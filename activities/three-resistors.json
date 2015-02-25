@@ -13,13 +13,13 @@
     {
       "type": "battery",
       "UID": "source",
-      "voltage": 9,
+      "voltage": 12.5,
       "connections": "battery_1,battery_2"
     },
     {
       "type": "resistor",
       "UID": "rX",
-      "resistance": "100",
+      "resistance": "120",
       "connections": "battery_2,0:off_11",
       "hidden": true
     },
