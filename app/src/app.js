@@ -33,22 +33,44 @@ function startActivity(activityName, ttWorkbench) {
 
 }
 
+function parseActivity(activityName, rawData) {
+  try {
+    startActivity(activityName, JSON.parse(rawData));
+  }
+  catch (e) {
+    alert('Unable to parse JSON for ' + activityName);
+  }
+}
+
 function loadActivity(activityName) {
-  var activityUrl = config.modelsBase + activityName + ".json";
-
-  var request = new XMLHttpRequest();
-  request.open('GET', activityUrl, true);
-
-  request.onload = function() {
-    if (request.status >= 200 && request.status < 400) {
-      var data = JSON.parse(request.responseText);
-      startActivity(activityName, data);
-    } else {
-      alert("Could not find activity at "+activityUrl);
+  var localPrefix = 'local:',
+      rawData, data, activityUrl, request;
+  
+  if (activityName.substr(0, localPrefix.length) == localPrefix) {
+    var rawData = localStorage.getItem(activityName);
+    if (rawData) {
+      parseActivity(activityName, rawData);
     }
-  };
+    else {
+      alert("Could not find LOCAL activity at " + activityName);
+    }
+  }
+  else {
+    activityUrl = config.modelsBase + activityName + ".json";
 
-  request.send();
+    request = new XMLHttpRequest();
+    request.open('GET', activityUrl, true);
+
+    request.onload = function() {
+      if (request.status >= 200 && request.status < 400) {
+        parseActivity(activityName, request.responseText);
+      } else {
+        alert("Could not find activity at "+activityUrl);
+      }
+    };
+
+    request.send();
+  }
 }
 
 // render initial page
