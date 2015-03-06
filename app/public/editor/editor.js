@@ -71,6 +71,26 @@ App = React.createFactory(React.createClass({
     window.open('../#local:' + this.state.filename);
   },
   
+  formatText: function () {
+    try {
+      this.setState({text: JSON.stringify(JSON.parse(this.state.text), null, 2)});
+    }
+    catch (e) {
+      alert('Unable to format invalid JSON!');
+    }
+  },
+  
+  isValidText: function (message) {
+    try {
+      JSON.parse(this.state.text);
+      return true;
+    }
+    catch (e) {
+      alert(message || 'The JSON is NOT valid');
+      return false;
+    }
+  },
+  
   handleToolbar: function (button) {
     var self = this,
         showDialog = function () {
@@ -89,15 +109,19 @@ App = React.createFactory(React.createClass({
         }
         break;
       case 'Save':
-        if (this.state.filename) {
-          this.saveFile(this.state.filename);
-        }
-        else {
-          showDialog();
+        if (isValidText('Sorry, you must fix the JSON errors before you can save.')) {
+          if (this.state.filename) {
+            this.saveFile(this.state.filename);
+          }
+          else {
+            showDialog();
+          }
         }
         break;
       case 'Save As':
-        showDialog();
+        if (isValidText('Sorry, you must fix the JSON errors before you can save.')) {
+          showDialog();
+        }
         break;
       case 'Use':
         if (this.okIfDirty()) {
@@ -107,6 +131,14 @@ App = React.createFactory(React.createClass({
       case 'Delete':
         if (confirm('Are you sure you want to delete this?')) {
           this.deleteFile();
+        }
+        break;
+      case 'Format':
+        this.formatText();
+        break;
+      case 'Validate':
+        if (this.isValidText()) {
+          alert('The JSON is valid');
         }
         break;
     }
@@ -183,6 +215,8 @@ Toolbar = React.createFactory(React.createClass({
       span({}, 'Open'),
       span(dirtyProps, 'Save'),
       span(dirtyProps, 'Save As'),
+      span(emptyProps, 'Format'),
+      span(emptyProps, 'Validate'),
       span(filenameProps, 'Use'),
       span({className: this.props.filename === null ? 'disabled' : null, style: {'float': 'right'}}, 'Delete')
     );
