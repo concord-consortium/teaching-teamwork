@@ -109,7 +109,7 @@ App = React.createFactory(React.createClass({
         }
         break;
       case 'Save':
-        if (isValidText('Sorry, you must fix the JSON errors before you can save.')) {
+        if (this.isValidText('Sorry, you must fix the JSON errors before you can save.')) {
           if (this.state.filename) {
             this.saveFile(this.state.filename);
           }
@@ -119,7 +119,7 @@ App = React.createFactory(React.createClass({
         }
         break;
       case 'Save As':
-        if (isValidText('Sorry, you must fix the JSON errors before you can save.')) {
+        if (this.isValidText('Sorry, you must fix the JSON errors before you can save.')) {
           showDialog();
         }
         break;
