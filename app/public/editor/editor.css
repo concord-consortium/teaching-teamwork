@@ -31,7 +31,7 @@ html, body {
   background-color: #700;
 }
 .header .alert-info {
-  background-color: #0f0;
+  background-color: #070;
 }
 
 .toolbar {
@@ -56,6 +56,9 @@ html, body {
   color: #000;
   background-color: #eee;
   cursor: not-allowed;
+}
+.toolbar span.right {
+  float: right;
 }
 .editor {
   position: absolute;
