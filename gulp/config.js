@@ -19,7 +19,7 @@ module.exports = {
     dest: dest
   },
   vendor: {
-    src: [bower + '/breadboard/**/*'],
+    src: [bower + '/breadboard/**/*', bower + '/codemirror/**/*', bower + '/jsonlint/**/*'],
     base: bower + '/',
     dest: dest + '/vendor'
   }

@@ -2,6 +2,8 @@
   "name": "teaching-teamwork",
   "version": "0.0.1",
   "dependencies": {
-    "breadboard": "0.0.2"
+    "breadboard": "0.0.2",
+    "codemirror": "5.0.0",
+    "jsonlint": "1.6.0"
   }
 }

@@ -8,7 +8,9 @@ module.exports = PageView = React.createClass({
     var title,
         activity = this.props.activity ? this.props.activity : {},
         image = null,
-        chat = null;
+        chat = null,
+        src;
+        
     if (activity.name) {
       title = <h1>Teaching Teamwork: { activity.name }</h1>
     } else {
@@ -16,7 +18,8 @@ module.exports = PageView = React.createClass({
     }
 
     if (activity.image) {
-      image = <img src={ config.modelsBase + activity.image } />
+      src = /^https?:\/\//.test(activity.image) ? activity.image : config.modelsBase + activity.image;
+      image = <img src={ src } />
     }
 
     if (activity.clients && activity.clients.length > 1) {
