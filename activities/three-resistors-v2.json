@@ -1,6 +1,6 @@
 {
   "name": "Three resistors",
-  "image": "http://i.imgur.com/lTUYr4T.png",
+  "image": "images/three-resistors-circuit.v2.png",
   "externalComponents": [
     {
       "type": "battery",
