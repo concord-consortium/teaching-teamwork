@@ -1,78 +1,11 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-require('./views/page.jsx');
-
-var WorkbenchAdaptor      = require('./data/workbenchAdaptor'),
-    WorkbenchFBConnector  = require('./data/workbenchFBConnector'),
-    logController         = require('./controllers/log'),
-    userController        = require('./controllers/user'),
-    config                = require('./config'),
-    activityName;
-
-function startActivity(activityName, ttWorkbench) {
-  var workbenchAdaptor, workbenchFBConnector;
-
-  logController.init(activityName);
-  React.render(
-    React.createElement(PageView, {activity: ttWorkbench }),
-    document.getElementById('content')
-  );
-
-  userController.init(ttWorkbench.clients.length, function(clientNumber) {
-    React.render(
-      React.createElement(PageView, {activity: ttWorkbench, circuit:  (1 * clientNumber)+1}),
-      document.getElementById('content')
-    );
-
-    logController.setClientNumber(clientNumber);
-    workbenchAdaptor = new WorkbenchAdaptor(clientNumber)
-    workbenchFBConnector = new WorkbenchFBConnector(userController, clientNumber, workbenchAdaptor);
-    workbench = workbenchAdaptor.processTTWorkbench(ttWorkbench);
-    sparks.createWorkbench(workbench, "breadboard-wrapper");
-
-    logController.startListeningToCircuitEvents();
-  });
-
-}
-
-function loadActivity(activityName) {
-  var activityUrl = config.modelsBase + activityName + ".json";
-
-  var request = new XMLHttpRequest();
-  request.open('GET', activityUrl, true);
-
-  request.onload = function() {
-    if (request.status >= 200 && request.status < 400) {
-      var data = JSON.parse(request.responseText);
-      startActivity(activityName, data);
-    } else {
-      alert("Could not find activity at "+activityUrl);
-    }
-  };
-
-  request.send();
-}
-
-// render initial page
-React.render(
-  React.createElement(PageView, null),
-  document.getElementById('content')
-);
-
-// load blank workbench
-sparks.createWorkbench({"circuit": []}, "breadboard-wrapper");
-
-// load and start activity
-activityName = window.location.hash;
-activityName = activityName.substring(1,activityName.length);
-if (!activityName){
-  activityName = "two-resistors";
-}
-
-loadActivity(activityName);
+var App = React.createFactory(require('./views/app'));
+React.render(App({}), document.getElementById('content'));
 
 
 
-},{"./config":2,"./controllers/log":3,"./controllers/user":4,"./data/workbenchAdaptor":5,"./data/workbenchFBConnector":6,"./views/page.jsx":10}],2:[function(require,module,exports){
+
+},{"./views/app":7}],2:[function(require,module,exports){
 module.exports = {
   modelsBase: "activities/"
 }
@@ -345,7 +278,7 @@ module.exports = {
 }
 
 
-},{"../views/userRegistration.jsx":11,"./log":3}],5:[function(require,module,exports){
+},{"../views/userRegistration.jsx":13,"./log":3}],5:[function(require,module,exports){
 /**
  The workbench adaptor takes a TT-workbench definition such as
 
@@ -550,19 +483,136 @@ module.exports = WorkbenchFBConnector;
 
 
 },{}],7:[function(require,module,exports){
+var PageView              = React.createFactory(require('./page.jsx')),
+    WorkbenchAdaptor      = require('../data/workbenchAdaptor'),
+    WorkbenchFBConnector  = require('../data/workbenchFBConnector'),
+    logController         = require('../controllers/log'),
+    userController        = require('../controllers/user'),
+    config                = require('../config');
+
+module.exports = React.createClass({
+  displayName: 'App',
+
+  getInitialState: function () {
+    return {
+      activity: null,
+      circuit: 0,
+      breadboard: null,
+      client: null
+    };
+  },
+
+  render: function () {
+    return PageView({
+      activity: this.state.activity,
+      circuit: this.state.circuit,
+      breadboard: this.state.breadboard,
+      client: this.state.client
+    });
+  },
+
+  componentDidMount: function () {
+    // load blank workbench
+    sparks.createWorkbench({"circuit": []}, "breadboard-wrapper");
+
+    // load and start activity
+    this.loadActivity(window.location.hash.substring(1) || "two-resistors");
+  },
+
+  loadActivity: function(activityName) {
+    var self = this,
+        localPrefix = 'local:',
+        rawData, data, activityUrl, request;
+
+    if (activityName.substr(0, localPrefix.length) == localPrefix) {
+      var rawData = localStorage.getItem(activityName);
+      if (rawData) {
+        this.parseActivity(activityName, rawData);
+      }
+      else {
+        alert("Could not find LOCAL activity at " + activityName);
+      }
+    }
+    else {
+      activityUrl = config.modelsBase + activityName + ".json";
+
+      request = new XMLHttpRequest();
+      request.open('GET', activityUrl, true);
+
+      request.onload = function() {
+        if (request.status >= 200 && request.status < 400) {
+          self.parseActivity(activityName, request.responseText);
+        } else {
+          alert("Could not find activity at "+activityUrl);
+        }
+      };
+
+      request.send();
+    }
+  },
+
+  parseActivity: function (activityName, rawData) {
+    var parsedData;
+    try {
+      parsedData = JSON.parse(rawData);
+    }
+    catch (e) {
+      alert('Unable to parse JSON for ' + activityName);
+      return
+    }
+    this.startActivity(activityName, parsedData);
+  },
+
+  startActivity: function (activityName, ttWorkbench) {
+    var self = this,
+        workbenchAdaptor, workbenchFBConnector;
+
+    logController.init(activityName);
+    this.setState({activity: ttWorkbench});
+
+    userController.init(ttWorkbench.clients.length, function(clientNumber) {
+      var circuit = (1 * clientNumber) + 1;
+
+      logController.setClientNumber(clientNumber);
+      workbenchAdaptor = new WorkbenchAdaptor(clientNumber)
+      workbenchFBConnector = new WorkbenchFBConnector(userController, clientNumber, workbenchAdaptor);
+      workbench = workbenchAdaptor.processTTWorkbench(ttWorkbench);
+      sparks.createWorkbench(workbench, "breadboard-wrapper");
+
+      self.setState({
+        client: ttWorkbench.clients[circuit - 1],
+        circuit: circuit,
+        breadboard: sparks.workbenchController.breadboardController
+      });
+
+      logController.startListeningToCircuitEvents();
+    });
+  }
+});
+
+
+
+
+
+
+
+
+},{"../config":2,"../controllers/log":3,"../controllers/user":4,"../data/workbenchAdaptor":5,"../data/workbenchFBConnector":6,"./page.jsx":12}],8:[function(require,module,exports){
 // adapted from http://thecodeplayer.com/walkthrough/javascript-css3-calculator
 
 var logController = require('../controllers/log');
-    
-module.exports = CalculatorView = React.createClass({displayName: "CalculatorView",
-  
+
+module.exports = React.createClass({
+
+  displayName: 'Calculator',
+
   getInitialState: function() {
     this.backspace = String.fromCharCode(8592);
     this.inverse = '1/x';
     this.squareRoot = String.fromCharCode(8730);
     this.equals = '=';
     this.plusMinus = String.fromCharCode(177);
-    
+
     return {
       input: '',
       open: false,
@@ -574,19 +624,19 @@ module.exports = CalculatorView = React.createClass({displayName: "CalculatorVie
       openTop: 10
     };
   },
-  
+
   open: function (e) {
     logController.logEvent("Opened calculator");
     this.setState({open: true});
-    e.preventDefault();    
+    e.preventDefault();
   },
 
   close: function (e) {
     logController.logEvent("Closed calculator");
     this.setState({open: false});
-    e.preventDefault();    
+    e.preventDefault();
   },
-  
+
   clear: function (e) {
     logController.logEvent("Cleared calculator");
     this.setState({
@@ -594,7 +644,7 @@ module.exports = CalculatorView = React.createClass({displayName: "CalculatorVie
       evaled: false,
       error: false
     });
-    e.preventDefault();    
+    e.preventDefault();
   },
 
   eval: function (e) {
@@ -603,7 +653,7 @@ module.exports = CalculatorView = React.createClass({displayName: "CalculatorVie
         key = e.target.innerHTML,
         error = false,
         evaled;
-        
+
     if (equation) {
       if (key === this.inverse) {
         equation = "1/(" + equation + ")";
@@ -637,11 +687,11 @@ module.exports = CalculatorView = React.createClass({displayName: "CalculatorVie
         error: error
       });
     }
-    
+
     e.stopPropagation();
-    e.preventDefault();    
+    e.preventDefault();
   },
-  
+
   keyPressed: function (e) {
     var input = this.state.input,
         preInput = input,
@@ -649,12 +699,12 @@ module.exports = CalculatorView = React.createClass({displayName: "CalculatorVie
         endsWithOperator = input.match(/(\+|\-|\*|\/)$/),
         key = e.target.innerHTML,
         evaled = false;
-    
+
     // ignore clicks off the buttons
     if (e.target.nodeName !== 'SPAN') {
       return;
     }
-    
+
     if (key.match(/(\+|\-|\*|\/)/)) {
       if (!empty) {
         if (!endsWithOperator || key == '-') {
@@ -693,13 +743,13 @@ module.exports = CalculatorView = React.createClass({displayName: "CalculatorVie
     else {
       input += key;
     }
-    
+
     logController.logEvent("Calculator button pressed", null, {
       "button": key,
       "preCalculation": preInput,
       "postCalculation": input,
       "changed": this.state.input != input
-    });    
+    });
 
     if (this.state.input != input) {
       this.setState({
@@ -707,10 +757,10 @@ module.exports = CalculatorView = React.createClass({displayName: "CalculatorVie
         evaled: evaled
       });
     }
-    
-    e.preventDefault();    
+
+    e.preventDefault();
   },
-  
+
   startDrag: function (e) {
     this.dragging = (this.state.open && (e.target.nodeName != 'SPAN'));
     this.dragged = false;
@@ -726,12 +776,12 @@ module.exports = CalculatorView = React.createClass({displayName: "CalculatorVie
       y: e.clientY
     };
   },
-  
+
   drag: function (e) {
     var newPos;
     if (this.dragging) {
       // the calculations are reversed here only because we are setting the right pos and not the left
-      newPos = { 
+      newPos = {
         openRight: this.startCalculatorPos.right + (this.startMousePos.x - e.clientX),
         openTop: this.startCalculatorPos.top + (e.clientY - this.startMousePos.y)
       };
@@ -741,7 +791,7 @@ module.exports = CalculatorView = React.createClass({displayName: "CalculatorVie
       }
     }
   },
-  
+
   endDrag:  function (e) {
     if (this.dragged) {
       logController.logEvent("Calculator dragged", null, {
@@ -757,10 +807,10 @@ module.exports = CalculatorView = React.createClass({displayName: "CalculatorVie
 
   render: function() {
     var style = {
-      top: this.state.open ? this.state.openTop : this.state.closeTop, 
+      top: this.state.open ? this.state.openTop : this.state.closeTop,
       right: this.state.open ? this.state.openRight : this.state.closeRight
     };
-    
+
     if (this.state.open) {
       return (
         React.createElement("div", {id: "calculator", onMouseDown:  this.startDrag, onMouseMove:  this.drag, onMouseUp:  this.endDrag, style: style }, 
@@ -768,31 +818,31 @@ module.exports = CalculatorView = React.createClass({displayName: "CalculatorVie
             React.createElement("span", {className: "title"}, "Calculator"), 
             React.createElement("span", {className: "close", onClick:  this.close}, "X")
           ), 
-          
+
           React.createElement("div", {className: "top"}, 
             React.createElement("span", {className: "clear", onClick:  this.clear}, "C"), 
             React.createElement("div", {className:  this.state.error ? 'screen screen-error' : 'screen'},  this.state.input)
           ), 
-          
+
           React.createElement("div", {className: "keys", onClick:  this.keyPressed}, 
             React.createElement("span", null, "7"), 
             React.createElement("span", null, "8"), 
             React.createElement("span", null, "9"), 
             React.createElement("span", {className: "operator"}, "+"), 
             React.createElement("span", {className: "operator operator-right"}, this.backspace), 
-            
+
             React.createElement("span", null, "4"), 
             React.createElement("span", null, "5"), 
             React.createElement("span", null, "6"), 
             React.createElement("span", {className: "operator"}, "-"), 
             React.createElement("span", {className: "eval eval-right", onClick:  this.eval}, this.inverse), 
-            
+
             React.createElement("span", null, "1"), 
             React.createElement("span", null, "2"), 
             React.createElement("span", null, "3"), 
             React.createElement("span", {className: "operator"}, "/"), 
             React.createElement("span", {className: "eval eval-right", onClick:  this.eval}, this.squareRoot), 
-            
+
             React.createElement("span", null, "0"), 
             React.createElement("span", null, "."), 
             React.createElement("span", {className: "operator"}, this.plusMinus), 
@@ -813,15 +863,15 @@ module.exports = CalculatorView = React.createClass({displayName: "CalculatorVie
 });
 
 
-},{"../controllers/log":3}],8:[function(require,module,exports){
-require('./goalTable.jsx');
+},{"../controllers/log":3}],9:[function(require,module,exports){
+var GoalTable = require('./goalTable.jsx'),
+    ReactTransitionGroup = React.addons.TransitionGroup,
+    userController = require('../controllers/user'),
+    logController = require('../controllers/log');
 
-var ReactTransitionGroup = React.addons.TransitionGroup;
+module.exports = React.createClass({
+  displayName: 'Chat',
 
-var userController  = require('../controllers/user'),
-    logController   = require('../controllers/log');
-
-module.exports = ChatView = React.createClass({displayName: "ChatView",
   getInitialState: function() {
     this.items = [];
     return {items: [], text: ""};
@@ -911,11 +961,13 @@ module.exports = ChatView = React.createClass({displayName: "ChatView",
 });
 
 
-},{"../controllers/log":3,"../controllers/user":4,"./goalTable.jsx":9}],9:[function(require,module,exports){
-module.exports = GoalTable = React.createClass({displayName: "GoalTable",
+},{"../controllers/log":3,"../controllers/user":4,"./goalTable.jsx":10}],10:[function(require,module,exports){
+module.exports = React.createClass({
+  displayName: 'GoalTable',
+
   render: function() {
     var rows = this.props.goal.map(function(val, i) {
-      return (React.createElement("tr", null, 
+      return (React.createElement("tr", {key: i}, 
                 React.createElement("td", null,  i+1), 
                 React.createElement("td", null, val ), 
                 React.createElement("td", {className: "actual"})
@@ -938,49 +990,181 @@ module.exports = GoalTable = React.createClass({displayName: "GoalTable",
 });
 
 
-},{}],10:[function(require,module,exports){
-require('./chat.jsx');
-require('./calculator.jsx');
+},{}],11:[function(require,module,exports){
+// adapted from SPARKS math-parser.js
 
-var config = require('../config');
+module.exports = React.createClass({
 
-module.exports = PageView = React.createClass({displayName: "PageView",
-  render: function() {
-    var title,
-        activity = this.props.activity ? this.props.activity : {},
-        image = null,
-        chat = null;
-    if (activity.name) {
-      title = React.createElement("h1", null, "Teaching Teamwork: ",  activity.name)
+  displayName: 'Notes',
+
+  render: function () {
+    if (!this.props.text) {
+      return React.DOM.div({});
+    }
+    return React.DOM.div({className: this.props.className || 'notes', dangerouslySetInnerHTML: {__html: this.calculateMeasurement(this.props.text)}});
+  },
+
+  calculateMeasurement: function (text){
+    var context = {
+          breadboard: this.props.breadboard
+        },
+        components = this.props.breadboard ? this.props.breadboard.getComponents() : null,
+        result,
+        key;
+
+    // short-circuit
+    if (text === undefined || text === null || text === "") {
+      return "";
+    }
+    if (!isNaN(Number(text))) {
+      return text;
+    }
+
+    // convert to string
+    text = "" + text;
+
+    // add the components to the the context to eval in
+    if (components) {
+      for (var key in components) {
+        if (components.hasOwnProperty(key)) {
+          context[key] = components[key];
+        }
+      }
+    }
+
+    // replace all the bracket delimited javascript
+    result = text.replace(/\[([^\]]+)\]/g, function (match, contents) {
+      try {
+        with (context) {
+          return eval(contents);
+        }
+      }
+      catch (e) {
+        return '<i>n/a</i>';
+      }
+    });
+
+    // convert
+    result = this.convertMeasurement(result);
+
+    // and standardize
+    result = this.standardizeUnits(result);
+
+    return result;
+  },
+
+  isMeasurement: function(string) {
+    return !!string.match(/^\s?\d+.?\d*\s?\D+\s?$/);
+  },
+
+  convertMeasurement: function(measurement) {
+    if (!this.isMeasurement(measurement)){
+      return measurement
+    }
+
+    var numPattern = /\d+\.?\d*/g
+    var nmatched = measurement.match(numPattern);
+    if (!nmatched){
+      return measurement;
+    }
+    var value = nmatched[0];
+
+    var unitPattern =  /(?=\d*.?\d*)[^\d\.\s]+/g
+    var umatched = measurement.match(unitPattern);
+    if (!umatched){
+      return measurement;
+    }
+    var unit = umatched[0];
+
+    var eng = this.toEngineering(value, unit)
+    return eng.value + " " + eng.units;
+  },
+
+  toEngineering: function (value, units) {
+    var isShort = (units.length === 1 || units === "Hz"),
+        prefix  = "";
+
+    value = Number(value);
+    if (value >= 1000000){
+      prefix = isShort ? "M" : "mega";
+      value = this.round(value/1000000,2);
+    } else if (value >= 1000){
+      prefix = isShort ? "k" : "kilo";
+      value = this.round(value/1000,2);
+    } else if (value === 0 ) {
+      value = 0;
+    } else if (value < 0.000000001){
+      prefix = isShort ? "p" : "pico";
+      value = this.round(value * 1000000000000,2);
+    } else if (value < 0.000001){
+      prefix = isShort ? "n" : "nano";
+      value = this.round(value * 1000000000,2);
+    } else if (value < 0.001){
+      prefix = isShort ? "μ" : "micro";
+      value = this.round(value * 1000000,2);
+    } else if (value < 1) {
+      prefix = isShort ? "m" : "milli";
+      value = this.round(value * 1000,2);
     } else {
-      title = React.createElement("h1", null, "Teaching Teamwork")
+      value = this.round(value,2);
     }
+    units = prefix + units;
 
-    if (activity.image) {
-      image = React.createElement("img", {src:  config.modelsBase + activity.image})
-    }
+    return {"value": value, "units": units};
+  },
 
-    if (activity.clients && activity.clients.length > 1) {
-      chat = React.createElement(ChatView, React.__spread({},  activity))
-    }
+  round: function(num, dec) {
+    return Math.round( Math.round( num * Math.pow( 10, dec + 2 ) ) / Math.pow( 10, 2 ) ) / Math.pow(10,dec);
+  },
+
+  standardizeUnits: function (string) {
+    return string
+      .replace(/ohms/gi,"&#x2126;")
+      .replace("micro","&#x00b5;")
+      .replace("milli","m")
+      .replace("kilo","k")
+      .replace("mega","M");
+  }
+});
+
+},{}],12:[function(require,module,exports){
+var ChatView = require('./chat.jsx'),
+    CalculatorView = require('./calculator.jsx'),
+    NotesView = require('./notes'),
+    config = require('../config');
+
+module.exports = React.createClass({
+
+  displayName: 'Page',
+
+  render: function() {
+    var activity = this.props.activity ? this.props.activity : {},
+        activityName = activity.name ? ': ' + activity.name : '',
+        circuit = this.props.circuit ? (React.createElement("h2", null, "Circuit ",  this.props.circuit)) : null,
+        notes = this.props.client ? (this.props.client.notes || "") : "";
+
     return (
       React.createElement("div", {className: "tt-page"}, 
-        title, 
-        React.createElement("h2", null, "Circuit ",  this.props.circuit), 
+        React.createElement("h1", null, "Teaching Teamwork", activityName ), 
+        circuit, 
         React.createElement("div", {id: "breadboard-wrapper"}), 
-        chat, 
-        React.createElement("div", {id: "image-wrapper"}, image ), 
-        React.createElement(CalculatorView, null)
+         activity.clients && activity.clients.length > 1 ? (React.createElement(ChatView, React.__spread({},  activity))) : null, 
+        React.createElement("div", {id: "image-wrapper"},  activity.image ? (React.createElement("img", {src:  config.modelsBase + activity.image})) : null), 
+        React.createElement(CalculatorView, null), 
+        React.createElement("div", {id: "notes-wrapper"}, React.createElement(NotesView, {text: notes, className: "tt-notes", breadboard:  this.props.breadboard}))
       )
     );
   }
 });
 
 
-},{"../config":2,"./calculator.jsx":7,"./chat.jsx":8}],11:[function(require,module,exports){
+},{"../config":2,"./calculator.jsx":8,"./chat.jsx":9,"./notes":11}],13:[function(require,module,exports){
 var userController;
 
-module.exports = UserRegistrationView = React.createClass({displayName: "UserRegistrationView",
+// add a global UserRegistrationView variable because its statics are called in other modules
+module.exports = UserRegistrationView = React.createClass({
+  displayName: 'UserRegistration',
+
   statics: {
     // open a dialog with props object as props
     open: function(_userController, data) {
@@ -1123,7 +1307,7 @@ module.exports = UserRegistrationView = React.createClass({displayName: "UserReg
         }
 
         clientChoices.push(
-          React.createElement("div", null, 
+          React.createElement("div", {key: i }, 
             React.createElement("input", {type: "radio", name: "clientSelection", defaultChecked: selected, value: i, onClick:  this.handleClientSelection}), "Circuit ",  i+1, " (", userSpan, ")"
           ) );
       }

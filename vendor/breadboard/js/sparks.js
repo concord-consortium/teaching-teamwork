@@ -10329,9 +10329,8 @@ MultimeterBase.prototype = {
 
         this.mode = this.modes.ohmmeter;
 
-        this.absoluteValue = 0;   // current absolute meter value
-        this.value = 0;           // current real meter value
-        
+        this.absoluteValue = 0;   //current meter value
+
         this.displayText = '       ';
 
         this.redProbeConnection = null;
@@ -10369,14 +10368,6 @@ MultimeterBase.prototype = {
 
     updateDisplay : function () {
         var text = '',
-            self = this,
-            toSignedDisplayString = function (s, dec) {
-              return self.toDisplayString((self.value < 0 ? '-' : '') + s, dec);
-            },
-            prependHV = function (s) {
-              // if there is a leading negative place it in the second position so that both HV and the negative sign will display
-              return s.substr(0, 1) === '-' ? 'h-' + text.substring(2) : 'h' + text.substring(1)
-            },
             vm, imc, im;
 
         if (!this.powerOn) {
@@ -10388,7 +10379,7 @@ MultimeterBase.prototype = {
             if (this.dialPosition === 'dcv_20') {
                 if (this.absoluteValue < 19.995) {
                     text = (Math.round(this.absoluteValue * 100) * 0.01).toString();
-                    text = toSignedDisplayString(text, 2);
+                    text = this.toDisplayString(text, 2);
                 }
                 else {
                     text = ' 1 .   ';
@@ -10398,7 +10389,7 @@ MultimeterBase.prototype = {
             } else if (this.dialPosition === 'dcv_200') {
                 if (this.absoluteValue < 199.95) {
                     text = (Math.round(this.absoluteValue * 10) * 0.1).toString();
-                    text = toSignedDisplayString(text, 1);
+                    text = this.toDisplayString(text, 1);
                 }
                 else {
                     text = ' 1 .   ';
@@ -10408,7 +10399,8 @@ MultimeterBase.prototype = {
             } else if (this.dialPosition === 'dcv_1000') {
                  if (this.absoluteValue < 999.95) {
                     text = Math.round(this.absoluteValue).toString();
-                    text = prependHV(toSignedDisplayString(text, 0));
+                    text = this.toDisplayString(text, 0);
+                    text = "h" + text.substring(1);
                 }
                 else {
                     text = 'h1 .   ';
@@ -10419,7 +10411,7 @@ MultimeterBase.prototype = {
                 vm = this.absoluteValue * 1000;
                 if (vm < 1999.5) {
                     text = Math.round(vm).toString();
-                    text = toSignedDisplayString(text, 0);
+                    text = this.toDisplayString(text, 0);
                 }
                 else {
                     text = ' 1 .   ';
@@ -10430,7 +10422,7 @@ MultimeterBase.prototype = {
                 vm = this.absoluteValue * 1000;
                 if (vm < 195){
                   text = (Math.round(vm * 100) * 0.01).toString();
-                  text = toSignedDisplayString(text, 1);
+                  text = this.toDisplayString(text, 1);
                 }
                 else {
                     text = ' 1 .   ';
@@ -10440,7 +10432,7 @@ MultimeterBase.prototype = {
             } else if (this.dialPosition === 'acv_200') {
                 if (this.absoluteValue < 199.95) {
                     text = (Math.round(this.absoluteValue * 10) * 0.1).toString();
-                    text = toSignedDisplayString(text, 1);
+                    text = this.toDisplayString(text, 1);
                 }
                 else {
                     text = ' 1 .   ';
@@ -10450,7 +10442,8 @@ MultimeterBase.prototype = {
             } else if (this.dialPosition === 'acv_750') {
                 if (this.absoluteValue < 699.5) {
                     text = (Math.round(this.absoluteValue)).toString();
-                    text = prependHV(toSignedDisplayString(text, 0));
+                    text = this.toDisplayString(text, 0);
+                    text = "h"+text.substring(1);
                 }
                 else {
                     text = 'h1 .   ';
@@ -10460,7 +10453,7 @@ MultimeterBase.prototype = {
             } else if (this.dialPosition === 'r_200') {
                 if (this.absoluteValue < 199.95) {
                     text = (Math.round(this.absoluteValue * 10) * 0.1).toString();
-                    text = toSignedDisplayString(text, 1);
+                    text = this.toDisplayString(text, 1);
                 }
                 else {
                     text = ' 1   . ';
@@ -10469,7 +10462,7 @@ MultimeterBase.prototype = {
             } else if (this.dialPosition === 'r_2000') {
                 if (this.absoluteValue < 1999.5) {
                     text = Math.round(this.absoluteValue).toString();
-                    text = toSignedDisplayString(text, 0);
+                    text = this.toDisplayString(text, 0);
                 }
                 else {
                     text = ' 1     ';
@@ -10479,7 +10472,7 @@ MultimeterBase.prototype = {
             else if (this.dialPosition === 'r_20k') {
                 if (this.absoluteValue < 19995) {
                     text = (Math.round(this.absoluteValue * 0.1) * 0.01).toString();
-                    text = toSignedDisplayString(text, 2);
+                    text = this.toDisplayString(text, 2);
                 }
                 else {
                     text = ' 1 .   ';
@@ -10489,7 +10482,7 @@ MultimeterBase.prototype = {
             else if (this.dialPosition === 'r_200k') {
                 if (this.absoluteValue < 199950) {
                     text = (Math.round(this.absoluteValue * 0.01) * 0.1).toString();
-                    text = toSignedDisplayString(text, 1);
+                    text = this.toDisplayString(text, 1);
                 }
                 else {
                     text = ' 1   . ';
@@ -10499,7 +10492,7 @@ MultimeterBase.prototype = {
             else if (this.dialPosition === 'r_2000k') {
                 if (this.absoluteValue < 1999500) {
                     text = Math.round(this.absoluteValue * 0.001).toString();
-                    text = toSignedDisplayString(text, 0);
+                    text = this.toDisplayString(text, 0);
                 }
                 else {
                     text = ' 1     ';
@@ -10510,7 +10503,7 @@ MultimeterBase.prototype = {
               imc = this.absoluteValue * 1000000;
               if (imc < 195){
                 text = (Math.round(imc * 100) * 0.01).toString();
-                text = toSignedDisplayString(text, 1);
+                text = this.toDisplayString(text, 1);
               }
               else {
                   text = ' 1     ';
@@ -10521,7 +10514,7 @@ MultimeterBase.prototype = {
               imc = this.absoluteValue * 1000000;
               if (imc < 1950){
                 text = (Math.round(imc * 10) * 0.1).toString();
-                text = toSignedDisplayString(text, 0);
+                text = this.toDisplayString(text, 0);
               }
               else {
                   text = ' 1     ';
@@ -10532,7 +10525,7 @@ MultimeterBase.prototype = {
               im = this.absoluteValue * 1000;
               if (im < 19.5){
                 text = (Math.round(im * 100) * 0.01).toString();
-                text = toSignedDisplayString(text, 2);
+                text = this.toDisplayString(text, 2);
               }
               else {
                   text = ' 1     ';
@@ -10543,7 +10536,7 @@ MultimeterBase.prototype = {
               im = this.absoluteValue * 1000;
               if (im < 195){
                 text = (Math.round(im * 10) * 0.1).toString();
-                text = toSignedDisplayString(text, 1);
+                text = this.toDisplayString(text, 1);
               }
               else {
                   text = ' 1     ';
@@ -10880,7 +10873,7 @@ extend(Multimeter, MultimeterBase, {
   // this is called after update() is called and ciso returns
   updateWithData: function (ciso) {
     var measurement = this.currentMeasurement,
-        source, b, p1, p2, v1, v2, current,
+        source, b, p1, p2, v1, v2, current, drop,
         result;
 
     if (ciso) {
@@ -10901,22 +10894,17 @@ extend(Multimeter, MultimeterBase, {
 
         // exit quickly if ciso was not able to solve circuit
         if (!v1 || !v2) {
-          this.value = 0;
           this.absoluteValue = 0;
           this.updateDisplay();
           return;
         }
 
-        switch (measurement) {
-          case "voltage":
-            result = v1.real - v2.real;
-            break;
-          case "ac_voltage":
-            result = v1.subtract(v2).magnitude;
-            break;
-          case "current":
-            result = v1.subtract(v2).magnitude / 1e-6
-            break;
+        drop = v1.subtract(v2).magnitude;
+
+        if (measurement === "current") {
+          result = drop / 1e-6;
+        } else {
+          result = drop;
         }
       }
 
@@ -10938,10 +10926,6 @@ extend(Multimeter, MultimeterBase, {
         }
         result = Math.round(result*Math.pow(10,8))/Math.pow(10,8);
 
-        // track both the value and the absolute value.  the absolute value lets us
-        // make simpler one-sided comparisons to zero and the value lets us display
-        // the negative sign
-        this.value = result;
         this.absoluteValue = Math.abs(result);
 
         if (measurement === "current" && this.absoluteValue > 0.44){
