@@ -60,7 +60,7 @@
     {
       "show_multimeter": true,
       "showComponentEditor": true,
-      "notes": "Try to make the voltage across your resistor 7.62 volts.",
+      "notes": "Try to make the voltage across your resistor 7.52 volts.",
       "circuit": [
         {
           "type": "wire",
