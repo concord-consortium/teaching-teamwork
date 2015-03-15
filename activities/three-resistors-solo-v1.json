@@ -22,7 +22,7 @@
    ],
   "clients": [
     {
-      "showComponentEditor": false,
+      "showComponentEditor": true,
       "showComponentDrawer": false,
       "show_multimeter": true,
       "notes": "Goal: V1 = 4.14 volts, V2 = 3.41 volts, V3 = 4.99 volts.",
