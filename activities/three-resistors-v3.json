@@ -11,7 +11,7 @@
     {
       "type": "resistor",
       "UID": "rX",
-      "resistance": "120",
+      "resistance": "290",
       "connections": "battery_2,0:off_11",
       "hidden": true
     },
@@ -35,7 +35,7 @@
     {
       "show_multimeter": true,
       "showComponentEditor": true,
-      "notes": "Try to make the voltage across your resistor 6.92 volts.",
+      "notes": "Try to make the voltage across your resistor 1.89 volts.",
       "circuit": [
         {
           "type": "wire",
@@ -60,7 +60,7 @@
     {
       "show_multimeter": true,
       "showComponentEditor": true,
-      "notes": "Try to make the voltage across your resistor 1.43 volts.",
+      "notes": "Try to make the voltage across your resistor 7.62 volts.",
       "circuit": [
         {
           "type": "wire",
@@ -85,7 +85,7 @@
     {
       "show_multimeter": true,
       "showComponentEditor": true,
-      "notes": "Try to make the voltage across your resistor 3.84 volts.",
+      "notes": "Try to make the voltage across your resistor 2.31 volts.",
       "circuit": [
         {
           "type": "wire",
