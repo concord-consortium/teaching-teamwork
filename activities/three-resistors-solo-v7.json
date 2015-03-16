@@ -4,13 +4,13 @@
     {
       "type": "battery",
       "UID": "source",
-      "voltage": 14,
+      "voltage": 12.76,
       "connections": "battery_1,battery_2"
     },
     {
       "type": "resistor",
       "UID": "rX",
-      "resistance": "240",
+      "resistance": "112",
       "connections": "battery_1,0:off_11",
       "hidden": true
     },
@@ -25,7 +25,7 @@
       "showComponentEditor": true,
       "showComponentDrawer": false,
       "show_multimeter": true,
-      "notes": "Goal: V1 = 4.14 volts, V2 = 3.41 volts, V3 = 4.99 volts.",
+      "notes": "Goal: V1 = 1.38 volts, V2 = 3.65 volts, V3 = 5.47 volts.",
       "circuit": [
         {
           "type": "resistor",

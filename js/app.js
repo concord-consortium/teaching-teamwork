@@ -859,7 +859,7 @@ module.exports = React.createClass({
 
     if (this.state.open) {
       return (
-        React.createElement("div", {id: "calculator", onMouseDown:  this.startDrag, onMouseMove:  this.drag, onMouseUp:  this.endDrag, style:  style }, 
+        React.createElement("div", {id: "calculator", onMouseDown:  this.startDrag, onMouseMove:  this.drag, onMouseUp:  this.endDrag, style: style }, 
           React.createElement("div", {className: "top very-top"}, 
             React.createElement("span", {className: "title"}, "Calculator"), 
             React.createElement("span", {className: "close", onClick:  this.close}, "X")
@@ -900,7 +900,7 @@ module.exports = React.createClass({
     }
     else {
       return (
-        React.createElement("div", {id: "open-calculator", onClick:  this.open, style:  style }, 
+        React.createElement("div", {id: "open-calculator", onClick:  this.open, style: style }, 
           "Calculator"
         )
       );
@@ -988,17 +988,17 @@ module.exports = React.createClass({
         React.createElement("div", {id: "messages"}, 
           React.createElement(ReactTransitionGroup, null, 
             this.state.items.map(function(item, i) {
-              return React.createElement(Message, {i:  i, item:  item })
+              return React.createElement(Message, {i: i, item: item })
             })
           )
         ), 
-         table, 
+        table, 
         React.createElement("div", {id: "input"}, 
           React.createElement("form", {onSubmit:  this.handleSubmit}, 
             "Send chat:", 
               React.createElement("input", {onChange:  this.onChange, value:  this.state.text, type: "text", size: "70", id: "send-chat"}), 
               React.createElement("button", {id: "send", onClick:  this.handleSubmit}, "Send"), 
-               sendMeas 
+              sendMeas 
           )
         )
       )
@@ -1598,7 +1598,7 @@ module.exports = React.createClass({
     var rows = this.props.goal.map(function(val, i) {
       return (React.createElement("tr", {key: i}, 
                 React.createElement("td", null,  i+1), 
-                React.createElement("td", null,  val ), 
+                React.createElement("td", null, val ), 
                 React.createElement("td", {className: "actual"})
               )
               );
@@ -1611,7 +1611,7 @@ module.exports = React.createClass({
             React.createElement("th", null, "Goal (",  this.props.measurement, ")"), 
             React.createElement("th", null, "Actual")
           ), 
-           rows 
+          rows 
         )
       )
     );
@@ -1777,14 +1777,14 @@ module.exports = React.createClass({
 
     return (
       React.createElement("div", {className: "tt-page"}, 
-        React.createElement("h1", null, "Teaching Teamwork",  activityName ), 
-         circuit, 
+        React.createElement("h1", null, "Teaching Teamwork", activityName ), 
+        circuit, 
         React.createElement("div", {id: "breadboard-wrapper"}), 
          activity.clients && activity.clients.length > 1 ? (React.createElement(ChatView, React.__spread({},  activity))) : null, 
-        React.createElement("div", {id: "image-wrapper"},  image ), 
+        React.createElement("div", {id: "image-wrapper"}, image ), 
         React.createElement(CalculatorView, null), 
-        React.createElement("div", {id: "notes-wrapper"}, React.createElement(NotesView, {text:  notes, className: "tt-notes", breadboard:  this.props.breadboard})), 
-         editor 
+        React.createElement("div", {id: "notes-wrapper"}, React.createElement(NotesView, {text: notes, className: "tt-notes", breadboard:  this.props.breadboard})), 
+        editor 
       )
     );
   }
@@ -1904,11 +1904,11 @@ module.exports = UserRegistrationView = React.createClass({
       form = (
         React.createElement("div", null, 
           React.createElement("h3", null, "Group name: ",  this.state.groupName), 
-           groupDetails, 
+          groupDetails, 
           React.createElement("label", null, " "), 
-          React.createElement("span", null, "Do you want to ",  joinStr, " this group?"), 
+          React.createElement("span", null, "Do you want to ", joinStr, " this group?"), 
           React.createElement("label", null, 
-            React.createElement("button", {onClick:  this.handleJoinGroup}, "Yes, ",  joinStr ), 
+            React.createElement("button", {onClick:  this.handleJoinGroup}, "Yes, ", joinStr ), 
             React.createElement("button", {onClick:  this.handleRejectGroup}, "No, enter a different group")
           )
         )
@@ -1940,14 +1940,14 @@ module.exports = UserRegistrationView = React.createClass({
         }
 
         clientChoices.push(
-          React.createElement("div", {key:  i }, 
-            React.createElement("input", {type: "radio", name: "clientSelection", defaultChecked:  selected, value:  i, onClick:  this.handleClientSelection}), "Circuit ",  i+1, " (",  userSpan, ")"
+          React.createElement("div", {key: i }, 
+            React.createElement("input", {type: "radio", name: "clientSelection", defaultChecked: selected, value: i, onClick:  this.handleClientSelection}), "Circuit ",  i+1, " (", userSpan, ")"
           ) );
       }
 
       form = (
         React.createElement("div", null, 
-           clientChoices, 
+          clientChoices, 
           React.createElement("label", null, 
             React.createElement("button", {disabled:  !submittable, onClick:  this.handleClientSelected}, "Select")
           )
@@ -1957,7 +1957,7 @@ module.exports = UserRegistrationView = React.createClass({
 
     return (
       React.createElement("form", {onSubmit:  this.handleSubmit}, 
-         form 
+        form 
       )
     );
   }
