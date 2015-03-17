@@ -14,6 +14,7 @@ module.exports = {
   },
   activities: {
     src: './activities/**/*',
+    json: './activities/**/*.json',
     base: './',
     dest: dest
   },
