@@ -125,7 +125,7 @@ module.exports = React.createClass({
 
   startActivity: function (activityName, ttWorkbench) {
     var self = this,
-        workbenchAdaptor, workbenchFBConnector;
+        workbenchAdaptor, workbenchFBConnector, eventName, eventData, value, parameters;
 
     logController.init(activityName);
     this.setState({activity: ttWorkbench});
@@ -151,6 +151,17 @@ module.exports = React.createClass({
       });
 
       logController.startListeningToCircuitEvents();
+
+      if (ttWorkbench.logEvent) {
+        for (eventName in ttWorkbench.logEvent) {
+          eventData = ttWorkbench.logEvent[eventName];
+          value = eventData.hasOwnProperty("value") ? eventData.value : null;
+          parameters = eventData.hasOwnProperty("parameters") ? eventData.parameters : null;
+          if (value || parameters) {
+            logController.logEvent(eventName, value, parameters);
+          }
+        }
+      }
     });
   }
 });
