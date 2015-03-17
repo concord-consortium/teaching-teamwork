@@ -31,11 +31,26 @@
       "hidden": true
     }
   ],
+  "logEvent": {
+    "Activity Settings": {
+      "parameters": {
+        "E": 12.76,
+        "R0": 310
+      }
+    },
+    "Activity Goals": {
+      "parameters": {
+        "V1": 6.65,
+        "V2": 1.73,
+        "V3": 3.01
+      }
+    }
+  },
   "clients": [
     {
       "show_multimeter": true,
       "showComponentEditor": true,
-      "notes": "Try to make the voltage across your resistor 6.65 volts.",
+      "notes": "Goal: V1 = 6.65 volts.",
       "circuit": [
         {
           "type": "wire",
@@ -60,7 +75,7 @@
     {
       "show_multimeter": true,
       "showComponentEditor": true,
-      "notes": "Try to make the voltage across your resistor 1.73 volts.",
+      "notes": "Goal: V2 = 1.73 volts.",
       "circuit": [
         {
           "type": "wire",
@@ -85,7 +100,7 @@
     {
       "show_multimeter": true,
       "showComponentEditor": true,
-      "notes": "Try to make the voltage across your resistor 3.01 volts.",
+      "notes": "Goal: V3 = 3.01 volts.",
       "circuit": [
         {
           "type": "wire",
