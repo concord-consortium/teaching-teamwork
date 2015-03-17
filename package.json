@@ -27,7 +27,9 @@
     "karma-browserify": "^3.0.0",
     "reactify": "^1.0.0",
     "vinyl-source-stream": "^1.0.0",
-    "event-stream": "^3.3.0"
+    "event-stream": "^3.3.0",
+    "gulp-jsonlint": "^1.0.2",
+    "gulp-if": "^1.2.5"
   },
   "browserify-shim": {
     "external": "global:External"
