@@ -8,6 +8,6 @@ gulp.task('watch', function() {
     gulp.watch(config.activities.src, ['copy-activities']);
 });
 
-gulp.task('build-all', ['browserify', 'copy-activities', 'copy-public', 'copy-vendor', 'json-lint'])
+gulp.task('build-all', ['browserify', 'copy-activities', 'copy-public', 'copy-vendor', 'json-lint', 'bower-check'])
 
 gulp.task('default', ['build-all', 'watch']);
