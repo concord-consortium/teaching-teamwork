@@ -1502,45 +1502,66 @@ module.exports = React.createClass({
   },
 
   startDrag: function (e) {
-    this.dragging = true;
-    this.dragged = false;
-    this.startCalculatorPos = {
-      right: this.state.openRight,
-      top: this.state.openTop,
-    };
-    this.startMousePos = {
-      x: e.clientX,
-      y: e.clientY
-    };
-  },
-
-  drag: function (e) {
-    var newPos;
-    if (this.dragging) {
-      // the calculations are reversed here only because we are setting the right pos and not the left
-      newPos = {
-        openRight: this.startCalculatorPos.right + (this.startMousePos.x - e.clientX),
-        openTop: this.startCalculatorPos.top + (e.clientY - this.startMousePos.y)
-      };
-      if ((newPos.openRight != this.state.openRight) || (newPos.openTop != this.state.openTop)) {
-        this.setState(newPos);
-        this.dragged = true;
+    var self = this,
+      dragging = true,
+      dragged = false,
+      startCalculatorPos = {
+        right: this.state.openRight,
+        top: this.state.openTop,
+      },
+      startMousePos = {
+        x: e.clientX,
+        y: e.clientY
+      },
+      mousemove, mouseup;
+    
+    mousemove = function (e) {
+      var newPos;
+      if (dragging) {
+        // the calculations are reversed here only because we are setting the right pos and not the left
+        newPos = {
+          openRight: startCalculatorPos.right + (startMousePos.x - e.clientX),
+          openTop: startCalculatorPos.top + (e.clientY - startMousePos.y)
+        };
+        if ((newPos.openRight != self.state.openRight) || (newPos.openTop != self.state.openTop)) {
+          self.setState(newPos);
+          dragged = true;
+        }
       }
+    };
+    
+    mouseup = function (e) {
+      if (dragged) {
+        logController.logEvent("MathPad dragged", null, {
+          "startTop": startCalculatorPos.top,
+          "startRight": startCalculatorPos.right,
+          "endTop": self.state.openTop,
+          "endRight": self.state.openRight,
+        });
+        dragged = false;
+      }
+      dragging = false;
+      
+      if (window.removeEventListener) {
+        window.removeEventListener('mousemove', mousemove);
+        window.removeEventListener('mouseup', mouseup);
+      }
+      else {
+        window.detactEvent('onmousemove', mousemove);
+        window.detactEvent('onmouseup', mouseup);
+      }
+      
+      self.focus();
+    };
+    
+    if (window.addEventListener) {
+      window.addEventListener('mousemove', mousemove, false);
+      window.addEventListener('mouseup', mouseup, false);
     }
-  },
-
-  endDrag:  function (e) {
-    if (this.dragged) {
-      logController.logEvent("MathPad dragged", null, {
-        "startTop": this.startCalculatorPos.top,
-        "startRight": this.startCalculatorPos.right,
-        "endTop": this.state.openTop,
-        "endRight": this.state.openRight,
-      });
-      this.dragged = false;
+    else {
+      window.attachEvent('onmousemove', mousemove);
+      window.attachEvent('onmouseup', mouseup);
     }
-    this.dragging = false;
-    this.focus();
   },
 
   open: function (e) {
@@ -1580,7 +1601,7 @@ module.exports = React.createClass({
 
     if (this.state.open) {
       return React.createElement("div", {className: "mathpad mathpad-open", style: style}, 
-        React.createElement("div", {className: "title", onMouseDown: this.startDrag, onMouseMove: this.drag, onMouseUp: this.endDrag}, 
+        React.createElement("div", {className: "title", onMouseDown: this.startDrag}, 
           "MathPad", 
           React.createElement("span", {className: "close", onClick: this.close}, "X")
         ), 
@@ -1923,7 +1944,7 @@ module.exports = React.createClass({
         React.createElement("div", {id: "breadboard-wrapper"}), 
          hasMultipleClients ? (React.createElement(ChatView, React.__spread({},  activity))) : null, 
         React.createElement("div", {id: "image-wrapper"},  image ), 
-        React.createElement(MathPadView, null), 
+        this.props.activity ? (React.createElement(MathPadView, null)) : null, 
         React.createElement("div", {id: "notes-wrapper"}, React.createElement(NotesView, {text:  notes, className: "tt-notes", breadboard:  this.props.breadboard})), 
          editor 
       )
