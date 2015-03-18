@@ -29,7 +29,10 @@
     "vinyl-source-stream": "^1.0.0",
     "event-stream": "^3.3.0",
     "gulp-jsonlint": "^1.0.2",
-    "beepbeep": "^1.2.0"
+    "beepbeep": "^1.2.0",
+    "gulp-jshint": "^1.9.4",
+    "jshint-stylish": "^1.0.1",
+    "gulp-react": "^3.0.1"
   },
   "browserify-shim": {
     "external": "global:External"

@@ -32,7 +32,7 @@ module.exports = React.createClass({
 
     // add the components to the the context to eval in
     if (components) {
-      for (var key in components) {
+      for (key in components) {
         if (components.hasOwnProperty(key)) {
           context[key] = components[key];
         }
@@ -40,6 +40,8 @@ module.exports = React.createClass({
     }
 
     // replace all the bracket delimited javascript
+    // jshint ignore:start
+    // with and eval might be evil but we need them here
     result = text.replace(/\[([^\]]+)\]/g, function (match, contents) {
       try {
         with (context) {
@@ -50,6 +52,7 @@ module.exports = React.createClass({
         return '<i>n/a</i>';
       }
     });
+    // jshint ignore:end
 
     // convert
     result = this.convertMeasurement(result);
@@ -66,29 +69,29 @@ module.exports = React.createClass({
 
   convertMeasurement: function(measurement) {
     if (!this.isMeasurement(measurement)){
-      return measurement
+      return measurement;
     }
 
-    var numPattern = /\d+\.?\d*/g
+    var numPattern = /\d+\.?\d*/g;
     var nmatched = measurement.match(numPattern);
     if (!nmatched){
       return measurement;
     }
     var value = nmatched[0];
 
-    var unitPattern =  /(?=\d*.?\d*)[^\d\.\s]+/g
+    var unitPattern =  /(?=\d*.?\d*)[^\d\.\s]+/g;
     var umatched = measurement.match(unitPattern);
     if (!umatched){
       return measurement;
     }
     var unit = umatched[0];
 
-    var eng = this.toEngineering(value, unit)
+    var eng = this.toEngineering(value, unit);
     return eng.value + " " + eng.units;
   },
 
   toEngineering: function (value, units) {
-    var isShort = (units.length === 1 || units === "Hz"),
+    var isShort = (units.length == 1 || units == "Hz"),
         prefix  = "";
 
     value = Number(value);

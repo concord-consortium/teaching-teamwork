@@ -1,3 +1,5 @@
+/* global math: false */
+
 var logController = require('../controllers/log'),
     HelpTab, HistoryTab, HistoryItem;
 
@@ -34,7 +36,7 @@ module.exports = React.createClass({
     if (!math || !math.eval) {
       return error(true, 'math.js needs to be included in html file');
     }
-    if (input.length == 0) {
+    if (input.length === 0) {
       return null;
     }
     try {
@@ -42,7 +44,7 @@ module.exports = React.createClass({
       if (typeof output != 'number') {
         return error(true, 'Unexpected end of expression');
       }
-      return error(false, output)
+      return error(false, output);
     }
     catch (e) {
       return error(true, e.message.replace(/\(char [^)]+\)/, ''));
@@ -84,7 +86,7 @@ module.exports = React.createClass({
         logController.logEvent("MathPad item added to history", null, {
           "input": input,
           "output": output.text
-        });        
+        });
         this.focus(true);
       }
     }
@@ -112,7 +114,7 @@ module.exports = React.createClass({
       input.focus();
       document.selection.createRange().text = text;
     }
-    else if (input.selectionStart || input.selectionStart == '0') {
+    else if (input.selectionStart || input.selectionStart === 0) {
       startPos = input.selectionStart;
       endPos = input.selectionEnd;
       input.value = input.value.substring(0, startPos) + text + input.value.substring(endPos, input.value.length);
@@ -143,7 +145,7 @@ module.exports = React.createClass({
         y: e.clientY
       },
       mousemove, mouseup;
-    
+
     mousemove = function (e) {
       var newPos;
       if (dragging) {
@@ -158,8 +160,8 @@ module.exports = React.createClass({
         }
       }
     };
-    
-    mouseup = function (e) {
+
+    mouseup = function () {
       if (dragged) {
         logController.logEvent("MathPad dragged", null, {
           "startTop": startCalculatorPos.top,
@@ -170,7 +172,7 @@ module.exports = React.createClass({
         dragged = false;
       }
       dragging = false;
-      
+
       if (window.removeEventListener) {
         window.removeEventListener('mousemove', mousemove);
         window.removeEventListener('mouseup', mouseup);
@@ -179,10 +181,10 @@ module.exports = React.createClass({
         window.detactEvent('onmousemove', mousemove);
         window.detactEvent('onmouseup', mouseup);
       }
-      
+
       self.focus();
     };
-    
+
     if (window.addEventListener) {
       window.addEventListener('mousemove', mousemove, false);
       window.addEventListener('mouseup', mouseup, false);
@@ -206,8 +208,7 @@ module.exports = React.createClass({
   },
 
   render: function () {
-    var historyItems = [],
-        output, outputClass, style;
+    var output, outputClass, style;
 
     outputClass = 'output';
     if (this.state.output !== null) {
@@ -371,7 +372,7 @@ HelpTab = React.createClass({
 
 HistoryTab = React.createClass({
 
-  componentDidUpdate: function (prevProps, prevState) {
+  componentDidUpdate: function (prevProps) {
     // if history changed then scroll to the bottom
     if ((JSON.stringify(prevProps.history) != JSON.stringify(this.props.history))) {
       var history = this.refs.history ? this.refs.history.getDOMNode() : null;

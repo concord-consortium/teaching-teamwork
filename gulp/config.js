@@ -10,6 +10,8 @@ module.exports = {
   js: {
     src: app + '/src/app.js',
     allSrc: app + '/src/**/*',
+    allJS: app + '/src/**/*.js',
+    allJSX: app + '/src/**/*.jsx',
     dest: dest + '/js'
   },
   activities: {

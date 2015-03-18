@@ -56,8 +56,8 @@ module.exports = React.createClass({
         sendMeas = null;
 
     if (this.props.simpleMeasurementGame) {
-      table = <GoalTable {...this.props.simpleMeasurementGame}/>
-      sendMeas = <button id="send-val" onClick={ this.handleSendVal }>Send measurement</button>
+      table = <GoalTable {...this.props.simpleMeasurementGame}/>;
+      sendMeas = <button id="send-val" onClick={ this.handleSendVal }>Send measurement</button>;
     }
 
     var Message = React.createClass({
@@ -67,7 +67,7 @@ module.exports = React.createClass({
         }, 800);
       },
       render: function() {
-        return <div key={ this.props.i } className='chat'><b>{ this.props.item.user }:</b> { this.props.item.message }</div>
+        return <div key={ this.props.i } className='chat'><b>{ this.props.item.user }:</b> { this.props.item.message }</div>;
       }
     });
 
@@ -76,7 +76,7 @@ module.exports = React.createClass({
         <div id="messages">
           <ReactTransitionGroup>
             {this.state.items.map(function(item, i) {
-              return <Message i={ i } item={ item } />
+              return <Message i={ i } item={ item } />;
             })}
           </ReactTransitionGroup>
         </div>

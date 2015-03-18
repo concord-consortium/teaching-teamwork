@@ -45,7 +45,6 @@ module.exports = React.createClass({
 
   loadActivity: function(activityName) {
     var self = this,
-        localPrefix = 'local:',
         matches = activityName.match(/^((local):(.+)|(remote):([^/]+)\/(.+))$/),
         setStateAndParseAndStartActivity = function (jsonData) {
           if (jsonData) {
@@ -73,7 +72,8 @@ module.exports = React.createClass({
     else if (matches && (matches[4] == 'remote')) {
       editorState = {via: 'user ' + matches[5], filename: matches[6], username: matches[5]};
 
-      var firebase = new Firebase('https://teaching-teamwork.firebaseio.com/dev/activities/' + editorState.username + '/' + editorState.filename);
+      var url = editorState.username + '/' + editorState.filename,
+          firebase = new Firebase('https://teaching-teamwork.firebaseio.com/dev/activities/' + url);
       firebase.once('value', function (snapshot) {
         var jsonData = snapshot.val();
         if (jsonData) {
@@ -82,16 +82,16 @@ module.exports = React.createClass({
         else {
           alert("No data found for REMOTE activity at " + url);
         }
-      }, function (error) {
+      }, function () {
         alert("Could not find REMOTE activity at " + url);
       });
     }
     else {
       editorState = {via: 'server', filename: activityName};
 
-      activityUrl = config.modelsBase + activityName + ".json";
+      var activityUrl = config.modelsBase + activityName + ".json";
 
-      request = new XMLHttpRequest();
+      var request = new XMLHttpRequest();
       request.open('GET', activityUrl, true);
 
       request.onload = function() {
@@ -125,7 +125,7 @@ module.exports = React.createClass({
 
   startActivity: function (activityName, ttWorkbench) {
     var self = this,
-        workbenchAdaptor, workbenchFBConnector, eventName, eventData, value, parameters;
+        workbenchAdaptor, workbenchFBConnector, workbench, eventName, eventData, value, parameters;
 
     logController.init(activityName);
     this.setState({activity: ttWorkbench});
@@ -134,7 +134,7 @@ module.exports = React.createClass({
       var circuit = (1 * clientNumber) + 1;
 
       logController.setClientNumber(clientNumber);
-      workbenchAdaptor = new WorkbenchAdaptor(clientNumber)
+      workbenchAdaptor = new WorkbenchAdaptor(clientNumber);
       workbenchFBConnector = new WorkbenchFBConnector(userController, clientNumber, workbenchAdaptor);
       workbench = workbenchAdaptor.processTTWorkbench(ttWorkbench);
       try {
@@ -154,11 +154,13 @@ module.exports = React.createClass({
 
       if (ttWorkbench.logEvent) {
         for (eventName in ttWorkbench.logEvent) {
-          eventData = ttWorkbench.logEvent[eventName];
-          value = eventData.hasOwnProperty("value") ? eventData.value : null;
-          parameters = eventData.hasOwnProperty("parameters") ? eventData.parameters : null;
-          if (value || parameters) {
-            logController.logEvent(eventName, value, parameters);
+          if (ttWorkbench.logEvent.hasOwnProperty(eventName)) {
+            eventData = ttWorkbench.logEvent[eventName];
+            value = eventData.hasOwnProperty("value") ? eventData.value : null;
+            parameters = eventData.hasOwnProperty("parameters") ? eventData.parameters : null;
+            if (value || parameters) {
+              logController.logEvent(eventName, value, parameters);
+            }
           }
         }
       }
