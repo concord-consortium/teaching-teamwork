@@ -24,7 +24,7 @@ module.exports = React.createClass({
         <div id="breadboard-wrapper"></div>
         { hasMultipleClients ? (<ChatView {...activity} />) : null }
         <div id="image-wrapper">{ image }</div>
-        <MathPadView />
+        {this.props.activity ? (<MathPadView />) : null }
         <div id="notes-wrapper"><NotesView text={ notes } className="tt-notes" breadboard={ this.props.breadboard } /></div>
         { editor }
       </div>
