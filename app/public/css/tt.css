@@ -25,6 +25,11 @@ th {
   background-color: white;
 }
 
+/* fix bug in MathPad overlay - the breadboard svg 'bleeds though' the MathPad overlay at full opacity and steals focus */
+#breadboard-wrapper {
+  opacity: 0.9999;
+}
+
 .tt-notes:before{
   font-weight:700;
   content:"Notes:";
