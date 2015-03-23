@@ -1,9 +1,12 @@
+/* global FirebaseSimpleLogin: false */
+/* global CodeMirror: false */
+
 var div = React.DOM.div,
     span = React.DOM.span,
     italics = React.DOM.i,
     storagePrefix = 'local:',
     loginKey = 'editor:login',
-    Header, Toolbar, Editor, Dialog;
+    Header, Toolbar, Editor, Dialog, FileListItem;
 
 module.exports = React.createClass({
 
@@ -91,7 +94,7 @@ module.exports = React.createClass({
         via: nextProps.editorState.via,
         text: nextProps.editorState.text,
         dirty: false,
-        empty: nextProps.editorState.text.length == 0,
+        empty: nextProps.editorState.text.length === 0,
         opened: false
       });
     }
@@ -113,7 +116,7 @@ module.exports = React.createClass({
         via: null,
         text: text,
         dirty: false,
-        empty: text.length == 0,
+        empty: text.length === 0,
         opened: true
       });
       this.hideDialog();
@@ -128,7 +131,7 @@ module.exports = React.createClass({
             via: 'user ' + username,
             text: jsonData,
             dirty: false,
-            empty: jsonData.length == 0,
+            empty: jsonData.length === 0,
             opened: true
           });
           self.hideDialog();
@@ -136,7 +139,7 @@ module.exports = React.createClass({
         else {
           alert("No data found for REMOTE activity at " + url);
         }
-      }, function (error) {
+      }, function () {
         alert("Could not find REMOTE activity at " + url);
       });
     }
@@ -162,7 +165,7 @@ module.exports = React.createClass({
   },
 
   useFile: function () {
-    this.props.parseAndStartActivity(this.state.filename || 'New Activity', this.state.text)
+    this.props.parseAndStartActivity(this.state.filename || 'New Activity', this.state.text);
   },
 
   useRemoteFile: function () {
@@ -210,14 +213,14 @@ module.exports = React.createClass({
   },
 
   login: function (email, password) {
-    var saveLogin = function (error, user) {
+    var saveLogin = function (error) {
           if (!error) {
             localStorage.setItem(loginKey, JSON.stringify({
               email: email,
               password: password
             }));
           }
-        },
+        };
 
     email = email || prompt('Email?');
     password = password || (email ? prompt('Password?') : null);
@@ -316,7 +319,7 @@ module.exports = React.createClass({
   },
 
   editorChanged: function (text) {
-    var empty = text.length == 0;
+    var empty = text.length === 0;
     this.setState({
       empty: empty,
       dirty: !empty && !this.state.opened && !this.state.newed,
@@ -364,8 +367,8 @@ Header = React.createFactory(React.createClass({
 
   render: function () {
     var alert = function (type, show, text) {
-      return show ? span({className: 'alert alert-' + type}, text) : null
-    }
+      return show ? span({className: 'alert alert-' + type}, text) : null;
+    };
     return div({className: 'header'},
       'Teaching Teamwork Activity Editor - ',
       span({}, this.props.filename || italics({}, 'New Activity')),
@@ -393,7 +396,6 @@ Toolbar = React.createFactory(React.createClass({
     var disabledProps = {className: 'disabled'},
         dirtyProps = this.props.dirty ? {} : disabledProps,
         emptyProps = this.props.empty ? disabledProps : {},
-        deleteProps = this.props.filename === null ? {className: 'disabled'} : {},
         filenameProps = this.props.filename === null ? {className: 'disabled'} : {};
 
     return div({className: 'toolbar', onClick: this.clicked},
@@ -500,7 +502,9 @@ Dialog = React.createFactory(React.createClass({
         for (var username in publishedFiles) {
           if (publishedFiles.hasOwnProperty(username)) {
             for (var filename in publishedFiles[username]) {
-              remoteFiles.push(username + '/' + filename);
+              if (publishedFiles[username].hasOwnProperty(filename)) {
+                remoteFiles.push(username + '/' + filename);
+              }
             }
           }
         }

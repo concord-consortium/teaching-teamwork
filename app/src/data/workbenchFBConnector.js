@@ -1,11 +1,12 @@
 var clientListFirebaseRef,
     myCircuitFirebaseRef,
     clientNumber,
-    wa;
+    wa,
+    userController;
 
 function init() {
   sparks.logController.addListener(function(evt) {
-    if (evt.name = "Changed circuit") {
+    if (evt.name == "Changed circuit") {
       myCircuitFirebaseRef.set(wa.getClientCircuit());
     }
   });

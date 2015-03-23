@@ -1,4 +1,5 @@
 var logManagerUrl = 'http://teaching-teamwork-log-manager.herokuapp.com/api/logs',
+    activityName,
     session,
     username,
     groupname,
@@ -7,7 +8,10 @@ var logManagerUrl = 'http://teaching-teamwork-log-manager.herokuapp.com/api/logs
 
     generateGUID = function() {
       function S4() {
+        // turn off bitwise checking for this line
+        // jshint bitwise:false
         return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
+        // jshint bitwise:true
       }
       return S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4();
     },
@@ -46,7 +50,7 @@ var logManagerUrl = 'http://teaching-teamwork-log-manager.herokuapp.com/api/logs
         event: eventName,
         event_value: value,
         parameters: parameters
-      }
+      };
 
       if (typeof client == "undefined") {
         queue.push(data);

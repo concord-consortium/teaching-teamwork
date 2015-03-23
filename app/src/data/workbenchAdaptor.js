@@ -37,9 +37,9 @@
 when client-0 makes changes, it pushes just those component values to the backend.
 **/
 
-WorkbenchAdaptor = function(client) {
+var WorkbenchAdaptor = function(client) {
   this.client = client;
-}
+};
 
 WorkbenchAdaptor.prototype = {
   processTTWorkbench: function(ttWorkbench) {
@@ -50,20 +50,20 @@ WorkbenchAdaptor.prototype = {
         i, ii, j, jj;
 
     // copy externalComponents as hidden components
-    comps = ttWorkbench.externalComponents
+    comps = ttWorkbench.externalComponents;
     if (comps) {
       for (i = 0, ii = comps.length; i < ii; i++) {
         comp = comps[i];
         this.validate(comp);
         comp.hidden = true;
         // removes any x: from connection if x == client
-        comp.connections = comp.connections.replace(new RegExp(this.client+":","g"),"")
+        comp.connections = comp.connections.replace(new RegExp(this.client+":","g"),"");
         workbenchDef.circuit.push(comp);
       }
     }
 
     // copy client components, hiding those that aren't the client's
-    clients = ttWorkbench.clients
+    clients = ttWorkbench.clients;
     for (i = 0, ii = clients.length; i < ii; i++) {
 
       comps = clients[i].circuit;
@@ -88,8 +88,8 @@ WorkbenchAdaptor.prototype = {
 
     // copy non-circuit properties from the appropriate client def
     clientProps = ttWorkbench.clients[this.client];
-    for (prop in clientProps) {
-      if (clientProps.hasOwnProperty(prop) && prop !== "circuit") {
+    for (var prop in clientProps) {
+      if (clientProps.hasOwnProperty(prop) && prop != "circuit") {
         workbenchDef[prop] = clientProps[prop];
       }
     }
@@ -101,7 +101,7 @@ WorkbenchAdaptor.prototype = {
     if (!comp.type) {
       throw new Error("Component is missing a type");
     }
-    if (!comp.connections && !(comp.UID == "source")) {
+    if (!comp.connections && (comp.UID != "source")) {
       throw new Error("Component is missing connections");
     }
   },
@@ -112,7 +112,10 @@ WorkbenchAdaptor.prototype = {
 
     for (var i = 0, ii = circuit.length; i < ii; i++) {
       var comp = circuit[i];
-      if (!~comp.connections.indexOf(":") && comp.type !== "powerLead") {
+      // turn off bitwise checking for this line
+      // jshint bitwise:false
+      if (!~comp.connections.indexOf(":") && comp.type != "powerLead") {
+        // jshint bitwise:true
         // ugly
         var nodes = comp.connections.split(","),
             bbHoles = sparks.workbenchController.breadboardController.getHoles();
@@ -137,10 +140,10 @@ WorkbenchAdaptor.prototype = {
     }
 
     // update in place
-    var circuit = JSON.parse(sparks.workbenchController.serialize()).circuit;
-    for (var i = 0, ii = circuit.length; i < ii; i++) {
-      var comp = circuit[i];
-      if (comp.connections.indexOf(client+":") !== comp.connections.lastIndexOf(client+":")) {
+    circuit = JSON.parse(sparks.workbenchController.serialize()).circuit;
+    for (i = 0, ii = circuit.length; i < ii; i++) {
+      comp = circuit[i];
+      if (comp.connections.indexOf(client+":") != comp.connections.lastIndexOf(client+":")) {
         sparks.workbenchController.breadboardController.remove(comp.type, comp.connections);
       }
     }
@@ -152,6 +155,6 @@ WorkbenchAdaptor.prototype = {
     }
     sparks.workbenchController.workbench.meter.update();
   }
-}
+};
 
 module.exports = WorkbenchAdaptor;

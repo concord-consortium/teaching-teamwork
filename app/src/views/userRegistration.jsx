@@ -1,7 +1,7 @@
-var userController;
+var userController, UserRegistrationView;
 
 // add a global UserRegistrationView variable because its statics are called in other modules
-module.exports = UserRegistrationView = React.createClass({
+module.exports = window.UserRegistrationView = UserRegistrationView = React.createClass({
   displayName: 'UserRegistration',
 
   statics: {
@@ -53,7 +53,7 @@ module.exports = UserRegistrationView = React.createClass({
     this.setState({groupName: ''});
     userController.rejectGroupName();
   },
-  handleClientSelection: function() {
+  handleClientSelection: function(event) {
     userController.selectClient(event.target.value);
   },
   handleClientSelected: function(e) {
@@ -86,7 +86,7 @@ module.exports = UserRegistrationView = React.createClass({
       var groupDetails,
           joinStr,
           keys = Object.keys(this.props.users);
-      if (keys.length == 0) {
+      if (keys.length === 0) {
         groupDetails = (
           <div>
             <label>You are the first member of this group.</label>
@@ -128,7 +128,7 @@ module.exports = UserRegistrationView = React.createClass({
             selected = false,
             valid = true,
             selectedUsers = [];
-        for (user in this.props.users) {
+        for (var user in this.props.users) {
           if (this.props.users[user].client == i) {
             selectedUsers.push(user);
             if (user == this.state.userName) {
