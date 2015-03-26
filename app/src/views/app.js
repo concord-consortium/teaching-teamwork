@@ -15,7 +15,10 @@ module.exports = React.createClass({
       breadboard: null,
       client: null,
       editorState: null,
-      showEditor: !!window.location.search.match(/editor/)
+      showEditor: !!window.location.search.match(/editor/),
+      showSubmit: false,
+      goals: null,
+      nextActivity: null
     };
   },
 
@@ -27,7 +30,10 @@ module.exports = React.createClass({
       client: this.state.client,
       parseAndStartActivity: this.parseAndStartActivity,
       editorState: this.state.editorState,
-      showEditor: this.state.showEditor
+      showEditor: this.state.showEditor,
+      showSubmit: this.state.showSubmit,
+      goals: this.state.goals,
+      nextActivity: this.state.nextActivity
     });
   },
 
@@ -130,7 +136,7 @@ module.exports = React.createClass({
     logController.init(activityName);
     this.setState({activity: ttWorkbench});
 
-    userController.init(ttWorkbench.clients.length, function(clientNumber) {
+    userController.init(ttWorkbench.clients.length, activityName, function(clientNumber) {
       var circuit = (1 * clientNumber) + 1;
 
       logController.setClientNumber(clientNumber);
@@ -144,10 +150,16 @@ module.exports = React.createClass({
         // sparks is throwing an error when computing the distance between points on load
       }
 
+      // reset the circuit in firebase so that any old info doesn't display in the submit popup
+      workbenchFBConnector.setClientCircuit();
+
       self.setState({
         client: ttWorkbench.clients[circuit - 1],
         circuit: circuit,
-        breadboard: sparks.workbenchController.breadboardController
+        breadboard: sparks.workbenchController.breadboardController,
+        showSubmit: !!ttWorkbench.goals,
+        goals: ttWorkbench.goals,
+        nextActivity: ttWorkbench.nextActivity
       });
 
       logController.startListeningToCircuitEvents();

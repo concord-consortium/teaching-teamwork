@@ -30,7 +30,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
     }
   },
   getInitialState: function() {
-    return {userName: '', groupName: ''};
+    return {userName: $.cookie('userName') || '', groupName: $.cookie('groupName') || ''};
   },
   handleUserNameChange: function(event) {
     this.setState({userName: event.target.value});
@@ -60,6 +60,24 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
     e.preventDefault();
     userController.selectedClient();
   },
+  selectInput: function () {
+  },
+  componentDidMount: function () {
+    var self = this,
+        focusAndSelect = function (ref) {
+          var node = self.refs[ref] ? self.refs[ref].getDOMNode() : null;
+          if (node) {
+            node.focus();
+            node.select();
+          }
+        };
+    if (this.props.form == 'username') {
+      focusAndSelect('userName');
+    }
+    else if (this.props.form == 'groupname') {
+      focusAndSelect('groupName');
+    }
+  },
   render: function() {
     var form;
     if (this.props.form == 'username') {
@@ -68,7 +86,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
           <h3>&nbsp;</h3>
           <label>
             <span>User Name :</span>
-            <input type="text" value={this.state.userName} onChange={this.handleUserNameChange} />
+            <input type="text" ref="userName" value={this.state.userName} onChange={this.handleUserNameChange} />
           </label>
         </div>
       );
@@ -78,7 +96,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
           <h3>Hi { this.state.userName }!</h3>
           <label>
             <span>Group Name :</span>
-            <input type="text" value={this.state.groupName} onChange={this.handleGroupNameChange} />
+            <input type="text" ref="groupName" value={this.state.groupName} onChange={this.handleGroupNameChange} />
           </label>
         </div>
       );
