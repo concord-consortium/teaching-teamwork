@@ -142,7 +142,6 @@ module.exports = SubmitButton = React.createClass({
         queue = [],
         table = [],
         allCorrect = true,
-        activityClients = userController.getActivityClients(),
         client, goalName, processQueue;
 
     // gather the goal names into a queue for async processing
@@ -181,7 +180,6 @@ module.exports = SubmitButton = React.createClass({
             correct: (correct ? 'Yes' : 'No'),
             correctClass: (correct ? 'correct' : 'incorrect'),
             client: item.client,
-            user: activityClients[item.client] || 'n/a',
             goal: item.name,
             goalValue: absGoalValue + units,
             currentValue: absClientGoalValue + units
@@ -200,15 +198,29 @@ module.exports = SubmitButton = React.createClass({
   },
 
   submitClicked: function (e) {
-    var username = userController.getUsername();
+    var self = this,
+        username = userController.getUsername();
 
     e.preventDefault();
 
-    // add the submit - this will trigger our submitRef watcher
-    this.submitRef.set({
-      user: username,
-      at: Firebase.ServerValue.TIMESTAMP
-    });
+    // if in solo mode then just populate the table
+    if (!this.submitRef) {
+      this.getPopupData(function (table, allCorrect) {
+        self.setState({
+          submitted: true,
+          table: table,
+          allCorrect: allCorrect,
+          closePopup: false
+        });
+      });
+    }
+    else {
+      // add the submit - this will trigger our submitRef watcher
+      this.submitRef.set({
+        user: username,
+        at: Firebase.ServerValue.TIMESTAMP
+      });
+    }
     logController.logEvent("Submit clicked", username);
   },
 
@@ -285,7 +297,6 @@ Popup = React.createFactory(React.createClass({
 
     circuitRows.push(React.DOM.tr({key: 'header'},
       this.props.multipleClients ? th({}, 'Circuit') : null,
-      this.props.multipleClients ? th({}, 'User') : null,
       th({}, 'Goal'),
       th({}, 'Goal Value'),
       th({}, 'Current Value'),
@@ -296,7 +307,6 @@ Popup = React.createFactory(React.createClass({
       row = this.props.table[i];
       circuitRows.push(React.DOM.tr({key: i},
         this.props.multipleClients ? td({}, row.client + 1) : null,
-        this.props.multipleClients ? td({}, row.user) : null,
         td({}, row.goal),
         td({}, row.goalValue),
         td({}, row.currentValue),

@@ -129,8 +129,14 @@ WorkbenchAdaptor.prototype = {
   },
 
   updateClient: function(client, circuit) {
-    var clientCircuit = [];
-    for (var i = 0, ii = circuit.length; i < ii; i++) {
+    var clientCircuit = [],
+        i, ii;
+
+    if (!circuit) {
+      return;
+    }
+
+    for (i = 0, ii = circuit.length; i < ii; i++) {
       comp = circuit[i];
       // transforms other clients connections, e.g. "a1,b2", to "0:a1,0:b2"
       comp.connections = client+":"+comp.connections.split(",").join(","+client+":");
