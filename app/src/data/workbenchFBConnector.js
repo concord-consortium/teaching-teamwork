@@ -5,6 +5,7 @@ var clientListFirebaseRef,
     userController;
 
 function init() {
+
   sparks.logController.addListener(function(evt) {
     if (evt.name == "Changed circuit") {
       myCircuitFirebaseRef.set(wa.getClientCircuit());
@@ -38,5 +39,9 @@ function WorkbenchFBConnector(_userController, _clientNumber, _wa) {
   wa = _wa;
   init();
 }
+
+WorkbenchFBConnector.prototype.setClientCircuit = function () {
+  myCircuitFirebaseRef.set(wa.getClientCircuit());
+};
 
 module.exports = WorkbenchFBConnector;

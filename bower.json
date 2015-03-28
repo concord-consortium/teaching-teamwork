@@ -5,6 +5,7 @@
     "breadboard": "0.0.3",
     "codemirror": "5.0.0",
     "jsonlint": "1.6.0",
-    "mathjs": "1.4.0"
+    "mathjs": "1.4.0",
+    "jquery.cookie": "1.4.1"
   }
 }

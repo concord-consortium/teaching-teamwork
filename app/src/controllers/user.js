@@ -1,6 +1,7 @@
 var UserRegistrationView = require('../views/userRegistration.jsx'),
     logController = require('./log'),
     numClients,
+    activityName,
     userName,
     groupName,
     firebaseGroupRef,
@@ -10,10 +11,15 @@ var UserRegistrationView = require('../views/userRegistration.jsx'),
     boardsSelectionListener,
     groupRefCreationListeners,
     client,
-    callback;
+    callback,
+    serverSkew,
+    activityRef,
+    activityClients,
+    activityClientsListener;
 
 // scratch
-var fbUrlBase = 'https://teaching-teamwork.firebaseio.com/dev/';
+var fbUrlDomain = 'https://teaching-teamwork.firebaseio.com/';
+var fbUrlBase = fbUrlDomain + '/dev/';
 
 var getDate = function() {
   var today = new Date(),
@@ -40,17 +46,26 @@ var notifyGroupRefCreation = function() {
   }
 };
 
+// listen for timestamp skews
+serverSkew = 0;
+var offsetRef = new Firebase(fbUrlDomain + '.info/serverTimeOffset');
+offsetRef.on("value", function(snap) {
+  serverSkew = snap.val();
+});
 
 module.exports = {
 
-  init: function(_numClients, _callback) {
+  init: function(_numClients, _activityName, _callback) {
     numClients = _numClients;
+    activityName = _activityName;
+    activityClients = {};
     callback = _callback;
     UserRegistrationView.open(this, {form: "username"});
   },
 
   setName: function(name) {
     userName = name;
+    $.cookie('userName', name);
     logController.setUserName(userName);
     if (numClients > 1) {
       UserRegistrationView.open(this, {form: "groupname"});
@@ -79,7 +94,27 @@ module.exports = {
       UserRegistrationView.open(self, {form: "groupconfirm", users: users});
     });
 
-    firebaseUsersRef.child(userName).set({lastAction: Math.floor(Date.now()/1000)});
+    if (activityRef) {
+      activityRef.off("value");
+    }
+    activityRef = firebaseGroupRef.child('users');
+    activityClientsListener = activityRef.on("value", function(snapshot) {
+      var users = snapshot.val(),
+          name, user;
+      activityClients = {};
+      if (users) {
+        for (name in users) {
+          if (users.hasOwnProperty(name)) {
+            user = users[name];
+            if ((user.activityName == activityName) && user.hasOwnProperty("client")) {
+              activityClients[user.client] = name;
+            }
+          }
+        }
+      }
+    });
+
+    firebaseUsersRef.child(userName).set({activityName: activityName, lastAction: Math.floor(Date.now()/1000)});
 
     logController.logEvent("Started to join group", groupName);
   },
@@ -105,6 +140,8 @@ module.exports = {
   setGroupName: function(name) {
     var self = this;
     groupName = name;
+    $.cookie('groupName', name);
+
     firebaseUsersRef.off("value", groupUsersListener);
 
     logController.setGroupName(groupName);
@@ -122,7 +159,7 @@ module.exports = {
 
   selectClient: function(_client) {
     client = _client;
-    firebaseUsersRef.child(userName).set({client: client, lastAction: Math.floor(Date.now()/1000)});
+    firebaseUsersRef.child(userName).set({activityName: activityName, client: client, lastAction: Math.floor(Date.now()/1000)});
   },
 
   selectedClient: function() {
@@ -133,6 +170,18 @@ module.exports = {
 
   getUsername: function() {
     return userName;
+  },
+
+  getClient: function () {
+    return client;
+  },
+
+  getServerSkew: function () {
+    return serverSkew;
+  },
+
+  getActivityClients: function () {
+    return activityClients;
   },
 
   getFirebaseGroupRef: function() {
