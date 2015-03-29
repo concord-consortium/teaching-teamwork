@@ -9,6 +9,13 @@ h1 {
   color: black;
 }
 
+.tt-page {
+  margin-bottom: 20px;
+}
+.tt-page h1 {
+  text-align: center;
+}
+
 h2 {
   text-align: center;
   color: black;
@@ -25,16 +32,22 @@ th {
   background-color: white;
 }
 
+#breadboard-wrapper {
+  min-height: 500px;
+}
+
 /* fix bug in MathPad overlay - the breadboard svg 'bleeds though' the MathPad overlay at full opacity and steals focus */
 #breadboard-wrapper {
   opacity: 0.9999;
 }
 
+/*
 .tt-notes:before{
   font-weight:700;
   content:"Notes:";
   display:block;
 }
+*/
 
 #chat {
   position: relative;
@@ -153,14 +166,10 @@ form button:disabled {
 /* mathpad */
 .mathpad-closed {
   position: absolute;
-  background-color: #ddd;
-  padding: 10px;
-  background-color: #007;
-  color: #fff;
-  cursor: pointer;
 }
 
 .mathpad-open {
+  font: 14px Arial, Helvetica, sans-serif;
   position: absolute;
   width: 400px;
   border: 1px solid #777;
@@ -170,20 +179,17 @@ form button:disabled {
   box-shadow: 10px 10px 5px 0px rgba(0,0,0,0.25);
 }
 
-.mathpad {
-  font: 14px Arial, Helvetica, sans-serif;
-}
-
 .mathpad .title {
-  background-color: #007;
+  background-color: #f3951d;
   color: #fff;
   padding: 5px;
   cursor: move;
+  font-weight: bold;
 }
 .mathpad .close {
   float: right;
-  background-color: #f00;
-  color: #fff;
+  background-color: #fff;
+  color: #f00;
   padding: 3px;
   font-size: 10px;
   cursor: pointer;
@@ -279,4 +285,41 @@ form button:disabled {
 }
 .mathpad .output-error {
   color: #f00;
+}
+
+.submit-button-wrapper {
+  text-align: center;
+  padding: 10px;
+}
+
+.submit-button-popup {
+  width: 700px;
+  position: relative;
+  margin: 10% auto;
+  padding: 5px 20px 13px 20px;
+  border-radius: 5px;
+  background: #fff;
+  background: -moz-linear-gradient(#fff, #D0D0D0);
+  background: -webkit-linear-gradient(#fff, #D0D0D0);
+  background: -o-linear-gradient(#fff, #D0D0D0);
+
+  text-align: center;
+}
+
+.submit-button-popup  h1 {
+  padding: 0;
+}
+
+.submit-button-popup  table {
+  margin: 1em auto;
+}
+
+.submit-button-popup td.correct {
+  color: #070;
+}
+.submit-button-popup td.incorrect {
+  color: #700;
+}
+.submit-button-popup td.waiting {
+  color: #007;
 }

@@ -8,11 +8,12 @@ React.render(App({}), document.getElementById('content'));
 },{"./views/app":7}],2:[function(require,module,exports){
 module.exports = {
   modelsBase: "activities/"
-}
+};
 
 
 },{}],3:[function(require,module,exports){
 var logManagerUrl = 'http://teaching-teamwork-log-manager.herokuapp.com/api/logs',
+    activityName,
     session,
     username,
     groupname,
@@ -21,7 +22,10 @@ var logManagerUrl = 'http://teaching-teamwork-log-manager.herokuapp.com/api/logs
 
     generateGUID = function() {
       function S4() {
+        // turn off bitwise checking for this line
+        // jshint bitwise:false
         return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
+        // jshint bitwise:true
       }
       return S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4();
     },
@@ -60,7 +64,7 @@ var logManagerUrl = 'http://teaching-teamwork-log-manager.herokuapp.com/api/logs
         event: eventName,
         event_value: value,
         parameters: parameters
-      }
+      };
 
       if (typeof client == "undefined") {
         queue.push(data);
@@ -115,10 +119,10 @@ module.exports = new LogController();
 
 
 },{}],4:[function(require,module,exports){
-require('../views/userRegistration.jsx');
-
-var logController = require('./log'),
+var UserRegistrationView = require('../views/userRegistration.jsx'),
+    logController = require('./log'),
     numClients,
+    activityName,
     userName,
     groupName,
     firebaseGroupRef,
@@ -128,10 +132,15 @@ var logController = require('./log'),
     boardsSelectionListener,
     groupRefCreationListeners,
     client,
-    callback;
+    callback,
+    serverSkew,
+    activityRef,
+    activityClients,
+    activityClientsListener;
 
 // scratch
-var fbUrlBase = 'https://teaching-teamwork.firebaseio.com/dev/';
+var fbUrlDomain = 'https://teaching-teamwork.firebaseio.com/';
+var fbUrlBase = fbUrlDomain + '/dev/';
 
 var getDate = function() {
   var today = new Date(),
@@ -140,15 +149,15 @@ var getDate = function() {
       yyyy = today.getFullYear();
 
   if(dd<10) {
-      dd='0'+dd
+      dd='0'+dd;
   }
 
   if(mm<10) {
-      mm='0'+mm
+      mm='0'+mm;
   }
 
   return yyyy+'-'+mm+'-'+dd;
-}
+};
 
 var notifyGroupRefCreation = function() {
   if (groupRefCreationListeners) {
@@ -156,19 +165,28 @@ var notifyGroupRefCreation = function() {
       groupRefCreationListeners.pop()();
     }
   }
-}
+};
 
+// listen for timestamp skews
+serverSkew = 0;
+var offsetRef = new Firebase(fbUrlDomain + '.info/serverTimeOffset');
+offsetRef.on("value", function(snap) {
+  serverSkew = snap.val();
+});
 
 module.exports = {
 
-  init: function(_numClients, _callback) {
+  init: function(_numClients, _activityName, _callback) {
     numClients = _numClients;
+    activityName = _activityName;
+    activityClients = {};
     callback = _callback;
     UserRegistrationView.open(this, {form: "username"});
   },
 
   setName: function(name) {
     userName = name;
+    $.cookie('userName', name);
     logController.setUserName(userName);
     if (numClients > 1) {
       UserRegistrationView.open(this, {form: "groupname"});
@@ -197,7 +215,27 @@ module.exports = {
       UserRegistrationView.open(self, {form: "groupconfirm", users: users});
     });
 
-    firebaseUsersRef.child(userName).set({lastAction: Math.floor(Date.now()/1000)});
+    if (activityRef) {
+      activityRef.off("value");
+    }
+    activityRef = firebaseGroupRef.child('users');
+    activityClientsListener = activityRef.on("value", function(snapshot) {
+      var users = snapshot.val(),
+          name, user;
+      activityClients = {};
+      if (users) {
+        for (name in users) {
+          if (users.hasOwnProperty(name)) {
+            user = users[name];
+            if ((user.activityName == activityName) && user.hasOwnProperty("client")) {
+              activityClients[user.client] = name;
+            }
+          }
+        }
+      }
+    });
+
+    firebaseUsersRef.child(userName).set({activityName: activityName, lastAction: Math.floor(Date.now()/1000)});
 
     logController.logEvent("Started to join group", groupName);
   },
@@ -223,6 +261,8 @@ module.exports = {
   setGroupName: function(name) {
     var self = this;
     groupName = name;
+    $.cookie('groupName', name);
+
     firebaseUsersRef.off("value", groupUsersListener);
 
     logController.setGroupName(groupName);
@@ -240,7 +280,7 @@ module.exports = {
 
   selectClient: function(_client) {
     client = _client;
-    firebaseUsersRef.child(userName).set({client: client, lastAction: Math.floor(Date.now()/1000)});
+    firebaseUsersRef.child(userName).set({activityName: activityName, client: client, lastAction: Math.floor(Date.now()/1000)});
   },
 
   selectedClient: function() {
@@ -253,6 +293,18 @@ module.exports = {
     return userName;
   },
 
+  getClient: function () {
+    return client;
+  },
+
+  getServerSkew: function () {
+    return serverSkew;
+  },
+
+  getActivityClients: function () {
+    return activityClients;
+  },
+
   getFirebaseGroupRef: function() {
     return firebaseGroupRef;
   },
@@ -260,7 +312,9 @@ module.exports = {
   getOtherClientNos: function() {
     var ret = [];
     for (var i = 0; i < numClients; i++) {
-      if (i !== client) ret.push(i);
+      if (i != client) {
+        ret.push(i);
+      }
     }
     return ret;
   },
@@ -275,10 +329,10 @@ module.exports = {
       groupRefCreationListeners.push(callback);
     }
   }
-}
+};
 
 
-},{"../views/userRegistration.jsx":14,"./log":3}],5:[function(require,module,exports){
+},{"../views/userRegistration.jsx":15,"./log":3}],5:[function(require,module,exports){
 /**
  The workbench adaptor takes a TT-workbench definition such as
 
@@ -318,9 +372,9 @@ module.exports = {
 when client-0 makes changes, it pushes just those component values to the backend.
 **/
 
-WorkbenchAdaptor = function(client) {
+var WorkbenchAdaptor = function(client) {
   this.client = client;
-}
+};
 
 WorkbenchAdaptor.prototype = {
   processTTWorkbench: function(ttWorkbench) {
@@ -331,20 +385,20 @@ WorkbenchAdaptor.prototype = {
         i, ii, j, jj;
 
     // copy externalComponents as hidden components
-    comps = ttWorkbench.externalComponents
+    comps = ttWorkbench.externalComponents;
     if (comps) {
       for (i = 0, ii = comps.length; i < ii; i++) {
         comp = comps[i];
         this.validate(comp);
         comp.hidden = true;
         // removes any x: from connection if x == client
-        comp.connections = comp.connections.replace(new RegExp(this.client+":","g"),"")
+        comp.connections = comp.connections.replace(new RegExp(this.client+":","g"),"");
         workbenchDef.circuit.push(comp);
       }
     }
 
     // copy client components, hiding those that aren't the client's
-    clients = ttWorkbench.clients
+    clients = ttWorkbench.clients;
     for (i = 0, ii = clients.length; i < ii; i++) {
 
       comps = clients[i].circuit;
@@ -369,8 +423,8 @@ WorkbenchAdaptor.prototype = {
 
     // copy non-circuit properties from the appropriate client def
     clientProps = ttWorkbench.clients[this.client];
-    for (prop in clientProps) {
-      if (clientProps.hasOwnProperty(prop) && prop !== "circuit") {
+    for (var prop in clientProps) {
+      if (clientProps.hasOwnProperty(prop) && prop != "circuit") {
         workbenchDef[prop] = clientProps[prop];
       }
     }
@@ -382,7 +436,7 @@ WorkbenchAdaptor.prototype = {
     if (!comp.type) {
       throw new Error("Component is missing a type");
     }
-    if (!comp.connections && !(comp.UID == "source")) {
+    if (!comp.connections && (comp.UID != "source")) {
       throw new Error("Component is missing connections");
     }
   },
@@ -393,7 +447,10 @@ WorkbenchAdaptor.prototype = {
 
     for (var i = 0, ii = circuit.length; i < ii; i++) {
       var comp = circuit[i];
-      if (!~comp.connections.indexOf(":") && comp.type !== "powerLead") {
+      // turn off bitwise checking for this line
+      // jshint bitwise:false
+      if (!~comp.connections.indexOf(":") && comp.type != "powerLead") {
+        // jshint bitwise:true
         // ugly
         var nodes = comp.connections.split(","),
             bbHoles = sparks.workbenchController.breadboardController.getHoles();
@@ -407,8 +464,14 @@ WorkbenchAdaptor.prototype = {
   },
 
   updateClient: function(client, circuit) {
-    var clientCircuit = [];
-    for (var i = 0, ii = circuit.length; i < ii; i++) {
+    var clientCircuit = [],
+        i, ii;
+
+    if (!circuit) {
+      return;
+    }
+
+    for (i = 0, ii = circuit.length; i < ii; i++) {
       comp = circuit[i];
       // transforms other clients connections, e.g. "a1,b2", to "0:a1,0:b2"
       comp.connections = client+":"+comp.connections.split(",").join(","+client+":");
@@ -418,10 +481,10 @@ WorkbenchAdaptor.prototype = {
     }
 
     // update in place
-    var circuit = JSON.parse(sparks.workbenchController.serialize()).circuit;
-    for (var i = 0, ii = circuit.length; i < ii; i++) {
-      var comp = circuit[i];
-      if (comp.connections.indexOf(client+":") !== comp.connections.lastIndexOf(client+":")) {
+    circuit = JSON.parse(sparks.workbenchController.serialize()).circuit;
+    for (i = 0, ii = circuit.length; i < ii; i++) {
+      comp = circuit[i];
+      if (comp.connections.indexOf(client+":") != comp.connections.lastIndexOf(client+":")) {
         sparks.workbenchController.breadboardController.remove(comp.type, comp.connections);
       }
     }
@@ -433,7 +496,7 @@ WorkbenchAdaptor.prototype = {
     }
     sparks.workbenchController.workbench.meter.update();
   }
-}
+};
 
 module.exports = WorkbenchAdaptor;
 
@@ -442,11 +505,13 @@ module.exports = WorkbenchAdaptor;
 var clientListFirebaseRef,
     myCircuitFirebaseRef,
     clientNumber,
-    wa;
+    wa,
+    userController;
 
 function init() {
+
   sparks.logController.addListener(function(evt) {
-    if (evt.name = "Changed circuit") {
+    if (evt.name == "Changed circuit") {
       myCircuitFirebaseRef.set(wa.getClientCircuit());
     }
   });
@@ -479,6 +544,12 @@ function WorkbenchFBConnector(_userController, _clientNumber, _wa) {
   init();
 }
 
+WorkbenchFBConnector.prototype.setClientCircuit = function () {
+  if (myCircuitFirebaseRef) {
+    myCircuitFirebaseRef.set(wa.getClientCircuit());
+  }
+};
+
 module.exports = WorkbenchFBConnector;
 
 
@@ -500,7 +571,10 @@ module.exports = React.createClass({
       breadboard: null,
       client: null,
       editorState: null,
-      showEditor: !!window.location.search.match(/editor/)
+      showEditor: !!window.location.search.match(/editor/),
+      showSubmit: false,
+      goals: null,
+      nextActivity: null
     };
   },
 
@@ -512,7 +586,10 @@ module.exports = React.createClass({
       client: this.state.client,
       parseAndStartActivity: this.parseAndStartActivity,
       editorState: this.state.editorState,
-      showEditor: this.state.showEditor
+      showEditor: this.state.showEditor,
+      showSubmit: this.state.showSubmit,
+      goals: this.state.goals,
+      nextActivity: this.state.nextActivity
     });
   },
 
@@ -530,7 +607,6 @@ module.exports = React.createClass({
 
   loadActivity: function(activityName) {
     var self = this,
-        localPrefix = 'local:',
         matches = activityName.match(/^((local):(.+)|(remote):([^/]+)\/(.+))$/),
         setStateAndParseAndStartActivity = function (jsonData) {
           if (jsonData) {
@@ -558,7 +634,8 @@ module.exports = React.createClass({
     else if (matches && (matches[4] == 'remote')) {
       editorState = {via: 'user ' + matches[5], filename: matches[6], username: matches[5]};
 
-      var firebase = new Firebase('https://teaching-teamwork.firebaseio.com/dev/activities/' + editorState.username + '/' + editorState.filename);
+      var url = editorState.username + '/' + editorState.filename,
+          firebase = new Firebase('https://teaching-teamwork.firebaseio.com/dev/activities/' + url);
       firebase.once('value', function (snapshot) {
         var jsonData = snapshot.val();
         if (jsonData) {
@@ -567,16 +644,16 @@ module.exports = React.createClass({
         else {
           alert("No data found for REMOTE activity at " + url);
         }
-      }, function (error) {
+      }, function () {
         alert("Could not find REMOTE activity at " + url);
       });
     }
     else {
       editorState = {via: 'server', filename: activityName};
 
-      activityUrl = config.modelsBase + activityName + ".json";
+      var activityUrl = config.modelsBase + activityName + ".json";
 
-      request = new XMLHttpRequest();
+      var request = new XMLHttpRequest();
       request.open('GET', activityUrl, true);
 
       request.onload = function() {
@@ -610,44 +687,234 @@ module.exports = React.createClass({
 
   startActivity: function (activityName, ttWorkbench) {
     var self = this,
-        workbenchAdaptor, workbenchFBConnector, eventName, eventData, value, parameters;
+        workbenchAdaptor, workbenchFBConnector, workbench, eventName, eventData, value, parameters;
 
     logController.init(activityName);
+
+    // initially set the state to get the name of the activity
     this.setState({activity: ttWorkbench});
 
-    userController.init(ttWorkbench.clients.length, function(clientNumber) {
+    userController.init(ttWorkbench.clients.length, activityName, function(clientNumber) {
       var circuit = (1 * clientNumber) + 1;
 
       logController.setClientNumber(clientNumber);
-      workbenchAdaptor = new WorkbenchAdaptor(clientNumber)
-      workbenchFBConnector = new WorkbenchFBConnector(userController, clientNumber, workbenchAdaptor);
-      workbench = workbenchAdaptor.processTTWorkbench(ttWorkbench);
-      try {
-        sparks.createWorkbench(workbench, "breadboard-wrapper");
-      }
-      catch (e) {
-        // sparks is throwing an error when computing the distance between points on load
-      }
 
-      self.setState({
-        client: ttWorkbench.clients[circuit - 1],
-        circuit: circuit,
-        breadboard: sparks.workbenchController.breadboardController
-      });
+      // look for a model and update the workbench values if found
+      // NOTE: the callback might be called more than once if there is a race condition setting the model values
+      self.preProcessWorkbench(ttWorkbench, function (ttWorkbench) {
 
-      logController.startListeningToCircuitEvents();
+        // reset state after processing the workbench
+        self.setState({activity: ttWorkbench});
 
-      if (ttWorkbench.logEvent) {
-        for (eventName in ttWorkbench.logEvent) {
-          eventData = ttWorkbench.logEvent[eventName];
-          value = eventData.hasOwnProperty("value") ? eventData.value : null;
-          parameters = eventData.hasOwnProperty("parameters") ? eventData.parameters : null;
-          if (value || parameters) {
-            logController.logEvent(eventName, value, parameters);
+        workbenchAdaptor = new WorkbenchAdaptor(clientNumber);
+        workbenchFBConnector = new WorkbenchFBConnector(userController, clientNumber, workbenchAdaptor);
+        workbench = workbenchAdaptor.processTTWorkbench(ttWorkbench);
+        try {
+          sparks.createWorkbench(workbench, "breadboard-wrapper");
+        }
+        catch (e) {
+          // sparks is throwing an error when computing the distance between points on load
+        }
+
+        // reset the circuit in firebase so that any old info doesn't display in the submit popup
+        workbenchFBConnector.setClientCircuit();
+
+        self.setState({
+          client: ttWorkbench.clients[circuit - 1],
+          circuit: circuit,
+          breadboard: sparks.workbenchController.breadboardController,
+          showSubmit: !!ttWorkbench.goals,
+          goals: ttWorkbench.goals,
+          nextActivity: ttWorkbench.nextActivity
+        });
+
+        logController.startListeningToCircuitEvents();
+
+        if (ttWorkbench.logEvent) {
+          for (eventName in ttWorkbench.logEvent) {
+            if (ttWorkbench.logEvent.hasOwnProperty(eventName)) {
+              eventData = ttWorkbench.logEvent[eventName];
+              value = eventData.hasOwnProperty("value") ? eventData.value : null;
+              parameters = eventData.hasOwnProperty("parameters") ? eventData.parameters : null;
+              if (value || parameters) {
+                logController.logEvent(eventName, value, parameters);
+              }
+            }
           }
         }
-      }
+      });
     });
+  },
+
+  preProcessWorkbench: function (workbench, cb) {
+    var self = this,
+        applyModel = function (model) {
+          var json = JSON.stringify(workbench),
+              key;
+          for (key in model) {
+            if (model.hasOwnProperty(key)) {
+              json = json.replace(new RegExp('\\$' + key + '\\b', 'g'), model[key]);
+            }
+          }
+          logController.logEvent('model name', workbench.model.name);
+          logController.logEvent('model options', null, workbench.model.options || {});
+          logController.logEvent('model values', null, model);
+          cb(JSON.parse(json));
+        },
+        models = {
+          "three-resistors": this.threeResistorsModel
+        },
+        modelHandler, modelRef, usersRef;
+
+    // skip if no model defined (not an error)
+    if (!workbench.model) {
+      return cb(workbench);
+    }
+    if (!workbench.model.name) {
+      alert("Model found in activity JSON without a name");
+      return cb(workbench);
+    }
+    if (!models.hasOwnProperty(workbench.model.name)) {
+      alert("Unknown model found in activity JSON: " + workbench.model.name);
+      return cb(workbench);
+    }
+
+    // create the handler
+    modelHandler = models[workbench.model.name](workbench.model.options || {});
+
+    // check if we are in solo mode
+    if (!userController.getFirebaseGroupRef()) {
+
+      // yes so just generate the model values
+      applyModel(modelHandler.generator.call(self));
+    }
+    else {
+
+      // check if we are the only user
+      usersRef = userController.getFirebaseGroupRef().child('users');
+      usersRef.once("value", function(snap) {
+        var users = snap.val(),
+            onlyUser = !users || Object.keys(users).length == 1;
+
+        // check if the model exists
+        modelRef = userController.getFirebaseGroupRef().child("models").child(modelHandler.key());
+        modelRef.once("value", function (snap) {
+          var model = snap.val();
+
+          // listen for model changes
+          modelRef.on("value", function (snap) {
+            applyModel(snap.val());
+          });
+
+          // if we are the only user or the model doesn't exist create it
+          if (onlyUser || !model) {
+            modelRef.set(modelHandler.generator.call(self));
+          }
+          else {
+            applyModel(model);
+          }
+        });
+      });
+    }
+  },
+
+  uniformResistor: function (min, max, notInSet) {
+    var bc = sparks.workbenchController.breadboardController,
+        value, resistor;
+
+    notInSet = notInSet || [];
+    do {
+      resistor = bc.component({
+        "kind": "resistor",
+        "type": "resistor",
+        "resistance": ["uniform", min, max],
+        "UID": "model",
+        "connections": "c14,c20",
+        "tolerance": 0.1
+      });
+      value = resistor.resistance;
+      bc.removeComponent(resistor);
+    } while (notInSet.indexOf(value) !== -1);
+
+    return value;
+  },
+
+  threeResistorsModel: function (options) {
+    var level = options.level || 1;
+
+    return {
+      key: function () {
+        return "three-resistors-level-" + level;
+      },
+
+      generator: function () {
+        var R1 = this.uniformResistor(100, 1000, []),
+            R2 = this.uniformResistor(100, 1000, [R1]),
+            R3 = this.uniformResistor(100, 1000, [R1, R2]),
+
+            GoalR = this.uniformResistor(100, 1000, []),
+            GoalR1 = this.uniformResistor(100, 1000, [GoalR]),
+            GoalR2 = this.uniformResistor(100, 1000, [GoalR, GoalR1]),
+            GoalR3 = this.uniformResistor(100, 1000, [GoalR, GoalR1, GoalR2]),
+
+            model = {
+              E: 6 + Math.round(Math.random() * (20 - 6)), // from 6 to 20 volts
+              R: 0,
+              R1: R1,
+              R2: R2,
+              R3: R3
+            },
+
+            round = function (value) {
+              return Math.round(value * Math.pow(10,2)) / Math.pow(10,2);
+            };
+
+        switch (level) {
+          // 1: Known E, R = 0, Vi's all the same (initial R values are set different)
+          case 1:
+            model.GoalR1 = model.GoalR2 = model.GoalR3 = GoalR;
+            break;
+
+          // 2: Known E, R = 0, Vi's all different (we specify the three values, must sum to E)
+          // 4: Unknown E, R = 0, Vi's all different
+          case 2:
+          case 4:
+            model.GoalR1 = GoalR1;
+            model.GoalR2 = GoalR2;
+            model.GoalR3 = GoalR3;
+            break;
+
+          // Known E, known R ≠ 0, Vi's the same and equal to V (the voltage across R)
+          case 3:
+            model.R = model.GoalR1 = model.GoalR2 = model.GoalR3 = GoalR;
+            break;
+
+          // Unknown E, known R ≠ 0, Vi's the same and ≠ V
+          case 5:
+            model.R = GoalR;
+            model.GoalR1 = model.GoalR2 = model.GoalR3 = GoalR1;
+            break;
+
+          // Unknown E, unknown R ≠ 0, Vi's different
+          case 6:
+            model.R = GoalR;
+            model.GoalR1 = GoalR1;
+            model.GoalR2 = GoalR2;
+            model.GoalR3 = GoalR3;
+            break;
+
+          default:
+            alert("Unknown level in three-resistors model: " + level);
+            break;
+        }
+
+        model.V1 = round((model.E * model.GoalR1) / (model.R + model.GoalR1 + model.GoalR2 + model.GoalR3));
+        model.V2 = round((model.E * model.GoalR2) / (model.R + model.GoalR1 + model.GoalR2 + model.GoalR3));
+        model.V3 = round((model.E * model.GoalR3) / (model.R + model.GoalR1 + model.GoalR2 + model.GoalR3));
+
+        return model;
+      }
+    };
   }
 });
 
@@ -717,8 +984,8 @@ module.exports = React.createClass({
         sendMeas = null;
 
     if (this.props.simpleMeasurementGame) {
-      table = React.createElement(GoalTable, React.__spread({},  this.props.simpleMeasurementGame))
-      sendMeas = React.createElement("button", {id: "send-val", onClick:  this.handleSendVal}, "Send measurement")
+      table = React.createElement(GoalTable, React.__spread({},  this.props.simpleMeasurementGame));
+      sendMeas = React.createElement("button", {id: "send-val", onClick:  this.handleSendVal}, "Send measurement");
     }
 
     var Message = React.createClass({displayName: "Message",
@@ -728,7 +995,7 @@ module.exports = React.createClass({
         }, 800);
       },
       render: function() {
-        return React.createElement("div", {key:  this.props.i, className: "chat"}, React.createElement("b", null,  this.props.item.user, ":"), " ",  this.props.item.message)
+        return React.createElement("div", {key:  this.props.i, className: "chat"}, React.createElement("b", null,  this.props.item.user, ":"), " ",  this.props.item.message);
       }
     });
 
@@ -737,7 +1004,7 @@ module.exports = React.createClass({
         React.createElement("div", {id: "messages"}, 
           React.createElement(ReactTransitionGroup, null, 
             this.state.items.map(function(item, i) {
-              return React.createElement(Message, {i:  i, item:  item })
+              return React.createElement(Message, {i:  i, item:  item });
             })
           )
         ), 
@@ -757,12 +1024,15 @@ module.exports = React.createClass({
 
 
 },{"../controllers/log":3,"../controllers/user":4,"./goalTable.jsx":10}],9:[function(require,module,exports){
+/* global FirebaseSimpleLogin: false */
+/* global CodeMirror: false */
+
 var div = React.DOM.div,
     span = React.DOM.span,
     italics = React.DOM.i,
     storagePrefix = 'local:',
     loginKey = 'editor:login',
-    Header, Toolbar, Editor, Dialog;
+    Header, Toolbar, Editor, Dialog, FileListItem;
 
 module.exports = React.createClass({
 
@@ -850,7 +1120,7 @@ module.exports = React.createClass({
         via: nextProps.editorState.via,
         text: nextProps.editorState.text,
         dirty: false,
-        empty: nextProps.editorState.text.length == 0,
+        empty: nextProps.editorState.text.length === 0,
         opened: false
       });
     }
@@ -872,7 +1142,7 @@ module.exports = React.createClass({
         via: null,
         text: text,
         dirty: false,
-        empty: text.length == 0,
+        empty: text.length === 0,
         opened: true
       });
       this.hideDialog();
@@ -887,7 +1157,7 @@ module.exports = React.createClass({
             via: 'user ' + username,
             text: jsonData,
             dirty: false,
-            empty: jsonData.length == 0,
+            empty: jsonData.length === 0,
             opened: true
           });
           self.hideDialog();
@@ -895,7 +1165,7 @@ module.exports = React.createClass({
         else {
           alert("No data found for REMOTE activity at " + url);
         }
-      }, function (error) {
+      }, function () {
         alert("Could not find REMOTE activity at " + url);
       });
     }
@@ -921,7 +1191,7 @@ module.exports = React.createClass({
   },
 
   useFile: function () {
-    this.props.parseAndStartActivity(this.state.filename || 'New Activity', this.state.text)
+    this.props.parseAndStartActivity(this.state.filename || 'New Activity', this.state.text);
   },
 
   useRemoteFile: function () {
@@ -969,14 +1239,14 @@ module.exports = React.createClass({
   },
 
   login: function (email, password) {
-    var saveLogin = function (error, user) {
+    var saveLogin = function (error) {
           if (!error) {
             localStorage.setItem(loginKey, JSON.stringify({
               email: email,
               password: password
             }));
           }
-        },
+        };
 
     email = email || prompt('Email?');
     password = password || (email ? prompt('Password?') : null);
@@ -1075,7 +1345,7 @@ module.exports = React.createClass({
   },
 
   editorChanged: function (text) {
-    var empty = text.length == 0;
+    var empty = text.length === 0;
     this.setState({
       empty: empty,
       dirty: !empty && !this.state.opened && !this.state.newed,
@@ -1123,8 +1393,8 @@ Header = React.createFactory(React.createClass({
 
   render: function () {
     var alert = function (type, show, text) {
-      return show ? span({className: 'alert alert-' + type}, text) : null
-    }
+      return show ? span({className: 'alert alert-' + type}, text) : null;
+    };
     return div({className: 'header'},
       'Teaching Teamwork Activity Editor - ',
       span({}, this.props.filename || italics({}, 'New Activity')),
@@ -1152,7 +1422,6 @@ Toolbar = React.createFactory(React.createClass({
     var disabledProps = {className: 'disabled'},
         dirtyProps = this.props.dirty ? {} : disabledProps,
         emptyProps = this.props.empty ? disabledProps : {},
-        deleteProps = this.props.filename === null ? {className: 'disabled'} : {},
         filenameProps = this.props.filename === null ? {className: 'disabled'} : {};
 
     return div({className: 'toolbar', onClick: this.clicked},
@@ -1259,7 +1528,9 @@ Dialog = React.createFactory(React.createClass({
         for (var username in publishedFiles) {
           if (publishedFiles.hasOwnProperty(username)) {
             for (var filename in publishedFiles[username]) {
-              remoteFiles.push(username + '/' + filename);
+              if (publishedFiles[username].hasOwnProperty(filename)) {
+                remoteFiles.push(username + '/' + filename);
+              }
             }
           }
         }
@@ -1369,6 +1640,8 @@ module.exports = React.createClass({
 
 
 },{}],11:[function(require,module,exports){
+/* global math: false */
+
 var logController = require('../controllers/log'),
     HelpTab, HistoryTab, HistoryItem;
 
@@ -1405,7 +1678,7 @@ module.exports = React.createClass({
     if (!math || !math.eval) {
       return error(true, 'math.js needs to be included in html file');
     }
-    if (input.length == 0) {
+    if (input.length === 0) {
       return null;
     }
     try {
@@ -1413,7 +1686,7 @@ module.exports = React.createClass({
       if (typeof output != 'number') {
         return error(true, 'Unexpected end of expression');
       }
-      return error(false, output)
+      return error(false, output);
     }
     catch (e) {
       return error(true, e.message.replace(/\(char [^)]+\)/, ''));
@@ -1455,7 +1728,7 @@ module.exports = React.createClass({
         logController.logEvent("MathPad item added to history", null, {
           "input": input,
           "output": output.text
-        });        
+        });
         this.focus(true);
       }
     }
@@ -1483,7 +1756,7 @@ module.exports = React.createClass({
       input.focus();
       document.selection.createRange().text = text;
     }
-    else if (input.selectionStart || input.selectionStart == '0') {
+    else if (input.selectionStart || input.selectionStart === 0) {
       startPos = input.selectionStart;
       endPos = input.selectionEnd;
       input.value = input.value.substring(0, startPos) + text + input.value.substring(endPos, input.value.length);
@@ -1514,7 +1787,7 @@ module.exports = React.createClass({
         y: e.clientY
       },
       mousemove, mouseup;
-    
+
     mousemove = function (e) {
       var newPos;
       if (dragging) {
@@ -1529,8 +1802,8 @@ module.exports = React.createClass({
         }
       }
     };
-    
-    mouseup = function (e) {
+
+    mouseup = function () {
       if (dragged) {
         logController.logEvent("MathPad dragged", null, {
           "startTop": startCalculatorPos.top,
@@ -1541,7 +1814,7 @@ module.exports = React.createClass({
         dragged = false;
       }
       dragging = false;
-      
+
       if (window.removeEventListener) {
         window.removeEventListener('mousemove', mousemove);
         window.removeEventListener('mouseup', mouseup);
@@ -1550,10 +1823,10 @@ module.exports = React.createClass({
         window.detactEvent('onmousemove', mousemove);
         window.detactEvent('onmouseup', mouseup);
       }
-      
+
       self.focus();
     };
-    
+
     if (window.addEventListener) {
       window.addEventListener('mousemove', mousemove, false);
       window.addEventListener('mouseup', mouseup, false);
@@ -1577,8 +1850,7 @@ module.exports = React.createClass({
   },
 
   render: function () {
-    var historyItems = [],
-        output, outputClass, style;
+    var output, outputClass;
 
     outputClass = 'output';
     if (this.state.output !== null) {
@@ -1591,34 +1863,30 @@ module.exports = React.createClass({
       }
     }
     else {
-      output = 'Please enter a math expression above';
+      output = 'Please enter a math expression above and press enter';
     }
 
-    style = {
-      top: this.state.open ? this.state.openTop : this.state.closeTop,
-      right: this.state.open ? this.state.openRight : this.state.closeRight
-    };
-
-    if (this.state.open) {
-      return React.createElement("div", {className: "mathpad mathpad-open", style: style}, 
-        React.createElement("div", {className: "title", onMouseDown: this.startDrag}, 
-          "MathPad", 
-          React.createElement("span", {className: "close", onClick: this.close}, "X")
-        ), 
-        React.createElement("div", {className: "tabs"}, 
-          React.createElement("div", {onClick: this.helpTabClicked, className: 'tab ' + (this.state.showHelp ? 'active' : 'inactive')}, "Help"), 
-          React.createElement("div", {onClick: this.historyTabClicked, className: 'tab ' + (!this.state.showHelp ? 'active' : 'inactive')}, "History", this.state.history.length > 0 ? ' (' + this.state.history.length + ')' : '')
-        ), 
-        this.state.showHelp ? React.createElement(HelpTab, null) : React.createElement(HistoryTab, {history: this.state.history, itemClicked: this.historyItemClicked}), 
-        React.createElement("div", {className: "input"}, 
-          React.createElement("input", {ref: "input", onKeyUp: this.keyup})
-        ), 
-        React.createElement("div", {className: outputClass}, output)
-      );
-    }
-    else {
-      return React.createElement("div", {className: "mathpad mathpad-closed", onClick: this.open, style: style}, "MathPad");
-    }
+    return React.createElement("div", null, 
+      React.createElement("button", {className: "mathpad mathpad-closed", onClick: this.open, style: {top: this.state.closeTop, right: this.state.closeRight}}, "MathPad"), 
+        this.state.open ? (
+          React.createElement("div", {className: "mathpad mathpad-open", style: {top: this.state.openTop, right: this.state.openRight}}, 
+            React.createElement("div", {className: "title", onMouseDown: this.startDrag}, 
+              "MathPad", 
+              React.createElement("span", {className: "close", onClick: this.close}, "X")
+            ), 
+            React.createElement("div", {className: "tabs"}, 
+              React.createElement("div", {onClick: this.helpTabClicked, className: 'tab ' + (this.state.showHelp ? 'active' : 'inactive')}, "Help"), 
+              React.createElement("div", {onClick: this.historyTabClicked, className: 'tab ' + (!this.state.showHelp ? 'active' : 'inactive')}, "History", this.state.history.length > 0 ? ' (' + this.state.history.length + ')' : '')
+            ), 
+            this.state.showHelp ? React.createElement(HelpTab, null) : React.createElement(HistoryTab, {history: this.state.history, itemClicked: this.historyItemClicked}), 
+            React.createElement("div", {className: "input"}, 
+              React.createElement("input", {ref: "input", onKeyUp: this.keyup})
+            ), 
+            React.createElement("div", {className: outputClass}, output)
+          )
+        ) : null
+      
+    );
   }
 });
 
@@ -1742,7 +2010,7 @@ HelpTab = React.createClass({displayName: "HelpTab",
 
 HistoryTab = React.createClass({displayName: "HistoryTab",
 
-  componentDidUpdate: function (prevProps, prevState) {
+  componentDidUpdate: function (prevProps) {
     // if history changed then scroll to the bottom
     if ((JSON.stringify(prevProps.history) != JSON.stringify(this.props.history))) {
       var history = this.refs.history ? this.refs.history.getDOMNode() : null;
@@ -1815,7 +2083,7 @@ module.exports = React.createClass({
 
     // add the components to the the context to eval in
     if (components) {
-      for (var key in components) {
+      for (key in components) {
         if (components.hasOwnProperty(key)) {
           context[key] = components[key];
         }
@@ -1823,6 +2091,8 @@ module.exports = React.createClass({
     }
 
     // replace all the bracket delimited javascript
+    // jshint ignore:start
+    // with and eval might be evil but we need them here
     result = text.replace(/\[([^\]]+)\]/g, function (match, contents) {
       try {
         with (context) {
@@ -1833,6 +2103,7 @@ module.exports = React.createClass({
         return '<i>n/a</i>';
       }
     });
+    // jshint ignore:end
 
     // convert
     result = this.convertMeasurement(result);
@@ -1849,29 +2120,29 @@ module.exports = React.createClass({
 
   convertMeasurement: function(measurement) {
     if (!this.isMeasurement(measurement)){
-      return measurement
+      return measurement;
     }
 
-    var numPattern = /\d+\.?\d*/g
+    var numPattern = /\d+\.?\d*/g;
     var nmatched = measurement.match(numPattern);
     if (!nmatched){
       return measurement;
     }
     var value = nmatched[0];
 
-    var unitPattern =  /(?=\d*.?\d*)[^\d\.\s]+/g
+    var unitPattern =  /(?=\d*.?\d*)[^\d\.\s]+/g;
     var umatched = measurement.match(unitPattern);
     if (!umatched){
       return measurement;
     }
     var unit = umatched[0];
 
-    var eng = this.toEngineering(value, unit)
+    var eng = this.toEngineering(value, unit);
     return eng.value + " " + eng.units;
   },
 
   toEngineering: function (value, units) {
-    var isShort = (units.length === 1 || units === "Hz"),
+    var isShort = (units.length == 1 || units == "Hz"),
         prefix  = "";
 
     value = Number(value);
@@ -1918,10 +2189,12 @@ module.exports = React.createClass({
 });
 
 },{}],13:[function(require,module,exports){
-var ChatView = require('./chat.jsx'),
+var userController = require('../controllers/user'),
+    ChatView = require('./chat.jsx'),
     MathPadView = require('./mathpad.jsx'),
     NotesView = require('./notes'),
     EditorView = require('./editor'),
+    SubmitButtonView = require('./submitButton'),
     config = require('../config');
 
 module.exports = React.createClass({
@@ -1932,20 +2205,23 @@ module.exports = React.createClass({
     var activity = this.props.activity ? this.props.activity : {},
         activityName = activity.name ? ': ' + activity.name : '',
         hasMultipleClients = activity.clients && (activity.clients.length > 1),
-        circuit = hasMultipleClients && this.props.circuit ? (React.createElement("h2", null, "Circuit ",  this.props.circuit)) : null,
+        username = userController.getUsername(),
+        circuit = hasMultipleClients && this.props.circuit ? (React.createElement("h2", null, "Circuit ",  this.props.circuit,  username ? ' / ' + username : '')) : null,
         notes = this.props.client ? (this.props.client.notes || "") : "",
         editor = this.props.showEditor ? (React.createElement(EditorView, {parseAndStartActivity:  this.props.parseAndStartActivity, editorState:  this.props.editorState})) : null,
-        image = activity.image ? (React.createElement("img", {src:  /^https?:\/\//.test(activity.image) ? activity.image : config.modelsBase + activity.image})) : null;
+        image = activity.image ? (React.createElement("img", {src:  /^https?:\/\//.test(activity.image) ? activity.image : config.modelsBase + activity.image})) : null,
+        submitButton = this.props.showSubmit && this.props.circuit ? (React.createElement(SubmitButtonView, {label: hasMultipleClients ? 'We got it!' : "I got it!", goals:  this.props.goals, nextActivity:  this.props.nextActivity})) : null;
 
     return (
       React.createElement("div", {className: "tt-page"}, 
         React.createElement("h1", null, "Teaching Teamwork",  activityName ), 
          circuit, 
+         submitButton, 
+        React.createElement("div", {id: "notes-wrapper"}, React.createElement(NotesView, {text:  notes, className: "tt-notes", breadboard:  this.props.breadboard})), 
         React.createElement("div", {id: "breadboard-wrapper"}), 
          hasMultipleClients ? (React.createElement(ChatView, React.__spread({},  activity))) : null, 
         React.createElement("div", {id: "image-wrapper"},  image ), 
         this.props.activity ? (React.createElement(MathPadView, null)) : null, 
-        React.createElement("div", {id: "notes-wrapper"}, React.createElement(NotesView, {text:  notes, className: "tt-notes", breadboard:  this.props.breadboard})), 
          editor 
       )
     );
@@ -1953,11 +2229,346 @@ module.exports = React.createClass({
 });
 
 
-},{"../config":2,"./chat.jsx":8,"./editor":9,"./mathpad.jsx":11,"./notes":12}],14:[function(require,module,exports){
-var userController;
+},{"../config":2,"../controllers/user":4,"./chat.jsx":8,"./editor":9,"./mathpad.jsx":11,"./notes":12,"./submitButton":14}],14:[function(require,module,exports){
+var userController = require('../controllers/user'),
+    logController = require('../controllers/log'),
+    SubmitButton, Popup;
+
+module.exports = SubmitButton = React.createClass({
+
+  displayName: 'SubmitButton',
+
+  getInitialState: function () {
+    return {
+      submitted: null,
+      allCorrect: false,
+      goalValues: {},
+      closePopup: false
+    };
+  },
+
+  componentWillMount: function () {
+    var self = this;
+
+    userController.onGroupRefCreation(function() {
+      var otherClients, i, updateFromClient;
+
+      // listen for submits
+      self.submitRef = userController.getFirebaseGroupRef().child("submitted");
+      self.submitRef.on("value", function(dataSnapshot) {
+        var submitValue = dataSnapshot.val(),
+            skew = userController.getServerSkew(),
+            now = (new Date().getTime()) + skew;
+
+        // ignore submits over 10 seconds old
+        if (submitValue && (submitValue.at < now - (10 * 1000))) {
+          return;
+        }
+
+        // get the measurements and create the popup data
+        self.getPopupData(function (table, allCorrect) {
+          self.setState({
+            submitted: submitValue,
+            table: table,
+            allCorrect: allCorrect,
+            closePopup: false
+          });
+        });
+      });
+
+      // recalculate table on client updates
+      updateFromClient = function() {
+        self.getPopupData(function (table, allCorrect) {
+          self.setState({
+            table: table,
+            allCorrect: allCorrect,
+          });
+        });
+      };
+
+      // listen for client updates
+      self.clientListRef = userController.getFirebaseGroupRef().child('clients');
+      otherClients = userController.getOtherClientNos();
+      for (i = 0; i < otherClients.length; i++) {
+        self.clientListRef.child(otherClients[i]).on("value", updateFromClient);
+      }
+    });
+  },
+
+  componentWillUnmount: function() {
+    this.submitRef.off();
+    this.clientListRef.off();
+  },
+
+  getMeasurement: function (client, measurement, callback) {
+    var bc = sparks.workbenchController.breadboardController,
+        matches = measurement.match(/^((component_)([^\(]+)\(([^\)]+)\))|(([^\(]+)\(([^,]+),([^\)]+)\))$/),
+        // see: http://regexper.com/#%5E((component_)(%5B%5E%5C(%5D%2B)%5C((%5B%5E%5C)%5D%2B)%5C))%7C((%5B%5E%5C(%5D%2B)%5C((%5B%5E%2C%5D%2B)%2C(%5B%5E%5C)%5D%2B)%5C))%24
+        renameConnection = function (s) {
+          return s.replace(/[abcdefghij](\d)/g, "L$1");
+        },
+        type, component, c1, c2;
+
+    if (matches) {
+      if (matches[1]) {
+        type = matches[3];
+        component = bc.getComponents()[matches[4]];
+        if (!component || !component.connections) {
+          return callback(0);
+        }
+        c1 = component.connections[0].name;
+        c2 = component.connections[1].name;
+      }
+      else {
+        type = matches[6];
+        c1 = client + ':' + renameConnection(matches[7]);
+        c2 = client + ':' + renameConnection(matches[8]);
+      }
+
+      bc.query(type, c1 + ',' + c2, function (ciso) {
+        var result = 0,
+            p1, p2, v1, v2, current;
+
+        if (ciso) {
+          p1 = bc.getHole(c1).nodeName();
+          p2 = bc.getHole(c2).nodeName();
+
+          if (type === "resistance") {
+            if (p1 != p2) {
+              current = ciso.getCurrent('ohmmeterBattery');
+              result = 1 / current.magnitude;
+            }
+          }
+          else {
+            v1 = ciso.getVoltageAt(p1);
+            v2 = ciso.getVoltageAt(p2);
+
+            if (v1 && v2) {
+              switch (type) {
+                case "voltage":
+                  result = v1.real - v2.real;
+                  break;
+                case "ac_voltage":
+                  result = v1.subtract(v2).magnitude;
+                  break;
+                case "current":
+                  result = v1.subtract(v2).magnitude / 1e-6;
+                  break;
+              }
+            }
+          }
+        }
+
+        result = Math.round(result*Math.pow(10,2))/Math.pow(10,2);
+
+        callback(result);
+      });
+    }
+    else {
+      callback(0);
+    }
+  },
+
+  getPopupData: function (callback) {
+    var self = this,
+        queue = [],
+        table = [],
+        allCorrect = true,
+        client, goalName, processQueue;
+
+    // gather the goal names into a queue for async processing
+    for (client = 0; client < this.props.goals.length; client++) {
+      for (goalName in this.props.goals[client]) {
+        if (this.props.goals[client].hasOwnProperty(goalName)) {
+          queue.push({
+            client: client,
+            name: goalName,
+            goal: this.props.goals[client][goalName]
+          });
+        }
+      }
+    }
+
+    // drain the queue
+    processQueue = function () {
+      var item = queue.shift(),
+          goal = item ? item.goal : null;
+
+      if (item) {
+        self.getMeasurement(item.client, item.goal.measurement, function (clientValue) {
+          var units, tolerance, absGoalValue, absClientGoalValue, correct;
+
+          units = goal.units || '';
+
+          tolerance = goal.value * (goal.tolerance || 0);
+          tolerance = Math.round(tolerance * Math.pow(10,4)) / Math.pow(10,4);
+
+          absGoalValue = Math.abs(goal.value);
+          absClientGoalValue = Math.abs(clientValue);
+
+          correct = (absClientGoalValue >= (absGoalValue - tolerance)) && (absClientGoalValue <= (absGoalValue + tolerance));
+
+          table.push({
+            correct: (correct ? 'Yes' : 'No'),
+            correctClass: (correct ? 'correct' : 'incorrect'),
+            client: item.client,
+            goal: item.name,
+            goalValue: absGoalValue + units,
+            currentValue: absClientGoalValue + units
+          });
+
+          allCorrect = allCorrect && correct;
+
+          processQueue();
+        });
+      }
+      else {
+        callback(table, allCorrect);
+      }
+    };
+    processQueue();
+  },
+
+  submitClicked: function (e) {
+    var self = this,
+        username = userController.getUsername();
+
+    e.preventDefault();
+
+    // if in solo mode then just populate the table
+    if (!this.submitRef) {
+      this.getPopupData(function (table, allCorrect) {
+        self.setState({
+          submitted: true,
+          table: table,
+          allCorrect: allCorrect,
+          closePopup: false
+        });
+      });
+    }
+    else {
+      // add the submit - this will trigger our submitRef watcher
+      this.submitRef.set({
+        user: username,
+        at: Firebase.ServerValue.TIMESTAMP
+      });
+    }
+    logController.logEvent("Submit clicked", username);
+  },
+
+  popupButtonClicked: function () {
+    if (this.state.allCorrect) {
+      window.location = 'http://concord.org/projects/teaching-teamwork/activities2';
+    }
+    else {
+      this.setState({closePopup: true});
+    }
+  },
+
+  statics: {
+    showPopup: function(props, multipleClients, buttonClicked) {
+      var $anchor = $('#submit-popup'),
+          closePopup = function (e) {
+            e.preventDefault();
+            SubmitButton.closePopup();
+            buttonClicked();
+          };
+
+      if (!$anchor.length) {
+        $anchor = $('<div id="submit-popup" class="modalDialog"></div>').appendTo('body');
+      }
+
+      setTimeout(function() {
+        $anchor[0].style.opacity = 1;
+      }, 100);
+
+      return React.render(Popup({
+        table: props.table,
+        waiting: props.waiting,
+        allCorrect: props.allCorrect,
+        nextActivity: props.nextActivity,
+        multipleClients: multipleClients,
+        buttonClicked: closePopup,
+      }), $anchor.get(0));
+    },
+
+    closePopup: function () {
+      var $anchor = $('#submit-popup');
+      React.unmountComponentAtNode($anchor.get(0));
+      $anchor.remove();
+    }
+  },
+
+  render: function () {
+    var self = this;
+
+    setTimeout(function () {
+      if (self.state.submitted && !self.state.closePopup) {
+        SubmitButton.showPopup(self.state, self.props.goals.length > 1, self.popupButtonClicked);
+      }
+      else {
+        SubmitButton.closePopup();
+      }
+    });
+
+    return React.DOM.div({className: 'submit-button-wrapper'},
+      React.DOM.button({onClick: this.submitClicked}, this.props.label || 'Submit')
+    );
+  },
+
+});
+
+Popup = React.createFactory(React.createClass({
+  displayName: 'Popup',
+
+  render: function () {
+    var circuitRows = [],
+      th = React.DOM.th,
+      td = React.DOM.td,
+      i, row, title, label;
+
+    circuitRows.push(React.DOM.tr({key: 'header'},
+      this.props.multipleClients ? th({}, 'Circuit') : null,
+      th({}, 'Goal'),
+      th({}, 'Goal Value'),
+      th({}, 'Current Value'),
+      th({}, 'Correct')
+    ));
+
+    for (i = 0; i < this.props.table.length; i++) {
+      row = this.props.table[i];
+      circuitRows.push(React.DOM.tr({key: i},
+        this.props.multipleClients ? td({}, row.client + 1) : null,
+        td({}, row.goal),
+        td({}, row.goalValue),
+        td({}, row.currentValue),
+        td({className: row.correctClass}, row.correct)
+      ));
+    }
+
+    if (this.props.allCorrect) {
+      title = 'All Goals Are Correct!';
+      label = this.props.nextActivity ? this.props.nextActivity : 'All Done!';
+    }
+    else {
+      title = 'Some Goals Have Not Been Met';
+      label = 'Keep Trying...';
+    }
+
+    return React.DOM.div({className: 'submit-button-popup'},
+      React.DOM.h1({}, title),
+      React.DOM.table({}, React.DOM.tbody({}, circuitRows)),
+      React.DOM.button({onClick: this.props.buttonClicked}, label)
+    );
+  }
+}));
+
+
+},{"../controllers/log":3,"../controllers/user":4}],15:[function(require,module,exports){
+var userController, UserRegistrationView;
 
 // add a global UserRegistrationView variable because its statics are called in other modules
-module.exports = UserRegistrationView = React.createClass({
+module.exports = window.UserRegistrationView = UserRegistrationView = React.createClass({
   displayName: 'UserRegistration',
 
   statics: {
@@ -1986,7 +2597,7 @@ module.exports = UserRegistrationView = React.createClass({
     }
   },
   getInitialState: function() {
-    return {userName: '', groupName: ''};
+    return {userName: $.cookie('userName') || '', groupName: $.cookie('groupName') || ''};
   },
   handleUserNameChange: function(event) {
     this.setState({userName: event.target.value});
@@ -2009,12 +2620,30 @@ module.exports = UserRegistrationView = React.createClass({
     this.setState({groupName: ''});
     userController.rejectGroupName();
   },
-  handleClientSelection: function() {
+  handleClientSelection: function(event) {
     userController.selectClient(event.target.value);
   },
   handleClientSelected: function(e) {
     e.preventDefault();
     userController.selectedClient();
+  },
+  selectInput: function () {
+  },
+  componentDidMount: function () {
+    var self = this,
+        focusAndSelect = function (ref) {
+          var node = self.refs[ref] ? self.refs[ref].getDOMNode() : null;
+          if (node) {
+            node.focus();
+            node.select();
+          }
+        };
+    if (this.props.form == 'username') {
+      focusAndSelect('userName');
+    }
+    else if (this.props.form == 'groupname') {
+      focusAndSelect('groupName');
+    }
   },
   render: function() {
     var form;
@@ -2024,7 +2653,7 @@ module.exports = UserRegistrationView = React.createClass({
           React.createElement("h3", null, " "), 
           React.createElement("label", null, 
             React.createElement("span", null, "User Name :"), 
-            React.createElement("input", {type: "text", value: this.state.userName, onChange: this.handleUserNameChange})
+            React.createElement("input", {type: "text", ref: "userName", value: this.state.userName, onChange: this.handleUserNameChange})
           )
         )
       );
@@ -2034,7 +2663,7 @@ module.exports = UserRegistrationView = React.createClass({
           React.createElement("h3", null, "Hi ",  this.state.userName, "!"), 
           React.createElement("label", null, 
             React.createElement("span", null, "Group Name :"), 
-            React.createElement("input", {type: "text", value: this.state.groupName, onChange: this.handleGroupNameChange})
+            React.createElement("input", {type: "text", ref: "groupName", value: this.state.groupName, onChange: this.handleGroupNameChange})
           )
         )
       );
@@ -2042,7 +2671,7 @@ module.exports = UserRegistrationView = React.createClass({
       var groupDetails,
           joinStr,
           keys = Object.keys(this.props.users);
-      if (keys.length == 0) {
+      if (keys.length === 0) {
         groupDetails = (
           React.createElement("div", null, 
             React.createElement("label", null, "You are the first member of this group.")
@@ -2084,7 +2713,7 @@ module.exports = UserRegistrationView = React.createClass({
             selected = false,
             valid = true,
             selectedUsers = [];
-        for (user in this.props.users) {
+        for (var user in this.props.users) {
           if (this.props.users[user].client == i) {
             selectedUsers.push(user);
             if (user == this.state.userName) {

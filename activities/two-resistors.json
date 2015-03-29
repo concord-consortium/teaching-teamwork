@@ -25,6 +25,25 @@
       "hidden": true
     }
   ],
+  "goals": [
+    {
+      "Voltage for R1": {
+        "measurement": "voltage(c20,c14)",
+        "value": 2.2,
+        "units": "V",
+        "tolerance": 0.01
+      }
+    },
+    {
+      "Voltage for R2": {
+        "measurement": "voltage(c20,c14)",
+        "value": 4.95,
+        "units": "V",
+        "tolerance": 0.01
+      }
+    }
+  ],
+  "nextLevel": "two-resistors-2",
   "clients": [
     {
       "show_multimeter": true,
