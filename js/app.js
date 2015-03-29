@@ -304,7 +304,7 @@ module.exports = {
 };
 
 
-},{"../views/userRegistration.jsx":15,"./log":3}],5:[function(require,module,exports){
+},{"../views/userRegistration.jsx":14,"./log":3}],5:[function(require,module,exports){
 /**
  The workbench adaptor takes a TT-workbench definition such as
 
@@ -890,105 +890,7 @@ module.exports = React.createClass({
 
 
 
-},{"../config":2,"../controllers/log":3,"../controllers/user":4,"../data/workbenchAdaptor":5,"../data/workbenchFBConnector":6,"./page.jsx":13}],8:[function(require,module,exports){
-var GoalTable = require('./goalTable.jsx'),
-    ReactTransitionGroup = React.addons.TransitionGroup,
-    userController = require('../controllers/user'),
-    logController = require('../controllers/log');
-
-module.exports = React.createClass({
-  displayName: 'Chat',
-
-  getInitialState: function() {
-    this.items = [];
-    return {items: [], text: ""};
-  },
-  componentWillMount: function() {
-    var self = this;
-    userController.onGroupRefCreation(function() {
-      self.firebaseRef = userController.getFirebaseGroupRef().child("chat");
-      self.firebaseRef.on("child_added", function(dataSnapshot) {
-        self.items.push(dataSnapshot.val());
-        self.setState({
-          items: self.items
-        });
-      }.bind(self));
-    });
-  },
-  componentWillUnmount: function() {
-    this.firebaseRef.off();
-  },
-  onChange: function(e) {
-    this.setState({text: e.target.value});
-  },
-  handleSubmit: function(e) {
-    e.preventDefault();
-    this.firebaseRef.push({
-      user: userController.getUsername(),
-      message: this.state.text
-    });
-    logController.logEvent("Sent message", this.state.text);
-    this.setState({text: ""});
-  },
-  handleSendVal: function(e) {
-    e.preventDefault();
-    var val   = sparks.workbenchController.workbench.meter.dmm.currentValue,
-      units = sparks.workbenchController.workbench.meter.dmm.currentUnits || "V";
-
-    this.firebaseRef.push({
-      user: userController.getUsername(),
-      message: val+" "+units,
-      val: val,
-      units: units
-    });
-    logController.logEvent("Sent value", val+" "+units);
-  },
-  render: function() {
-
-    var table = null,
-        sendMeas = null;
-
-    if (this.props.simpleMeasurementGame) {
-      table = React.createElement(GoalTable, React.__spread({},  this.props.simpleMeasurementGame));
-      sendMeas = React.createElement("button", {id: "send-val", onClick:  this.handleSendVal}, "Send measurement");
-    }
-
-    var Message = React.createClass({displayName: "Message",
-      componentDidEnter: function() {
-        $('#messages').stop().animate({
-          scrollTop: $("#messages")[0].scrollHeight
-        }, 800);
-      },
-      render: function() {
-        return React.createElement("div", {key:  this.props.i, className: "chat"}, React.createElement("b", null,  this.props.item.user, ":"), " ",  this.props.item.message);
-      }
-    });
-
-    return (
-      React.createElement("div", {id: "chat"}, 
-        React.createElement("div", {id: "messages"}, 
-          React.createElement(ReactTransitionGroup, null, 
-            this.state.items.map(function(item, i) {
-              return React.createElement(Message, {i:  i, item:  item });
-            })
-          )
-        ), 
-         table, 
-        React.createElement("div", {id: "input"}, 
-          React.createElement("form", {onSubmit:  this.handleSubmit}, 
-            "Send chat:", 
-              React.createElement("input", {onChange:  this.onChange, value:  this.state.text, type: "text", size: "70", id: "send-chat"}), 
-              React.createElement("button", {id: "send", onClick:  this.handleSubmit}, "Send"), 
-               sendMeas 
-          )
-        )
-      )
-    );
-  }
-});
-
-
-},{"../controllers/log":3,"../controllers/user":4,"./goalTable.jsx":10}],9:[function(require,module,exports){
+},{"../config":2,"../controllers/log":3,"../controllers/user":4,"../data/workbenchAdaptor":5,"../data/workbenchFBConnector":6,"./page.jsx":11}],8:[function(require,module,exports){
 /* global FirebaseSimpleLogin: false */
 /* global CodeMirror: false */
 
@@ -1575,36 +1477,7 @@ Dialog = React.createFactory(React.createClass({
 
 
 
-},{}],10:[function(require,module,exports){
-module.exports = React.createClass({
-  displayName: 'GoalTable',
-
-  render: function() {
-    var rows = this.props.goal.map(function(val, i) {
-      return (React.createElement("tr", {key: i}, 
-                React.createElement("td", null,  i+1), 
-                React.createElement("td", null,  val ), 
-                React.createElement("td", {className: "actual"})
-              )
-              );
-    });
-    return (
-      React.createElement("div", {id: "values"}, 
-        React.createElement("table", null, 
-          React.createElement("tr", null, 
-            React.createElement("th", null), 
-            React.createElement("th", null, "Goal (",  this.props.measurement, ")"), 
-            React.createElement("th", null, "Actual")
-          ), 
-           rows 
-        )
-      )
-    );
-  }
-});
-
-
-},{}],11:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 /* global math: false */
 
 var logController = require('../controllers/log'),
@@ -2013,7 +1886,7 @@ HistoryItem = React.createClass({
 });
 
 
-},{"../controllers/log":3}],12:[function(require,module,exports){
+},{"../controllers/log":3}],10:[function(require,module,exports){
 // adapted from SPARKS math-parser.js
 
 module.exports = React.createClass({
@@ -2153,9 +2026,10 @@ module.exports = React.createClass({
   }
 });
 
-},{}],13:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 var userController = require('../controllers/user'),
-    ChatView = require('./chat.jsx'),
+    //ChatView = require('./chat.jsx'),
+    SidebarChatView = require('./sidebar-chat.jsx'),
     MathPadView = require('./mathpad.jsx'),
     NotesView = require('./notes'),
     EditorView = require('./editor'),
@@ -2175,17 +2049,20 @@ module.exports = React.createClass({
         notes = this.props.client ? (this.props.client.notes || "") : "",
         editor = this.props.showEditor ? (React.createElement(EditorView, {parseAndStartActivity:  this.props.parseAndStartActivity, editorState:  this.props.editorState})) : null,
         image = activity.image ? (React.createElement("img", {src:  /^https?:\/\//.test(activity.image) ? activity.image : config.modelsBase + activity.image})) : null,
-        submitButton = this.props.showSubmit && this.props.circuit ? (React.createElement(SubmitButtonView, {label: hasMultipleClients ? 'We got it!' : "I got it!", goals:  this.props.goals, nextActivity:  this.props.nextActivity})) : null;
+        submitButton = this.props.showSubmit && this.props.circuit ? (React.createElement(SubmitButtonView, {label: hasMultipleClients ? 'We got it!' : "I got it!", goals:  this.props.goals, nextActivity:  this.props.nextActivity})) : null,
+        wrapperClass = hasMultipleClients ? 'multiple-clients' : null;
 
     return (
       React.createElement("div", {className: "tt-page"}, 
         React.createElement("h1", null, "Teaching Teamwork",  activityName ), 
          circuit, 
          submitButton, 
-        React.createElement("div", {id: "notes-wrapper"}, React.createElement(NotesView, {text:  notes, className: "tt-notes", breadboard:  this.props.breadboard})), 
-        React.createElement("div", {id: "breadboard-wrapper"}), 
-         hasMultipleClients ? (React.createElement(ChatView, React.__spread({},  activity))) : null, 
-        React.createElement("div", {id: "image-wrapper"},  image ), 
+        React.createElement("div", {id: "notes-wrapper", className:  wrapperClass }, React.createElement(NotesView, {text:  notes, className: "tt-notes", breadboard:  this.props.breadboard})), 
+        React.createElement("div", {id: "breadboard-and-chat-wrapper", className:  wrapperClass }, 
+           hasMultipleClients ? (React.createElement("div", {id: "sidebar-chat-wrapper", className:  wrapperClass }, React.createElement(SidebarChatView, React.__spread({},  activity)))) : null, 
+          React.createElement("div", {id: "breadboard-wrapper", className:  wrapperClass })
+        ), 
+        React.createElement("div", {id: "image-wrapper", className:  wrapperClass },  image ), 
         this.props.activity ? (React.createElement(MathPadView, null)) : null, 
          editor 
       )
@@ -2194,7 +2071,100 @@ module.exports = React.createClass({
 });
 
 
-},{"../config":2,"../controllers/user":4,"./chat.jsx":8,"./editor":9,"./mathpad.jsx":11,"./notes":12,"./submitButton":14}],14:[function(require,module,exports){
+},{"../config":2,"../controllers/user":4,"./editor":8,"./mathpad.jsx":9,"./notes":10,"./sidebar-chat.jsx":12,"./submitButton":13}],12:[function(require,module,exports){
+var userController = require('../controllers/user'),
+    logController = require('../controllers/log'),
+    ChatItems, ChatItem;
+
+module.exports = React.createClass({
+
+  displayName: 'SidebarChat',
+
+  getInitialState: function() {
+    return {items: [], text: ""};
+  },
+
+  componentWillMount: function() {
+    var self = this;
+    userController.onGroupRefCreation(function() {
+      self.firebaseRef = userController.getFirebaseGroupRef().child("chat");
+      self.firebaseRef.on("child_added", function(dataSnapshot) {
+        var items = self.state.items.slice(0);
+        items.push(dataSnapshot.val());
+        self.setState({
+          items: items
+        });
+      }.bind(self));
+    });
+  },
+
+  componentWillUnmount: function() {
+    this.firebaseRef.off();
+  },
+
+  handleSubmit: function(e) {
+    var input = this.refs.text.getDOMNode();
+    e.preventDefault();
+    this.firebaseRef.push({
+      user: userController.getUsername(),
+      message: input.value
+    });
+    input.value = '';
+    logController.logEvent("Sent message", this.state.text);
+    this.setState({text: ""});
+  },
+
+  render: function() {
+    return (
+      React.createElement("div", {className: "sidebar-chat"}, 
+        React.createElement("div", {className: "sidebar-chat-input"}, 
+          React.createElement(ChatItems, {items:  this.state.items}), 
+          React.createElement("form", {onSubmit:  this.handleSubmit}, 
+            React.createElement("input", {ref: "text", type: "text"}), 
+            React.createElement("button", {onClick:  this.handleSubmit}, "Send")
+          )
+        )
+      )
+    );
+  }
+});
+
+ChatItems = React.createClass({
+  displayName: 'ChatItems',
+
+  componentDidUpdate: function (prevProps) {
+    console.log('componentDidUpdate ' + prevProps.items.length + ' / ' + this.props.items.length);
+    if (prevProps.items.length !== this.props.items.length) {
+      var items = this.refs.items ? this.refs.items.getDOMNode() : null;
+      if (items) {
+        items.scrollTop = items.scrollHeight;
+      }
+    }
+  },
+
+  render: function () {
+    var user = userController.getUsername();
+    return React.createElement("div", {ref: "items", className: "sidebar-chat-items"}, 
+      this.props.items.map(function(item, i) {
+        return React.createElement(ChatItem, {key:  i, item:  item, me:  item.user == user});
+      })
+    );
+  }
+});
+
+ChatItem = React.createClass({
+  displayName: 'ChatItem',
+
+  render: function () {
+    return React.createElement("div", {className:  this.props.me ? 'chat-item chat-item-me' : 'chat-item chat-item-others'}, 
+        React.createElement("b", null,  this.props.item.user, ":"), " ",  this.props.item.message
+      );
+  }
+});
+
+
+
+},{"../controllers/log":3,"../controllers/user":4}],13:[function(require,module,exports){
 var userController = require('../controllers/user'),
     logController = require('../controllers/log'),
     SubmitButton, Popup;
@@ -2530,7 +2500,7 @@ Popup = React.createFactory(React.createClass({
 }));
 
 
-},{"../controllers/log":3,"../controllers/user":4}],15:[function(require,module,exports){
+},{"../controllers/log":3,"../controllers/user":4}],14:[function(require,module,exports){
 var userController, UserRegistrationView;
 
 // add a global UserRegistrationView variable because its statics are called in other modules
