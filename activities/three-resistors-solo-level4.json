@@ -7,7 +7,7 @@
       "level": 4
     }
   },
-  "nextActivity": "three-resistors-level5",
+  "nextActivity": "Move To Level 5",
   "goals": [
     {
       "Voltage across R1": {
