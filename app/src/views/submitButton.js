@@ -11,7 +11,8 @@ module.exports = SubmitButton = React.createClass({
       submitted: null,
       allCorrect: false,
       goalValues: {},
-      closePopup: false
+      closePopup: false,
+      nextActivity: this.props.nextActivity
     };
   },
 

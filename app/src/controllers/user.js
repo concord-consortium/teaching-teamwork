@@ -12,10 +12,7 @@ var UserRegistrationView = require('../views/userRegistration.jsx'),
     groupRefCreationListeners,
     client,
     callback,
-    serverSkew,
-    activityRef,
-    activityClients,
-    activityClientsListener;
+    serverSkew;
 
 // scratch
 var fbUrlDomain = 'https://teaching-teamwork.firebaseio.com/';
@@ -58,7 +55,6 @@ module.exports = {
   init: function(_numClients, _activityName, _callback) {
     numClients = _numClients;
     activityName = _activityName;
-    activityClients = {};
     callback = _callback;
     UserRegistrationView.open(this, {form: "username"});
   },
@@ -81,7 +77,7 @@ module.exports = {
 
     groupName = name;
 
-    fbUrl = fbUrlBase + date + "-" + name + "/";
+    fbUrl = fbUrlBase + date + "-" + name + "/activities/" + activityName + "/";
 
     firebaseGroupRef = new Firebase(fbUrl);
     firebaseUsersRef = firebaseGroupRef.child('users');
@@ -94,27 +90,7 @@ module.exports = {
       UserRegistrationView.open(self, {form: "groupconfirm", users: users});
     });
 
-    if (activityRef) {
-      activityRef.off("value");
-    }
-    activityRef = firebaseGroupRef.child('users');
-    activityClientsListener = activityRef.on("value", function(snapshot) {
-      var users = snapshot.val(),
-          name, user;
-      activityClients = {};
-      if (users) {
-        for (name in users) {
-          if (users.hasOwnProperty(name)) {
-            user = users[name];
-            if ((user.activityName == activityName) && user.hasOwnProperty("client")) {
-              activityClients[user.client] = name;
-            }
-          }
-        }
-      }
-    });
-
-    firebaseUsersRef.child(userName).set({activityName: activityName, lastAction: Math.floor(Date.now()/1000)});
+    firebaseUsersRef.child(userName).set({lastAction: Math.floor(Date.now()/1000)});
 
     logController.logEvent("Started to join group", groupName);
   },
@@ -159,7 +135,7 @@ module.exports = {
 
   selectClient: function(_client) {
     client = _client;
-    firebaseUsersRef.child(userName).set({activityName: activityName, client: client, lastAction: Math.floor(Date.now()/1000)});
+    firebaseUsersRef.child(userName).set({client: client, lastAction: Math.floor(Date.now()/1000)});
   },
 
   selectedClient: function() {
@@ -178,10 +154,6 @@ module.exports = {
 
   getServerSkew: function () {
     return serverSkew;
-  },
-
-  getActivityClients: function () {
-    return activityClients;
   },
 
   getFirebaseGroupRef: function() {

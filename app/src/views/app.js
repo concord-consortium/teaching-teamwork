@@ -208,7 +208,7 @@ module.exports = React.createClass({
         models = {
           "three-resistors": this.threeResistorsModel
         },
-        modelHandler, modelRef, usersRef;
+        generateModel, modelRef, usersRef;
 
     // skip if no model defined (not an error)
     if (!workbench.model) {
@@ -224,13 +224,15 @@ module.exports = React.createClass({
     }
 
     // create the handler
-    modelHandler = models[workbench.model.name](workbench.model.options || {});
+    generateModel = function () {
+      return models[workbench.model.name].call(self, workbench.model.options || {});
+    };
 
     // check if we are in solo mode
     if (!userController.getFirebaseGroupRef()) {
 
       // yes so just generate the model values
-      applyModel(modelHandler.generator.call(self));
+      applyModel(generateModel());
     }
     else {
 
@@ -241,7 +243,7 @@ module.exports = React.createClass({
             onlyUser = !users || Object.keys(users).length == 1;
 
         // check if the model exists
-        modelRef = userController.getFirebaseGroupRef().child("models").child(modelHandler.key());
+        modelRef = userController.getFirebaseGroupRef().child("model");
         modelRef.once("value", function (snap) {
           var model = snap.val();
 
@@ -252,7 +254,7 @@ module.exports = React.createClass({
 
           // if we are the only user or the model doesn't exist create it
           if (onlyUser || !model) {
-            modelRef.set(modelHandler.generator.call(self));
+            modelRef.set(generateModel());
           }
           else {
             applyModel(model);
@@ -284,81 +286,72 @@ module.exports = React.createClass({
   },
 
   threeResistorsModel: function (options) {
-    var level = options.level || 1;
+    var level = options.level || 1,
+        R1 = this.uniformResistor(100, 1000, []),
+        R2 = this.uniformResistor(100, 1000, [R1]),
+        R3 = this.uniformResistor(100, 1000, [R1, R2]),
 
-    return {
-      key: function () {
-        return "three-resistors-level-" + level;
-      },
+        GoalR = this.uniformResistor(100, 1000, []),
+        GoalR1 = this.uniformResistor(100, 1000, [GoalR]),
+        GoalR2 = this.uniformResistor(100, 1000, [GoalR, GoalR1]),
+        GoalR3 = this.uniformResistor(100, 1000, [GoalR, GoalR1, GoalR2]),
 
-      generator: function () {
-        var R1 = this.uniformResistor(100, 1000, []),
-            R2 = this.uniformResistor(100, 1000, [R1]),
-            R3 = this.uniformResistor(100, 1000, [R1, R2]),
+        model = {
+          E: 6 + Math.round(Math.random() * (20 - 6)), // from 6 to 20 volts
+          R: 0,
+          R1: R1,
+          R2: R2,
+          R3: R3
+        },
 
-            GoalR = this.uniformResistor(100, 1000, []),
-            GoalR1 = this.uniformResistor(100, 1000, [GoalR]),
-            GoalR2 = this.uniformResistor(100, 1000, [GoalR, GoalR1]),
-            GoalR3 = this.uniformResistor(100, 1000, [GoalR, GoalR1, GoalR2]),
+        round = function (value) {
+          return Math.round(value * Math.pow(10,2)) / Math.pow(10,2);
+        };
 
-            model = {
-              E: 6 + Math.round(Math.random() * (20 - 6)), // from 6 to 20 volts
-              R: 0,
-              R1: R1,
-              R2: R2,
-              R3: R3
-            },
+    switch (level) {
+      // 1: Known E, R = 0, Vi's all the same (initial R values are set different)
+      case 1:
+        model.GoalR1 = model.GoalR2 = model.GoalR3 = GoalR;
+        break;
 
-            round = function (value) {
-              return Math.round(value * Math.pow(10,2)) / Math.pow(10,2);
-            };
+      // 2: Known E, R = 0, Vi's all different (we specify the three values, must sum to E)
+      // 4: Unknown E, R = 0, Vi's all different
+      case 2:
+      case 4:
+        model.GoalR1 = GoalR1;
+        model.GoalR2 = GoalR2;
+        model.GoalR3 = GoalR3;
+        break;
 
-        switch (level) {
-          // 1: Known E, R = 0, Vi's all the same (initial R values are set different)
-          case 1:
-            model.GoalR1 = model.GoalR2 = model.GoalR3 = GoalR;
-            break;
+      // Known E, known R ≠ 0, Vi's the same and equal to V (the voltage across R)
+      case 3:
+        model.R = model.GoalR1 = model.GoalR2 = model.GoalR3 = GoalR;
+        break;
 
-          // 2: Known E, R = 0, Vi's all different (we specify the three values, must sum to E)
-          // 4: Unknown E, R = 0, Vi's all different
-          case 2:
-          case 4:
-            model.GoalR1 = GoalR1;
-            model.GoalR2 = GoalR2;
-            model.GoalR3 = GoalR3;
-            break;
+      // Unknown E, known R ≠ 0, Vi's the same and ≠ V
+      case 5:
+        model.R = GoalR;
+        model.GoalR1 = model.GoalR2 = model.GoalR3 = GoalR1;
+        break;
 
-          // Known E, known R ≠ 0, Vi's the same and equal to V (the voltage across R)
-          case 3:
-            model.R = model.GoalR1 = model.GoalR2 = model.GoalR3 = GoalR;
-            break;
+      // Unknown E, unknown R ≠ 0, Vi's different
+      case 6:
+        model.R = GoalR;
+        model.GoalR1 = GoalR1;
+        model.GoalR2 = GoalR2;
+        model.GoalR3 = GoalR3;
+        break;
 
-          // Unknown E, known R ≠ 0, Vi's the same and ≠ V
-          case 5:
-            model.R = GoalR;
-            model.GoalR1 = model.GoalR2 = model.GoalR3 = GoalR1;
-            break;
+      default:
+        alert("Unknown level in three-resistors model: " + level);
+        break;
+    }
 
-          // Unknown E, unknown R ≠ 0, Vi's different
-          case 6:
-            model.R = GoalR;
-            model.GoalR1 = GoalR1;
-            model.GoalR2 = GoalR2;
-            model.GoalR3 = GoalR3;
-            break;
+    model.V1 = round((model.E * model.GoalR1) / (model.R + model.GoalR1 + model.GoalR2 + model.GoalR3));
+    model.V2 = round((model.E * model.GoalR2) / (model.R + model.GoalR1 + model.GoalR2 + model.GoalR3));
+    model.V3 = round((model.E * model.GoalR3) / (model.R + model.GoalR1 + model.GoalR2 + model.GoalR3));
 
-          default:
-            alert("Unknown level in three-resistors model: " + level);
-            break;
-        }
-
-        model.V1 = round((model.E * model.GoalR1) / (model.R + model.GoalR1 + model.GoalR2 + model.GoalR3));
-        model.V2 = round((model.E * model.GoalR2) / (model.R + model.GoalR1 + model.GoalR2 + model.GoalR3));
-        model.V3 = round((model.E * model.GoalR3) / (model.R + model.GoalR1 + model.GoalR2 + model.GoalR3));
-
-        return model;
-      }
-    };
+    return model;
   }
 });
 
