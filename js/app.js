@@ -2048,9 +2048,9 @@ module.exports = React.createClass({
         circuit = hasMultipleClients && this.props.circuit ? (React.createElement("h2", null, "Circuit ",  this.props.circuit,  username ? ' / ' + username : '')) : null,
         notes = this.props.client ? (this.props.client.notes || "") : "",
         editor = this.props.showEditor ? (React.createElement(EditorView, {parseAndStartActivity:  this.props.parseAndStartActivity, editorState:  this.props.editorState})) : null,
-        image = activity.image ? (React.createElement("img", {src:  /^https?:\/\//.test(activity.image) ? activity.image : config.modelsBase + activity.image})) : null,
-        submitButton = this.props.showSubmit && this.props.circuit ? (React.createElement(SubmitButtonView, {label: hasMultipleClients ? 'We got it!' : "I got it!", goals:  this.props.goals, nextActivity:  this.props.nextActivity})) : null,
-        wrapperClass = hasMultipleClients ? 'multiple-clients' : null;
+        wrapperClass = hasMultipleClients ? 'multiple-clients' : null,
+        image = activity.image ? (React.createElement("div", {id: "image-wrapper", className:  wrapperClass }, React.createElement("img", {src:  /^https?:\/\//.test(activity.image) ? activity.image : config.modelsBase + activity.image}))) : null,
+        submitButton = this.props.showSubmit && this.props.circuit ? (React.createElement(SubmitButtonView, {label: hasMultipleClients ? 'We got it!' : "I got it!", goals:  this.props.goals, nextActivity:  this.props.nextActivity})) : null;
 
     return (
       React.createElement("div", {className: "tt-page"}, 
@@ -2062,7 +2062,7 @@ module.exports = React.createClass({
            hasMultipleClients ? (React.createElement("div", {id: "sidebar-chat-wrapper", className:  wrapperClass }, React.createElement(SidebarChatView, React.__spread({},  activity)))) : null, 
           React.createElement("div", {id: "breadboard-wrapper", className:  wrapperClass })
         ), 
-        React.createElement("div", {id: "image-wrapper", className:  wrapperClass },  image ), 
+         image, 
         this.props.activity ? (React.createElement(MathPadView, null)) : null, 
          editor 
       )
@@ -2081,7 +2081,7 @@ module.exports = React.createClass({
   displayName: 'SidebarChat',
 
   getInitialState: function() {
-    return {items: [], text: ""};
+    return {items: []};
   },
 
   componentWillMount: function() {
@@ -2110,18 +2110,19 @@ module.exports = React.createClass({
       message: input.value
     });
     input.value = '';
-    logController.logEvent("Sent message", this.state.text);
-    this.setState({text: ""});
+    input.focus();
+    logController.logEvent("Sent message", input);
   },
 
   render: function() {
     return (
       React.createElement("div", {className: "sidebar-chat"}, 
+        React.createElement(ChatItems, {items:  this.state.items}), 
         React.createElement("div", {className: "sidebar-chat-input"}, 
-          React.createElement(ChatItems, {items:  this.state.items}), 
           React.createElement("form", {onSubmit:  this.handleSubmit}, 
-            React.createElement("input", {ref: "text", type: "text"}), 
-            React.createElement("button", {onClick:  this.handleSubmit}, "Send")
+            React.createElement("textarea", {ref: "text", placeholder: "Enter chat message here..."}), 
+            React.createElement("br", null), 
+            React.createElement("button", {onClick:  this.handleSubmit}, "Send Chat Message")
           )
         )
       )
