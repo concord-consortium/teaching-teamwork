@@ -41,7 +41,9 @@ function WorkbenchFBConnector(_userController, _clientNumber, _wa) {
 }
 
 WorkbenchFBConnector.prototype.setClientCircuit = function () {
-  myCircuitFirebaseRef.set(wa.getClientCircuit());
+  if (myCircuitFirebaseRef) {
+    myCircuitFirebaseRef.set(wa.getClientCircuit());
+  }
 };
 
 module.exports = WorkbenchFBConnector;
