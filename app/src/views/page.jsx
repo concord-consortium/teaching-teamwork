@@ -1,5 +1,6 @@
 var userController = require('../controllers/user'),
-    ChatView = require('./chat.jsx'),
+    //ChatView = require('./chat.jsx'),
+    SidebarChatView = require('./sidebar-chat.jsx'),
     MathPadView = require('./mathpad.jsx'),
     NotesView = require('./notes'),
     EditorView = require('./editor'),
@@ -19,17 +20,20 @@ module.exports = React.createClass({
         notes = this.props.client ? (this.props.client.notes || "") : "",
         editor = this.props.showEditor ? (<EditorView parseAndStartActivity={ this.props.parseAndStartActivity } editorState={ this.props.editorState } />) : null,
         image = activity.image ? (<img src={ /^https?:\/\//.test(activity.image) ? activity.image : config.modelsBase + activity.image } />) : null,
-        submitButton = this.props.showSubmit && this.props.circuit ? (<SubmitButtonView label={hasMultipleClients ? 'We got it!' : "I got it!"} goals={ this.props.goals } nextActivity={ this.props.nextActivity } />) : null;
+        submitButton = this.props.showSubmit && this.props.circuit ? (<SubmitButtonView label={hasMultipleClients ? 'We got it!' : "I got it!"} goals={ this.props.goals } nextActivity={ this.props.nextActivity } />) : null,
+        wrapperClass = hasMultipleClients ? 'multiple-clients' : null;
 
     return (
       <div className="tt-page">
         <h1>Teaching Teamwork{ activityName }</h1>
         { circuit }
         { submitButton }
-        <div id="notes-wrapper"><NotesView text={ notes } className="tt-notes" breadboard={ this.props.breadboard } /></div>
-        <div id="breadboard-wrapper"></div>
-        { hasMultipleClients ? (<ChatView {...activity} />) : null }
-        <div id="image-wrapper">{ image }</div>
+        <div id="notes-wrapper" className={ wrapperClass }><NotesView text={ notes } className="tt-notes" breadboard={ this.props.breadboard } /></div>
+        <div id="breadboard-and-chat-wrapper" className={ wrapperClass }>
+          { hasMultipleClients ? (<div id="sidebar-chat-wrapper" className={ wrapperClass }><SidebarChatView {...activity} /></div>) : null }
+          <div id="breadboard-wrapper" className={ wrapperClass }></div>
+        </div>
+        <div id="image-wrapper" className={ wrapperClass }>{ image }</div>
         {this.props.activity ? (<MathPadView />) : null }
         { editor }
       </div>
