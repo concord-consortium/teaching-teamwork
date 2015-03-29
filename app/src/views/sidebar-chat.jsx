@@ -7,7 +7,7 @@ module.exports = React.createClass({
   displayName: 'SidebarChat',
 
   getInitialState: function() {
-    return {items: [], text: ""};
+    return {items: []};
   },
 
   componentWillMount: function() {
@@ -36,18 +36,19 @@ module.exports = React.createClass({
       message: input.value
     });
     input.value = '';
-    logController.logEvent("Sent message", this.state.text);
-    this.setState({text: ""});
+    input.focus();
+    logController.logEvent("Sent message", input);
   },
 
   render: function() {
     return (
       <div className="sidebar-chat">
+        <ChatItems items={ this.state.items } />
         <div className="sidebar-chat-input">
-          <ChatItems items={ this.state.items } />
           <form onSubmit={ this.handleSubmit }>
-            <input ref="text" type="text" />
-            <button onClick={ this.handleSubmit }>Send</button>
+            <textarea ref="text" placeholder="Enter chat message here..." />
+            <br/>
+            <button onClick={ this.handleSubmit }>Send Chat Message</button>
           </form>
         </div>
       </div>

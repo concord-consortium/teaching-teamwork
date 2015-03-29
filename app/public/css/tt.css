@@ -346,7 +346,8 @@ form button:disabled {
 .sidebar-chat .sidebar-chat-items {
   padding: 10px;
   overflow: auto;
-  height: 425px;
+  height: 370px;
+  background-color: #fff;
 }
 .sidebar-chat .sidebar-chat-items .chat-item {
   clear: both;
@@ -364,6 +365,13 @@ form button:disabled {
   float: left;
   background-color: #86c6ff;
 }
-.sidebar-chat form input[type="text"] {
-  width: 60%;
+.sidebar-chat .sidebar-chat-input {
+  padding: 10px;
+}
+.sidebar-chat .sidebar-chat-input textarea {
+  width: 170px;
+  height: 60px;
+}
+.sidebar-chat .sidebar-chat-input button {
+  margin-top: 5px;
 }
