@@ -29,15 +29,16 @@ module.exports = React.createClass({
   },
 
   handleSubmit: function(e) {
-    var input = this.refs.text.getDOMNode();
+    var input = this.refs.text.getDOMNode(),
+        message = input.value;
     e.preventDefault();
     this.firebaseRef.push({
       user: userController.getUsername(),
-      message: input.value
+      message: message
     });
     input.value = '';
     input.focus();
-    logController.logEvent("Sent message", input);
+    logController.logEvent("Sent message", message);
   },
 
   render: function() {

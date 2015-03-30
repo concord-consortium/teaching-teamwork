@@ -143,6 +143,7 @@ module.exports = SubmitButton = React.createClass({
         queue = [],
         table = [],
         allCorrect = true,
+        logParams = {},
         client, goalName, processQueue;
 
     // gather the goal names into a queue for async processing
@@ -185,6 +186,9 @@ module.exports = SubmitButton = React.createClass({
             goalValue: absGoalValue + units,
             currentValue: absClientGoalValue + units
           });
+          
+          logParams[item.name + ': Goal'] = absGoalValue;
+          logParams[item.name + ': Measured'] = absClientGoalValue;
 
           allCorrect = allCorrect && correct;
 
@@ -192,6 +196,7 @@ module.exports = SubmitButton = React.createClass({
         });
       }
       else {
+        logController.logEvent(allCorrect ? "Goals met" : "Goals not met", null, logParams);
         callback(table, allCorrect);
       }
     };
@@ -226,6 +231,8 @@ module.exports = SubmitButton = React.createClass({
   },
 
   popupButtonClicked: function () {
+    logController.logEvent("Submit close button clicked", this.state.allCorrect ? 'done' : 'resume');
+    
     if (this.state.allCorrect) {
       window.location = 'http://concord.org/projects/teaching-teamwork/activities2';
     }
