@@ -300,7 +300,7 @@ Popup = React.createFactory(React.createClass({
       this.props.multipleClients ? th({}, 'Circuit') : null,
       th({}, 'Goal'),
       th({}, 'Goal Value'),
-      th({}, 'Current Value'),
+      th({}, 'Measured Value'),
       th({}, 'Correct')
     ));
 
