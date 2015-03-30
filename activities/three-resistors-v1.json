@@ -31,32 +31,6 @@
       "hidden": true
     }
   ],
-  "goals": [
-    {
-      "Voltage across R1": {
-        "measurement": "component_voltage(r1)",
-        "value": 4.14,
-        "units": "V",
-        "tolerance": 0.01
-      }
-    },
-    {
-      "Voltage across R2": {
-        "measurement": "component_voltage(r2)",
-        "value": 3.41,
-        "units": "V",
-        "tolerance": 0.01
-      }
-    },
-    {
-      "Voltage across R3": {
-        "measurement": "component_voltage(r3)",
-        "value": 4.99,
-        "units": "V",
-        "tolerance": 0.01
-      }
-    }
-  ],  
   "logEvent": {
     "Activity Settings": {
       "parameters": {
