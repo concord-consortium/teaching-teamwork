@@ -309,33 +309,22 @@ module.exports = React.createClass({
         };
 
     switch (level) {
-      // 1: Known E, R = 0, Vi's all the same (initial R values are set different)
+      // Level 1: known E, R = 0, all goals the same
       case 1:
         model.GoalR1 = model.GoalR2 = model.GoalR3 = GoalR;
         break;
 
-      // 2: Known E, R = 0, Vi's all different (we specify the three values, must sum to E)
-      // 4: Unknown E, R = 0, Vi's all different
+      // Level 2: known E, known R​ ≠ 0​, all goals the same
       case 2:
-      case 4:
-        model.GoalR1 = GoalR1;
-        model.GoalR2 = GoalR2;
-        model.GoalR3 = GoalR3;
-        break;
-
-      // Known E, known R ≠ 0, Vi's the same and equal to V (the voltage across R)
-      case 3:
         model.R = model.GoalR1 = model.GoalR2 = model.GoalR3 = GoalR;
         break;
-
-      // Unknown E, known R ≠ 0, Vi's the same and ≠ V
+        
+      // Level 3: known E, known R ≠ 0​, goals different
+      // Level 4: unknown E, known R ≠ 0, goals different
+      // Level 5: unknown E, unknown R ≠ 0, goals different
+      case 3:
+      case 4:
       case 5:
-        model.R = GoalR;
-        model.GoalR1 = model.GoalR2 = model.GoalR3 = GoalR1;
-        break;
-
-      // Unknown E, unknown R ≠ 0, Vi's different
-      case 6:
         model.R = GoalR;
         model.GoalR1 = GoalR1;
         model.GoalR2 = GoalR2;

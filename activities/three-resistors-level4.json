@@ -39,7 +39,14 @@
       "type": "battery",
       "UID": "source",
       "voltage": "$E",
-      "connections": "battery_1,0:off_11"
+      "connections": "battery_1,battery_2"
+    },
+    {
+      "type": "resistor",
+      "UID": "rX",
+      "resistance": "$R",
+      "connections": "battery_2,0:off_11",
+      "hidden": true
     },
     {
       "type": "wire",
@@ -61,7 +68,7 @@
     "Activity Settings": {
       "parameters": {
         "E": "$E",
-        "R0": "0"
+        "R0": "$R"
       }
     },
     "Activity Goals": {
@@ -76,7 +83,7 @@
     {
       "show_multimeter": true,
       "showComponentEditor": true,
-      "notes": "Level 4: E is unknown, R = 0, your goal is to make your voltage $V1 volts.",
+      "notes": "Level 4: E is unknown, R = $R, your goal is to make your voltage $V1 volts.",
       "circuit": [
         {
           "type": "wire",
@@ -101,7 +108,7 @@
     {
       "show_multimeter": true,
       "showComponentEditor": true,
-      "notes": "Level 4: E is unknown, R = 0, your goal is to make your voltage $V2 volts.",
+      "notes": "Level 4: E is unknown, R = $R, your goal is to make your voltage $V2 volts.",
       "circuit": [
         {
           "type": "wire",
@@ -126,7 +133,7 @@
     {
       "show_multimeter": true,
       "showComponentEditor": true,
-      "notes": "Level 4: E is unknown, R = 0, your goal is to make your voltage $V3 volts.",
+      "notes": "Level 4: E is unknown, R = $R, your goal is to make your voltage $V3 volts.",
       "circuit": [
         {
           "type": "wire",
