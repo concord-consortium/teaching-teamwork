@@ -2114,6 +2114,12 @@ module.exports = React.createClass({
     input.focus();
     logController.logEvent("Sent message", message);
   },
+  
+  listenForEnter: function (e) {
+    if (e.keyCode === 13) {
+      this.handleSubmit(e);
+    }
+  },
 
   render: function() {
     return (
@@ -2121,7 +2127,7 @@ module.exports = React.createClass({
         React.createElement(ChatItems, {items:  this.state.items}), 
         React.createElement("div", {className: "sidebar-chat-input"}, 
           React.createElement("form", {onSubmit:  this.handleSubmit}, 
-            React.createElement("textarea", {ref: "text", placeholder: "Enter chat message here..."}), 
+            React.createElement("textarea", {ref: "text", placeholder: "Enter chat message here...", onKeyDown: this.listenForEnter}), 
             React.createElement("br", null), 
             React.createElement("button", {onClick:  this.handleSubmit}, "Send Chat Message")
           )
