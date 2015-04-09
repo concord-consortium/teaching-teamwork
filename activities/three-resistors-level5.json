@@ -7,7 +7,6 @@
       "level": 5
     }
   },
-  "nextActivity": "Move To Level 6",
   "goals": [
     {
       "Voltage across R1": {
@@ -83,7 +82,7 @@
     {
       "show_multimeter": true,
       "showComponentEditor": true,
-      "notes": "Level 5: E is unknown, R = $R, your goal is to make your voltage $V1 volts.",
+      "notes": "Level 5: E is unknown, R is unknown, your goal is to make your voltage $V1 volts.",
       "circuit": [
         {
           "type": "wire",
@@ -108,7 +107,7 @@
     {
       "show_multimeter": true,
       "showComponentEditor": true,
-      "notes": "Level 5: E is unknown, R = $R, your goal is to make your voltage $V2 volts.",
+      "notes": "Level 5: E is unknown, R is unknown, your goal is to make your voltage $V2 volts.",
       "circuit": [
         {
           "type": "wire",
@@ -133,7 +132,7 @@
     {
       "show_multimeter": true,
       "showComponentEditor": true,
-      "notes": "Level 5: E is unknown, R = $R, your goal is to make your voltage $V3 volts.",
+      "notes": "Level 5: E is unknown, R is unknown, your goal is to make your voltage $V3 volts.",
       "circuit": [
         {
           "type": "wire",
