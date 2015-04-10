@@ -6,17 +6,17 @@ var UserRegistrationView = require('../views/userRegistration.jsx'),
     groupName,
     firebaseGroupRef,
     firebaseUsersRef,
-    fbUrl,
     groupUsersListener,
     boardsSelectionListener,
     groupRefCreationListeners,
     client,
     callback,
-    serverSkew;
+    serverSkew,
+    UserController;
 
 // scratch
 var fbUrlDomain = 'https://teaching-teamwork.firebaseio.com/';
-var fbUrlBase = fbUrlDomain + '/dev/';
+var fbUrlBase = fbUrlDomain + 'dev/';
 
 var getDate = function() {
   var today = new Date(),
@@ -50,7 +50,7 @@ offsetRef.on("value", function(snap) {
   serverSkew = snap.val();
 });
 
-module.exports = {
+module.exports = UserController = {
 
   init: function(_numClients, _activityName, _callback) {
     numClients = _numClients;
@@ -58,7 +58,7 @@ module.exports = {
     callback = _callback;
     UserRegistrationView.open(this, {form: "username"});
   },
-
+  
   setName: function(name) {
     userName = name;
     $.cookie('userName', name);
@@ -70,16 +70,14 @@ module.exports = {
       callback(0);
     }
   },
-
+  
   checkGroupName: function(name) {
-    var date = getDate(),
-        self = this;
+    var self = this;
 
     groupName = name;
 
-    fbUrl = fbUrlBase + date + "-" + name + "/activities/" + activityName + "/";
-
-    firebaseGroupRef = new Firebase(fbUrl);
+    UserController.createFirebaseGroupRef(activityName, name);
+    
     firebaseUsersRef = firebaseGroupRef.child('users');
     groupUsersListener = firebaseUsersRef.on("value", function(snapshot) {
       var users = snapshot.val();
@@ -93,6 +91,11 @@ module.exports = {
     firebaseUsersRef.child(userName).set({lastAction: Math.floor(Date.now()/1000)});
 
     logController.logEvent("Started to join group", groupName);
+  },
+
+  createFirebaseGroupRef: function(_activityName, _groupName) {
+    var url = fbUrlBase + getDate() + "-" + _groupName + "/activities/" + _activityName + "/";
+    firebaseGroupRef = new Firebase(url);
   },
 
   rejectGroupName: function() {
@@ -146,6 +149,10 @@ module.exports = {
 
   getUsername: function() {
     return userName;
+  },
+
+  getGroupName: function() {
+    return groupName;
   },
 
   getClient: function () {

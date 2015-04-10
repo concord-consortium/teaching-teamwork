@@ -21,7 +21,7 @@ module.exports = React.createClass({
       showSubmit: false,
       goals: null,
       nextActivity: null,
-      ttWorkbench: null
+      activityName: null
     };
   },
 
@@ -41,7 +41,7 @@ module.exports = React.createClass({
         showSubmit: this.state.showSubmit,
         goals: this.state.goals,
         nextActivity: this.state.nextActivity,
-        ttWorkbench: this.state.ttWorkbench
+        activityName: this.state.activityName
       });
     }
   },
@@ -161,7 +161,7 @@ module.exports = React.createClass({
         // reset state after processing the workbench, use cloned copy because workbenchAdaptor.processTTWorkbench() modifies in place
         self.setState({
           activity: ttWorkbench,
-          ttWorkbench: JSON.parse(JSON.stringify(ttWorkbench))
+          activityName: activityName
         });
 
         workbenchAdaptor = new WorkbenchAdaptor(clientNumber);

@@ -28,7 +28,9 @@ module.exports = OtherCircuits = React.createClass({
 
       return React.render(Popup({
         circuit: props.circuit,
-        ttWorkbench: props.ttWorkbench,
+        activityName: props.activityName,
+        groupName: props.groupName,
+        numClients: props.numClients,
         buttonClicked: closePopup
       }), $anchor.get(0));
     },
@@ -74,7 +76,8 @@ PopupIFrame = React.createFactory(React.createClass({
     var iframe = this.refs.iframe.getDOMNode(),
         payload = {
           circuit: this.props.circuit,
-          ttWorkbench: this.props.ttWorkbench
+          activityName: this.props.activityName,
+          groupName: this.props.groupName
         };
     iframe.onload = function () {
       iframe.contentWindow.postMessage(JSON.stringify(payload), window.location.origin);
@@ -119,12 +122,12 @@ Popup = React.createFactory(React.createClass({
         circuit,
         selected;
 
-    for (circuit = 1; circuit <= this.props.ttWorkbench.clients.length; circuit++) {
+    for (circuit = 1; circuit <= this.props.numClients; circuit++) {
       selected = circuit == this.state.selectedCircuit;
       links.push(CircuitLink({key: circuit, clicked: this.linkClicked, circuit: circuit, selected: selected}));
-      iframes.push(React.DOM.div({key: circuit, style: {display: selected ? 'block' : 'none'}}, PopupIFrame({circuit: circuit, ttWorkbench: this.props.ttWorkbench})));
+      iframes.push(React.DOM.div({key: circuit, style: {display: selected ? 'block' : 'none'}}, PopupIFrame({circuit: circuit, activityName: this.props.activityName, groupName: this.props.groupName})));
     }
-    links.push(React.DOM.button({onClick: this.props.buttonClicked}, 'Close'));
+    links.push(React.DOM.button({key: 'close', onClick: this.props.buttonClicked}, 'Close'));
 
     return React.DOM.div({className: 'other-circuits-button-popup'},
       React.DOM.h1({}, 'All Circuits'),
