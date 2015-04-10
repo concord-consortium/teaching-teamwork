@@ -29,7 +29,7 @@ module.exports = React.createClass({
       if (event.origin == window.location.origin) {
         payload = JSON.parse(event.data);
         workbenchAdaptor = new WorkbenchAdaptor(payload.circuit - 1);
-        workbench = workbenchAdaptor.processTTWorkbench(payload.activity);
+        workbench = workbenchAdaptor.processTTWorkbench(payload.ttWorkbench);
         workbench.showComponentEditor = false;
         workbench.show_multimeter = false;
         try {

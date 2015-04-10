@@ -20,7 +20,8 @@ module.exports = React.createClass({
       showEditor: !!window.location.search.match(/editor/),
       showSubmit: false,
       goals: null,
-      nextActivity: null
+      nextActivity: null,
+      ttWorkbench: null
     };
   },
 
@@ -39,7 +40,8 @@ module.exports = React.createClass({
         showEditor: this.state.showEditor,
         showSubmit: this.state.showSubmit,
         goals: this.state.goals,
-        nextActivity: this.state.nextActivity
+        nextActivity: this.state.nextActivity,
+        ttWorkbench: this.state.ttWorkbench
       });
     }
   },
@@ -156,8 +158,11 @@ module.exports = React.createClass({
       // look for a model and update the workbench values if found
       // NOTE: the callback might be called more than once if there is a race condition setting the model values
       self.preProcessWorkbench(ttWorkbench, function (ttWorkbench) {
-        // reset state after processing the workbench
-        self.setState({activity: ttWorkbench});
+        // reset state after processing the workbench, use cloned copy because workbenchAdaptor.processTTWorkbench() modifies in place
+        self.setState({
+          activity: ttWorkbench,
+          ttWorkbench: JSON.parse(JSON.stringify(ttWorkbench))
+        });
 
         workbenchAdaptor = new WorkbenchAdaptor(clientNumber);
         workbenchFBConnector = new WorkbenchFBConnector(userController, clientNumber, workbenchAdaptor);

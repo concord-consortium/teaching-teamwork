@@ -28,7 +28,7 @@ module.exports = OtherCircuits = React.createClass({
 
       return React.render(Popup({
         circuit: props.circuit,
-        activity: props.activity,
+        ttWorkbench: props.ttWorkbench,
         buttonClicked: closePopup
       }), $anchor.get(0));
     },
@@ -74,7 +74,7 @@ PopupIFrame = React.createFactory(React.createClass({
     var iframe = this.refs.iframe.getDOMNode(),
         payload = {
           circuit: this.props.circuit,
-          activity: this.props.activity
+          ttWorkbench: this.props.ttWorkbench
         };
     iframe.onload = function () {
       iframe.contentWindow.postMessage(JSON.stringify(payload), window.location.origin);
@@ -82,7 +82,7 @@ PopupIFrame = React.createFactory(React.createClass({
   },
 
   render: function () {
-    return React.DOM.iframe({ref: 'iframe', src: '?view-other-circuit!', style: {width: 800, height: 500}, onLoad: this.loaded});
+    return React.DOM.iframe({ref: 'iframe', src: '?view-other-circuit!', style: {width: 800, height: 500}, onLoad: this.loaded}, 'Loading...');
   }
 }));
 
@@ -105,7 +105,7 @@ Popup = React.createFactory(React.createClass({
 
   getInitialState: function () {
     return {
-      selectedCircuit: parseInt(this.props.circuit, 10) === 1 ? 2 : 1
+      selectedCircuit: 1
     };
   },
 
@@ -119,10 +119,10 @@ Popup = React.createFactory(React.createClass({
         circuit,
         selected;
 
-    for (circuit = 1; circuit <= this.props.activity.clients.length; circuit++) {
+    for (circuit = 1; circuit <= this.props.ttWorkbench.clients.length; circuit++) {
       selected = circuit == this.state.selectedCircuit;
       links.push(CircuitLink({key: circuit, clicked: this.linkClicked, circuit: circuit, selected: selected}));
-      iframes.push(React.DOM.div({key: circuit, style: {display: selected ? 'block' : 'none'}}, PopupIFrame({circuit: circuit, activity: this.props.activity})));
+      iframes.push(React.DOM.div({key: circuit, style: {display: selected ? 'block' : 'none'}}, PopupIFrame({circuit: circuit, ttWorkbench: this.props.ttWorkbench})));
     }
     links.push(React.DOM.button({onClick: this.props.buttonClicked}, 'Close'));
 
