@@ -186,7 +186,7 @@ module.exports = SubmitButton = React.createClass({
             goalValue: absGoalValue + units,
             currentValue: absClientGoalValue + units
           });
-          
+
           logParams[item.name + ': Goal'] = absGoalValue;
           logParams[item.name + ': Measured'] = absClientGoalValue;
 
@@ -232,7 +232,7 @@ module.exports = SubmitButton = React.createClass({
 
   popupButtonClicked: function () {
     logController.logEvent("Submit close button clicked", this.state.allCorrect ? 'done' : 'resume');
-    
+
     if (this.state.allCorrect) {
       window.location = 'http://concord.org/projects/teaching-teamwork/activities2';
     }

@@ -3,7 +3,9 @@ var PageView              = React.createFactory(require('./page.jsx')),
     WorkbenchFBConnector  = require('../data/workbenchFBConnector'),
     logController         = require('../controllers/log'),
     userController        = require('../controllers/user'),
-    config                = require('../config');
+    config                = require('../config'),
+    OtherCircuitView      = React.createFactory(require('./view-other-circuit')),
+    viewOtherCircuit      = !!window.location.search.match(/view-other-circuit!/);
 
 module.exports = React.createClass({
   displayName: 'App',
@@ -23,29 +25,37 @@ module.exports = React.createClass({
   },
 
   render: function () {
-    return PageView({
-      activity: this.state.activity,
-      circuit: this.state.circuit,
-      breadboard: this.state.breadboard,
-      client: this.state.client,
-      parseAndStartActivity: this.parseAndStartActivity,
-      editorState: this.state.editorState,
-      showEditor: this.state.showEditor,
-      showSubmit: this.state.showSubmit,
-      goals: this.state.goals,
-      nextActivity: this.state.nextActivity
-    });
+    if (viewOtherCircuit) {
+      return OtherCircuitView({});
+    }
+    else {
+      return PageView({
+        activity: this.state.activity,
+        circuit: this.state.circuit,
+        breadboard: this.state.breadboard,
+        client: this.state.client,
+        parseAndStartActivity: this.parseAndStartActivity,
+        editorState: this.state.editorState,
+        showEditor: this.state.showEditor,
+        showSubmit: this.state.showSubmit,
+        goals: this.state.goals,
+        nextActivity: this.state.nextActivity
+      });
+    }
   },
 
   componentDidMount: function () {
-    var activityName = window.location.hash.substring(1);
+    var activityName;
 
-    // load blank workbench
-    sparks.createWorkbench({"circuit": []}, "breadboard-wrapper");
+    if (!viewOtherCircuit) {
+      // load blank workbench
+      sparks.createWorkbench({"circuit": []}, "breadboard-wrapper");
 
-    // load and start activity if present
-    if (activityName.length > 0) {
-      this.loadActivity(activityName);
+      // load and start activity if present
+      activityName = window.location.hash.substring(1);
+      if (activityName.length > 0) {
+        this.loadActivity(activityName);
+      }
     }
   },
 
@@ -146,7 +156,6 @@ module.exports = React.createClass({
       // look for a model and update the workbench values if found
       // NOTE: the callback might be called more than once if there is a race condition setting the model values
       self.preProcessWorkbench(ttWorkbench, function (ttWorkbench) {
-
         // reset state after processing the workbench
         self.setState({activity: ttWorkbench});
 
