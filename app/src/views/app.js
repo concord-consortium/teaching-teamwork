@@ -5,7 +5,8 @@ var PageView              = React.createFactory(require('./page.jsx')),
     userController        = require('../controllers/user'),
     config                = require('../config'),
     OtherCircuitView      = React.createFactory(require('./view-other-circuit')),
-    viewOtherCircuit      = !!window.location.search.match(/view-other-circuit!/);
+    viewOtherCircuit      = !!window.location.search.match(/view-other-circuit!/),
+    forceWiresToBlueHack  = require('../hacks/forceWiresToBlue');
 
 module.exports = React.createClass({
   displayName: 'App',
@@ -173,6 +174,9 @@ module.exports = React.createClass({
         catch (e) {
           // sparks is throwing an error when computing the distance between points on load
         }
+        
+        // HACK: force all wires to blue
+        forceWiresToBlueHack();
 
         // reset the circuit in firebase so that any old info doesn't display in the submit popup
         workbenchFBConnector.setClientCircuit();

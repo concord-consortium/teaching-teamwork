@@ -1,4 +1,5 @@
-var userController   = require('../controllers/user');
+var userController = require('../controllers/user'),
+    forceWiresToBlueHack = require('../hacks/forceWiresToBlue');
 
 module.exports = React.createClass({
 
@@ -34,6 +35,9 @@ module.exports = React.createClass({
         comp = circuit[i];
         sparks.workbenchController.breadboardController.insertComponent(comp.type, comp);          
       }
+      
+      // HACK: force all wires to blue
+      forceWiresToBlueHack();
     };
     
     // listen for workbench load requests
