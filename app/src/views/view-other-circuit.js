@@ -1,4 +1,5 @@
-var userController = require('../controllers/user'),
+var userController       = require('../controllers/user'),
+    WorkbenchAdaptor     = require('../data/workbenchAdaptor'),
     forceWiresToBlueHack = require('../hacks/forceWiresToBlue');
 
 module.exports = React.createClass({
@@ -30,6 +31,10 @@ module.exports = React.createClass({
     redraw = function (circuit) {
       var i, ii, comp;
       
+      if (!circuit) {
+        return;
+      }
+      
       sparks.workbenchController.breadboardController.clear();
       for (i = 0, ii = circuit.length; i < ii; i++) {
         comp = circuit[i];
@@ -44,12 +49,18 @@ module.exports = React.createClass({
     window.addEventListener("message", function (event) {
       var payload,
           clientNumber,
+          workbenchAdaptor,
+          workbench,
           redrawTimeout;
 
       if (event.origin == window.location.origin) {
         payload = JSON.parse(event.data);
         
         clientNumber = payload.circuit - 1;
+        
+        workbenchAdaptor = new WorkbenchAdaptor(clientNumber);
+        workbench = workbenchAdaptor.processTTWorkbench(payload.ttWorkbench);
+        redraw(workbench.circuit);
         
         userController.createFirebaseGroupRef(payload.activityName, payload.groupName);
         userController.getFirebaseGroupRef().child('clients').child(clientNumber).on('value', function(snapshot) {
