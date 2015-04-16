@@ -1,6 +1,14 @@
 {
   "name": "Three Resistors - Level 1",
   "image": "images/three-resistors-circuit.v2.png",
+  "otherCircuits": {
+    "image": "images/three-resistors-breadboards.png",
+    "breadboards": [
+      {"x": 20, "y": 80},
+      {"x": 280, "y": 80},
+      {"x": 540, "y": 80}
+    ]
+  },
   "model": {
     "name": "three-resistors",
     "options": {

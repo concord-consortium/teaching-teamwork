@@ -30,13 +30,13 @@ module.exports = React.createClass({
         <h1>Teaching Teamwork{ activityName }</h1>
         { circuit }
         { submitButton }
-        { otherCircuitsButton }
         <div id="notes-wrapper" className={ wrapperClass }><NotesView text={ notes } className="tt-notes" breadboard={ this.props.breadboard } /></div>
         <div id="breadboard-and-chat-wrapper" className={ wrapperClass }>
           { hasMultipleClients ? (<div id="sidebar-chat-wrapper" className={ wrapperClass }><SidebarChatView {...activity} /></div>) : null }
           <div id="breadboard-wrapper" className={ wrapperClass }></div>
         </div>
         { image }
+        { otherCircuitsButton }
         {this.props.activity ? (<MathPadView />) : null }
         { editor }
       </div>

@@ -1,4 +1,5 @@
-var OtherCircuits, Popup, PopupIFrame, CircuitLink;
+var config = require('../config'),
+    OtherCircuits, Popup, PopupIFrame, CircuitLink, CircuitImage;
 
 module.exports = OtherCircuits = React.createClass({
 
@@ -104,6 +105,15 @@ CircuitLink = React.createFactory(React.createClass({
   }
 }));
 
+CircuitImage = React.createFactory(React.createClass({
+  
+  displayName: 'CircuitImage',
+  
+  render: function () {
+    return React.DOM.img({src: /^https?:\/\//.test(this.props.image) ? this.props.image : config.modelsBase + this.props.image });
+  }
+}));
+
 Popup = React.createFactory(React.createClass({
 
   displayName: 'OtherCircuitsPopup',
@@ -114,26 +124,31 @@ Popup = React.createFactory(React.createClass({
     };
   },
 
-  linkClicked: function (selectedCircuit) {
+  selectedCircuit: function (selectedCircuit) {
     this.setState({selectedCircuit: selectedCircuit});
   },
 
   render: function () {
     var links = [],
         iframes = [],
+        haveImage =  this.props.ttWorkbench.otherCircuits && this.props.ttWorkbench.otherCircuits.image && this.props.ttWorkbench.otherCircuits.breadboards,
         circuit,
         selected;
 
     for (circuit = 1; circuit <= this.props.numClients; circuit++) {
       selected = circuit == this.state.selectedCircuit;
-      links.push(CircuitLink({key: circuit, clicked: this.linkClicked, circuit: circuit, selected: selected}));
+      if (!haveImage) {
+        links.push(CircuitLink({key: circuit, clicked: this.selectedCircuit, circuit: circuit, selected: selected}));
+      }
       iframes.push(React.DOM.div({key: circuit, style: {display: selected ? 'block' : 'none'}}, PopupIFrame({circuit: circuit, activityName: this.props.activityName, groupName: this.props.groupName, ttWorkbench: this.props.ttWorkbench})));
     }
-    links.push(React.DOM.button({key: 'close', onClick: this.props.buttonClicked}, 'Close'));
+    //links.push(React.DOM.button({key: 'close', onClick: this.props.buttonClicked}, 'Close'));
 
     return React.DOM.div({className: 'other-circuits-button-popup'},
+      React.DOM.button({style: {'float': 'right'}, onClick: this.props.buttonClicked}, 'X'),
       React.DOM.h1({}, 'All Circuits'),
-      React.DOM.div({className: 'links'}, links),
+      (haveImage ? CircuitImage({image: this.props.ttWorkbench.otherCircuits.image, breadboards: this.props.ttWorkbench.otherCircuits.breadboards}) : null),
+      (links.length > 0 ? React.DOM.div({className: 'links'}, links) : null),
       React.DOM.div({className: 'iframes'}, iframes)
     );
   }
