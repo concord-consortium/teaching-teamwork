@@ -13,20 +13,15 @@ module.exports = React.createClass({
   render: function () {
     return React.DOM.div({},
       React.DOM.div({style: {position: 'absolute'}}, 'Loading...'),
-      React.DOM.div({id: "breadboard-wrapper"})
+      React.DOM.div({id: "breadboard-wrapper"}),
+      // add a click absorber
+      React.DOM.div({style: {position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0}})
     );
   },
 
   componentDidMount: function () {
     var initialDraw = true,
         redraw;
-    
-    // load blank workbench
-    try {
-      sparks.createWorkbench({"circuit": []}, "breadboard-wrapper");
-    }
-    catch (e) {
-    }
     
     redraw = function (circuit) {
       var i, ii, comp;
@@ -60,7 +55,11 @@ module.exports = React.createClass({
         
         workbenchAdaptor = new WorkbenchAdaptor(clientNumber);
         workbench = workbenchAdaptor.processTTWorkbench(payload.ttWorkbench);
-        redraw(workbench.circuit);
+        try {
+          sparks.createWorkbench(workbench, "breadboard-wrapper");
+        }
+        catch (e) {
+        }
         
         userController.createFirebaseGroupRef(payload.activityName, payload.groupName);
         userController.getFirebaseGroupRef().child('clients').child(clientNumber).on('value', function(snapshot) {
@@ -74,7 +73,13 @@ module.exports = React.createClass({
             }, 500);
           }
         });
-        
+
+        // tell the parent that we are loaded after we redraw
+        if (payload.loadMessage) {
+          setTimeout(function () {
+            parent.postMessage(payload.loadMessage, '*');
+          }, 10);
+        }
       }
     }, false);
   }

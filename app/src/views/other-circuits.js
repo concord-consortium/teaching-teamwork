@@ -101,17 +101,25 @@ ScaledIFrame = React.createFactory(React.createClass({
 
   componentDidMount: function () {
     var iframe = this.refs.iframe.getDOMNode(),
+        loadMessage = 'loaded:scaled:' + this.props.circuit,
         payload = {
           circuit: this.props.circuit,
           activityName: this.props.activityName,
           groupName: this.props.groupName,
-          ttWorkbench: this.props.ttWorkbench
+          ttWorkbench: this.props.ttWorkbench,
+          loadMessage: loadMessage
+        },
+        listenForLoad = function (event) {
+          if (event.data === loadMessage) {
+            iframe.style.display = 'block';
+            window.removeEventListener("message", listenForLoad);
+          }
         };
+        
     iframe.onload = function () {
-      iframe.style.display = 'block';
-      console.log('loaded');
       iframe.contentWindow.postMessage(JSON.stringify(payload), window.location.origin);
     };
+    window.addEventListener("message", listenForLoad);
   },
 
   render: function () {

@@ -1,5 +1,5 @@
 module.exports = function () {
-  var components = sparks.workbenchController.breadboardView.component;
+  var components = sparks.workbenchController && sparks.workbenchController.breadboardView ? sparks.workbenchController.component : {};
   for (var key in components) {
     if (components.hasOwnProperty(key)) {
       var component = components[key];
