@@ -1,5 +1,6 @@
 var clientListFirebaseRef,
     myCircuitFirebaseRef,
+    myMeterFirebaseRef,
     clientNumber,
     wa,
     userController;
@@ -7,8 +8,17 @@ var clientListFirebaseRef,
 function init() {
 
   sparks.logController.addListener(function(evt) {
-    if (evt.name == "Changed circuit") {
-      myCircuitFirebaseRef.set(wa.getClientCircuit());
+    //console.dir(evt);
+    switch (evt.name) {
+      case "Changed circuit":
+        myCircuitFirebaseRef.set(wa.getClientCircuit());
+        break;
+      case "Moved DMM dial":
+        myMeterFirebaseRef.child('DMM').set(evt.value.value);
+        break;
+      case "Attached probe":
+        myMeterFirebaseRef.child('probes').child(evt.value.color).set(evt.value.location);
+        break;
     }
   });
 
@@ -35,6 +45,8 @@ function WorkbenchFBConnector(_userController, _clientNumber, _wa) {
   clientNumber = _clientNumber;
   clientListFirebaseRef = userController.getFirebaseGroupRef().child('clients');
   myCircuitFirebaseRef = clientListFirebaseRef.child(clientNumber);
+  
+  myMeterFirebaseRef = userController.getFirebaseGroupRef().child('meters').child(clientNumber);
 
   wa = _wa;
   init();
@@ -45,5 +57,12 @@ WorkbenchFBConnector.prototype.setClientCircuit = function () {
     myCircuitFirebaseRef.set(wa.getClientCircuit());
   }
 };
+
+WorkbenchFBConnector.prototype.resetMeters = function () {
+  if (myMeterFirebaseRef) {
+    myMeterFirebaseRef.set({});
+  }
+};
+
 
 module.exports = WorkbenchFBConnector;

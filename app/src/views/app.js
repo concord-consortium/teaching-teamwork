@@ -183,6 +183,7 @@ module.exports = React.createClass({
 
         // reset the circuit in firebase so that any old info doesn't display in the submit popup
         workbenchFBConnector.setClientCircuit();
+        workbenchFBConnector.resetMeters();
 
         self.setState({
           client: ttWorkbench.clients[circuit - 1],
