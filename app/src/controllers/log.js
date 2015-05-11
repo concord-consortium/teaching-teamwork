@@ -46,7 +46,7 @@ var logManagerUrl = 'http://teaching-teamwork-log-manager.herokuapp.com/api/logs
         groupname: groupname,
         board: client,
         session: session,
-        time: (Date.now()/1000),
+        time: Date.now(),
         event: eventName,
         event_value: value,
         parameters: parameters
