@@ -124,10 +124,24 @@ module.exports = {
 
     notifyGroupRefCreation();
 
+    this.startPinging();
+
     // annoyingly we have to get out of this before the off() call is finalized
     setTimeout(function(){
       boardsSelectionListener = firebaseUsersRef.on("value", function(snapshot) {
         var users = snapshot.val();
+
+        // remove any users who haven't pinged in 5 seconds from the list,
+        // opening the slot up to another user
+        for (var user in users) {
+          if (!users.hasOwnProperty(user)) {
+            continue;
+          }
+          var age = Math.floor(Date.now()/1000) - users[user].lastAction;
+          if (age > 5) {
+            firebaseUsersRef.child(user).remove();
+          }
+        }
         UserRegistrationView.open(self, {form: "selectboard", numClients: numClients, users: users});
       });
     }, 1);
@@ -142,6 +156,15 @@ module.exports = {
     firebaseUsersRef.off("value");
     UserRegistrationView.close();
     callback(client);
+  },
+
+  // ping firebase every second so we show we're still an active member of the group.
+  // currently this doesn't have a corresponding stopPinging method, because there in't
+  // any way for a user to leave the group without exiting the page.
+  startPinging: function() {
+    setInterval(function() {
+      firebaseUsersRef.child(userName).child("lastAction").set(Math.floor(Date.now()/1000));
+    }, 1000);
   },
 
   getUsername: function() {
