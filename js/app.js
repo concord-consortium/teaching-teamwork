@@ -60,7 +60,7 @@ var logManagerUrl = 'http://teaching-teamwork-log-manager.herokuapp.com/api/logs
         groupname: groupname,
         board: client,
         session: session,
-        time: (Date.now()/1000),
+        time: Date.now(),
         event: eventName,
         event_value: value,
         parameters: parameters
@@ -245,10 +245,23 @@ module.exports = {
 
     notifyGroupRefCreation();
 
+    this.startPinging();
+
     // annoyingly we have to get out of this before the off() call is finalized
     setTimeout(function(){
       boardsSelectionListener = firebaseUsersRef.on("value", function(snapshot) {
         var users = snapshot.val();
+        for (var user in users) {
+          if (!users.hasOwnProperty(user)) {
+            continue;
+          }
+          var age = Math.floor(Date.now()/1000) - users[user].lastAction;
+          if (age > 6) {
+            firebaseUsersRef.child(user).remove();
+          } else if (age > 3) {
+            users[user].stale = true;
+          }
+        }
         UserRegistrationView.open(self, {form: "selectboard", numClients: numClients, users: users});
       });
     }, 1);
@@ -263,6 +276,15 @@ module.exports = {
     firebaseUsersRef.off("value");
     UserRegistrationView.close();
     callback(client);
+  },
+
+  // ping firebase every second so we show we're still an active member of the group.
+  // currently this doesn't have a corresponding stopPinging method, because there in't
+  // any way for a user to leave the group without exiting the page.
+  startPinging: function() {
+    setInterval(function() {
+      firebaseUsersRef.child(userName).child("lastAction").set(Math.floor(Date.now()/1000));
+    }, 1000);
   },
 
   getUsername: function() {
@@ -2038,22 +2060,22 @@ module.exports = React.createClass({
         notes = this.props.client ? (this.props.client.notes || "") : "",
         editor = this.props.showEditor ? (React.createElement(EditorView, {parseAndStartActivity:  this.props.parseAndStartActivity, editorState:  this.props.editorState})) : null,
         wrapperClass = hasMultipleClients ? 'multiple-clients' : null,
-        image = activity.image ? (React.createElement("div", {id: "image-wrapper", className:  wrapperClass }, React.createElement("img", {src:  /^https?:\/\//.test(activity.image) ? activity.image : config.modelsBase + activity.image}))) : null,
+        image = activity.image ? (React.createElement("div", {id: "image-wrapper", className: wrapperClass }, React.createElement("img", {src:  /^https?:\/\//.test(activity.image) ? activity.image : config.modelsBase + activity.image}))) : null,
         submitButton = this.props.showSubmit && this.props.circuit ? (React.createElement(SubmitButtonView, {label: hasMultipleClients ? 'We got it!' : "I got it!", goals:  this.props.goals, nextActivity:  this.props.nextActivity})) : null;
 
     return (
       React.createElement("div", {className: "tt-page"}, 
-        React.createElement("h1", null, "Teaching Teamwork",  activityName ), 
-         circuit, 
-         submitButton, 
-        React.createElement("div", {id: "notes-wrapper", className:  wrapperClass }, React.createElement(NotesView, {text:  notes, className: "tt-notes", breadboard:  this.props.breadboard})), 
-        React.createElement("div", {id: "breadboard-and-chat-wrapper", className:  wrapperClass }, 
-           hasMultipleClients ? (React.createElement("div", {id: "sidebar-chat-wrapper", className:  wrapperClass }, React.createElement(SidebarChatView, React.__spread({},  activity)))) : null, 
-          React.createElement("div", {id: "breadboard-wrapper", className:  wrapperClass })
+        React.createElement("h1", null, "Teaching Teamwork", activityName ), 
+        circuit, 
+        submitButton, 
+        React.createElement("div", {id: "notes-wrapper", className: wrapperClass }, React.createElement(NotesView, {text: notes, className: "tt-notes", breadboard:  this.props.breadboard})), 
+        React.createElement("div", {id: "breadboard-and-chat-wrapper", className: wrapperClass }, 
+           hasMultipleClients ? (React.createElement("div", {id: "sidebar-chat-wrapper", className: wrapperClass }, React.createElement(SidebarChatView, React.__spread({},  activity)))) : null, 
+          React.createElement("div", {id: "breadboard-wrapper", className: wrapperClass })
         ), 
-         image, 
+        image, 
         this.props.activity ? (React.createElement(MathPadView, null)) : null, 
-         editor 
+        editor 
       )
     );
   }
@@ -2143,7 +2165,7 @@ ChatItems = React.createClass({
     var user = userController.getUsername();
     return React.createElement("div", {ref: "items", className: "sidebar-chat-items"}, 
       this.props.items.map(function(item, i) {
-        return React.createElement(ChatItem, {key:  i, item:  item, me:  item.user == user});
+        return React.createElement(ChatItem, {key: i, item: item, me:  item.user == user});
       })
     );
   }
@@ -2635,11 +2657,11 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
       form = (
         React.createElement("div", null, 
           React.createElement("h3", null, "Group name: ",  this.state.groupName), 
-           groupDetails, 
+          groupDetails, 
           React.createElement("label", null, " "), 
-          React.createElement("span", null, "Do you want to ",  joinStr, " this group?"), 
+          React.createElement("span", null, "Do you want to ", joinStr, " this group?"), 
           React.createElement("label", null, 
-            React.createElement("button", {onClick:  this.handleJoinGroup}, "Yes, ",  joinStr ), 
+            React.createElement("button", {onClick:  this.handleJoinGroup}, "Yes, ", joinStr ), 
             React.createElement("button", {onClick:  this.handleRejectGroup}, "No, enter a different group")
           )
         )
@@ -2655,7 +2677,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
             selectedUsers = [];
         for (var user in this.props.users) {
           if (this.props.users[user].client == i) {
-            selectedUsers.push(user);
+            selectedUsers.push( React.createElement("li", {className:  this.props.users[user].stale ? "stale" : ""}, user ) );
             if (user == this.state.userName) {
               isOwn = true;
               selected = true;
@@ -2663,7 +2685,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
             if (selectedUsers.length > 1) {
               valid = false;
             }
-            userSpan = ( React.createElement("span", {className:  valid ? "" : "error"},  selectedUsers.join(", ") ) );
+            userSpan = ( React.createElement("ul", {className:  valid ? "ul-commas" : "ul-commas error"}, selectedUsers ) );
           }
         }
         if (isOwn && selectedUsers.length == 1) {
@@ -2671,14 +2693,14 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
         }
 
         clientChoices.push(
-          React.createElement("div", {key:  i }, 
-            React.createElement("input", {type: "radio", name: "clientSelection", defaultChecked:  selected, value:  i, onClick:  this.handleClientSelection}), "Circuit ",  i+1, " (",  userSpan, ")"
+          React.createElement("div", {className: "client-selection", key: i }, 
+            React.createElement("input", {type: "radio", name: "clientSelection", defaultChecked: selected, value: i, onClick:  this.handleClientSelection}), "Circuit ",  i+1, " (", userSpan, ")"
           ) );
       }
 
       form = (
         React.createElement("div", null, 
-           clientChoices, 
+          clientChoices, 
           React.createElement("label", null, 
             React.createElement("button", {disabled:  !submittable, onClick:  this.handleClientSelected}, "Select")
           )
@@ -2688,7 +2710,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
 
     return (
       React.createElement("form", {onSubmit:  this.handleSubmit}, 
-         form 
+        form 
       )
     );
   }
