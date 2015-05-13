@@ -96,6 +96,7 @@ module.exports = {
   },
 
   rejectGroupName: function() {
+    this.stopPinging();
     // clean up
     firebaseUsersRef.once("value", function(snapshot) {
       var users = snapshot.val();
@@ -159,12 +160,16 @@ module.exports = {
   },
 
   // ping firebase every second so we show we're still an active member of the group.
-  // currently this doesn't have a corresponding stopPinging method, because there in't
-  // any way for a user to leave the group without exiting the page.
   startPinging: function() {
-    setInterval(function() {
+    this.ping = setInterval(function() {
       firebaseUsersRef.child(userName).child("lastAction").set(Math.floor(Date.now()/1000));
     }, 1000);
+  },
+
+  stopPinging: function() {
+    if (this.ping) {
+      clearInterval(this.ping);
+    }
   },
 
   getUsername: function() {

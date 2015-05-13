@@ -174,6 +174,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
           { clientChoices }
           <label>
             <button disabled={ !submittable } onClick={ this.handleClientSelected } >Select</button>
+            <button onClick={ this.handleRejectGroup } >Enter a different group</button>
           </label>
         </div>
       );
