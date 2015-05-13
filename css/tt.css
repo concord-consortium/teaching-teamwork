@@ -375,34 +375,3 @@ form button:disabled {
 .sidebar-chat .sidebar-chat-input button {
   margin-top: 5px;
 }
-
-.stale {
-  color: rgb(179, 182, 32);
-}
-
-.client-selection {
-  overflow: hidden;
-}
-.client-selection>* {
-  float: left;
-  margin: 0;
-  margin-left: 0.3em;
-  margin-top: 4px;
-}
-.client-selection>i, .client-selection>ul, .client-selection>*:last-child {
-  float: left;
-  margin-left: 0em;
-}
-.ul-commas {
-  padding-left: 0;
-}
-.ul-commas > li {
-  display: inline;
-  margin: 0;
-}
-.ul-commas > li:before {
-  content:',\0000a0'; /* Non-breaking space */
-}
-.ul-commas > li:first-child:before {
-  content: normal;
-}

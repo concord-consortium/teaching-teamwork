@@ -217,6 +217,7 @@ module.exports = {
   },
 
   rejectGroupName: function() {
+    this.stopPinging();
     // clean up
     firebaseUsersRef.once("value", function(snapshot) {
       var users = snapshot.val();
@@ -251,15 +252,16 @@ module.exports = {
     setTimeout(function(){
       boardsSelectionListener = firebaseUsersRef.on("value", function(snapshot) {
         var users = snapshot.val();
+
+        // remove any users who haven't pinged in 5 seconds from the list,
+        // opening the slot up to another user
         for (var user in users) {
           if (!users.hasOwnProperty(user)) {
             continue;
           }
           var age = Math.floor(Date.now()/1000) - users[user].lastAction;
-          if (age > 6) {
+          if (age > 5) {
             firebaseUsersRef.child(user).remove();
-          } else if (age > 3) {
-            users[user].stale = true;
           }
         }
         UserRegistrationView.open(self, {form: "selectboard", numClients: numClients, users: users});
@@ -279,12 +281,16 @@ module.exports = {
   },
 
   // ping firebase every second so we show we're still an active member of the group.
-  // currently this doesn't have a corresponding stopPinging method, because there in't
-  // any way for a user to leave the group without exiting the page.
   startPinging: function() {
-    setInterval(function() {
+    this.ping = setInterval(function() {
       firebaseUsersRef.child(userName).child("lastAction").set(Math.floor(Date.now()/1000));
     }, 1000);
+  },
+
+  stopPinging: function() {
+    if (this.ping) {
+      clearInterval(this.ping);
+    }
   },
 
   getUsername: function() {
@@ -2677,7 +2683,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
             selectedUsers = [];
         for (var user in this.props.users) {
           if (this.props.users[user].client == i) {
-            selectedUsers.push( React.createElement("li", {className:  this.props.users[user].stale ? "stale" : ""}, user ) );
+            selectedUsers.push(user);
             if (user == this.state.userName) {
               isOwn = true;
               selected = true;
@@ -2685,7 +2691,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
             if (selectedUsers.length > 1) {
               valid = false;
             }
-            userSpan = ( React.createElement("ul", {className:  valid ? "ul-commas" : "ul-commas error"}, selectedUsers ) );
+            userSpan = ( React.createElement("span", {className:  valid ? "" : "error"},  selectedUsers.join(", ") ) );
           }
         }
         if (isOwn && selectedUsers.length == 1) {
@@ -2693,7 +2699,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
         }
 
         clientChoices.push(
-          React.createElement("div", {className: "client-selection", key: i }, 
+          React.createElement("div", {key: i }, 
             React.createElement("input", {type: "radio", name: "clientSelection", defaultChecked: selected, value: i, onClick:  this.handleClientSelection}), "Circuit ",  i+1, " (", userSpan, ")"
           ) );
       }
@@ -2702,7 +2708,8 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
         React.createElement("div", null, 
           clientChoices, 
           React.createElement("label", null, 
-            React.createElement("button", {disabled:  !submittable, onClick:  this.handleClientSelected}, "Select")
+            React.createElement("button", {disabled:  !submittable, onClick:  this.handleClientSelected}, "Select"), 
+            React.createElement("button", {onClick:  this.handleRejectGroup}, "Enter a different group")
           )
         )
       );
