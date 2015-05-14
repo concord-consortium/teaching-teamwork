@@ -176,6 +176,10 @@ module.exports = {
     return userName;
   },
 
+  getGroupname: function() {
+    return groupName;
+  },
+
   getClient: function () {
     return client;
   },
