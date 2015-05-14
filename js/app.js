@@ -297,6 +297,10 @@ module.exports = {
     return userName;
   },
 
+  getGroupname: function() {
+    return groupName;
+  },
+
   getClient: function () {
     return client;
   },
@@ -2062,7 +2066,8 @@ module.exports = React.createClass({
         activityName = activity.name ? ': ' + activity.name : '',
         hasMultipleClients = activity.clients && (activity.clients.length > 1),
         username = userController.getUsername(),
-        circuit = hasMultipleClients && this.props.circuit ? (React.createElement("h2", null, "Circuit ",  this.props.circuit,  username ? ' / ' + username : '')) : null,
+        groupname = userController.getGroupname(),
+        circuit = hasMultipleClients && this.props.circuit ? (React.createElement("h2", null, "Circuit ",  this.props.circuit,  username ? ' (User: ' + username : '',  groupname ? ', Group: ' + groupname + ')': ')')) : null,
         notes = this.props.client ? (this.props.client.notes || "") : "",
         editor = this.props.showEditor ? (React.createElement(EditorView, {parseAndStartActivity:  this.props.parseAndStartActivity, editorState:  this.props.editorState})) : null,
         wrapperClass = hasMultipleClients ? 'multiple-clients' : null,
