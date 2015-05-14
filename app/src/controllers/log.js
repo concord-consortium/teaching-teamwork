@@ -52,6 +52,16 @@ var logManagerUrl = 'http://teaching-teamwork-log-manager.herokuapp.com/api/logs
         parameters: parameters
       };
 
+      // add resistor values. This is specific to the current 3-resistor
+      // activities, and should be removed or refactored after testing.
+      var resistors = ['r1', 'r2', 'r3'];
+      for (var i = 0; i < resistors.length; i++) {
+        var r = sparks.workbenchController.breadboardController.component(resistors[i]);
+        if (r && r.resistance) {
+          data[resistors[i]] = r.resistance;
+        }
+      }
+
       if (typeof client == "undefined") {
         queue.push(data);
       } else {
