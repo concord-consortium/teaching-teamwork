@@ -96,6 +96,7 @@ module.exports = {
   },
 
   rejectGroupName: function() {
+    this.stopPinging();
     // clean up
     firebaseUsersRef.once("value", function(snapshot) {
       var users = snapshot.val();
@@ -124,10 +125,24 @@ module.exports = {
 
     notifyGroupRefCreation();
 
+    this.startPinging();
+
     // annoyingly we have to get out of this before the off() call is finalized
     setTimeout(function(){
       boardsSelectionListener = firebaseUsersRef.on("value", function(snapshot) {
         var users = snapshot.val();
+
+        // remove any users who haven't pinged in 5 seconds from the list,
+        // opening the slot up to another user
+        for (var user in users) {
+          if (!users.hasOwnProperty(user)) {
+            continue;
+          }
+          var age = Math.floor(Date.now()/1000) - users[user].lastAction;
+          if (age > 5) {
+            firebaseUsersRef.child(user).remove();
+          }
+        }
         UserRegistrationView.open(self, {form: "selectboard", numClients: numClients, users: users});
       });
     }, 1);
@@ -144,8 +159,25 @@ module.exports = {
     callback(client);
   },
 
+  // ping firebase every second so we show we're still an active member of the group.
+  startPinging: function() {
+    this.ping = setInterval(function() {
+      firebaseUsersRef.child(userName).child("lastAction").set(Math.floor(Date.now()/1000));
+    }, 1000);
+  },
+
+  stopPinging: function() {
+    if (this.ping) {
+      clearInterval(this.ping);
+    }
+  },
+
   getUsername: function() {
     return userName;
+  },
+
+  getGroupname: function() {
+    return groupName;
   },
 
   getClient: function () {
