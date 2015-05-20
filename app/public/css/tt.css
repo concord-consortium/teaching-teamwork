@@ -266,6 +266,7 @@ form button:disabled {
   vertical-align: top;
   padding: 3px 3px 3px 0;
   border: 0;
+  min-width: 10em;
 }
 
 .mathpad .history .history-item {

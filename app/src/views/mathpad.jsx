@@ -260,14 +260,56 @@ HelpTab = React.createClass({
           Enter an math expression and it will be solved as you type it.  To save it in the history hit the "Enter" key.  To recall an item from this history just click on it.
         </p>
         <p>
-          You can enter either calculations like this: "1 + 1" or formulas like this: "sin(e)/cos(1) + 1".  A list of constants and functions are shown below.
+          You can enter either calculations like this: "1 + 1" or formulas like this: "sin(e)/cos(1) + 1".  A list of functions and constants are shown below.
         </p>
       </div>
+      <div className='header'>Example calculations</div>
+      <table>
+        <tbody>
+          <tr>
+            <td><code>5 * 2</code></td>
+            <td> = 10</td>
+          </tr>
+          <tr>
+            <td><code>(7 + 3) / 2</code></td>
+            <td> = 5</td>
+          </tr>
+        </tbody>
+      </table>
+      <div className='header'>Functions</div>
+      <table>
+        <tbody>
+          <tr>
+            <td><code>sqrt(x)</code></td>
+            <td>The square root of a number.</td>
+          </tr>
+          <tr>
+            <td><code>pow(x, y)</code></td>
+            <td><i>x</i> raised to the power <i>y</i>.</td>
+          </tr>
+          <tr>
+            <td><code>cos(x)</code></td>
+            <td>Returns the cosine of a number.</td>
+          </tr>
+          <tr>
+            <td><code>sin(x)</code></td>
+            <td>Returns the sine of a number.</td>
+          </tr>
+          <tr>
+            <td><code>tan(x)</code></td>
+            <td>Returns the tangent of a number.</td>
+          </tr>
+          <tr>
+            <td><code>log(x)</code></td>
+            <td>Returns the natural logarithm (loge, also ln) of a number.</td>
+          </tr>
+        </tbody>
+      </table>
       <div className='header'>Constants</div>
       <table>
         <tbody>
           <tr>
-            <td><code>e</code>, <code>E</code></td>
+            <td><code>e</code></td>
             <td>Euler's number, the base of the natural logarithm.</td>
           </tr>
           <tr>
@@ -279,86 +321,9 @@ HelpTab = React.createClass({
             <td>Returns the natural logarithm of 10.</td>
           </tr>
           <tr>
-            <td><code>LOG2E</code></td>
-            <td>Returns the base-2 logarithm of E.</td>
-          </tr>
-          <tr>
-            <td><code>LOG10E</code></td>
-            <td>Returns the base-10 logarithm of E.</td>
-          </tr>
-          <tr>
-            <td><code>phi</code></td>
-            <td>Phi is the golden ratio. Two quantities are in the golden ratio if their
-            ratio is the same as the ratio of their sum to the larger of the two quantities.
-            Phi is defined as <code>(1 + sqrt(5)) / 2</code></td>
-          </tr>
-          <tr>
-            <td><code>pi</code>, <code>PI</code></td>
+            <td><code>pi</code></td>
             <td>The number pi is a mathematical constant that is the ratio of a circle\'s
             circumference to its diameter.</td>
-          </tr>
-          <tr>
-            <td><code>SQRT1_2</code></td>
-            <td>Returns the square root of 1/2.</td>
-          </tr>
-          <tr>
-            <td><code>SQRT2</code></td>
-            <td>Returns the square root of 2.</td>
-          </tr>
-          <tr>
-            <td><code>tau</code></td>
-            <td>Tau is the ratio constant of a circle\'s circumference to radius, equal to
-            <code>2 * pi</code>.</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div className='header'>Functions</div>
-      <table>
-        <tbody>
-          <tr>
-            <td><code>abs(x)</code></td>
-            <td>Returns the absolute value of a number.</td>
-          </tr>
-          <tr>
-            <td><code>acos(x)</code></td>
-            <td>Returns the arccosine of a number.</td>
-          </tr>
-          <tr>
-            <td><code>asin(x)</code></td>
-            <td>Returns the arcsine of a number.</td>
-          </tr>
-          <tr>
-            <td><code>atan(x)</code></td>
-            <td>Returns the arctangent of a number.</td>
-          </tr>
-          <tr>
-            <td><code>atan2(y, x)</code></td>
-            <td>Returns the inverse tangent function with two arguments</td>
-          </tr>
-          <tr>
-            <td><code>cos(x)</code></td>
-            <td>Returns the cosine of a number.</td>
-          </tr>
-          <tr>
-            <td><code>log(x)</code></td>
-            <td>Returns the natural logarithm (loge, also ln) of a number.</td>
-          </tr>
-          <tr>
-            <td><code>round(x)</code></td>
-            <td>Returns the value of a number rounded to the nearest integer.</td>
-          </tr>
-          <tr>
-            <td><code>sin(x)</code></td>
-            <td>Returns the sine of a number.</td>
-          </tr>
-          <tr>
-            <td><code>sqrt(x)</code></td>
-            <td>Returns the positive square root of a number.</td>
-          </tr>
-          <tr>
-            <td><code>tan(x)</code></td>
-            <td>Returns the tangent of a number.</td>
           </tr>
         </tbody>
       </table>
