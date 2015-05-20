@@ -5,7 +5,7 @@ React.render(App({}), document.getElementById('content'));
 
 
 
-},{"./views/app":7}],2:[function(require,module,exports){
+},{"./views/app":8}],2:[function(require,module,exports){
 module.exports = {
   modelsBase: "activities/"
 };
@@ -13,6 +13,7 @@ module.exports = {
 
 },{}],3:[function(require,module,exports){
 var logManagerUrl = 'http://teaching-teamwork-log-manager.herokuapp.com/api/logs',
+    xhrObserver   = require('../data/xhrObserver'),
     activityName,
     session,
     username,
@@ -31,10 +32,8 @@ var logManagerUrl = 'http://teaching-teamwork-log-manager.herokuapp.com/api/logs
     },
 
     sendEvent = function(data) {
-      var request = new XMLHttpRequest();
-      request.open('POST', logManagerUrl, true);
-      request.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
-      request.send(JSON.stringify(data));
+      var request = xhrObserver.createObservedXMLHttpRequest();
+      request.repeatablePost(logManagerUrl, 'application/json; charset=UTF-8', JSON.stringify(data));
     },
 
     backfillQueue = function(key, value) {
@@ -128,7 +127,7 @@ LogController.prototype = {
 module.exports = new LogController();
 
 
-},{}],4:[function(require,module,exports){
+},{"../data/xhrObserver":7}],4:[function(require,module,exports){
 var UserRegistrationView = require('../views/userRegistration.jsx'),
     logController = require('./log'),
     numClients,
@@ -346,7 +345,7 @@ module.exports = {
 };
 
 
-},{"../views/userRegistration.jsx":14,"./log":3}],5:[function(require,module,exports){
+},{"../views/userRegistration.jsx":16,"./log":3}],5:[function(require,module,exports){
 /**
  The workbench adaptor takes a TT-workbench definition such as
 
@@ -568,6 +567,81 @@ module.exports = WorkbenchFBConnector;
 
 
 },{}],7:[function(require,module,exports){
+var xhrObserver;
+
+function XHRObserver() {
+  this.connectionListeners = [];
+}
+
+XHRObserver.prototype = {
+
+  online: true,
+
+  setOnline: function(online) {
+    this.online = online;
+    this.notifyListeners();
+  },
+
+  addConnectionListener: function(listener) {
+    this.connectionListeners.push(listener);
+  },
+
+  notifyListeners: function() {
+    for (var i = 0; i < this.connectionListeners.length; i++) {
+      this.connectionListeners[i](this.online);
+    }
+  },
+
+  createObservedXMLHttpRequest: function(successCallback) {
+    var request = new XMLHttpRequest();
+
+    request.repeatablePost = function(url, contentHeader, data) {
+      request._repeat = true;
+      request._url = url;
+      request._contentHeader = contentHeader;
+      request._data = data;
+
+      request.open('POST', url, true);
+      request.setRequestHeader('Content-Type', contentHeader);
+      request.send(data);
+    };
+
+    request.onerror = this.onError;
+    request.onload = function(evt) {
+      if (request.status >= 200 && request.status < 400) {
+        xhrObserver.setOnline(true);
+        if (successCallback) {
+          successCallback();
+        }
+      } else {
+        xhrObserver.onError(evt);
+      }
+    };
+
+
+
+    return request;
+  },
+
+  onError: function(evt) {
+    xhrObserver.setOnline(false);
+
+    if (evt.currentTarget._repeat) {
+      setTimeout(function() {
+        var request = evt.currentTarget;
+        request.open('POST', request._url, true);
+        request.setRequestHeader('Content-Type', request._contentHeader);
+        request.send(request._data);
+      }, 2000);
+    }
+  }
+
+};
+
+module.exports = xhrObserver = new XHRObserver();
+
+
+},{}],8:[function(require,module,exports){
 var PageView              = React.createFactory(require('./page.jsx')),
     WorkbenchAdaptor      = require('../data/workbenchAdaptor'),
     WorkbenchFBConnector  = require('../data/workbenchFBConnector'),
@@ -921,7 +995,49 @@ module.exports = React.createClass({
 
 
 
-},{"../config":2,"../controllers/log":3,"../controllers/user":4,"../data/workbenchAdaptor":5,"../data/workbenchFBConnector":6,"./page.jsx":11}],8:[function(require,module,exports){
+},{"../config":2,"../controllers/log":3,"../controllers/user":4,"../data/workbenchAdaptor":5,"../data/workbenchFBConnector":6,"./page.jsx":13}],9:[function(require,module,exports){
+var xhrObserver = require('../data/xhrObserver');
+
+module.exports = React.createClass({
+  displayName: 'Connection',
+
+  getInitialState: function() {
+    return {connected: true};
+  },
+
+  componentWillMount: function() {
+    var self = this;
+    xhrObserver.addConnectionListener(function(connected) {
+      self.setState({connected: connected});
+    });
+  },
+
+  render: function() {
+    var alert;
+    if (!this.state.connected) {
+      alert = (
+                React.createElement("div", {id: "connection-alert"}, 
+                  React.createElement("h2", null, "Connection Lost"), 
+                  React.createElement("p", null, "This computer appears to have lost connection to the web."), 
+                  React.createElement("p", null, "Please try and resolve connection issues before trying to refresh the page."), 
+                  React.createElement("p", null, "This message will disappear when connection is reestablished.")
+                )
+              );
+    }
+    return (
+      React.createElement("div", null, 
+        React.createElement("div", {id: "connection-status"}, 
+          React.createElement("div", {className:  this.state.connected ? "online" : "offline"}), 
+          this.state.connected ? "Online" : "Offline"
+        ), 
+        alert 
+      )
+    );
+  }
+});
+
+
+},{"../data/xhrObserver":7}],10:[function(require,module,exports){
 /* global FirebaseSimpleLogin: false */
 /* global CodeMirror: false */
 
@@ -1508,7 +1624,7 @@ Dialog = React.createFactory(React.createClass({
 
 
 
-},{}],9:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 /* global math: false */
 
 var logController = require('../controllers/log'),
@@ -1520,18 +1636,16 @@ module.exports = React.createClass({
   getInitialState: function () {
     return {
       open: false,
+      unopened: true,
       closeRight: 10,
       closeTop: 10,
+      initialRight: -500,
       openRight: 25,
       openTop: 25,
       output: null,
       history: [],
       showHelp: true
     };
-  },
-
-  componentDidUpdate: function () {
-    this.focus();
   },
 
   evalute: function (input) {
@@ -1707,8 +1821,13 @@ module.exports = React.createClass({
   },
 
   open: function (e) {
+    var self = this;
     logController.logEvent("Opened MathPad");
     this.setState({open: true});
+    setTimeout(function() {
+      self.focus();
+      self.setState({unopened: false});
+    }, 1200);
     e.preventDefault();
   },
 
@@ -1719,7 +1838,7 @@ module.exports = React.createClass({
   },
 
   render: function () {
-    var output, outputClass;
+    var output, outputClass, right, padClass;
 
     outputClass = 'output';
     if (this.state.output !== null) {
@@ -1735,26 +1854,27 @@ module.exports = React.createClass({
       output = 'Please enter a math expression above and press enter';
     }
 
+    right = this.state.open ? this.state.openRight : this.state.initialRight;
+
+    padClass = 'mathpad mathpad-open' + (this.state.unopened ? ' unopened' : '');
+
     return React.createElement("div", null, 
       React.createElement("button", {className: "mathpad mathpad-closed", onClick: this.open, style: {top: this.state.closeTop, right: this.state.closeRight}}, "MathPad"), 
-        this.state.open ? (
-          React.createElement("div", {className: "mathpad mathpad-open", style: {top: this.state.openTop, right: this.state.openRight}}, 
-            React.createElement("div", {className: "title", onMouseDown: this.startDrag}, 
-              "MathPad", 
-              React.createElement("span", {className: "close", onClick: this.close}, "X")
-            ), 
-            React.createElement("div", {className: "tabs"}, 
-              React.createElement("div", {onClick: this.helpTabClicked, className: 'tab ' + (this.state.showHelp ? 'active' : 'inactive')}, "Help"), 
-              React.createElement("div", {onClick: this.historyTabClicked, className: 'tab ' + (!this.state.showHelp ? 'active' : 'inactive')}, "History", this.state.history.length > 0 ? ' (' + this.state.history.length + ')' : '')
-            ), 
-            this.state.showHelp ? React.createElement(HelpTab, null) : React.createElement(HistoryTab, {history: this.state.history, itemClicked: this.historyItemClicked}), 
-            React.createElement("div", {className: "input"}, 
-              React.createElement("input", {ref: "input", onKeyUp: this.keyup})
-            ), 
-            React.createElement("div", {className: outputClass}, output)
-          )
-        ) : null
-      
+      React.createElement("div", {className: padClass, style: {top: this.state.openTop, right: right, visibility: this.state.open ? 'visible' : 'visible'}}, 
+        React.createElement("div", {className: "title", onMouseDown: this.startDrag}, 
+          "MathPad", 
+          React.createElement("span", {className: "close", onClick: this.close}, "X")
+        ), 
+        React.createElement("div", {className: "tabs"}, 
+          React.createElement("div", {onClick: this.helpTabClicked, className: 'tab ' + (this.state.showHelp ? 'active' : 'inactive')}, "Help"), 
+          React.createElement("div", {onClick: this.historyTabClicked, className: 'tab ' + (!this.state.showHelp ? 'active' : 'inactive')}, "History", this.state.history.length > 0 ? ' (' + this.state.history.length + ')' : '')
+        ), 
+        this.state.showHelp ? React.createElement(HelpTab, null) : React.createElement(HistoryTab, {history: this.state.history, itemClicked: this.historyItemClicked}), 
+        React.createElement("div", {className: "input"}, 
+          React.createElement("input", {ref: "input", onKeyUp: this.keyup})
+        ), 
+        React.createElement("div", {className: outputClass}, output)
+      )
     );
   }
 });
@@ -1771,14 +1891,56 @@ HelpTab = React.createClass({displayName: "HelpTab",
           "Enter an math expression and it will be solved as you type it.  To save it in the history hit the \"Enter\" key.  To recall an item from this history just click on it."
         ), 
         React.createElement("p", null, 
-          "You can enter either calculations like this: \"1 + 1\" or formulas like this: \"sin(e)/cos(1) + 1\".  A list of constants and functions are shown below."
+          "You can enter either calculations like this: \"1 + 1\" or formulas like this: \"sin(e)/cos(1) + 1\".  A list of functions and constants are shown below."
+        )
+      ), 
+      React.createElement("div", {className: "header"}, "Example calculations"), 
+      React.createElement("table", null, 
+        React.createElement("tbody", null, 
+          React.createElement("tr", null, 
+            React.createElement("td", null, React.createElement("code", null, "5 * 2")), 
+            React.createElement("td", null, " = 10")
+          ), 
+          React.createElement("tr", null, 
+            React.createElement("td", null, React.createElement("code", null, "(7 + 3) / 2")), 
+            React.createElement("td", null, " = 5")
+          )
+        )
+      ), 
+      React.createElement("div", {className: "header"}, "Functions"), 
+      React.createElement("table", null, 
+        React.createElement("tbody", null, 
+          React.createElement("tr", null, 
+            React.createElement("td", null, React.createElement("code", null, "sqrt(x)")), 
+            React.createElement("td", null, "The square root of a number.")
+          ), 
+          React.createElement("tr", null, 
+            React.createElement("td", null, React.createElement("code", null, "pow(x, y)")), 
+            React.createElement("td", null, React.createElement("i", null, "x"), " raised to the power ", React.createElement("i", null, "y"), ".")
+          ), 
+          React.createElement("tr", null, 
+            React.createElement("td", null, React.createElement("code", null, "cos(x)")), 
+            React.createElement("td", null, "Returns the cosine of a number.")
+          ), 
+          React.createElement("tr", null, 
+            React.createElement("td", null, React.createElement("code", null, "sin(x)")), 
+            React.createElement("td", null, "Returns the sine of a number.")
+          ), 
+          React.createElement("tr", null, 
+            React.createElement("td", null, React.createElement("code", null, "tan(x)")), 
+            React.createElement("td", null, "Returns the tangent of a number.")
+          ), 
+          React.createElement("tr", null, 
+            React.createElement("td", null, React.createElement("code", null, "log(x)")), 
+            React.createElement("td", null, "Returns the natural logarithm (loge, also ln) of a number.")
+          )
         )
       ), 
       React.createElement("div", {className: "header"}, "Constants"), 
       React.createElement("table", null, 
         React.createElement("tbody", null, 
           React.createElement("tr", null, 
-            React.createElement("td", null, React.createElement("code", null, "e"), ", ", React.createElement("code", null, "E")), 
+            React.createElement("td", null, React.createElement("code", null, "e")), 
             React.createElement("td", null, "Euler's number, the base of the natural logarithm.")
           ), 
           React.createElement("tr", null, 
@@ -1790,86 +1952,9 @@ HelpTab = React.createClass({displayName: "HelpTab",
             React.createElement("td", null, "Returns the natural logarithm of 10.")
           ), 
           React.createElement("tr", null, 
-            React.createElement("td", null, React.createElement("code", null, "LOG2E")), 
-            React.createElement("td", null, "Returns the base-2 logarithm of E.")
-          ), 
-          React.createElement("tr", null, 
-            React.createElement("td", null, React.createElement("code", null, "LOG10E")), 
-            React.createElement("td", null, "Returns the base-10 logarithm of E.")
-          ), 
-          React.createElement("tr", null, 
-            React.createElement("td", null, React.createElement("code", null, "phi")), 
-            React.createElement("td", null, "Phi is the golden ratio. Two quantities are in the golden ratio if their" + ' ' +
-            "ratio is the same as the ratio of their sum to the larger of the two quantities." + ' ' +
-            "Phi is defined as ", React.createElement("code", null, "(1 + sqrt(5)) / 2"))
-          ), 
-          React.createElement("tr", null, 
-            React.createElement("td", null, React.createElement("code", null, "pi"), ", ", React.createElement("code", null, "PI")), 
+            React.createElement("td", null, React.createElement("code", null, "pi")), 
             React.createElement("td", null, "The number pi is a mathematical constant that is the ratio of a circle\\'s" + ' ' +
             "circumference to its diameter.")
-          ), 
-          React.createElement("tr", null, 
-            React.createElement("td", null, React.createElement("code", null, "SQRT1_2")), 
-            React.createElement("td", null, "Returns the square root of 1/2.")
-          ), 
-          React.createElement("tr", null, 
-            React.createElement("td", null, React.createElement("code", null, "SQRT2")), 
-            React.createElement("td", null, "Returns the square root of 2.")
-          ), 
-          React.createElement("tr", null, 
-            React.createElement("td", null, React.createElement("code", null, "tau")), 
-            React.createElement("td", null, "Tau is the ratio constant of a circle\\'s circumference to radius, equal to", 
-            React.createElement("code", null, "2 * pi"), ".")
-          )
-        )
-      ), 
-
-      React.createElement("div", {className: "header"}, "Functions"), 
-      React.createElement("table", null, 
-        React.createElement("tbody", null, 
-          React.createElement("tr", null, 
-            React.createElement("td", null, React.createElement("code", null, "abs(x)")), 
-            React.createElement("td", null, "Returns the absolute value of a number.")
-          ), 
-          React.createElement("tr", null, 
-            React.createElement("td", null, React.createElement("code", null, "acos(x)")), 
-            React.createElement("td", null, "Returns the arccosine of a number.")
-          ), 
-          React.createElement("tr", null, 
-            React.createElement("td", null, React.createElement("code", null, "asin(x)")), 
-            React.createElement("td", null, "Returns the arcsine of a number.")
-          ), 
-          React.createElement("tr", null, 
-            React.createElement("td", null, React.createElement("code", null, "atan(x)")), 
-            React.createElement("td", null, "Returns the arctangent of a number.")
-          ), 
-          React.createElement("tr", null, 
-            React.createElement("td", null, React.createElement("code", null, "atan2(y, x)")), 
-            React.createElement("td", null, "Returns the inverse tangent function with two arguments")
-          ), 
-          React.createElement("tr", null, 
-            React.createElement("td", null, React.createElement("code", null, "cos(x)")), 
-            React.createElement("td", null, "Returns the cosine of a number.")
-          ), 
-          React.createElement("tr", null, 
-            React.createElement("td", null, React.createElement("code", null, "log(x)")), 
-            React.createElement("td", null, "Returns the natural logarithm (loge, also ln) of a number.")
-          ), 
-          React.createElement("tr", null, 
-            React.createElement("td", null, React.createElement("code", null, "round(x)")), 
-            React.createElement("td", null, "Returns the value of a number rounded to the nearest integer.")
-          ), 
-          React.createElement("tr", null, 
-            React.createElement("td", null, React.createElement("code", null, "sin(x)")), 
-            React.createElement("td", null, "Returns the sine of a number.")
-          ), 
-          React.createElement("tr", null, 
-            React.createElement("td", null, React.createElement("code", null, "sqrt(x)")), 
-            React.createElement("td", null, "Returns the positive square root of a number.")
-          ), 
-          React.createElement("tr", null, 
-            React.createElement("td", null, React.createElement("code", null, "tan(x)")), 
-            React.createElement("td", null, "Returns the tangent of a number.")
           )
         )
       )
@@ -1917,7 +2002,7 @@ HistoryItem = React.createClass({
 });
 
 
-},{"../controllers/log":3}],10:[function(require,module,exports){
+},{"../controllers/log":3}],12:[function(require,module,exports){
 // adapted from SPARKS math-parser.js
 
 module.exports = React.createClass({
@@ -2057,12 +2142,13 @@ module.exports = React.createClass({
   }
 });
 
-},{}],11:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 var userController = require('../controllers/user'),
     //ChatView = require('./chat.jsx'),
     SidebarChatView = require('./sidebar-chat.jsx'),
     MathPadView = require('./mathpad.jsx'),
     NotesView = require('./notes'),
+    ConnectionView = require('./connection.jsx'),
     EditorView = require('./editor'),
     SubmitButtonView = require('./submitButton'),
     config = require('../config');
@@ -2079,6 +2165,7 @@ module.exports = React.createClass({
         groupname = userController.getGroupname(),
         circuit = hasMultipleClients && this.props.circuit ? (React.createElement("h2", null, "Circuit ",  this.props.circuit,  username ? ' (User: ' + username : '',  groupname ? ', Group: ' + groupname + ')': ')')) : null,
         notes = this.props.client ? (this.props.client.notes || "") : "",
+        connection = React.createElement(ConnectionView, null),
         editor = this.props.showEditor ? (React.createElement(EditorView, {parseAndStartActivity:  this.props.parseAndStartActivity, editorState:  this.props.editorState})) : null,
         wrapperClass = hasMultipleClients ? 'multiple-clients' : null,
         image = activity.image ? (React.createElement("div", {id: "image-wrapper", className: wrapperClass }, React.createElement("img", {src:  /^https?:\/\//.test(activity.image) ? activity.image : config.modelsBase + activity.image}))) : null,
@@ -2095,7 +2182,8 @@ module.exports = React.createClass({
           React.createElement("div", {id: "breadboard-wrapper", className: wrapperClass })
         ), 
         image, 
-        this.props.activity ? (React.createElement(MathPadView, null)) : null, 
+        React.createElement(MathPadView, null), 
+        connection, 
         editor 
       )
     );
@@ -2103,7 +2191,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../config":2,"../controllers/user":4,"./editor":8,"./mathpad.jsx":9,"./notes":10,"./sidebar-chat.jsx":12,"./submitButton":13}],12:[function(require,module,exports){
+},{"../config":2,"../controllers/user":4,"./connection.jsx":9,"./editor":10,"./mathpad.jsx":11,"./notes":12,"./sidebar-chat.jsx":14,"./submitButton":15}],14:[function(require,module,exports){
 var userController = require('../controllers/user'),
     logController = require('../controllers/log'),
     ChatItems, ChatItem;
@@ -2204,7 +2292,7 @@ ChatItem = React.createClass({
 
 
 
-},{"../controllers/log":3,"../controllers/user":4}],13:[function(require,module,exports){
+},{"../controllers/log":3,"../controllers/user":4}],15:[function(require,module,exports){
 var userController = require('../controllers/user'),
     logController = require('../controllers/log'),
     SubmitButton, Popup;
@@ -2547,7 +2635,7 @@ Popup = React.createFactory(React.createClass({
 }));
 
 
-},{"../controllers/log":3,"../controllers/user":4}],14:[function(require,module,exports){
+},{"../controllers/log":3,"../controllers/user":4}],16:[function(require,module,exports){
 var userController, UserRegistrationView;
 
 // add a global UserRegistrationView variable because its statics are called in other modules
