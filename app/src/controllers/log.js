@@ -1,4 +1,5 @@
 var logManagerUrl = 'http://teaching-teamwork-log-manager.herokuapp.com/api/logs',
+    xhrObserver   = require('../data/xhrObserver'),
     activityName,
     session,
     username,
@@ -17,10 +18,8 @@ var logManagerUrl = 'http://teaching-teamwork-log-manager.herokuapp.com/api/logs
     },
 
     sendEvent = function(data) {
-      var request = new XMLHttpRequest();
-      request.open('POST', logManagerUrl, true);
-      request.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
-      request.send(JSON.stringify(data));
+      var request = xhrObserver.createObservedXMLHttpRequest();
+      request.repeatablePost(logManagerUrl, 'application/json; charset=UTF-8', JSON.stringify(data));
     },
 
     backfillQueue = function(key, value) {

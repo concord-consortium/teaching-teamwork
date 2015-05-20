@@ -375,3 +375,40 @@ form button:disabled {
 .sidebar-chat .sidebar-chat-input button {
   margin-top: 5px;
 }
+
+#connection-status {
+  margin: 0 auto;
+  width: 10em;
+  margin-top: 1em;
+  font-size: 0.9em;
+}
+
+#connection-status>div{
+  background: #0f0;
+  width: 1.1em;
+  height: 1.1em;
+  border: 1px solid black;
+  border-radius: 100px;
+  margin: 0.5em;
+  margin-top: 0.1em;
+  float: left;
+}
+
+#connection-status>div.offline{
+  background: #f00;
+}
+
+#connection-alert {
+  position: relative;
+  margin: 0 auto;
+  width: 415px;
+  background-color: #fee;
+  border: 3px solid black;
+  box-shadow: 0 0 50px #fff;
+  top: -650px;
+  padding: 1.5em;
+}
+
+#connection-alert>p {
+  padding: 0.3em;
+}
