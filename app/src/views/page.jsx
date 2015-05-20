@@ -37,7 +37,7 @@ module.exports = React.createClass({
           <div id="breadboard-wrapper" className={ wrapperClass }></div>
         </div>
         { image }
-        {this.props.activity ? (<MathPadView />) : null }
+        <MathPadView />
         { connection }
         { editor }
       </div>

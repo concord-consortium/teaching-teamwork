@@ -9,18 +9,16 @@ module.exports = React.createClass({
   getInitialState: function () {
     return {
       open: false,
+      unopened: true,
       closeRight: 10,
       closeTop: 10,
+      initialRight: -500,
       openRight: 25,
       openTop: 25,
       output: null,
       history: [],
       showHelp: true
     };
-  },
-
-  componentDidUpdate: function () {
-    this.focus();
   },
 
   evalute: function (input) {
@@ -196,8 +194,13 @@ module.exports = React.createClass({
   },
 
   open: function (e) {
+    var self = this;
     logController.logEvent("Opened MathPad");
     this.setState({open: true});
+    setTimeout(function() {
+      self.focus();
+      self.setState({unopened: false});
+    }, 1200);
     e.preventDefault();
   },
 
@@ -208,7 +211,7 @@ module.exports = React.createClass({
   },
 
   render: function () {
-    var output, outputClass;
+    var output, outputClass, right, padClass;
 
     outputClass = 'output';
     if (this.state.output !== null) {
@@ -224,26 +227,27 @@ module.exports = React.createClass({
       output = 'Please enter a math expression above and press enter';
     }
 
+    right = this.state.open ? this.state.openRight : this.state.initialRight;
+
+    padClass = 'mathpad mathpad-open' + (this.state.unopened ? ' unopened' : '');
+
     return <div>
-      <button className='mathpad mathpad-closed' onClick={this.open} style={{top: this.state.closeTop, right: this.state.closeRight}}>MathPad</button>{
-        this.state.open ? (
-          <div className='mathpad mathpad-open' style={{top: this.state.openTop, right: this.state.openRight}}>
-            <div className='title' onMouseDown={this.startDrag} >
-              MathPad
-              <span className='close' onClick={this.close}>X</span>
-            </div>
-            <div className='tabs'>
-              <div onClick={this.helpTabClicked} className={'tab ' + (this.state.showHelp ? 'active' : 'inactive')}>Help</div>
-              <div onClick={this.historyTabClicked} className={'tab ' + (!this.state.showHelp ? 'active' : 'inactive')}>History{this.state.history.length > 0 ? ' (' + this.state.history.length + ')' : ''}</div>
-            </div>
-            {this.state.showHelp ? <HelpTab /> : <HistoryTab history={this.state.history} itemClicked={this.historyItemClicked} />}
-            <div className='input'>
-              <input ref='input' onKeyUp={this.keyup} />
-            </div>
-            <div className={outputClass}>{output}</div>
-          </div>
-        ) : null
-      }
+      <button className='mathpad mathpad-closed' onClick={this.open} style={{top: this.state.closeTop, right: this.state.closeRight}}>MathPad</button>
+      <div className={padClass} style={{top: this.state.openTop, right: right, visibility: this.state.open ? 'visible' : 'visible'}}>
+        <div className='title' onMouseDown={this.startDrag} >
+          MathPad
+          <span className='close' onClick={this.close}>X</span>
+        </div>
+        <div className='tabs'>
+          <div onClick={this.helpTabClicked} className={'tab ' + (this.state.showHelp ? 'active' : 'inactive')}>Help</div>
+          <div onClick={this.historyTabClicked} className={'tab ' + (!this.state.showHelp ? 'active' : 'inactive')}>History{this.state.history.length > 0 ? ' (' + this.state.history.length + ')' : ''}</div>
+        </div>
+        {this.state.showHelp ? <HelpTab /> : <HistoryTab history={this.state.history} itemClicked={this.historyItemClicked} />}
+        <div className='input'>
+          <input ref='input' onKeyUp={this.keyup} />
+        </div>
+        <div className={outputClass}>{output}</div>
+      </div>
     </div>;
   }
 });
