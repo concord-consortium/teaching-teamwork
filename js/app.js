@@ -1030,7 +1030,7 @@ module.exports = React.createClass({
           React.createElement("div", {className:  this.state.connected ? "online" : "offline"}), 
           this.state.connected ? "Online" : "Offline"
         ), 
-        alert 
+         alert 
       )
     );
   }
@@ -2168,23 +2168,23 @@ module.exports = React.createClass({
         connection = React.createElement(ConnectionView, null),
         editor = this.props.showEditor ? (React.createElement(EditorView, {parseAndStartActivity:  this.props.parseAndStartActivity, editorState:  this.props.editorState})) : null,
         wrapperClass = hasMultipleClients ? 'multiple-clients' : null,
-        image = activity.image ? (React.createElement("div", {id: "image-wrapper", className: wrapperClass }, React.createElement("img", {src:  /^https?:\/\//.test(activity.image) ? activity.image : config.modelsBase + activity.image}))) : null,
+        image = activity.image ? (React.createElement("div", {id: "image-wrapper", className:  wrapperClass }, React.createElement("img", {src:  /^https?:\/\//.test(activity.image) ? activity.image : config.modelsBase + activity.image}))) : null,
         submitButton = this.props.showSubmit && this.props.circuit ? (React.createElement(SubmitButtonView, {label: hasMultipleClients ? 'We got it!' : "I got it!", goals:  this.props.goals, nextActivity:  this.props.nextActivity})) : null;
 
     return (
       React.createElement("div", {className: "tt-page"}, 
-        React.createElement("h1", null, "Teaching Teamwork", activityName ), 
-        circuit, 
-        submitButton, 
-        React.createElement("div", {id: "notes-wrapper", className: wrapperClass }, React.createElement(NotesView, {text: notes, className: "tt-notes", breadboard:  this.props.breadboard})), 
-        React.createElement("div", {id: "breadboard-and-chat-wrapper", className: wrapperClass }, 
-           hasMultipleClients ? (React.createElement("div", {id: "sidebar-chat-wrapper", className: wrapperClass }, React.createElement(SidebarChatView, React.__spread({},  activity)))) : null, 
-          React.createElement("div", {id: "breadboard-wrapper", className: wrapperClass })
+        React.createElement("h1", null, "Teaching Teamwork",  activityName ), 
+         circuit, 
+         submitButton, 
+        React.createElement("div", {id: "notes-wrapper", className:  wrapperClass }, React.createElement(NotesView, {text:  notes, className: "tt-notes", breadboard:  this.props.breadboard})), 
+        React.createElement("div", {id: "breadboard-and-chat-wrapper", className:  wrapperClass }, 
+           hasMultipleClients ? (React.createElement("div", {id: "sidebar-chat-wrapper", className:  wrapperClass }, React.createElement(SidebarChatView, React.__spread({},  activity)))) : null, 
+          React.createElement("div", {id: "breadboard-wrapper", className:  wrapperClass })
         ), 
-        image, 
+         image, 
         React.createElement(MathPadView, null), 
-        connection, 
-        editor 
+         connection, 
+         editor 
       )
     );
   }
@@ -2274,7 +2274,7 @@ ChatItems = React.createClass({
     var user = userController.getUsername();
     return React.createElement("div", {ref: "items", className: "sidebar-chat-items"}, 
       this.props.items.map(function(item, i) {
-        return React.createElement(ChatItem, {key: i, item: item, me:  item.user == user});
+        return React.createElement(ChatItem, {key:  i, item:  item, me:  item.user == user});
       })
     );
   }
@@ -2481,7 +2481,7 @@ module.exports = SubmitButton = React.createClass({
             goalValue: absGoalValue + units,
             currentValue: absClientGoalValue + units
           });
-          
+
           logParams[item.name + ': Goal'] = absGoalValue;
           logParams[item.name + ': Measured'] = absClientGoalValue;
 
@@ -2527,7 +2527,7 @@ module.exports = SubmitButton = React.createClass({
 
   popupButtonClicked: function () {
     logController.logEvent("Submit close button clicked", this.state.allCorrect ? 'done' : 'resume');
-    
+
     if (this.state.allCorrect) {
       window.location = 'http://concord.org/projects/teaching-teamwork/activities2';
     }
@@ -2628,7 +2628,7 @@ Popup = React.createFactory(React.createClass({
 
     return React.DOM.div({className: 'submit-button-popup'},
       React.DOM.h1({}, title),
-      React.DOM.table({}, React.DOM.tbody({}, circuitRows)),
+      (this.props.allCorrect ? React.DOM.table({}, React.DOM.tbody({}, circuitRows)) : React.DOM.p({}, "At least one of your team's voltage drops doesn't match that player's goal. Try again.")),
       React.DOM.button({onClick: this.props.buttonClicked}, label)
     );
   }
@@ -2766,11 +2766,11 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
       form = (
         React.createElement("div", null, 
           React.createElement("h3", null, "Group name: ",  this.state.groupName), 
-          groupDetails, 
+           groupDetails, 
           React.createElement("label", null, " "), 
-          React.createElement("span", null, "Do you want to ", joinStr, " this group?"), 
+          React.createElement("span", null, "Do you want to ",  joinStr, " this group?"), 
           React.createElement("label", null, 
-            React.createElement("button", {onClick:  this.handleJoinGroup}, "Yes, ", joinStr ), 
+            React.createElement("button", {onClick:  this.handleJoinGroup}, "Yes, ",  joinStr ), 
             React.createElement("button", {onClick:  this.handleRejectGroup}, "No, enter a different group")
           )
         )
@@ -2802,14 +2802,14 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
         }
 
         clientChoices.push(
-          React.createElement("div", {key: i }, 
-            React.createElement("input", {type: "radio", name: "clientSelection", defaultChecked: selected, value: i, onClick:  this.handleClientSelection}), "Circuit ",  i+1, " (", userSpan, ")"
+          React.createElement("div", {key:  i }, 
+            React.createElement("input", {type: "radio", name: "clientSelection", defaultChecked:  selected, value:  i, onClick:  this.handleClientSelection}), "Circuit ",  i+1, " (",  userSpan, ")"
           ) );
       }
 
       form = (
         React.createElement("div", null, 
-          clientChoices, 
+           clientChoices, 
           React.createElement("label", null, 
             React.createElement("button", {disabled:  !submittable, onClick:  this.handleClientSelected}, "Select"), 
             React.createElement("button", {onClick:  this.handleRejectGroup}, "Enter a different group")
@@ -2820,7 +2820,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
 
     return (
       React.createElement("form", {onSubmit:  this.handleSubmit}, 
-        form 
+         form 
       )
     );
   }

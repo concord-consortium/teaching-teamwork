@@ -14,19 +14,19 @@
         "measurement": "component_voltage(r1)",
         "value": "$V1",
         "units": "V",
-        "tolerance": 0.05
+        "tolerance": 0.005
       },
       "Voltage across R2": {
         "measurement": "component_voltage(r2)",
         "value": "$V2",
         "units": "V",
-        "tolerance": 0.05
+        "tolerance": 0.005
       },
       "Voltage across R3": {
         "measurement": "component_voltage(r3)",
         "value": "$V3",
         "units": "V",
-        "tolerance": 0.05
+        "tolerance": 0.005
       }
     }
   ],    
