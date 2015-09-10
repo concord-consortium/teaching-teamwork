@@ -56,9 +56,7 @@ var logManagerUrl = 'http://teaching-teamwork-log-manager.herokuapp.com/api/logs
       var resistors = ['r1', 'r2', 'r3'];
       for (var i = 0; i < resistors.length; i++) {
         var r = sparks.workbenchController.breadboardController.component(resistors[i]);
-        if (r && r.resistance) {
-          data[resistors[i]] = r.resistance;
-        }
+        data[resistors[i]] = r ? r.resistance : 'unknown';
       }
 
       if (typeof client == "undefined") {
