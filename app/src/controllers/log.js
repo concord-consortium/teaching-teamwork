@@ -1,10 +1,11 @@
-var logManagerUrl = 'http://teaching-teamwork-log-manager.herokuapp.com/api/logs',
-    xhrObserver   = require('../data/xhrObserver'),
+var logManagerUrl    = 'http://teaching-teamwork-log-manager.herokuapp.com/api/logs',
+    xhrObserver      = require('../data/xhrObserver'),
     activityName,
     session,
     username,
     groupname,
     client,
+    logEventListeners,
     queue = [],
 
     generateGUID = function() {
@@ -49,14 +50,12 @@ var logManagerUrl = 'http://teaching-teamwork-log-manager.herokuapp.com/api/logs
         event: eventName,
         event_value: value,
         parameters: parameters
-      };
+      },
+      i;
 
-      // add resistor values. This is specific to the current 3-resistor
-      // activities, and should be removed or refactored after testing.
-      var resistors = ['r1', 'r2', 'r3'];
-      for (var i = 0; i < resistors.length; i++) {
-        var r = sparks.workbenchController.breadboardController.component(resistors[i]);
-        data[resistors[i]] = r ? r.resistance : 'unknown';
+      // signal the listeners we are logging
+      for (i=0; i < logEventListeners.length; i++) {
+        logEventListeners[i](data);
       }
 
       if (typeof client == "undefined") {
@@ -79,7 +78,12 @@ LogController.prototype = {
 
   init: function(_activityName) {
     activityName = _activityName;
+    logEventListeners = [];
     startSession();
+  },
+
+  addLogEventListener: function(listener) {
+    logEventListeners.push(listener);
   },
 
   setUserName: function(name) {
@@ -105,6 +109,24 @@ LogController.prototype = {
     sparks.logController.addListener(function(evt) {
       logEvent(evt.name, null, evt.value);
     });
+  },
+
+  logEvents: function(events) {
+    var eventName, event, value, parameters;
+
+    if (!events) {
+      return;
+    }
+    for (eventName in events) {
+      if (events.hasOwnProperty(eventName)) {
+        event = events[eventName];
+        value = event.hasOwnProperty("value") ? event.value : null;
+        parameters = event.hasOwnProperty("parameters") ? event.parameters : null;
+        if (value || parameters) {
+          logEvent(eventName, value, parameters);
+        }
+      }
+    }
   }
 };
 

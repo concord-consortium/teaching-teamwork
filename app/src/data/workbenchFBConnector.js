@@ -1,15 +1,16 @@
-var clientListFirebaseRef,
+var eventsController = require('../controllers/events'),
+    clientListFirebaseRef,
     myCircuitFirebaseRef,
     clientNumber,
     wa,
     userController;
 
 function init() {
-
   sparks.logController.addListener(function(evt) {
     if (evt.name == "Changed circuit") {
       myCircuitFirebaseRef.set(wa.getClientCircuit());
     }
+    eventsController.handleLocalSparksEvent(evt);
   });
 
   // scratch
@@ -25,7 +26,6 @@ function addClientListener(client) {
     wa.updateClient(client, snapshot.val());
   });
 }
-
 
 function WorkbenchFBConnector(_userController, _clientNumber, _wa) {
   if (!_userController.getFirebaseGroupRef()) {
