@@ -1,4 +1,5 @@
 var xhrObserver = require('../data/xhrObserver');
+var logController = require('../controllers/log');
 
 module.exports = React.createClass({
   displayName: 'Connection',
@@ -10,7 +11,11 @@ module.exports = React.createClass({
   componentWillMount: function() {
     var self = this;
     xhrObserver.addConnectionListener(function(connected) {
-      self.setState({connected: connected});
+      var now = Date.now();
+      if (connected && !self.state.connected) {
+        logController.logEvent("Reconnected", null, {disconnectTime: self.state.disconnectTime, disconnectDuration: now - self.state.disconnectTime});
+      }
+      self.setState(connected ? {connected: true} : {connected: false, disconnectTime: now});
     });
   },
 
