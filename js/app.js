@@ -70,9 +70,7 @@ var logManagerUrl = 'http://teaching-teamwork-log-manager.herokuapp.com/api/logs
       var resistors = ['r1', 'r2', 'r3'];
       for (var i = 0; i < resistors.length; i++) {
         var r = sparks.workbenchController.breadboardController.component(resistors[i]);
-        if (r && r.resistance) {
-          data[resistors[i]] = r.resistance;
-        }
+        data[resistors[i]] = r ? r.resistance : 'unknown';
       }
 
       if (typeof client == "undefined") {
@@ -997,6 +995,7 @@ module.exports = React.createClass({
 
 },{"../config":2,"../controllers/log":3,"../controllers/user":4,"../data/workbenchAdaptor":5,"../data/workbenchFBConnector":6,"./page.jsx":13}],9:[function(require,module,exports){
 var xhrObserver = require('../data/xhrObserver');
+var logController = require('../controllers/log');
 
 module.exports = React.createClass({
   displayName: 'Connection',
@@ -1008,7 +1007,11 @@ module.exports = React.createClass({
   componentWillMount: function() {
     var self = this;
     xhrObserver.addConnectionListener(function(connected) {
-      self.setState({connected: connected});
+      var now = Date.now();
+      if (connected && !self.state.connected) {
+        logController.logEvent("Reconnected", null, {disconnectTime: self.state.disconnectTime, disconnectDuration: now - self.state.disconnectTime});
+      }
+      self.setState(connected ? {connected: true} : {connected: false, disconnectTime: now});
     });
   },
 
@@ -1037,7 +1040,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../data/xhrObserver":7}],10:[function(require,module,exports){
+},{"../controllers/log":3,"../data/xhrObserver":7}],10:[function(require,module,exports){
 /* global FirebaseSimpleLogin: false */
 /* global CodeMirror: false */
 
@@ -2668,10 +2671,17 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
     }
   },
   getInitialState: function() {
-    return {userName: $.cookie('userName') || '', groupName: $.cookie('groupName') || ''};
+    var userName = $.trim($.cookie('userName') || '');
+    return {
+      disableUserName: userName.length > 0,
+      userName: userName,
+      groupName: $.cookie('groupName') || ''
+    };
   },
   handleUserNameChange: function(event) {
-    this.setState({userName: event.target.value});
+    if (!this.state.disableUserName) {
+      this.setState({userName: event.target.value});
+    }
   },
   handleGroupNameChange: function(event) {
     this.setState({groupName: event.target.value});
