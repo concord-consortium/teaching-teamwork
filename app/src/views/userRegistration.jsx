@@ -30,10 +30,17 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
     }
   },
   getInitialState: function() {
-    return {userName: $.cookie('userName') || '', groupName: $.cookie('groupName') || ''};
+    var userName = $.trim($.cookie('userName') || '');
+    return {
+      disableUserName: userName.length > 0,
+      userName: userName,
+      groupName: $.cookie('groupName') || ''
+    };
   },
   handleUserNameChange: function(event) {
-    this.setState({userName: event.target.value});
+    if (!this.state.disableUserName) {
+      this.setState({userName: event.target.value});
+    }
   },
   handleGroupNameChange: function(event) {
     this.setState({groupName: event.target.value});
