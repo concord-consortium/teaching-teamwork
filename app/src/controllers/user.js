@@ -1,5 +1,6 @@
 var UserRegistrationView = require('../views/userRegistration.jsx'),
     logController = require('./log'),
+    userController,
     numClients,
     activityName,
     userName,
@@ -50,13 +51,19 @@ offsetRef.on("value", function(snap) {
   serverSkew = snap.val();
 });
 
-module.exports = {
+module.exports = userController = {
 
   init: function(_numClients, _activityName, _callback) {
     numClients = _numClients;
     activityName = _activityName;
     callback = _callback;
-    UserRegistrationView.open(this, {form: "username"});
+    userName = $.trim($.cookie('userName') || '');
+    if (userName.length === 0) {
+      UserRegistrationView.open(this, {form: "username"});
+    }
+    else {
+      userController.setName(userName);
+    }
   },
 
   setName: function(name) {
@@ -64,7 +71,13 @@ module.exports = {
     $.cookie('userName', name);
     logController.setUserName(userName);
     if (numClients > 1) {
-      UserRegistrationView.open(this, {form: "groupname"});
+      groupName = $.trim($.cookie('groupName') || '');
+      if (groupName.length === 0) {
+        UserRegistrationView.open(this, {form: "groupname"});
+      }
+      else {
+        userController.checkGroupName(groupName);
+      }
     } else {
       UserRegistrationView.close();
       callback(0);
