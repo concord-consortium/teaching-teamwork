@@ -92,7 +92,7 @@
     {
       "show_multimeter": true,
       "showComponentEditor": true,
-      "notes": "Level 1: E = $E, R = 0, your goal is to make your voltage $V1 volts.",
+      "notes": "Level 1: E = $E volts, R = 0 Ω, your goal is to make your voltage $V1 volts.",
       "circuit": [
         {
           "type": "wire",
