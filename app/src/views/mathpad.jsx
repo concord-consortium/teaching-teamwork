@@ -142,15 +142,20 @@ module.exports = React.createClass({
         x: e.clientX,
         y: e.clientY
       },
+      mathPadWidth = $(this.getDOMNode()).find('.title').width(),
+      windowWidth = $(window).width(),
       mousemove, mouseup;
+
+    e.preventDefault();
 
     mousemove = function (e) {
       var newPos;
       if (dragging) {
+        e.preventDefault();
         // the calculations are reversed here only because we are setting the right pos and not the left
         newPos = {
-          openRight: startCalculatorPos.right + (startMousePos.x - e.clientX),
-          openTop: startCalculatorPos.top + (e.clientY - startMousePos.y)
+          openRight: Math.min(windowWidth - 50, Math.max((-mathPadWidth + 50), startCalculatorPos.right + (startMousePos.x - e.clientX))),
+          openTop: Math.max(0, startCalculatorPos.top + (e.clientY - startMousePos.y))
         };
         if ((newPos.openRight != self.state.openRight) || (newPos.openTop != self.state.openTop)) {
           self.setState(newPos);
@@ -159,8 +164,9 @@ module.exports = React.createClass({
       }
     };
 
-    mouseup = function () {
+    mouseup = function (e) {
       if (dragged) {
+        e.preventDefault();
         logController.logEvent("MathPad dragged", null, {
           "startTop": startCalculatorPos.top,
           "startRight": startCalculatorPos.right,
