@@ -333,7 +333,7 @@ Popup = React.createFactory(React.createClass({
 
     return React.DOM.div({className: 'submit-button-popup'},
       React.DOM.h1({}, title),
-      (this.props.allCorrect ? React.DOM.table({}, React.DOM.tbody({}, circuitRows)) : React.DOM.p({}, "At least one of your team's voltage drops doesn't match that player's goal. Try again.")),
+      (this.props.allCorrect ? React.DOM.table({}, React.DOM.tbody({}, circuitRows)) : React.DOM.p({}, (this.props.multipleClients ? "At least one of your team's voltage drops doesn't match that player's goal. Try again." : "At least one of your voltage drops doesn't match the goal. Try again."))),
       React.DOM.button({onClick: this.props.buttonClicked}, label)
     );
   }
