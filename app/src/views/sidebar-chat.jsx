@@ -40,7 +40,7 @@ module.exports = React.createClass({
     input.focus();
     logController.logEvent("Sent message", message);
   },
-  
+
   listenForEnter: function (e) {
     if (e.keyCode === 13) {
       this.handleSubmit(e);
@@ -67,7 +67,6 @@ ChatItems = React.createClass({
   displayName: 'ChatItems',
 
   componentDidUpdate: function (prevProps) {
-    console.log('componentDidUpdate ' + prevProps.items.length + ' / ' + this.props.items.length);
     if (prevProps.items.length !== this.props.items.length) {
       var items = this.refs.items ? this.refs.items.getDOMNode() : null;
       if (items) {

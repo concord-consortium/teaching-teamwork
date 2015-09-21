@@ -3,6 +3,7 @@ var PageView              = React.createFactory(require('./page.jsx')),
     WorkbenchFBConnector  = require('../data/workbenchFBConnector'),
     logController         = require('../controllers/log'),
     userController        = require('../controllers/user'),
+    eventsController      = require('../controllers/events'),
     config                = require('../config');
 
 module.exports = React.createClass({
@@ -131,7 +132,7 @@ module.exports = React.createClass({
 
   startActivity: function (activityName, ttWorkbench) {
     var self = this,
-        workbenchAdaptor, workbenchFBConnector, workbench, eventName, eventData, value, parameters;
+        workbenchAdaptor, workbenchFBConnector, workbench;
 
     logController.init(activityName);
 
@@ -147,6 +148,13 @@ module.exports = React.createClass({
       // NOTE: the callback might be called more than once if there is a race condition setting the model values
       self.preProcessWorkbench(ttWorkbench, function (ttWorkbench) {
 
+        // set the event controller
+        eventsController.init({
+          clientNumber: clientNumber,
+          numClients: ttWorkbench.clients.length,
+          logging: ttWorkbench.logging
+        });
+
         // reset state after processing the workbench
         self.setState({activity: ttWorkbench});
 
@@ -158,6 +166,9 @@ module.exports = React.createClass({
         }
         catch (e) {
           // sparks is throwing an error when computing the distance between points on load
+          if (console.error) {
+            console.error(e);
+          }
         }
 
         // reset the circuit in firebase so that any old info doesn't display in the submit popup
@@ -172,20 +183,26 @@ module.exports = React.createClass({
           nextActivity: ttWorkbench.nextActivity
         });
 
+        // append the requested local component values to each event logged
+        var appendComponents = ttWorkbench.logging && ttWorkbench.logging.append && ttWorkbench.logging.append.local && ttWorkbench.logging.append.local.components ? ttWorkbench.logging.append.local.components : [];
+        if (appendComponents.length > 0) {
+          logController.addLogEventListener(function (data) {
+            for (var i = 0; i < appendComponents.length; i++) {
+              var component = appendComponents[i],
+                  sparksComponent = sparks.workbenchController.breadboardController.component(component.name);
+              data[component.name] = sparksComponent ? sparksComponent[component.measurement] : 'unknown';
+            }
+          });
+        }
+
+        // append the remote event values to each event logged
+        logController.addLogEventListener(function (data) {
+          eventsController.appendRemoteEventValues(data);
+        });
+
         logController.startListeningToCircuitEvents();
 
-        if (ttWorkbench.logEvent) {
-          for (eventName in ttWorkbench.logEvent) {
-            if (ttWorkbench.logEvent.hasOwnProperty(eventName)) {
-              eventData = ttWorkbench.logEvent[eventName];
-              value = eventData.hasOwnProperty("value") ? eventData.value : null;
-              parameters = eventData.hasOwnProperty("parameters") ? eventData.parameters : null;
-              if (value || parameters) {
-                logController.logEvent(eventName, value, parameters);
-              }
-            }
-          }
-        }
+        logController.logEvents(ttWorkbench.logging && ttWorkbench.logging.startActivity ? ttWorkbench.logging.startActivity : null);
       });
     });
   },
@@ -318,7 +335,7 @@ module.exports = React.createClass({
       case 2:
         model.R = model.GoalR1 = model.GoalR2 = model.GoalR3 = GoalR;
         break;
-        
+
       // Level 3: known E, known R ≠ 0​, goals different
       // Level 4: unknown E, known R ≠ 0, goals different
       // Level 5: unknown E, unknown R ≠ 0, goals different
