@@ -4,7 +4,9 @@ var PageView              = React.createFactory(require('./page.jsx')),
     logController         = require('../controllers/log'),
     userController        = require('../controllers/user'),
     eventsController      = require('../controllers/events'),
-    config                = require('../config');
+    config                = require('../config'),
+    OtherCircuitView      = React.createFactory(require('./view-other-circuit')),
+    viewOtherCircuit      = !!window.location.search.match(/view-other-circuit!/);
 
 module.exports = React.createClass({
   displayName: 'App',
@@ -19,34 +21,45 @@ module.exports = React.createClass({
       showEditor: !!window.location.search.match(/editor/),
       showSubmit: false,
       goals: null,
-      nextActivity: null
+      nextActivity: null,
+      activityName: null,
+      ttWorkbench: null
     };
   },
 
   render: function () {
-    return PageView({
-      activity: this.state.activity,
-      circuit: this.state.circuit,
-      breadboard: this.state.breadboard,
-      client: this.state.client,
-      parseAndStartActivity: this.parseAndStartActivity,
-      editorState: this.state.editorState,
-      showEditor: this.state.showEditor,
-      showSubmit: this.state.showSubmit,
-      goals: this.state.goals,
-      nextActivity: this.state.nextActivity
-    });
+    if (viewOtherCircuit) {
+      return OtherCircuitView({});
+    }
+    else {
+      return PageView({
+        activity: this.state.activity,
+        circuit: this.state.circuit,
+        breadboard: this.state.breadboard,
+        client: this.state.client,
+        parseAndStartActivity: this.parseAndStartActivity,
+        editorState: this.state.editorState,
+        showEditor: this.state.showEditor,
+        showSubmit: this.state.showSubmit,
+        goals: this.state.goals,
+        nextActivity: this.state.nextActivity,
+        activityName: this.state.activityName,
+        ttWorkbench: this.state.ttWorkbench
+      });
+    }
   },
 
   componentDidMount: function () {
     var activityName = window.location.hash.substring(1);
 
-    // load blank workbench
-    sparks.createWorkbench({"circuit": []}, "breadboard-wrapper");
+    if (!viewOtherCircuit) {
+      // load blank workbench
+      sparks.createWorkbench({"circuit": []}, "breadboard-wrapper");
 
-    // load and start activity if present
-    if (activityName.length > 0) {
-      this.loadActivity(activityName);
+      // load and start activity if present
+      if (activityName.length > 0) {
+        this.loadActivity(activityName);
+      }
     }
   },
 
@@ -156,7 +169,11 @@ module.exports = React.createClass({
         });
 
         // reset state after processing the workbench
-        self.setState({activity: ttWorkbench});
+        self.setState({
+          activity: ttWorkbench,
+          ttWorkbench: JSON.parse(JSON.stringify(ttWorkbench)), // this makes a deep clone before the circuit connections are modified by processTTWorkbench
+          activityName: activityName
+        });
 
         workbenchAdaptor = new WorkbenchAdaptor(clientNumber);
         workbenchFBConnector = new WorkbenchFBConnector(userController, clientNumber, workbenchAdaptor);
@@ -190,6 +207,7 @@ module.exports = React.createClass({
 
           // reset the circuit in firebase so that any old info doesn't display in the submit popup
           workbenchFBConnector.setClientCircuit();
+          workbenchFBConnector.resetMeters();
 
           self.setState({
             client: ttWorkbench.clients[circuit - 1],

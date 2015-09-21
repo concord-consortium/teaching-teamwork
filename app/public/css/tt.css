@@ -313,9 +313,13 @@ form button:disabled {
   transition:right 1s;
 }
 
-.submit-button-wrapper {
+#top-button-wrapper {
   text-align: center;
   padding: 10px;
+}
+
+#top-button-wrapper button {
+  margin: 0 10px;
 }
 
 .submit-button-popup {
@@ -418,4 +422,36 @@ form button:disabled {
 
 #connection-alert>p {
   padding: 0.3em;
+}
+
+.other-circuits-button-popup {
+  width: 820px;
+  position: relative;
+  margin: 50px auto;
+  padding: 5px 20px 13px 20px;
+  border-radius: 5px;
+  background: #fff;
+  background: -moz-linear-gradient(#fff, #D0D0D0);
+  background: -webkit-linear-gradient(#fff, #D0D0D0);
+  background: -o-linear-gradient(#fff, #D0D0D0);
+
+  text-align: center;
+}
+
+.other-circuits-button-popup  h1 {
+  padding: 0;
+}
+
+.other-circuits-button-popup .links {
+  margin: 10px 0;
+}
+.other-circuits-button-popup .links a {
+  margin: 0 10px;
+  font-size: 18px;
+}
+.other-circuits-button-popup .links a.selected {
+  font-weight: bold;
+}
+.other-circuits-button-popup .iframes {
+  margin: 10px 0;
 }
