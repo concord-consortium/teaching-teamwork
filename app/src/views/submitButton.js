@@ -196,7 +196,9 @@ module.exports = SubmitButton = React.createClass({
         });
       }
       else {
-        logController.logEvent(allCorrect ? "Goals met" : "Goals not met", null, logParams);
+        if (allCorrect) {
+          logController.logEvent("Goals met", null, logParams);
+        }
         callback(table, allCorrect);
       }
     };
