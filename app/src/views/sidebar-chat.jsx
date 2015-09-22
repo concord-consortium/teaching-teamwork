@@ -7,7 +7,16 @@ module.exports = React.createClass({
   displayName: 'SidebarChat',
 
   getInitialState: function() {
-    return {items: []};
+    var items = [];
+
+    if (this.props.initialChatMessage) {
+      items.push({
+        prefix: 'Welcome!',
+        message: this.props.initialChatMessage
+      });
+    }
+
+    return {items: items};
   },
 
   componentWillMount: function() {
@@ -90,7 +99,7 @@ ChatItem = React.createClass({
 
   render: function () {
     return <div className={ this.props.me ? 'chat-item chat-item-me' : 'chat-item chat-item-others' }>
-        <b>{ this.props.item.user }:</b> { this.props.item.message }
+        <b>{ this.props.item.prefix || (this.props.item.user + ':') }</b> { this.props.item.message }
       </div>;
   }
 });
