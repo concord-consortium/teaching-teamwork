@@ -1,4 +1,5 @@
 var config = require('../config'),
+    logController = require('../controllers/log'),
     OtherCircuits, Popup, PopupIFrame, CircuitLink, CircuitImage, ScaledIFrame;
 
 module.exports = OtherCircuits = React.createClass({
@@ -253,7 +254,16 @@ Popup = React.createFactory(React.createClass({
     };
   },
 
+  componentDidMount: function () {
+    logController.logEvent("Opened All Circuits View");
+  },
+
+  componentWillUnmount: function () {
+    logController.logEvent("Closed All Circuits View");
+  },
+
   selectedCircuit: function (selectedCircuit) {
+    logController.logEvent("Selected Circuit in All Circuits View", selectedCircuit);
     this.setState({selectedCircuit: selectedCircuit});
   },
 
