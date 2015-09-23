@@ -5,20 +5,136 @@ React.render(App({}), document.getElementById('content'));
 
 
 
-},{"./views/app":8}],2:[function(require,module,exports){
+},{"./views/app":9}],2:[function(require,module,exports){
 module.exports = {
   modelsBase: "activities/"
 };
 
 
 },{}],3:[function(require,module,exports){
-var logManagerUrl = 'http://teaching-teamwork-log-manager.herokuapp.com/api/logs',
-    xhrObserver   = require('../data/xhrObserver'),
+var userController = require('./user');
+
+var EventsController = function() {
+};
+
+EventsController.prototype = {
+
+  init: function(options) {
+    var self = this,
+        i, j;
+
+    this.options = options;
+
+    this.myEventValues = {sparks: {}};
+    this.remoteEventValues = {};
+
+    // setup the remote sparks event object for ourself and for each client
+    this.remoteSparksEvents = this.options.logging && this.options.logging.append && this.options.logging.append.remote && this.options.logging.append.remote.events && this.options.logging.append.remote.events.sparks ? this.options.logging.append.remote.events.sparks : [];
+    for (i=0; i < this.options.numClients; i++) {
+      this.remoteEventValues[i] = {sparks: {}};
+      for (j=0; j < this.remoteSparksEvents.length; j++) {
+        this.myEventValues.sparks[this.remoteSparksEvents[j]] = null;
+        this.remoteEventValues[i].sparks[this.remoteSparksEvents[j]] = null;
+      }
+    }
+
+    this.remoteEventsFirebaseRef = userController.getFirebaseGroupRef().child('events');
+
+    // track all remote event changes so we can append then to the log
+    this.remoteEventsFirebaseRef.on("value", function(snapshot) {
+      var snapshotValues = snapshot.val(),
+          clientIndex, eventType, eventName, events;
+
+      if (!snapshotValues) {
+        return;
+      }
+
+      // merge the snapshot values into the saved remote values
+      for (clientIndex=0; clientIndex < self.options.numClients; clientIndex++) {
+        if (snapshotValues[clientIndex]) {
+          for (eventType in self.remoteEventValues[clientIndex]) {
+            if (self.remoteEventValues[clientIndex].hasOwnProperty(eventType) && snapshotValues[clientIndex].hasOwnProperty(eventType)) {
+              events = self.remoteEventValues[clientIndex][eventType];
+              for (eventName in events) {
+                if (events.hasOwnProperty(eventName)) {
+                  events[eventName] = snapshotValues[clientIndex][eventType].hasOwnProperty(eventName) ? snapshotValues[clientIndex][eventType][eventName] : null;
+                }
+              }
+            }
+          }
+        }
+      }
+    });
+
+    this.myRemoteEventsFirebaseRef = this.remoteEventsFirebaseRef.child(options.clientNumber);
+    this.myRemoteEventsFirebaseRef.set(this.myEventValues);
+  },
+
+  handleLocalSparksEvent: function(event) {
+    // check if event is one we need to replicate in FB
+    if (this.remoteSparksEvents.indexOf(event.name) !== -1) {
+      this.myEventValues.sparks[event.name] = event.value;
+      this.myRemoteEventsFirebaseRef.set(this.myEventValues);
+    }
+  },
+
+  appendRemoteEventValues: function(data) {
+    var clientIndex, key, eventType, eventName, events;
+
+    if (!this.options) {
+      return;
+    }
+
+    // append each remote event value to the log
+    for (clientIndex=0; clientIndex < this.options.numClients; clientIndex++) {
+      if (this.remoteEventValues[clientIndex]) {
+        for (eventType in this.remoteEventValues[clientIndex]) {
+          if (this.remoteEventValues[clientIndex].hasOwnProperty(eventType)) {
+            events = this.remoteEventValues[clientIndex][eventType];
+            for (eventName in events) {
+              if (events.hasOwnProperty(eventName)) {
+                key = ['circuit ' + (clientIndex + 1), eventType, eventName].join(':');
+                this._appendObjectValues(data, key, this.remoteEventValues[clientIndex][eventType][eventName]);
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+
+  _appendObjectValues: function(data, key, objectOrValue) {
+    var childKey;
+
+    if ($.isPlainObject(objectOrValue)) {
+      for (childKey in objectOrValue) {
+        if (objectOrValue.hasOwnProperty(childKey)) {
+          this._appendObjectValues(data, [key, childKey].join(':'), objectOrValue[childKey]);
+        }
+      }
+    }
+    else {
+      // remove spaces if otherwise a numeric answer - the DMM uses spaces to separate the 7-segment display values
+      if (/^[\d\s\.]+$/.test(objectOrValue)) {
+        objectOrValue = objectOrValue.replace(/\s/g, '');
+      }
+      data[key] = objectOrValue;
+    }
+  }
+};
+
+module.exports = new EventsController();
+
+
+},{"./user":5}],4:[function(require,module,exports){
+var logManagerUrl    = 'http://teaching-teamwork-log-manager.herokuapp.com/api/logs',
+    xhrObserver      = require('../data/xhrObserver'),
     activityName,
     session,
     username,
     groupname,
     client,
+    logEventListeners,
     queue = [],
 
     generateGUID = function() {
@@ -63,14 +179,12 @@ var logManagerUrl = 'http://teaching-teamwork-log-manager.herokuapp.com/api/logs
         event: eventName,
         event_value: value,
         parameters: parameters
-      };
+      },
+      i;
 
-      // add resistor values. This is specific to the current 3-resistor
-      // activities, and should be removed or refactored after testing.
-      var resistors = ['r1', 'r2', 'r3'];
-      for (var i = 0; i < resistors.length; i++) {
-        var r = sparks.workbenchController.breadboardController.component(resistors[i]);
-        data[resistors[i]] = r ? r.resistance : 'unknown';
+      // signal the listeners we are logging
+      for (i=0; i < logEventListeners.length; i++) {
+        logEventListeners[i](data);
       }
 
       if (typeof client == "undefined") {
@@ -93,7 +207,12 @@ LogController.prototype = {
 
   init: function(_activityName) {
     activityName = _activityName;
+    logEventListeners = [];
     startSession();
+  },
+
+  addLogEventListener: function(listener) {
+    logEventListeners.push(listener);
   },
 
   setUserName: function(name) {
@@ -119,15 +238,34 @@ LogController.prototype = {
     sparks.logController.addListener(function(evt) {
       logEvent(evt.name, null, evt.value);
     });
+  },
+
+  logEvents: function(events) {
+    var eventName, event, value, parameters;
+
+    if (!events) {
+      return;
+    }
+    for (eventName in events) {
+      if (events.hasOwnProperty(eventName)) {
+        event = events[eventName];
+        value = event.hasOwnProperty("value") ? event.value : null;
+        parameters = event.hasOwnProperty("parameters") ? event.parameters : null;
+        if (value || parameters) {
+          logEvent(eventName, value, parameters);
+        }
+      }
+    }
   }
 };
 
 module.exports = new LogController();
 
 
-},{"../data/xhrObserver":7}],4:[function(require,module,exports){
+},{"../data/xhrObserver":8}],5:[function(require,module,exports){
 var UserRegistrationView = require('../views/userRegistration.jsx'),
     logController = require('./log'),
+    userController,
     numClients,
     activityName,
     userName,
@@ -178,13 +316,19 @@ offsetRef.on("value", function(snap) {
   serverSkew = snap.val();
 });
 
-module.exports = {
+module.exports = userController = {
 
   init: function(_numClients, _activityName, _callback) {
     numClients = _numClients;
     activityName = _activityName;
     callback = _callback;
-    UserRegistrationView.open(this, {form: "username"});
+    userName = $.trim($.cookie('userName') || '');
+    if (userName.length === 0) {
+      UserRegistrationView.open(this, {form: "username"});
+    }
+    else {
+      userController.setName(userName);
+    }
   },
 
   setName: function(name) {
@@ -192,7 +336,13 @@ module.exports = {
     $.cookie('userName', name);
     logController.setUserName(userName);
     if (numClients > 1) {
-      UserRegistrationView.open(this, {form: "groupname"});
+      groupName = $.trim($.cookie('groupName') || '');
+      if (groupName.length === 0) {
+        UserRegistrationView.open(this, {form: "groupname"});
+      }
+      else {
+        userController.checkGroupName(groupName);
+      }
     } else {
       UserRegistrationView.close();
       callback(0);
@@ -343,7 +493,7 @@ module.exports = {
 };
 
 
-},{"../views/userRegistration.jsx":16,"./log":3}],5:[function(require,module,exports){
+},{"../views/userRegistration.jsx":17,"./log":4}],6:[function(require,module,exports){
 /**
  The workbench adaptor takes a TT-workbench definition such as
 
@@ -512,19 +662,20 @@ WorkbenchAdaptor.prototype = {
 module.exports = WorkbenchAdaptor;
 
 
-},{}],6:[function(require,module,exports){
-var clientListFirebaseRef,
+},{}],7:[function(require,module,exports){
+var eventsController = require('../controllers/events'),
+    clientListFirebaseRef,
     myCircuitFirebaseRef,
     clientNumber,
     wa,
     userController;
 
 function init() {
-
   sparks.logController.addListener(function(evt) {
     if (evt.name == "Changed circuit") {
       myCircuitFirebaseRef.set(wa.getClientCircuit());
     }
+    eventsController.handleLocalSparksEvent(evt);
   });
 
   // scratch
@@ -540,7 +691,6 @@ function addClientListener(client) {
     wa.updateClient(client, snapshot.val());
   });
 }
-
 
 function WorkbenchFBConnector(_userController, _clientNumber, _wa) {
   if (!_userController.getFirebaseGroupRef()) {
@@ -564,7 +714,7 @@ WorkbenchFBConnector.prototype.setClientCircuit = function () {
 module.exports = WorkbenchFBConnector;
 
 
-},{}],7:[function(require,module,exports){
+},{"../controllers/events":3}],8:[function(require,module,exports){
 var xhrObserver;
 
 function XHRObserver() {
@@ -639,12 +789,13 @@ XHRObserver.prototype = {
 module.exports = xhrObserver = new XHRObserver();
 
 
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 var PageView              = React.createFactory(require('./page.jsx')),
     WorkbenchAdaptor      = require('../data/workbenchAdaptor'),
     WorkbenchFBConnector  = require('../data/workbenchFBConnector'),
     logController         = require('../controllers/log'),
     userController        = require('../controllers/user'),
+    eventsController      = require('../controllers/events'),
     config                = require('../config');
 
 module.exports = React.createClass({
@@ -773,7 +924,7 @@ module.exports = React.createClass({
 
   startActivity: function (activityName, ttWorkbench) {
     var self = this,
-        workbenchAdaptor, workbenchFBConnector, workbench, eventName, eventData, value, parameters;
+        workbenchAdaptor, workbenchFBConnector, workbench;
 
     logController.init(activityName);
 
@@ -789,6 +940,13 @@ module.exports = React.createClass({
       // NOTE: the callback might be called more than once if there is a race condition setting the model values
       self.preProcessWorkbench(ttWorkbench, function (ttWorkbench) {
 
+        // set the event controller
+        eventsController.init({
+          clientNumber: clientNumber,
+          numClients: ttWorkbench.clients.length,
+          logging: ttWorkbench.logging
+        });
+
         // reset state after processing the workbench
         self.setState({activity: ttWorkbench});
 
@@ -800,6 +958,9 @@ module.exports = React.createClass({
         }
         catch (e) {
           // sparks is throwing an error when computing the distance between points on load
+          if (console.error) {
+            console.error(e);
+          }
         }
 
         // reset the circuit in firebase so that any old info doesn't display in the submit popup
@@ -814,20 +975,26 @@ module.exports = React.createClass({
           nextActivity: ttWorkbench.nextActivity
         });
 
+        // append the requested local component values to each event logged
+        var appendComponents = ttWorkbench.logging && ttWorkbench.logging.append && ttWorkbench.logging.append.local && ttWorkbench.logging.append.local.components ? ttWorkbench.logging.append.local.components : [];
+        if (appendComponents.length > 0) {
+          logController.addLogEventListener(function (data) {
+            for (var i = 0; i < appendComponents.length; i++) {
+              var component = appendComponents[i],
+                  sparksComponent = sparks.workbenchController.breadboardController.component(component.name);
+              data[component.name] = sparksComponent ? sparksComponent[component.measurement] : 'unknown';
+            }
+          });
+        }
+
+        // append the remote event values to each event logged
+        logController.addLogEventListener(function (data) {
+          eventsController.appendRemoteEventValues(data);
+        });
+
         logController.startListeningToCircuitEvents();
 
-        if (ttWorkbench.logEvent) {
-          for (eventName in ttWorkbench.logEvent) {
-            if (ttWorkbench.logEvent.hasOwnProperty(eventName)) {
-              eventData = ttWorkbench.logEvent[eventName];
-              value = eventData.hasOwnProperty("value") ? eventData.value : null;
-              parameters = eventData.hasOwnProperty("parameters") ? eventData.parameters : null;
-              if (value || parameters) {
-                logController.logEvent(eventName, value, parameters);
-              }
-            }
-          }
-        }
+        logController.logEvents(ttWorkbench.logging && ttWorkbench.logging.startActivity ? ttWorkbench.logging.startActivity : null);
       });
     });
   },
@@ -960,7 +1127,7 @@ module.exports = React.createClass({
       case 2:
         model.R = model.GoalR1 = model.GoalR2 = model.GoalR3 = GoalR;
         break;
-        
+
       // Level 3: known E, known R ≠ 0​, goals different
       // Level 4: unknown E, known R ≠ 0, goals different
       // Level 5: unknown E, unknown R ≠ 0, goals different
@@ -993,7 +1160,7 @@ module.exports = React.createClass({
 
 
 
-},{"../config":2,"../controllers/log":3,"../controllers/user":4,"../data/workbenchAdaptor":5,"../data/workbenchFBConnector":6,"./page.jsx":13}],9:[function(require,module,exports){
+},{"../config":2,"../controllers/events":3,"../controllers/log":4,"../controllers/user":5,"../data/workbenchAdaptor":6,"../data/workbenchFBConnector":7,"./page.jsx":14}],10:[function(require,module,exports){
 var xhrObserver = require('../data/xhrObserver');
 var logController = require('../controllers/log');
 
@@ -1040,7 +1207,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../controllers/log":3,"../data/xhrObserver":7}],10:[function(require,module,exports){
+},{"../controllers/log":4,"../data/xhrObserver":8}],11:[function(require,module,exports){
 /* global FirebaseSimpleLogin: false */
 /* global CodeMirror: false */
 
@@ -1627,7 +1794,7 @@ Dialog = React.createFactory(React.createClass({
 
 
 
-},{}],11:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 /* global math: false */
 
 var logController = require('../controllers/log'),
@@ -1772,15 +1939,20 @@ module.exports = React.createClass({
         x: e.clientX,
         y: e.clientY
       },
+      mathPadWidth = $(this.getDOMNode()).find('.title').width(),
+      windowWidth = $(window).width(),
       mousemove, mouseup;
+
+    e.preventDefault();
 
     mousemove = function (e) {
       var newPos;
       if (dragging) {
+        e.preventDefault();
         // the calculations are reversed here only because we are setting the right pos and not the left
         newPos = {
-          openRight: startCalculatorPos.right + (startMousePos.x - e.clientX),
-          openTop: startCalculatorPos.top + (e.clientY - startMousePos.y)
+          openRight: Math.min(windowWidth - 50, Math.max((-mathPadWidth + 50), startCalculatorPos.right + (startMousePos.x - e.clientX))),
+          openTop: Math.max(0, startCalculatorPos.top + (e.clientY - startMousePos.y))
         };
         if ((newPos.openRight != self.state.openRight) || (newPos.openTop != self.state.openTop)) {
           self.setState(newPos);
@@ -1789,8 +1961,9 @@ module.exports = React.createClass({
       }
     };
 
-    mouseup = function () {
+    mouseup = function (e) {
       if (dragged) {
+        e.preventDefault();
         logController.logEvent("MathPad dragged", null, {
           "startTop": startCalculatorPos.top,
           "startRight": startCalculatorPos.right,
@@ -2005,7 +2178,7 @@ HistoryItem = React.createClass({
 });
 
 
-},{"../controllers/log":3}],12:[function(require,module,exports){
+},{"../controllers/log":4}],13:[function(require,module,exports){
 // adapted from SPARKS math-parser.js
 
 module.exports = React.createClass({
@@ -2145,7 +2318,7 @@ module.exports = React.createClass({
   }
 });
 
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 var userController = require('../controllers/user'),
     //ChatView = require('./chat.jsx'),
     SidebarChatView = require('./sidebar-chat.jsx'),
@@ -2194,7 +2367,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../config":2,"../controllers/user":4,"./connection.jsx":9,"./editor":10,"./mathpad.jsx":11,"./notes":12,"./sidebar-chat.jsx":14,"./submitButton":15}],14:[function(require,module,exports){
+},{"../config":2,"../controllers/user":5,"./connection.jsx":10,"./editor":11,"./mathpad.jsx":12,"./notes":13,"./sidebar-chat.jsx":15,"./submitButton":16}],15:[function(require,module,exports){
 var userController = require('../controllers/user'),
     logController = require('../controllers/log'),
     ChatItems, ChatItem;
@@ -2237,7 +2410,7 @@ module.exports = React.createClass({
     input.focus();
     logController.logEvent("Sent message", message);
   },
-  
+
   listenForEnter: function (e) {
     if (e.keyCode === 13) {
       this.handleSubmit(e);
@@ -2264,7 +2437,6 @@ ChatItems = React.createClass({
   displayName: 'ChatItems',
 
   componentDidUpdate: function (prevProps) {
-    console.log('componentDidUpdate ' + prevProps.items.length + ' / ' + this.props.items.length);
     if (prevProps.items.length !== this.props.items.length) {
       var items = this.refs.items ? this.refs.items.getDOMNode() : null;
       if (items) {
@@ -2295,7 +2467,7 @@ ChatItem = React.createClass({
 
 
 
-},{"../controllers/log":3,"../controllers/user":4}],15:[function(require,module,exports){
+},{"../controllers/log":4,"../controllers/user":5}],16:[function(require,module,exports){
 var userController = require('../controllers/user'),
     logController = require('../controllers/log'),
     SubmitButton, Popup;
@@ -2494,7 +2666,9 @@ module.exports = SubmitButton = React.createClass({
         });
       }
       else {
-        logController.logEvent(allCorrect ? "Goals met" : "Goals not met", null, logParams);
+        if (allCorrect) {
+          logController.logEvent("Goals met", null, logParams);
+        }
         callback(table, allCorrect);
       }
     };
@@ -2631,14 +2805,14 @@ Popup = React.createFactory(React.createClass({
 
     return React.DOM.div({className: 'submit-button-popup'},
       React.DOM.h1({}, title),
-      (this.props.allCorrect ? React.DOM.table({}, React.DOM.tbody({}, circuitRows)) : React.DOM.p({}, "At least one of your team's voltage drops doesn't match that player's goal. Try again.")),
+      (this.props.allCorrect ? React.DOM.table({}, React.DOM.tbody({}, circuitRows)) : React.DOM.p({}, (this.props.multipleClients ? "At least one of your team's voltage drops doesn't match that player's goal. Try again." : "At least one of your voltage drops doesn't match the goal. Try again."))),
       React.DOM.button({onClick: this.props.buttonClicked}, label)
     );
   }
 }));
 
 
-},{"../controllers/log":3,"../controllers/user":4}],16:[function(require,module,exports){
+},{"../controllers/log":4,"../controllers/user":5}],17:[function(require,module,exports){
 var userController, UserRegistrationView;
 
 // add a global UserRegistrationView variable because its statics are called in other modules
@@ -2671,17 +2845,13 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
     }
   },
   getInitialState: function() {
-    var userName = $.trim($.cookie('userName') || '');
     return {
-      disableUserName: userName.length > 0,
-      userName: userName,
-      groupName: $.cookie('groupName') || ''
+      userName: $.trim($.cookie('userName') || ''),
+      groupName: $.trim($.cookie('groupName') || '')
     };
   },
   handleUserNameChange: function(event) {
-    if (!this.state.disableUserName) {
-      this.setState({userName: event.target.value});
-    }
+    this.setState({userName: event.target.value});
   },
   handleGroupNameChange: function(event) {
     this.setState({groupName: event.target.value});

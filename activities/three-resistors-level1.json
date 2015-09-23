@@ -33,7 +33,7 @@
         "tolerance": 0.005
       }
     }
-  ],   
+  ],
   "externalComponents": [
     {
       "type": "battery",
@@ -57,18 +57,34 @@
       "hidden": true
     }
   ],
-  "logEvent": {
-    "Activity Settings": {
-      "parameters": {
-        "E": "$E",
-        "R0": "0"
+  "logging": {
+    "startActivity": {
+      "Activity Settings": {
+        "parameters": {
+          "E": "$E",
+          "R0": "0"
+        }
+      },
+      "Activity Goals": {
+        "parameters": {
+          "V1": "$V1",
+          "V2": "$V2",
+          "V3": "$V3"
+        }
       }
     },
-    "Activity Goals": {
-      "parameters": {
-        "V1": "$V1",
-        "V2": "$V2",
-        "V3": "$V3"
+    "append": {
+      "local": {
+        "components": [
+          {"name": "r1", "measurement": "resistance"},
+          {"name": "r2", "measurement": "resistance"},
+          {"name": "r3", "measurement": "resistance"}
+        ]
+      },
+      "remote": {
+        "events": {
+          "sparks": ["DMM measurement"]
+        }
       }
     }
   },
@@ -76,7 +92,7 @@
     {
       "show_multimeter": true,
       "showComponentEditor": true,
-      "notes": "Level 1: E = $E, R = 0, your goal is to make your voltage $V1 volts.",
+      "notes": "Level 1: E = $E volts, R = 0 Ω, your goal is to make your voltage $V1 volts.",
       "circuit": [
         {
           "type": "wire",
