@@ -16,7 +16,10 @@ function init() {
         myMeterFirebaseRef.child('DMM').set(evt.value.value);
         break;
       case "Attached probe":
-        myMeterFirebaseRef.child('probes').child(evt.value.color).set(evt.value.location);
+        myMeterFirebaseRef.child('probes').child(evt.value.color).set({event: 'attached', hole: evt.value.location});
+        break;
+      case "Dropped probe":
+        myMeterFirebaseRef.child('probes').child(evt.value.color).set({event: 'dropped', position: evt.value.position});
         break;
     }
     eventsController.handleLocalSparksEvent(evt);
@@ -32,7 +35,7 @@ function init() {
 
 function addClientListener(client) {
   clientListFirebaseRef.child(client).on("value", function(snapshot) {
-    wa.updateClient(client, snapshot.val());
+    wa.updateClient(client, snapshot.val(), false);
   });
 }
 

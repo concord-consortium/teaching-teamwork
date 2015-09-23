@@ -1,7 +1,6 @@
 var userController       = require('../controllers/user'),
     WorkbenchAdaptor     = require('../data/workbenchAdaptor'),
-    WorkbenchFBConnector = require('../data/workbenchFBConnector'),
-    forceWiresToBlueHack = require('../hacks/forceWiresToBlue');
+    WorkbenchFBConnector = require('../data/workbenchFBConnector');
 
 module.exports = React.createClass({
 
@@ -22,27 +21,6 @@ module.exports = React.createClass({
   },
 
   componentDidMount: function () {
-    var initialDraw = true,
-        redraw;
-
-    redraw = function (circuit) {
-      var i, ii, comp;
-
-      if (!circuit) {
-        return;
-      }
-
-      for (i = 0, ii = circuit.length; i < ii; i++) {
-        comp = circuit[i];
-        sparks.workbenchController.breadboardController.remove(comp.type, comp.connections);
-        sparks.workbenchController.breadboardController.insertComponent(comp.type, comp);
-      }
-
-      // HACK: force all wires to blue
-      forceWiresToBlueHack();
-
-      initialDraw = false;
-    };
 
     // listen for workbench load requests
     window.addEventListener("message", function (event) {
@@ -53,11 +31,12 @@ module.exports = React.createClass({
           clientNumber,
           workbenchAdaptor,
           workbench,
-          redrawTimeout,
+          //redrawTimeout,
           multimeter,
-          dmm,
+          meter,
           waitForLoad,
           moveProbe,
+          updateProbes,
           workbenchFBConnector;
 
       if (event.origin == window.location.origin) {
@@ -76,11 +55,11 @@ module.exports = React.createClass({
 
         // get the dmm and find the dial angles once it loads
         waitForLoad = function () {
-          var leadForHole;
+          var leadForHole, prevProbes;
 
-          if (sparks.workbenchController && sparks.workbenchController.breadboardView && sparks.workbenchController.breadboardView.multimeter) {
+          if (sparks.workbenchController && sparks.workbenchController.breadboardView && sparks.workbenchController.breadboardView.multimeter && sparks.workbenchController.breadboardController) {
             multimeter = sparks.workbenchController.breadboardView.multimeter;
-            dmm = sparks.workbenchController.workbench.meter.dmm;
+            meter = sparks.workbenchController.workbench.meter;
 
             // get the dial angles
             for (i = 0; i < 360; i++) {
@@ -92,19 +71,21 @@ module.exports = React.createClass({
 
             // listen for circuit changes
             userController.createFirebaseGroupRef(payload.activityName, payload.groupName);
-            userController.getFirebaseGroupRef().child('clients').child(clientNumber).on('value', function(snapshot) {
-              var data = snapshot.val();
+            userController.getFirebaseGroupRef().child('clients').on('value', function(snapshot) {
+              var data = snapshot.val(),
+                  i;
 
               if (data) {
-                if (initialDraw) {
-                  redraw(data);
+                sparks.workbenchController.breadboardController.clearHoleMap();
+                for (i in data) {
+                  if (data.hasOwnProperty(i)) {
+                    workbenchAdaptor.updateClient(i, data[i], i == clientNumber);
+                  }
                 }
-                else {
-                  clearTimeout(redrawTimeout);
-                  redrawTimeout = setTimeout(function () {
-                    redraw(data);
-                  }, 500);
+                if (prevProbes) {
+                  updateProbes(prevProbes);
                 }
+                meter.update();
               }
             });
 
@@ -123,11 +104,36 @@ module.exports = React.createClass({
               return false;
             };
 
-            moveProbe = function (color, hole) {
-              var lead = leadForHole(hole);
-              if (multimeter.probe[color].lead != lead) {
-                multimeter.probe[color].setState(lead);
+            moveProbe = function (color, locOrPos) {
+              var probe = multimeter.probe[color],
+                  lead;
+
+              if ((locOrPos.event === 'attached') && locOrPos.hole) {
+                lead = leadForHole(locOrPos.hole);
+                if (probe.lead != lead) {
+                  probe.lead = lead;
+                  probe.lead.probe = this;
+                  probe.lead.highlight(2);
+                  probe.snap();
+                  meter.setProbeLocation("probe_"+color, locOrPos.hole);
+                }
               }
+              else if ((locOrPos.event === 'dropped') && locOrPos.position) {
+                probe.move(locOrPos.position);
+                probe.lead = null;
+                probe.image.update();
+                meter.setProbeLocation("probe_"+color, null);
+              }
+            };
+
+            updateProbes = function (probes) {
+              if (probes.black) {
+                moveProbe('black', probes.black);
+              }
+              if (probes.red) {
+                moveProbe('red', probes.red);
+              }
+              meter.update();
             };
 
             // listen for meter changes
@@ -137,12 +143,8 @@ module.exports = React.createClass({
               if (data) {
                 // set the probes
                 if (data.probes) {
-                  if (data.probes.black) {
-                    moveProbe('black', data.probes.black);
-                  }
-                  if (data.probes.red) {
-                    moveProbe('red', data.probes.red);
-                  }
+                  prevProbes = data.probes;
+                  updateProbes(data.probes);
                 }
 
                 // set the DMM
@@ -157,7 +159,7 @@ module.exports = React.createClass({
             // listen for user changes
             userController.getFirebaseGroupRef().child('users').on('value', function (snapshot) {
               var data = snapshot.val(),
-                  username = "",
+                  username = "(unclaimed)",
                   key;
 
               if (data) {
@@ -171,7 +173,7 @@ module.exports = React.createClass({
                 }
               }
 
-              $("#userLabel").html(username).css({backgroundColor: ['#f00', '#0f0', '#00f'][clientNumber % 3]});
+              $("#userLabel").html(username).css({backgroundColor: ['#f00', '#228b22', '#00f'][clientNumber % 3]});
             });
 
           }

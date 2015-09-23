@@ -255,15 +255,15 @@ Popup = React.createFactory(React.createClass({
   },
 
   componentDidMount: function () {
-    logController.logEvent("Opened All Circuits View");
+    logController.logEvent("Opened Zoom View");
   },
 
   componentWillUnmount: function () {
-    logController.logEvent("Closed All Circuits View");
+    logController.logEvent("Closed Zoom View");
   },
 
   selectedCircuit: function (selectedCircuit) {
-    logController.logEvent("Selected Circuit in All Circuits View", selectedCircuit);
+    logController.logEvent("Selected Circuit in Zoom", selectedCircuit);
     this.setState({selectedCircuit: selectedCircuit});
   },
 

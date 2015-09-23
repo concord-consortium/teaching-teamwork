@@ -13,9 +13,9 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
         $anchor = $('<div id="user-registration" class="modalDialog"></div>').appendTo('body');
       }
 
-      setTimeout(function(){
-        $('#user-registration')[0].style.opacity = 1;},
-      100);
+      setTimeout(function() {
+        $('#user-registration')[0].style.opacity = 1;
+      }, 250);
 
       return React.render(
         <UserRegistrationView {...data} />,
