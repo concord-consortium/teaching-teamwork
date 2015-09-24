@@ -132,7 +132,7 @@ module.exports = React.createClass({
 
   startActivity: function (activityName, ttWorkbench) {
     var self = this,
-        workbenchAdaptor, workbenchFBConnector, workbench;
+        workbenchAdaptor, workbenchFBConnector, workbench, waitForBreadboardView;
 
     logController.init(activityName);
 
@@ -161,48 +161,66 @@ module.exports = React.createClass({
         workbenchAdaptor = new WorkbenchAdaptor(clientNumber);
         workbenchFBConnector = new WorkbenchFBConnector(userController, clientNumber, workbenchAdaptor);
         workbench = workbenchAdaptor.processTTWorkbench(ttWorkbench);
-        try {
-          sparks.createWorkbench(workbench, "breadboard-wrapper");
-        }
-        catch (e) {
-          // sparks is throwing an error when computing the distance between points on load
-          if (console.error) {
-            console.error(e);
-          }
-        }
 
-        // reset the circuit in firebase so that any old info doesn't display in the submit popup
-        workbenchFBConnector.setClientCircuit();
-
-        self.setState({
-          client: ttWorkbench.clients[circuit - 1],
-          circuit: circuit,
-          breadboard: sparks.workbenchController.breadboardController,
-          showSubmit: !!ttWorkbench.goals,
-          goals: ttWorkbench.goals,
-          nextActivity: ttWorkbench.nextActivity
-        });
-
-        // append the requested local component values to each event logged
-        var appendComponents = ttWorkbench.logging && ttWorkbench.logging.append && ttWorkbench.logging.append.local && ttWorkbench.logging.append.local.components ? ttWorkbench.logging.append.local.components : [];
-        if (appendComponents.length > 0) {
-          logController.addLogEventListener(function (data) {
-            for (var i = 0; i < appendComponents.length; i++) {
-              var component = appendComponents[i],
-                  sparksComponent = sparks.workbenchController.breadboardController.component(component.name);
-              data[component.name] = sparksComponent ? sparksComponent[component.measurement] : 'unknown';
+        // In solo mode when the user has already entered their name is a race condition where the
+        // breadboard view has not been created yet which causes the createWorkbench() call to not insert
+        // the components.  This function waits until the breadboard view is available.
+        waitForBreadboardView = function (callback) {
+          var check = function () {
+            if (sparks.workbenchController.breadboardView) {
+              callback();
             }
+            else {
+              setTimeout(check, 10);
+            }
+          };
+          check();
+        };
+
+        waitForBreadboardView(function () {
+          try {
+            sparks.createWorkbench(workbench, "breadboard-wrapper");
+          }
+          catch (e) {
+            // sparks is throwing an error when computing the distance between points on load
+            if (console.error) {
+              console.error(e);
+            }
+          }
+
+          // reset the circuit in firebase so that any old info doesn't display in the submit popup
+          workbenchFBConnector.setClientCircuit();
+
+          self.setState({
+            client: ttWorkbench.clients[circuit - 1],
+            circuit: circuit,
+            breadboard: sparks.workbenchController.breadboardController,
+            showSubmit: !!ttWorkbench.goals,
+            goals: ttWorkbench.goals,
+            nextActivity: ttWorkbench.nextActivity
           });
-        }
 
-        // append the remote event values to each event logged
-        logController.addLogEventListener(function (data) {
-          eventsController.appendRemoteEventValues(data);
+          // append the requested local component values to each event logged
+          var appendComponents = ttWorkbench.logging && ttWorkbench.logging.append && ttWorkbench.logging.append.local && ttWorkbench.logging.append.local.components ? ttWorkbench.logging.append.local.components : [];
+          if (appendComponents.length > 0) {
+            logController.addLogEventListener(function (data) {
+              for (var i = 0; i < appendComponents.length; i++) {
+                var component = appendComponents[i],
+                    sparksComponent = sparks.workbenchController.breadboardController.component(component.name);
+                data[component.name] = sparksComponent ? sparksComponent[component.measurement] : 'unknown';
+              }
+            });
+          }
+
+          // append the remote event values to each event logged
+          logController.addLogEventListener(function (data) {
+            eventsController.appendRemoteEventValues(data);
+          });
+
+          logController.startListeningToCircuitEvents();
+
+          logController.logEvents(ttWorkbench.logging && ttWorkbench.logging.startActivity ? ttWorkbench.logging.startActivity : null);
         });
-
-        logController.startListeningToCircuitEvents();
-
-        logController.logEvents(ttWorkbench.logging && ttWorkbench.logging.startActivity ? ttWorkbench.logging.startActivity : null);
       });
     });
   },
