@@ -13,6 +13,7 @@ EventsController.prototype = {
 
     this.myEventValues = {sparks: {}};
     this.remoteEventValues = {};
+    this.myRemoteEventsFirebaseRef = null;
 
     // setup the remote sparks event object for ourself and for each client
     this.remoteSparksEvents = this.options.logging && this.options.logging.append && this.options.logging.append.remote && this.options.logging.append.remote.events && this.options.logging.append.remote.events.sparks ? this.options.logging.append.remote.events.sparks : [];
@@ -24,43 +25,48 @@ EventsController.prototype = {
       }
     }
 
-    this.remoteEventsFirebaseRef = userController.getFirebaseGroupRef().child('events');
+    // add event listeners in group mode
+    if (self.options.numClients > 1) {
+      this.remoteEventsFirebaseRef = userController.getFirebaseGroupRef().child('events');
 
-    // track all remote event changes so we can append then to the log
-    this.remoteEventsFirebaseRef.on("value", function(snapshot) {
-      var snapshotValues = snapshot.val(),
-          clientIndex, eventType, eventName, events;
+      // track all remote event changes so we can append then to the log
+      this.remoteEventsFirebaseRef.on("value", function(snapshot) {
+        var snapshotValues = snapshot.val(),
+            clientIndex, eventType, eventName, events;
 
-      if (!snapshotValues) {
-        return;
-      }
+        if (!snapshotValues) {
+          return;
+        }
 
-      // merge the snapshot values into the saved remote values
-      for (clientIndex=0; clientIndex < self.options.numClients; clientIndex++) {
-        if (snapshotValues[clientIndex]) {
-          for (eventType in self.remoteEventValues[clientIndex]) {
-            if (self.remoteEventValues[clientIndex].hasOwnProperty(eventType) && snapshotValues[clientIndex].hasOwnProperty(eventType)) {
-              events = self.remoteEventValues[clientIndex][eventType];
-              for (eventName in events) {
-                if (events.hasOwnProperty(eventName)) {
-                  events[eventName] = snapshotValues[clientIndex][eventType].hasOwnProperty(eventName) ? snapshotValues[clientIndex][eventType][eventName] : null;
+        // merge the snapshot values into the saved remote values
+        for (clientIndex=0; clientIndex < self.options.numClients; clientIndex++) {
+          if (snapshotValues[clientIndex]) {
+            for (eventType in self.remoteEventValues[clientIndex]) {
+              if (self.remoteEventValues[clientIndex].hasOwnProperty(eventType) && snapshotValues[clientIndex].hasOwnProperty(eventType)) {
+                events = self.remoteEventValues[clientIndex][eventType];
+                for (eventName in events) {
+                  if (events.hasOwnProperty(eventName)) {
+                    events[eventName] = snapshotValues[clientIndex][eventType].hasOwnProperty(eventName) ? snapshotValues[clientIndex][eventType][eventName] : null;
+                  }
                 }
               }
             }
           }
         }
-      }
-    });
+      });
 
-    this.myRemoteEventsFirebaseRef = this.remoteEventsFirebaseRef.child(options.clientNumber);
-    this.myRemoteEventsFirebaseRef.set(this.myEventValues);
+      this.myRemoteEventsFirebaseRef = this.remoteEventsFirebaseRef.child(options.clientNumber);
+      this.myRemoteEventsFirebaseRef.set(this.myEventValues);
+    }
   },
 
   handleLocalSparksEvent: function(event) {
     // check if event is one we need to replicate in FB
     if (this.remoteSparksEvents.indexOf(event.name) !== -1) {
       this.myEventValues.sparks[event.name] = event.value;
-      this.myRemoteEventsFirebaseRef.set(this.myEventValues);
+      if (this.myRemoteEventsFirebaseRef) {
+        this.myRemoteEventsFirebaseRef.set(this.myEventValues);
+      }
     }
   },
 
