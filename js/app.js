@@ -27,6 +27,7 @@ EventsController.prototype = {
 
     this.myEventValues = {sparks: {}};
     this.remoteEventValues = {};
+    this.myRemoteEventsFirebaseRef = null;
 
     // setup the remote sparks event object for ourself and for each client
     this.remoteSparksEvents = this.options.logging && this.options.logging.append && this.options.logging.append.remote && this.options.logging.append.remote.events && this.options.logging.append.remote.events.sparks ? this.options.logging.append.remote.events.sparks : [];
@@ -38,43 +39,48 @@ EventsController.prototype = {
       }
     }
 
-    this.remoteEventsFirebaseRef = userController.getFirebaseGroupRef().child('events');
+    // add event listeners in group mode
+    if (self.options.numClients > 1) {
+      this.remoteEventsFirebaseRef = userController.getFirebaseGroupRef().child('events');
 
-    // track all remote event changes so we can append then to the log
-    this.remoteEventsFirebaseRef.on("value", function(snapshot) {
-      var snapshotValues = snapshot.val(),
-          clientIndex, eventType, eventName, events;
+      // track all remote event changes so we can append then to the log
+      this.remoteEventsFirebaseRef.on("value", function(snapshot) {
+        var snapshotValues = snapshot.val(),
+            clientIndex, eventType, eventName, events;
 
-      if (!snapshotValues) {
-        return;
-      }
+        if (!snapshotValues) {
+          return;
+        }
 
-      // merge the snapshot values into the saved remote values
-      for (clientIndex=0; clientIndex < self.options.numClients; clientIndex++) {
-        if (snapshotValues[clientIndex]) {
-          for (eventType in self.remoteEventValues[clientIndex]) {
-            if (self.remoteEventValues[clientIndex].hasOwnProperty(eventType) && snapshotValues[clientIndex].hasOwnProperty(eventType)) {
-              events = self.remoteEventValues[clientIndex][eventType];
-              for (eventName in events) {
-                if (events.hasOwnProperty(eventName)) {
-                  events[eventName] = snapshotValues[clientIndex][eventType].hasOwnProperty(eventName) ? snapshotValues[clientIndex][eventType][eventName] : null;
+        // merge the snapshot values into the saved remote values
+        for (clientIndex=0; clientIndex < self.options.numClients; clientIndex++) {
+          if (snapshotValues[clientIndex]) {
+            for (eventType in self.remoteEventValues[clientIndex]) {
+              if (self.remoteEventValues[clientIndex].hasOwnProperty(eventType) && snapshotValues[clientIndex].hasOwnProperty(eventType)) {
+                events = self.remoteEventValues[clientIndex][eventType];
+                for (eventName in events) {
+                  if (events.hasOwnProperty(eventName)) {
+                    events[eventName] = snapshotValues[clientIndex][eventType].hasOwnProperty(eventName) ? snapshotValues[clientIndex][eventType][eventName] : null;
+                  }
                 }
               }
             }
           }
         }
-      }
-    });
+      });
 
-    this.myRemoteEventsFirebaseRef = this.remoteEventsFirebaseRef.child(options.clientNumber);
-    this.myRemoteEventsFirebaseRef.set(this.myEventValues);
+      this.myRemoteEventsFirebaseRef = this.remoteEventsFirebaseRef.child(options.clientNumber);
+      this.myRemoteEventsFirebaseRef.set(this.myEventValues);
+    }
   },
 
   handleLocalSparksEvent: function(event) {
     // check if event is one we need to replicate in FB
     if (this.remoteSparksEvents.indexOf(event.name) !== -1) {
       this.myEventValues.sparks[event.name] = event.value;
-      this.myRemoteEventsFirebaseRef.set(this.myEventValues);
+      if (this.myRemoteEventsFirebaseRef) {
+        this.myRemoteEventsFirebaseRef.set(this.myEventValues);
+      }
     }
   },
 
@@ -924,7 +930,7 @@ module.exports = React.createClass({
 
   startActivity: function (activityName, ttWorkbench) {
     var self = this,
-        workbenchAdaptor, workbenchFBConnector, workbench;
+        workbenchAdaptor, workbenchFBConnector, workbench, waitForBreadboardView;
 
     logController.init(activityName);
 
@@ -953,48 +959,66 @@ module.exports = React.createClass({
         workbenchAdaptor = new WorkbenchAdaptor(clientNumber);
         workbenchFBConnector = new WorkbenchFBConnector(userController, clientNumber, workbenchAdaptor);
         workbench = workbenchAdaptor.processTTWorkbench(ttWorkbench);
-        try {
-          sparks.createWorkbench(workbench, "breadboard-wrapper");
-        }
-        catch (e) {
-          // sparks is throwing an error when computing the distance between points on load
-          if (console.error) {
-            console.error(e);
-          }
-        }
 
-        // reset the circuit in firebase so that any old info doesn't display in the submit popup
-        workbenchFBConnector.setClientCircuit();
-
-        self.setState({
-          client: ttWorkbench.clients[circuit - 1],
-          circuit: circuit,
-          breadboard: sparks.workbenchController.breadboardController,
-          showSubmit: !!ttWorkbench.goals,
-          goals: ttWorkbench.goals,
-          nextActivity: ttWorkbench.nextActivity
-        });
-
-        // append the requested local component values to each event logged
-        var appendComponents = ttWorkbench.logging && ttWorkbench.logging.append && ttWorkbench.logging.append.local && ttWorkbench.logging.append.local.components ? ttWorkbench.logging.append.local.components : [];
-        if (appendComponents.length > 0) {
-          logController.addLogEventListener(function (data) {
-            for (var i = 0; i < appendComponents.length; i++) {
-              var component = appendComponents[i],
-                  sparksComponent = sparks.workbenchController.breadboardController.component(component.name);
-              data[component.name] = sparksComponent ? sparksComponent[component.measurement] : 'unknown';
+        // In solo mode when the user has already entered their name is a race condition where the
+        // breadboard view has not been created yet which causes the createWorkbench() call to not insert
+        // the components.  This function waits until the breadboard view is available.
+        waitForBreadboardView = function (callback) {
+          var check = function () {
+            if (sparks.workbenchController.breadboardView) {
+              callback();
             }
+            else {
+              setTimeout(check, 10);
+            }
+          };
+          check();
+        };
+
+        waitForBreadboardView(function () {
+          try {
+            sparks.createWorkbench(workbench, "breadboard-wrapper");
+          }
+          catch (e) {
+            // sparks is throwing an error when computing the distance between points on load
+            if (console.error) {
+              console.error(e);
+            }
+          }
+
+          // reset the circuit in firebase so that any old info doesn't display in the submit popup
+          workbenchFBConnector.setClientCircuit();
+
+          self.setState({
+            client: ttWorkbench.clients[circuit - 1],
+            circuit: circuit,
+            breadboard: sparks.workbenchController.breadboardController,
+            showSubmit: !!ttWorkbench.goals,
+            goals: ttWorkbench.goals,
+            nextActivity: ttWorkbench.nextActivity
           });
-        }
 
-        // append the remote event values to each event logged
-        logController.addLogEventListener(function (data) {
-          eventsController.appendRemoteEventValues(data);
+          // append the requested local component values to each event logged
+          var appendComponents = ttWorkbench.logging && ttWorkbench.logging.append && ttWorkbench.logging.append.local && ttWorkbench.logging.append.local.components ? ttWorkbench.logging.append.local.components : [];
+          if (appendComponents.length > 0) {
+            logController.addLogEventListener(function (data) {
+              for (var i = 0; i < appendComponents.length; i++) {
+                var component = appendComponents[i],
+                    sparksComponent = sparks.workbenchController.breadboardController.component(component.name);
+                data[component.name] = sparksComponent ? sparksComponent[component.measurement] : 'unknown';
+              }
+            });
+          }
+
+          // append the remote event values to each event logged
+          logController.addLogEventListener(function (data) {
+            eventsController.appendRemoteEventValues(data);
+          });
+
+          logController.startListeningToCircuitEvents();
+
+          logController.logEvents(ttWorkbench.logging && ttWorkbench.logging.startActivity ? ttWorkbench.logging.startActivity : null);
         });
-
-        logController.startListeningToCircuitEvents();
-
-        logController.logEvents(ttWorkbench.logging && ttWorkbench.logging.startActivity ? ttWorkbench.logging.startActivity : null);
       });
     });
   },
@@ -2377,7 +2401,16 @@ module.exports = React.createClass({
   displayName: 'SidebarChat',
 
   getInitialState: function() {
-    return {items: []};
+    var items = [];
+
+    if (this.props.initialChatMessage) {
+      items.push({
+        prefix: 'Welcome!',
+        message: this.props.initialChatMessage
+      });
+    }
+
+    return {items: items};
   },
 
   componentWillMount: function() {
@@ -2460,7 +2493,7 @@ ChatItem = React.createClass({
 
   render: function () {
     return React.createElement("div", {className:  this.props.me ? 'chat-item chat-item-me' : 'chat-item chat-item-others'}, 
-        React.createElement("b", null,  this.props.item.user, ":"), " ",  this.props.item.message
+        React.createElement("b", null,  this.props.item.prefix || (this.props.item.user + ':') ), " ",  this.props.item.message
       );
   }
 });
