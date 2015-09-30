@@ -5,7 +5,7 @@ React.render(App({}), document.getElementById('content'));
 
 
 
-},{"./views/app":10}],2:[function(require,module,exports){
+},{"./views/app":9}],2:[function(require,module,exports){
 module.exports = {
   modelsBase: "activities/"
 };
@@ -503,7 +503,7 @@ module.exports = userController = {
 };
 
 
-},{"../views/userRegistration.jsx":19,"./log":4}],6:[function(require,module,exports){
+},{"../views/userRegistration.jsx":18,"./log":4}],6:[function(require,module,exports){
 /**
  The workbench adaptor takes a TT-workbench definition such as
 
@@ -820,22 +820,6 @@ module.exports = xhrObserver = new XHRObserver();
 
 
 },{}],9:[function(require,module,exports){
-module.exports = function () {
-  var components = sparks.workbenchController && sparks.workbenchController.breadboardView ? sparks.workbenchController.component : {};
-  for (var key in components) {
-    if (components.hasOwnProperty(key)) {
-      var component = components[key];
-      if (component.type === 'wire') {
-        component.connector.view.find('[type=line]').eq(1).attr('stroke', 'blue');
-        component.connector.view.find('[type=line]').eq(2).attr('stroke', 'blue');
-      }
-    }
-  }
-};
-
-
-
-},{}],10:[function(require,module,exports){
 var PageView              = React.createFactory(require('./page.jsx')),
     WorkbenchAdaptor      = require('../data/workbenchAdaptor'),
     WorkbenchFBConnector  = require('../data/workbenchFBConnector'),
@@ -890,6 +874,7 @@ module.exports = React.createClass({
   componentDidMount: function () {
     var activityName = window.location.hash.substring(1);
 
+    // TODO: make authorable
     window.breadboardSVGView.options.fixedCircuit = true;
 
     if (!viewOtherCircuit) {
@@ -1244,7 +1229,7 @@ module.exports = React.createClass({
 
 
 
-},{"../config":2,"../controllers/events":3,"../controllers/log":4,"../controllers/user":5,"../data/workbenchAdaptor":6,"../data/workbenchFBConnector":7,"./page.jsx":16,"./view-other-circuit":20}],11:[function(require,module,exports){
+},{"../config":2,"../controllers/events":3,"../controllers/log":4,"../controllers/user":5,"../data/workbenchAdaptor":6,"../data/workbenchFBConnector":7,"./page.jsx":15,"./view-other-circuit":19}],10:[function(require,module,exports){
 var xhrObserver = require('../data/xhrObserver');
 var logController = require('../controllers/log');
 
@@ -1291,7 +1276,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../controllers/log":4,"../data/xhrObserver":8}],12:[function(require,module,exports){
+},{"../controllers/log":4,"../data/xhrObserver":8}],11:[function(require,module,exports){
 /* global FirebaseSimpleLogin: false */
 /* global CodeMirror: false */
 
@@ -1878,7 +1863,7 @@ Dialog = React.createFactory(React.createClass({
 
 
 
-},{}],13:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 /* global math: false */
 
 var logController = require('../controllers/log'),
@@ -2262,7 +2247,7 @@ HistoryItem = React.createClass({
 });
 
 
-},{"../controllers/log":4}],14:[function(require,module,exports){
+},{"../controllers/log":4}],13:[function(require,module,exports){
 // adapted from SPARKS math-parser.js
 
 module.exports = React.createClass({
@@ -2402,7 +2387,7 @@ module.exports = React.createClass({
   }
 });
 
-},{}],15:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 var config = require('../config'),
     logController = require('../controllers/log'),
     OtherCircuits, Popup, PopupIFrame, CircuitLink, CircuitImage, ScaledIFrame;
@@ -2698,7 +2683,7 @@ Popup = React.createFactory(React.createClass({
 }));
 
 
-},{"../config":2,"../controllers/log":4}],16:[function(require,module,exports){
+},{"../config":2,"../controllers/log":4}],15:[function(require,module,exports){
 var userController = require('../controllers/user'),
     //ChatView = require('./chat.jsx'),
     SidebarChatView = require('./sidebar-chat.jsx'),
@@ -2752,7 +2737,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../config":2,"../controllers/user":5,"./connection.jsx":11,"./editor":12,"./mathpad.jsx":13,"./notes":14,"./other-circuits":15,"./sidebar-chat.jsx":17,"./submitButton":18}],17:[function(require,module,exports){
+},{"../config":2,"../controllers/user":5,"./connection.jsx":10,"./editor":11,"./mathpad.jsx":12,"./notes":13,"./other-circuits":14,"./sidebar-chat.jsx":16,"./submitButton":17}],16:[function(require,module,exports){
 var userController = require('../controllers/user'),
     logController = require('../controllers/log'),
     ChatItems, ChatItem;
@@ -2861,7 +2846,7 @@ ChatItem = React.createClass({
 
 
 
-},{"../controllers/log":4,"../controllers/user":5}],18:[function(require,module,exports){
+},{"../controllers/log":4,"../controllers/user":5}],17:[function(require,module,exports){
 var userController = require('../controllers/user'),
     logController = require('../controllers/log'),
     SubmitButton, Popup;
@@ -3204,7 +3189,7 @@ Popup = React.createFactory(React.createClass({
 }));
 
 
-},{"../controllers/log":4,"../controllers/user":5}],19:[function(require,module,exports){
+},{"../controllers/log":4,"../controllers/user":5}],18:[function(require,module,exports){
 var userController, UserRegistrationView;
 
 // add a global UserRegistrationView variable because its statics are called in other modules
@@ -3398,11 +3383,10 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
 });
 
 
-},{}],20:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 var userController       = require('../controllers/user'),
     WorkbenchAdaptor     = require('../data/workbenchAdaptor'),
-    WorkbenchFBConnector = require('../data/workbenchFBConnector'),
-    forceWiresToBlueHack = require('../hacks/forceWiresToBlue');
+    WorkbenchFBConnector = require('../data/workbenchFBConnector');
 
 module.exports = React.createClass({
 
@@ -3467,9 +3451,6 @@ module.exports = React.createClass({
         sparks.workbenchController.breadboardController.insertComponent(comp.type, comp);
       }
 
-      // HACK: force all wires to blue
-      forceWiresToBlueHack();
-
       initialDraw = false;
     };
 
@@ -3482,7 +3463,7 @@ module.exports = React.createClass({
           clientNumber,
           workbenchAdaptor,
           workbench,
-          redrawTimeout,
+          //redrawTimeout,
           multimeter,
           meter,
           waitForLoad,
@@ -3535,7 +3516,9 @@ module.exports = React.createClass({
               }
 
               /*
-              FIXME
+
+              FIXME: remove updateResistor() and replace with full component replacement
+
               if (data) {
                 if (initialDraw) {
                   redraw(data);
@@ -3657,4 +3640,4 @@ module.exports = React.createClass({
 
 
 
-},{"../controllers/user":5,"../data/workbenchAdaptor":6,"../data/workbenchFBConnector":7,"../hacks/forceWiresToBlue":9}]},{},[1]);
+},{"../controllers/user":5,"../data/workbenchAdaptor":6,"../data/workbenchFBConnector":7}]},{},[1]);

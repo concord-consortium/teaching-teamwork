@@ -16781,7 +16781,8 @@ window["breadboardSVGView"] = {
         "x": 80,
         "y": 80
       }
-    }
+    },
+    "fixedCircuit": false
   },
   "util" : {}
 };
