@@ -3427,7 +3427,7 @@ module.exports = React.createClass({
         updateResistor, redraw;
 
     updateResistor = function (circuit) {
-      var i, ii, components, comp;
+      var i, ii, components, comp, resistor;
 
       if (!circuit) {
         return;
@@ -3438,7 +3438,14 @@ module.exports = React.createClass({
       for (i = 0, ii = circuit.length; i < ii; i++) {
         comp = circuit[i];
         if ((comp.type === 'resistor') && components[comp.UID]) {
-          components[comp.UID].changeEditableValue(comp.resistance);
+          //components[comp.UID].changeEditableValue(comp.resistance);
+          resistor = components[comp.UID];
+          if (sparks.workbenchController.breadboardView.component[comp.UID]) {
+            resistor.changeEditableValue(comp.resistance);
+          }
+          else {
+            resistor.setResistance(comp.resistance);
+          }
         }
       }
     };
@@ -3514,11 +3521,16 @@ module.exports = React.createClass({
 
             // listen for circuit changes
             userController.createFirebaseGroupRef(payload.activityName, payload.groupName);
-            userController.getFirebaseGroupRef().child('clients').child(clientNumber).on('value', function(snapshot) {
-              var data = snapshot.val();
+            userController.getFirebaseGroupRef().child('clients').on('value', function(snapshot) {
+              var data = snapshot.val(),
+                  i;
 
               if (data) {
-                updateResistor(data);
+                for (i in data) {
+                  if (data.hasOwnProperty(i)) {
+                    updateResistor(data[i]);
+                  }
+                }
                 meter.update();
               }
 
