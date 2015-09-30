@@ -5,7 +5,7 @@ React.render(App({}), document.getElementById('content'));
 
 
 
-},{"./views/app":9}],2:[function(require,module,exports){
+},{"./views/app":10}],2:[function(require,module,exports){
 module.exports = {
   modelsBase: "activities/"
 };
@@ -288,7 +288,7 @@ var UserRegistrationView = require('../views/userRegistration.jsx'),
 
 // scratch
 var fbUrlDomain = 'https://teaching-teamwork.firebaseio.com/';
-var fbUrlBase = fbUrlDomain + '/dev/';
+var fbUrlBase = fbUrlDomain + 'dev/';
 
 var getDate = function() {
   var today = new Date(),
@@ -356,14 +356,12 @@ module.exports = userController = {
   },
 
   checkGroupName: function(name) {
-    var date = getDate(),
-        self = this;
+    var self = this;
 
     groupName = name;
 
-    fbUrl = fbUrlBase + date + "-" + name + "/activities/" + activityName + "/";
+    this.createFirebaseGroupRef(activityName, name);
 
-    firebaseGroupRef = new Firebase(fbUrl);
     firebaseUsersRef = firebaseGroupRef.child('users');
     groupUsersListener = firebaseUsersRef.on("value", function(snapshot) {
       var users = snapshot.val();
@@ -495,11 +493,17 @@ module.exports = userController = {
       }
       groupRefCreationListeners.push(callback);
     }
+  },
+
+  createFirebaseGroupRef: function (activityName, groupName) {
+    fbUrl = fbUrlBase + getDate() + "-" + groupName + "/activities/" + activityName + "/";
+    firebaseGroupRef = new Firebase(fbUrl);
+    return firebaseGroupRef;
   }
 };
 
 
-},{"../views/userRegistration.jsx":17,"./log":4}],6:[function(require,module,exports){
+},{"../views/userRegistration.jsx":19,"./log":4}],6:[function(require,module,exports){
 /**
  The workbench adaptor takes a TT-workbench definition such as
 
@@ -672,14 +676,26 @@ module.exports = WorkbenchAdaptor;
 var eventsController = require('../controllers/events'),
     clientListFirebaseRef,
     myCircuitFirebaseRef,
+    myMeterFirebaseRef,
     clientNumber,
     wa,
     userController;
 
 function init() {
   sparks.logController.addListener(function(evt) {
-    if (evt.name == "Changed circuit") {
-      myCircuitFirebaseRef.set(wa.getClientCircuit());
+    switch (evt.name) {
+      case "Changed circuit":
+        myCircuitFirebaseRef.set(wa.getClientCircuit());
+        break;
+      case "Moved DMM dial":
+        myMeterFirebaseRef.child('DMM').set(evt.value.value);
+        break;
+      case "Attached probe":
+        myMeterFirebaseRef.child('probes').child(evt.value.color).set({event: 'attached', hole: evt.value.location});
+        break;
+      case "Dropped probe":
+        myMeterFirebaseRef.child('probes').child(evt.value.color).set({event: 'dropped', position: evt.value.position});
+        break;
     }
     eventsController.handleLocalSparksEvent(evt);
   });
@@ -707,6 +723,8 @@ function WorkbenchFBConnector(_userController, _clientNumber, _wa) {
   clientListFirebaseRef = userController.getFirebaseGroupRef().child('clients');
   myCircuitFirebaseRef = clientListFirebaseRef.child(clientNumber);
 
+  myMeterFirebaseRef = userController.getFirebaseGroupRef().child('meters').child(clientNumber);
+
   wa = _wa;
   init();
 }
@@ -714,6 +732,12 @@ function WorkbenchFBConnector(_userController, _clientNumber, _wa) {
 WorkbenchFBConnector.prototype.setClientCircuit = function () {
   if (myCircuitFirebaseRef) {
     myCircuitFirebaseRef.set(wa.getClientCircuit());
+  }
+};
+
+WorkbenchFBConnector.prototype.resetMeters = function () {
+  if (myMeterFirebaseRef) {
+    myMeterFirebaseRef.set({});
   }
 };
 
@@ -796,13 +820,31 @@ module.exports = xhrObserver = new XHRObserver();
 
 
 },{}],9:[function(require,module,exports){
+module.exports = function () {
+  var components = sparks.workbenchController && sparks.workbenchController.breadboardView ? sparks.workbenchController.component : {};
+  for (var key in components) {
+    if (components.hasOwnProperty(key)) {
+      var component = components[key];
+      if (component.type === 'wire') {
+        component.connector.view.find('[type=line]').eq(1).attr('stroke', 'blue');
+        component.connector.view.find('[type=line]').eq(2).attr('stroke', 'blue');
+      }
+    }
+  }
+};
+
+
+
+},{}],10:[function(require,module,exports){
 var PageView              = React.createFactory(require('./page.jsx')),
     WorkbenchAdaptor      = require('../data/workbenchAdaptor'),
     WorkbenchFBConnector  = require('../data/workbenchFBConnector'),
     logController         = require('../controllers/log'),
     userController        = require('../controllers/user'),
     eventsController      = require('../controllers/events'),
-    config                = require('../config');
+    config                = require('../config'),
+    OtherCircuitView      = React.createFactory(require('./view-other-circuit')),
+    viewOtherCircuit      = !!window.location.search.match(/view-other-circuit!/);
 
 module.exports = React.createClass({
   displayName: 'App',
@@ -817,34 +859,47 @@ module.exports = React.createClass({
       showEditor: !!window.location.search.match(/editor/),
       showSubmit: false,
       goals: null,
-      nextActivity: null
+      nextActivity: null,
+      activityName: null,
+      ttWorkbench: null
     };
   },
 
   render: function () {
-    return PageView({
-      activity: this.state.activity,
-      circuit: this.state.circuit,
-      breadboard: this.state.breadboard,
-      client: this.state.client,
-      parseAndStartActivity: this.parseAndStartActivity,
-      editorState: this.state.editorState,
-      showEditor: this.state.showEditor,
-      showSubmit: this.state.showSubmit,
-      goals: this.state.goals,
-      nextActivity: this.state.nextActivity
-    });
+    if (viewOtherCircuit) {
+      return OtherCircuitView({});
+    }
+    else {
+      return PageView({
+        activity: this.state.activity,
+        circuit: this.state.circuit,
+        breadboard: this.state.breadboard,
+        client: this.state.client,
+        parseAndStartActivity: this.parseAndStartActivity,
+        editorState: this.state.editorState,
+        showEditor: this.state.showEditor,
+        showSubmit: this.state.showSubmit,
+        goals: this.state.goals,
+        nextActivity: this.state.nextActivity,
+        activityName: this.state.activityName,
+        ttWorkbench: this.state.ttWorkbench
+      });
+    }
   },
 
   componentDidMount: function () {
     var activityName = window.location.hash.substring(1);
 
-    // load blank workbench
-    sparks.createWorkbench({"circuit": []}, "breadboard-wrapper");
+    window.breadboardSVGView.options.fixedCircuit = true;
 
-    // load and start activity if present
-    if (activityName.length > 0) {
-      this.loadActivity(activityName);
+    if (!viewOtherCircuit) {
+      // load blank workbench
+      sparks.createWorkbench({"circuit": []}, "breadboard-wrapper");
+
+      // load and start activity if present
+      if (activityName.length > 0) {
+        this.loadActivity(activityName);
+      }
     }
   },
 
@@ -954,7 +1009,11 @@ module.exports = React.createClass({
         });
 
         // reset state after processing the workbench
-        self.setState({activity: ttWorkbench});
+        self.setState({
+          activity: ttWorkbench,
+          ttWorkbench: JSON.parse(JSON.stringify(ttWorkbench)), // this makes a deep clone before the circuit connections are modified by processTTWorkbench
+          activityName: activityName
+        });
 
         workbenchAdaptor = new WorkbenchAdaptor(clientNumber);
         workbenchFBConnector = new WorkbenchFBConnector(userController, clientNumber, workbenchAdaptor);
@@ -988,6 +1047,7 @@ module.exports = React.createClass({
 
           // reset the circuit in firebase so that any old info doesn't display in the submit popup
           workbenchFBConnector.setClientCircuit();
+          workbenchFBConnector.resetMeters();
 
           self.setState({
             client: ttWorkbench.clients[circuit - 1],
@@ -1184,7 +1244,7 @@ module.exports = React.createClass({
 
 
 
-},{"../config":2,"../controllers/events":3,"../controllers/log":4,"../controllers/user":5,"../data/workbenchAdaptor":6,"../data/workbenchFBConnector":7,"./page.jsx":14}],10:[function(require,module,exports){
+},{"../config":2,"../controllers/events":3,"../controllers/log":4,"../controllers/user":5,"../data/workbenchAdaptor":6,"../data/workbenchFBConnector":7,"./page.jsx":16,"./view-other-circuit":20}],11:[function(require,module,exports){
 var xhrObserver = require('../data/xhrObserver');
 var logController = require('../controllers/log');
 
@@ -1231,7 +1291,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../controllers/log":4,"../data/xhrObserver":8}],11:[function(require,module,exports){
+},{"../controllers/log":4,"../data/xhrObserver":8}],12:[function(require,module,exports){
 /* global FirebaseSimpleLogin: false */
 /* global CodeMirror: false */
 
@@ -1818,7 +1878,7 @@ Dialog = React.createFactory(React.createClass({
 
 
 
-},{}],12:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 /* global math: false */
 
 var logController = require('../controllers/log'),
@@ -2202,7 +2262,7 @@ HistoryItem = React.createClass({
 });
 
 
-},{"../controllers/log":4}],13:[function(require,module,exports){
+},{"../controllers/log":4}],14:[function(require,module,exports){
 // adapted from SPARKS math-parser.js
 
 module.exports = React.createClass({
@@ -2342,7 +2402,303 @@ module.exports = React.createClass({
   }
 });
 
-},{}],14:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
+var config = require('../config'),
+    logController = require('../controllers/log'),
+    OtherCircuits, Popup, PopupIFrame, CircuitLink, CircuitImage, ScaledIFrame;
+
+module.exports = OtherCircuits = React.createClass({
+
+  displayName: 'OtherCircuits',
+
+  getInitialState: function () {
+    return {
+      showPopup: false
+    };
+  },
+
+  statics: {
+    showPopup: function(props) {
+      var $anchor = $('#other-circuits-popup'),
+          closePopup = function (e) {
+            e.preventDefault();
+            OtherCircuits.closePopup();
+          };
+
+      if (!$anchor.length) {
+        $anchor = $('<div id="other-circuits-popup" class="modalDialog"></div>').appendTo('body');
+      }
+
+      setTimeout(function() {
+        $anchor[0].style.opacity = 1;
+      }, 100);
+
+      return React.render(Popup({
+        circuit: props.circuit,
+        activityName: props.activityName,
+        groupName: props.groupName,
+        numClients: props.numClients,
+        buttonClicked: closePopup,
+        ttWorkbench: props.ttWorkbench
+      }), $anchor.get(0));
+    },
+
+    closePopup: function () {
+      var $anchor = $('#other-circuits-popup');
+      React.unmountComponentAtNode($anchor.get(0));
+      $anchor.remove();
+    }
+  },
+
+  showClicked: function () {
+    this.setState({showPopup: true});
+  },
+
+  render: function () {
+    var self = this;
+
+    setTimeout(function () {
+      if (self.state.showPopup) {
+        OtherCircuits.showPopup(self.props);
+      }
+      else {
+        OtherCircuits.closePopup();
+      }
+    });
+
+    return React.DOM.button({onClick: this.showClicked}, this.props.label || 'View All Circuits');
+  },
+
+});
+
+PopupIFrame = React.createFactory(React.createClass({
+  displayName: 'OtherCircuitsPopupIFrame',
+
+  shouldComponentUpdate: function () {
+    return false;
+  },
+
+  componentDidMount: function () {
+    var iframe = this.refs.iframe.getDOMNode(),
+        payload = {
+          circuit: this.props.circuit,
+          activityName: this.props.activityName,
+          groupName: this.props.groupName,
+          ttWorkbench: this.props.ttWorkbench
+        };
+    iframe.onload = function () {
+      iframe.contentWindow.postMessage(JSON.stringify(payload), window.location.origin);
+    };
+  },
+
+  render: function () {
+    return React.DOM.iframe({ref: 'iframe', src: '?view-other-circuit!', style: {width: 800, height: 500}}, 'Loading...');
+  }
+}));
+
+ScaledIFrame = React.createFactory(React.createClass({
+  displayName: 'OtherCircuitsScaledIFrame',
+
+  shouldComponentUpdate: function () {
+    return false;
+  },
+
+  componentDidMount: function () {
+    var iframe = this.refs.iframe.getDOMNode(),
+        loadMessage = 'loaded:scaled:' + this.props.circuit,
+        payload = {
+          circuit: this.props.circuit,
+          activityName: this.props.activityName,
+          groupName: this.props.groupName,
+          ttWorkbench: this.props.ttWorkbench,
+          loadMessage: loadMessage
+        },
+        listenForLoad = function (event) {
+          if (event.data === loadMessage) {
+            iframe.style.display = 'block';
+            window.removeEventListener("message", listenForLoad);
+          }
+        };
+
+    iframe.onload = function () {
+      iframe.contentWindow.postMessage(JSON.stringify(payload), window.location.origin);
+    };
+    window.addEventListener("message", listenForLoad);
+  },
+
+  render: function () {
+    var scale = 'scale(' + this.props.scale + ')',
+        origin = '0 0',
+        style = {
+          width: 800,
+          height: 500,
+          display: 'none',
+          msTransform: scale,
+          MozTransform: scale,
+          OTransform: scale,
+          WebkitTransform: scale,
+          transform: scale,
+          msTransformOrigin: origin,
+          MozTransformOrigin: origin,
+          OTransformOrigin: origin,
+          WebkitTransformOrigin: origin,
+          transformOrigin: origin
+        };
+    return React.DOM.iframe({ref: 'iframe', src: '?view-other-circuit!', style: style});
+  }
+}));
+
+CircuitLink = React.createFactory(React.createClass({
+  displayName: 'CircuitLink',
+
+  clicked: function (e) {
+    e.preventDefault();
+    this.props.clicked(this.props.circuit);
+  },
+
+  render: function () {
+    return React.DOM.a({href: '#', onClick: this.clicked, className: this.props.selected ? 'selected' : ''}, "Circuit " + this.props.circuit);
+  }
+}));
+
+CircuitImage = React.createFactory(React.createClass({
+
+  displayName: 'CircuitImage',
+
+  getInitialState: function () {
+    this.imageInfo = this.props.ttWorkbench.otherCircuits;
+    this.breadboards = this.imageInfo.breadboards;
+    return {};
+  },
+
+  drawImageLayer: function () {
+    var context = this.refs.imageLayer.getDOMNode().getContext('2d'),
+        image = new Image(),
+        self = this;
+
+    image.src = /^https?:\/\//.test(this.imageInfo.image) ? this.imageInfo.image : config.modelsBase + this.imageInfo.image;
+    image.onload = function () {
+      context.drawImage(image, 0, 0);
+      self.drawClickLayer();
+    };
+  },
+
+  drawClickLayer: function () {
+    var canvas = this.refs.clickLayer.getDOMNode(),
+        context = canvas.getContext('2d'),
+        breadboard = this.breadboards[this.props.selectedCircuit - 1];
+
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.beginPath();
+    context.lineWidth = 5;
+    context.strokeStyle = '#f3951d';
+    context.rect(breadboard.x, breadboard.y, breadboard.width, breadboard.height);
+    context.stroke();
+    context.closePath();
+  },
+
+  canvasClicked: function (e) {
+    var canvas = this.refs.clickLayer.getDOMNode(),
+        offset = $(canvas).offset(),
+        x = e.pageX - offset.left,
+        y = e.pageY - offset.top,
+        i, breadboard;
+
+    e.preventDefault();
+    for (i = 0; i < this.breadboards.length; i++) {
+      breadboard = this.breadboards[i];
+      if ((x >= breadboard.x) && (x <= breadboard.x + breadboard.width) && (y >= breadboard.y) && (y <= breadboard.y + breadboard.height)) {
+        this.props.clicked(i + 1);
+        break;
+      }
+    }
+  },
+
+  componentDidMount: function () {
+    this.drawImageLayer();
+  },
+
+  componentDidUpdate: function () {
+    this.drawClickLayer();
+  },
+
+  render: function () {
+    var canvasStyle = {
+          position: 'absolute',
+          top: 0,
+          left: 0
+        },
+        iframes = [],
+        i, breadboard, iframeStyle;
+
+    for (i = 0; i < this.breadboards.length; i++) {
+      breadboard = this.breadboards[i];
+      iframeStyle = {
+        position: 'absolute',
+        top: breadboard.y,
+        left: breadboard.x
+      };
+      iframes.push(React.DOM.div({key: i, style: iframeStyle}, ScaledIFrame({scale: breadboard.width / 800, circuit: i + 1, activityName: this.props.activityName, groupName: this.props.groupName, ttWorkbench: this.props.ttWorkbench})));
+    }
+
+    return React.DOM.div({style: {position: 'relative', margin: 10, width: this.imageInfo.width, height: this.imageInfo.height}},
+      React.DOM.canvas({ref: 'imageLayer', width: this.imageInfo.width, height: this.imageInfo.height, style: canvasStyle}),
+      iframes,
+      React.DOM.canvas({ref: 'clickLayer', width: this.imageInfo.width, height: this.imageInfo.height, style: canvasStyle, onClick: this.canvasClicked})
+    );
+  }
+}));
+
+Popup = React.createFactory(React.createClass({
+
+  displayName: 'OtherCircuitsPopup',
+
+  getInitialState: function () {
+    return {
+      selectedCircuit: 1
+    };
+  },
+
+  componentDidMount: function () {
+    logController.logEvent("Opened Zoom View");
+  },
+
+  componentWillUnmount: function () {
+    logController.logEvent("Closed Zoom View");
+  },
+
+  selectedCircuit: function (selectedCircuit) {
+    logController.logEvent("Selected Circuit in Zoom", selectedCircuit);
+    this.setState({selectedCircuit: selectedCircuit});
+  },
+
+  render: function () {
+    var links = [],
+        iframes = [],
+        haveImage =  this.props.ttWorkbench.otherCircuits && this.props.ttWorkbench.otherCircuits.image && this.props.ttWorkbench.otherCircuits.breadboards,
+        circuit,
+        selected;
+
+    for (circuit = 1; circuit <= this.props.numClients; circuit++) {
+      selected = circuit == this.state.selectedCircuit;
+      if (!haveImage) {
+        links.push(CircuitLink({key: circuit, clicked: this.selectedCircuit, circuit: circuit, selected: selected}));
+      }
+      iframes.push(React.DOM.div({key: circuit, style: {display: selected ? 'block' : 'none'}}, PopupIFrame({circuit: circuit, activityName: this.props.activityName, groupName: this.props.groupName, ttWorkbench: this.props.ttWorkbench})));
+    }
+
+    return React.DOM.div({className: 'other-circuits-button-popup'},
+      React.DOM.button({style: {'float': 'right'}, onClick: this.props.buttonClicked}, 'X'),
+      React.DOM.h1({}, 'All Circuits'),
+      (haveImage ? CircuitImage({selectedCircuit: this.state.selectedCircuit, clicked: this.selectedCircuit, activityName: this.props.activityName, groupName: this.props.groupName, ttWorkbench: this.props.ttWorkbench}) : null),
+      (links.length > 0 ? React.DOM.div({className: 'links'}, links) : null),
+      React.DOM.div({className: 'iframes'}, iframes)
+    );
+  }
+}));
+
+
+},{"../config":2,"../controllers/log":4}],16:[function(require,module,exports){
 var userController = require('../controllers/user'),
     //ChatView = require('./chat.jsx'),
     SidebarChatView = require('./sidebar-chat.jsx'),
@@ -2351,6 +2707,7 @@ var userController = require('../controllers/user'),
     ConnectionView = require('./connection.jsx'),
     EditorView = require('./editor'),
     SubmitButtonView = require('./submitButton'),
+    OtherCircuitsView = require('./other-circuits'),
     config = require('../config');
 
 module.exports = React.createClass({
@@ -2369,13 +2726,17 @@ module.exports = React.createClass({
         editor = this.props.showEditor ? (React.createElement(EditorView, {parseAndStartActivity:  this.props.parseAndStartActivity, editorState:  this.props.editorState})) : null,
         wrapperClass = hasMultipleClients ? 'multiple-clients' : null,
         image = activity.image ? (React.createElement("div", {id: "image-wrapper", className:  wrapperClass }, React.createElement("img", {src:  /^https?:\/\//.test(activity.image) ? activity.image : config.modelsBase + activity.image}))) : null,
-        submitButton = this.props.showSubmit && this.props.circuit ? (React.createElement(SubmitButtonView, {label: hasMultipleClients ? 'We got it!' : "I got it!", goals:  this.props.goals, nextActivity:  this.props.nextActivity})) : null;
+        submitButton = this.props.showSubmit && this.props.circuit ? (React.createElement(SubmitButtonView, {label: hasMultipleClients ? 'We got it!' : "I got it!", goals:  this.props.goals, nextActivity:  this.props.nextActivity})) : null,
+        otherCircuitsButton = hasMultipleClients && this.props.circuit ? (React.createElement(OtherCircuitsView, {circuit:  this.props.circuit, numClients:  activity.clients.length, activityName:  this.props.activityName, groupName:  userController.getGroupname(), ttWorkbench:  this.props.ttWorkbench})) : null;
 
     return (
       React.createElement("div", {className: "tt-page"}, 
         React.createElement("h1", null, "Teaching Teamwork",  activityName ), 
          circuit, 
-         submitButton, 
+        React.createElement("div", {id: "top-button-wrapper"}, 
+           submitButton, 
+           otherCircuitsButton 
+        ), 
         React.createElement("div", {id: "notes-wrapper", className:  wrapperClass }, React.createElement(NotesView, {text:  notes, className: "tt-notes", breadboard:  this.props.breadboard})), 
         React.createElement("div", {id: "breadboard-and-chat-wrapper", className:  wrapperClass }, 
            hasMultipleClients ? (React.createElement("div", {id: "sidebar-chat-wrapper", className:  wrapperClass }, React.createElement(SidebarChatView, React.__spread({},  activity)))) : null, 
@@ -2391,7 +2752,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../config":2,"../controllers/user":5,"./connection.jsx":10,"./editor":11,"./mathpad.jsx":12,"./notes":13,"./sidebar-chat.jsx":15,"./submitButton":16}],15:[function(require,module,exports){
+},{"../config":2,"../controllers/user":5,"./connection.jsx":11,"./editor":12,"./mathpad.jsx":13,"./notes":14,"./other-circuits":15,"./sidebar-chat.jsx":17,"./submitButton":18}],17:[function(require,module,exports){
 var userController = require('../controllers/user'),
     logController = require('../controllers/log'),
     ChatItems, ChatItem;
@@ -2500,7 +2861,7 @@ ChatItem = React.createClass({
 
 
 
-},{"../controllers/log":4,"../controllers/user":5}],16:[function(require,module,exports){
+},{"../controllers/log":4,"../controllers/user":5}],18:[function(require,module,exports){
 var userController = require('../controllers/user'),
     logController = require('../controllers/log'),
     SubmitButton, Popup;
@@ -2792,9 +3153,7 @@ module.exports = SubmitButton = React.createClass({
       }
     });
 
-    return React.DOM.div({className: 'submit-button-wrapper'},
-      React.DOM.button({onClick: this.submitClicked}, this.props.label || 'Submit')
-    );
+    return React.DOM.button({onClick: this.submitClicked}, this.props.label || 'Submit');
   },
 
 });
@@ -2845,7 +3204,7 @@ Popup = React.createFactory(React.createClass({
 }));
 
 
-},{"../controllers/log":4,"../controllers/user":5}],17:[function(require,module,exports){
+},{"../controllers/log":4,"../controllers/user":5}],19:[function(require,module,exports){
 var userController, UserRegistrationView;
 
 // add a global UserRegistrationView variable because its statics are called in other modules
@@ -2893,7 +3252,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
     e.preventDefault();
     if (this.props.form == "username") {
       userController.setName(this.state.userName);
-    } else {
+    } else if (this.props.form == "groupname") {
       userController.checkGroupName(this.state.groupName);
     }
   },
@@ -2934,7 +3293,6 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
     if (this.props.form == 'username') {
       form = (
         React.createElement("div", null, 
-          React.createElement("h3", null, " "), 
           React.createElement("label", null, 
             React.createElement("span", null, "User Name :"), 
             React.createElement("input", {type: "text", ref: "userName", value: this.state.userName, onChange: this.handleUserNameChange})
@@ -3040,4 +3398,251 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
 });
 
 
-},{}]},{},[1]);
+},{}],20:[function(require,module,exports){
+var userController       = require('../controllers/user'),
+    WorkbenchAdaptor     = require('../data/workbenchAdaptor'),
+    WorkbenchFBConnector = require('../data/workbenchFBConnector'),
+    forceWiresToBlueHack = require('../hacks/forceWiresToBlue');
+
+module.exports = React.createClass({
+
+  displayName: 'ViewOtherCircuit',
+
+  shouldComponentUpdate: function () {
+    return false;
+  },
+
+  render: function () {
+    return React.DOM.div({},
+      React.DOM.div({style: {position: 'absolute'}}, 'Loading...'),
+      React.DOM.div({id: "breadboard-wrapper"}),
+      React.DOM.div({id: "userLabel", style: {position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: '#777', opacity: 0.75, color: '#fff', textAlign: 'center', height: 70, fontSize: 48, padding: 10, fontWeight: 'bold'}}),
+      // add a click absorber
+      React.DOM.div({style: {position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0}})
+    );
+  },
+
+  componentDidMount: function () {
+    var initialDraw = true,
+        updateResistor, redraw;
+
+    updateResistor = function (circuit) {
+      var i, ii, components, comp;
+
+      if (!circuit) {
+        return;
+      }
+
+      components = sparks.workbenchController.breadboardController.getComponents();
+
+      for (i = 0, ii = circuit.length; i < ii; i++) {
+        comp = circuit[i];
+        if ((comp.type === 'resistor') && components[comp.UID]) {
+          components[comp.UID].changeEditableValue(comp.resistance);
+        }
+      }
+    };
+
+    redraw = function (circuit) {
+      var i, ii, comp, oldComp;
+
+      if (!circuit) {
+        return;
+      }
+
+      for (i = 0, ii = circuit.length; i < ii; i++) {
+        comp = circuit[i];
+        oldComp = sparks.workbenchController.breadboardView.component[comp.UID];
+        sparks.workbenchController.breadboardView.removeComponent(comp.UID);
+        if (oldComp.destroy) {
+          oldComp.destroy();
+        }
+        sparks.workbenchController.breadboardController.insertComponent(comp.type, comp);
+      }
+
+      // HACK: force all wires to blue
+      forceWiresToBlueHack();
+
+      initialDraw = false;
+    };
+
+    // listen for workbench load requests
+    window.addEventListener("message", function (event) {
+      var dialStates = {},
+          i,
+          model,
+          payload,
+          clientNumber,
+          workbenchAdaptor,
+          workbench,
+          redrawTimeout,
+          multimeter,
+          meter,
+          waitForLoad,
+          moveProbe,
+          workbenchFBConnector;
+
+      if (event.origin == window.location.origin) {
+        payload = JSON.parse(event.data);
+
+        clientNumber = payload.circuit - 1;
+
+        workbenchAdaptor = new WorkbenchAdaptor(clientNumber);
+        workbenchFBConnector = new WorkbenchFBConnector(userController, clientNumber, workbenchAdaptor);
+        workbench = workbenchAdaptor.processTTWorkbench(payload.ttWorkbench);
+        try {
+          sparks.createWorkbench(workbench, "breadboard-wrapper");
+        }
+        catch (e) {
+        }
+
+        // get the dmm and find the dial angles once it loads
+        waitForLoad = function () {
+          var leadForHole;
+
+          if (sparks.workbenchController && sparks.workbenchController.breadboardView && sparks.workbenchController.breadboardView.multimeter && sparks.workbenchController.breadboardController) {
+            multimeter = sparks.workbenchController.breadboardView.multimeter;
+            meter = sparks.workbenchController.workbench.meter;
+
+            // get the dial angles
+            for (i = 0; i < 360; i++) {
+              model = multimeter.mmbox.model(i);
+              if (model && model.length === 2 && !dialStates.hasOwnProperty(model[1])) {
+                dialStates[model[1]] = model;
+              }
+            }
+
+            // listen for circuit changes
+            userController.createFirebaseGroupRef(payload.activityName, payload.groupName);
+            userController.getFirebaseGroupRef().child('clients').child(clientNumber).on('value', function(snapshot) {
+              var data = snapshot.val();
+
+              if (data) {
+                updateResistor(data);
+                meter.update();
+              }
+
+              /*
+              FIXME
+              if (data) {
+                if (initialDraw) {
+                  redraw(data);
+                }
+                else {
+                  clearTimeout(redrawTimeout);
+                  redrawTimeout = setTimeout(function () {
+                    redraw(data);
+                  }, 500);
+                }
+              }
+              */
+            });
+
+            // find the lead for a hole
+            leadForHole = function (hole) {
+              var itemsList = sparks.workbenchController.breadboardView.itemslist,
+                  i, j, lead;
+              for (i = itemsList.length; i--; ) {
+                for (j = itemsList[i].leads.length; j--; ) {
+                  lead = itemsList[i].leads[j];
+                  if (lead.hole == hole) {
+                    return lead;
+                  }
+                }
+              }
+              return false;
+            };
+
+            moveProbe = function (color, locOrPos) {
+              var probe = multimeter.probe[color],
+                  lead;
+
+              if ((locOrPos.event === 'attached') && locOrPos.hole) {
+                lead = leadForHole(locOrPos.hole);
+                if (probe.lead != lead) {
+                  probe.lead = lead;
+                  probe.lead.probe = this;
+                  probe.lead.highlight(2);
+                  probe.snap();
+                  meter.setProbeLocation("probe_"+color, locOrPos.hole);
+                }
+              }
+              else if ((locOrPos.event === 'dropped') && locOrPos.position) {
+                probe.move(locOrPos.position);
+                probe.lead = null;
+                probe.image.update();
+                meter.setProbeLocation("probe_"+color, null);
+              }
+            };
+
+            // listen for meter changes
+            userController.getFirebaseGroupRef().child('meters').child(clientNumber).on('value', function (snapshot) {
+              var data = snapshot.val();
+
+              if (data) {
+                // set the probes
+                if (data.probes) {
+                  if (data.probes.black) {
+                    moveProbe('black', data.probes.black);
+                  }
+                  if (data.probes.red) {
+                    moveProbe('red', data.probes.red);
+                  }
+                  meter.update();
+                }
+
+                // set the DMM
+                if (data.DMM) {
+                  if (dialStates[data.DMM]) {
+                    multimeter.mmbox.setState(dialStates[data.DMM]);
+                  }
+                }
+              }
+            });
+
+            // listen for user changes
+            userController.getFirebaseGroupRef().child('users').on('value', function (snapshot) {
+              var data = snapshot.val(),
+                  username = "(unclaimed)",
+                  key;
+
+              if (data) {
+                for (key in data) {
+                  if (data.hasOwnProperty(key)) {
+                    if (data[key].client == clientNumber) {
+                      username = key;
+                      break;
+                    }
+                  }
+                }
+              }
+
+              $("#userLabel").html(username).css({backgroundColor: ['#f00', '#228b22', '#00f'][clientNumber % 3]});
+            });
+
+          }
+          else {
+            setTimeout(waitForLoad, 100);
+          }
+        };
+        waitForLoad();
+
+        // tell the parent that we are loaded after we redraw
+        if (payload.loadMessage) {
+          setTimeout(function () {
+            parent.postMessage(payload.loadMessage, '*');
+          }, 10);
+        }
+      }
+    }, false);
+  }
+});
+
+
+
+
+
+
+
+
+},{"../controllers/user":5,"../data/workbenchAdaptor":6,"../data/workbenchFBConnector":7,"../hacks/forceWiresToBlue":9}]},{},[1]);
