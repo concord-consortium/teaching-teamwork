@@ -623,7 +623,7 @@ WorkbenchAdaptor.prototype = {
       if (!~comp.connections.indexOf(":") && comp.type != "powerLead") {
         // jshint bitwise:true
         // ugly
-        var nodes = comp.connections.split(","),
+        var nodes = comp.connections.replace(/ghost/g, '').split(","),
             bbHoles = sparks.workbenchController.breadboardController.getHoles();
         if (bbHoles[nodes[0]] || bbHoles[nodes[1]]) {
           ownCircuit.push(comp);
@@ -634,36 +634,62 @@ WorkbenchAdaptor.prototype = {
     return ownCircuit;
   },
 
-  updateClient: function(client, circuit) {
+  updateClient: function(client, newCircuit, isMyCircuit) {
     var clientCircuit = [],
-        i, ii;
+        clientUIDs = [],
+        comp, oldCircuit, i, ii, j, k, removeMyComponent, removeOtherComponent, uid, newComponent;
 
-    if (!circuit) {
+    if (!newCircuit) {
       return;
     }
 
-    for (i = 0, ii = circuit.length; i < ii; i++) {
-      comp = circuit[i];
+    for (i = 0, ii = newCircuit.length; i < ii; i++) {
+      comp = newCircuit[i];
+
+      // skip remote ghosts
+      if (!isMyCircuit && (comp.connections.indexOf('ghost') != -1)) {
+        continue;
+      }
+
+      // save ghost hole information
+      comp.savedConnectionList = comp.connections.slice(0).split(',');
+      comp.connections = comp.connections.replace(/ghost/g, '');
+
       // transforms other clients connections, e.g. "a1,b2", to "0:a1,0:b2"
-      comp.connections = client+":"+comp.connections.split(",").join(","+client+":");
-      comp.connections = comp.connections.replace(/[abcde](\d)/g,"L$1");
-      comp.connections = comp.connections.replace(/[fghij](\d)/g,"L$1");
+      if (!isMyCircuit) {
+        comp.connections = client+":"+comp.connections.split(",").join(","+client+":");
+        comp.connections = comp.connections.replace(/[abcde](\d)/g,"L$1");
+        comp.connections = comp.connections.replace(/[fghij](\d)/g,"L$1");
+      }
       clientCircuit.push(comp);
+      clientUIDs.push(comp.UID);
     }
 
     // update in place
-    circuit = JSON.parse(sparks.workbenchController.serialize()).circuit;
-    for (i = 0, ii = circuit.length; i < ii; i++) {
-      comp = circuit[i];
-      if (comp.connections.indexOf(client+":") != comp.connections.lastIndexOf(client+":")) {
+    oldCircuit = JSON.parse(sparks.workbenchController.serialize()).circuit;
+    for (i = 0, ii = oldCircuit.length; i < ii; i++) {
+      comp = oldCircuit[i];
+      removeMyComponent = isMyCircuit && (clientUIDs.indexOf(comp.UID) != -1);
+      removeOtherComponent = !isMyCircuit && (comp.connections.indexOf(client+":") != comp.connections.lastIndexOf(client+":"));
+      if (removeMyComponent || removeOtherComponent) {
         sparks.workbenchController.breadboardController.remove(comp.type, comp.connections);
       }
     }
 
     for (i = 0, ii = clientCircuit.length; i < ii; i++) {
-      var comp = clientCircuit[i];
-      comp.hidden = true;
-      sparks.workbenchController.breadboardController.insertComponent(comp.type, comp);
+      comp = clientCircuit[i];
+      comp.hidden = !isMyCircuit;
+      uid = sparks.workbenchController.breadboardController.insertComponent(comp.type, comp);
+      newComponent = sparks.workbenchController.breadboardView.component[uid];
+
+      // disconnect the leads of components with ghost holes
+      if (newComponent) {
+        for (j = 0, k = comp.savedConnectionList.length; j < k; j++) {
+          if (comp.savedConnectionList[j].indexOf('ghost') != -1) {
+            newComponent.leads[j].disconnect();
+          }
+        }
+      }
     }
     sparks.workbenchController.workbench.meter.update();
   }
@@ -710,7 +736,7 @@ function init() {
 
 function addClientListener(client) {
   clientListFirebaseRef.child(client).on("value", function(snapshot) {
-    wa.updateClient(client, snapshot.val());
+    wa.updateClient(client, snapshot.val(), false);
   });
 }
 
@@ -873,9 +899,6 @@ module.exports = React.createClass({
 
   componentDidMount: function () {
     var activityName = window.location.hash.substring(1);
-
-    // TODO: make authorable
-    window.breadboardSVGView.options.fixedCircuit = true;
 
     if (!viewOtherCircuit) {
       // load blank workbench
@@ -3205,9 +3228,9 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
         $anchor = $('<div id="user-registration" class="modalDialog"></div>').appendTo('body');
       }
 
-      setTimeout(function(){
-        $('#user-registration')[0].style.opacity = 1;},
-      100);
+      setTimeout(function() {
+        $('#user-registration')[0].style.opacity = 1;
+      }, 250);
 
       return React.render(
         React.createElement(UserRegistrationView, React.__spread({},  data)),
@@ -3407,52 +3430,6 @@ module.exports = React.createClass({
   },
 
   componentDidMount: function () {
-    var initialDraw = true,
-        updateResistor, redraw;
-
-    updateResistor = function (circuit) {
-      var i, ii, components, comp, resistor;
-
-      if (!circuit) {
-        return;
-      }
-
-      components = sparks.workbenchController.breadboardController.getComponents();
-
-      for (i = 0, ii = circuit.length; i < ii; i++) {
-        comp = circuit[i];
-        if ((comp.type === 'resistor') && components[comp.UID]) {
-          //components[comp.UID].changeEditableValue(comp.resistance);
-          resistor = components[comp.UID];
-          if (sparks.workbenchController.breadboardView.component[comp.UID]) {
-            resistor.changeEditableValue(comp.resistance);
-          }
-          else {
-            resistor.setResistance(comp.resistance);
-          }
-        }
-      }
-    };
-
-    redraw = function (circuit) {
-      var i, ii, comp, oldComp;
-
-      if (!circuit) {
-        return;
-      }
-
-      for (i = 0, ii = circuit.length; i < ii; i++) {
-        comp = circuit[i];
-        oldComp = sparks.workbenchController.breadboardView.component[comp.UID];
-        sparks.workbenchController.breadboardView.removeComponent(comp.UID);
-        if (oldComp.destroy) {
-          oldComp.destroy();
-        }
-        sparks.workbenchController.breadboardController.insertComponent(comp.type, comp);
-      }
-
-      initialDraw = false;
-    };
 
     // listen for workbench load requests
     window.addEventListener("message", function (event) {
@@ -3468,6 +3445,7 @@ module.exports = React.createClass({
           meter,
           waitForLoad,
           moveProbe,
+          updateProbes,
           workbenchFBConnector;
 
       if (event.origin == window.location.origin) {
@@ -3486,7 +3464,7 @@ module.exports = React.createClass({
 
         // get the dmm and find the dial angles once it loads
         waitForLoad = function () {
-          var leadForHole;
+          var leadForHole, prevProbes;
 
           if (sparks.workbenchController && sparks.workbenchController.breadboardView && sparks.workbenchController.breadboardView.multimeter && sparks.workbenchController.breadboardController) {
             multimeter = sparks.workbenchController.breadboardView.multimeter;
@@ -3507,30 +3485,17 @@ module.exports = React.createClass({
                   i;
 
               if (data) {
+                sparks.workbenchController.breadboardController.clearHoleMap();
                 for (i in data) {
                   if (data.hasOwnProperty(i)) {
-                    updateResistor(data[i]);
+                    workbenchAdaptor.updateClient(i, data[i], i == clientNumber);
                   }
+                }
+                if (prevProbes) {
+                  updateProbes(prevProbes);
                 }
                 meter.update();
               }
-
-              /*
-
-              FIXME: remove updateResistor() and replace with full component replacement
-
-              if (data) {
-                if (initialDraw) {
-                  redraw(data);
-                }
-                else {
-                  clearTimeout(redrawTimeout);
-                  redrawTimeout = setTimeout(function () {
-                    redraw(data);
-                  }, 500);
-                }
-              }
-              */
             });
 
             // find the lead for a hole
@@ -3570,6 +3535,16 @@ module.exports = React.createClass({
               }
             };
 
+            updateProbes = function (probes) {
+              if (probes.black) {
+                moveProbe('black', probes.black);
+              }
+              if (probes.red) {
+                moveProbe('red', probes.red);
+              }
+              meter.update();
+            };
+
             // listen for meter changes
             userController.getFirebaseGroupRef().child('meters').child(clientNumber).on('value', function (snapshot) {
               var data = snapshot.val();
@@ -3577,13 +3552,8 @@ module.exports = React.createClass({
               if (data) {
                 // set the probes
                 if (data.probes) {
-                  if (data.probes.black) {
-                    moveProbe('black', data.probes.black);
-                  }
-                  if (data.probes.red) {
-                    moveProbe('red', data.probes.red);
-                  }
-                  meter.update();
+                  prevProbes = data.probes;
+                  updateProbes(data.probes);
                 }
 
                 // set the DMM
