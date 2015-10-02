@@ -6,6 +6,7 @@ var userController = require('../controllers/user'),
     ConnectionView = require('./connection.jsx'),
     EditorView = require('./editor'),
     SubmitButtonView = require('./submitButton'),
+    OtherCircuitsView = require('./other-circuits'),
     config = require('../config');
 
 module.exports = React.createClass({
@@ -24,13 +25,17 @@ module.exports = React.createClass({
         editor = this.props.showEditor ? (<EditorView parseAndStartActivity={ this.props.parseAndStartActivity } editorState={ this.props.editorState } />) : null,
         wrapperClass = hasMultipleClients ? 'multiple-clients' : null,
         image = activity.image ? (<div id="image-wrapper" className={ wrapperClass }><img src={ /^https?:\/\//.test(activity.image) ? activity.image : config.modelsBase + activity.image } /></div>) : null,
-        submitButton = this.props.showSubmit && this.props.circuit ? (<SubmitButtonView label={hasMultipleClients ? 'We got it!' : "I got it!"} goals={ this.props.goals } nextActivity={ this.props.nextActivity } />) : null;
+        submitButton = this.props.showSubmit && this.props.circuit ? (<SubmitButtonView label={hasMultipleClients ? 'We got it!' : "I got it!"} goals={ this.props.goals } nextActivity={ this.props.nextActivity } />) : null,
+        otherCircuitsButton = hasMultipleClients && this.props.circuit ? (<OtherCircuitsView circuit={ this.props.circuit } numClients={ activity.clients.length } activityName={ this.props.activityName } groupName={ userController.getGroupname() } ttWorkbench={ this.props.ttWorkbench } />) : null;
 
     return (
       <div className="tt-page">
         <h1>Teaching Teamwork{ activityName }</h1>
         { circuit }
-        { submitButton }
+        <div id="top-button-wrapper">
+          { submitButton }
+          { otherCircuitsButton }
+        </div>
         <div id="notes-wrapper" className={ wrapperClass }><NotesView text={ notes } className="tt-notes" breadboard={ this.props.breadboard } /></div>
         <div id="breadboard-and-chat-wrapper" className={ wrapperClass }>
           { hasMultipleClients ? (<div id="sidebar-chat-wrapper" className={ wrapperClass }><SidebarChatView {...activity} /></div>) : null }

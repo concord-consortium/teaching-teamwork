@@ -17,7 +17,7 @@ var UserRegistrationView = require('../views/userRegistration.jsx'),
 
 // scratch
 var fbUrlDomain = 'https://teaching-teamwork.firebaseio.com/';
-var fbUrlBase = fbUrlDomain + '/dev/';
+var fbUrlBase = fbUrlDomain + 'dev/';
 
 var getDate = function() {
   var today = new Date(),
@@ -85,14 +85,12 @@ module.exports = userController = {
   },
 
   checkGroupName: function(name) {
-    var date = getDate(),
-        self = this;
+    var self = this;
 
     groupName = name;
 
-    fbUrl = fbUrlBase + date + "-" + name + "/activities/" + activityName + "/";
+    this.createFirebaseGroupRef(activityName, name);
 
-    firebaseGroupRef = new Firebase(fbUrl);
     firebaseUsersRef = firebaseGroupRef.child('users');
     groupUsersListener = firebaseUsersRef.on("value", function(snapshot) {
       var users = snapshot.val();
@@ -224,5 +222,11 @@ module.exports = userController = {
       }
       groupRefCreationListeners.push(callback);
     }
+  },
+
+  createFirebaseGroupRef: function (activityName, groupName) {
+    fbUrl = fbUrlBase + getDate() + "-" + groupName + "/activities/" + activityName + "/";
+    firebaseGroupRef = new Firebase(fbUrl);
+    return firebaseGroupRef;
   }
 };

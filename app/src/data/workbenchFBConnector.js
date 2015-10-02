@@ -1,14 +1,26 @@
 var eventsController = require('../controllers/events'),
     clientListFirebaseRef,
     myCircuitFirebaseRef,
+    myMeterFirebaseRef,
     clientNumber,
     wa,
     userController;
 
 function init() {
   sparks.logController.addListener(function(evt) {
-    if (evt.name == "Changed circuit") {
-      myCircuitFirebaseRef.set(wa.getClientCircuit());
+    switch (evt.name) {
+      case "Changed circuit":
+        myCircuitFirebaseRef.set(wa.getClientCircuit());
+        break;
+      case "Moved DMM dial":
+        myMeterFirebaseRef.child('DMM').set(evt.value.value);
+        break;
+      case "Attached probe":
+        myMeterFirebaseRef.child('probes').child(evt.value.color).set({event: 'attached', hole: evt.value.location});
+        break;
+      case "Dropped probe":
+        myMeterFirebaseRef.child('probes').child(evt.value.color).set({event: 'dropped', position: evt.value.position});
+        break;
     }
     eventsController.handleLocalSparksEvent(evt);
   });
@@ -23,7 +35,7 @@ function init() {
 
 function addClientListener(client) {
   clientListFirebaseRef.child(client).on("value", function(snapshot) {
-    wa.updateClient(client, snapshot.val());
+    wa.updateClient(client, snapshot.val(), false);
   });
 }
 
@@ -36,6 +48,8 @@ function WorkbenchFBConnector(_userController, _clientNumber, _wa) {
   clientListFirebaseRef = userController.getFirebaseGroupRef().child('clients');
   myCircuitFirebaseRef = clientListFirebaseRef.child(clientNumber);
 
+  myMeterFirebaseRef = userController.getFirebaseGroupRef().child('meters').child(clientNumber);
+
   wa = _wa;
   init();
 }
@@ -43,6 +57,12 @@ function WorkbenchFBConnector(_userController, _clientNumber, _wa) {
 WorkbenchFBConnector.prototype.setClientCircuit = function () {
   if (myCircuitFirebaseRef) {
     myCircuitFirebaseRef.set(wa.getClientCircuit());
+  }
+};
+
+WorkbenchFBConnector.prototype.resetMeters = function () {
+  if (myMeterFirebaseRef) {
+    myMeterFirebaseRef.set({});
   }
 };
 

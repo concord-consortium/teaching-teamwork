@@ -13,9 +13,9 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
         $anchor = $('<div id="user-registration" class="modalDialog"></div>').appendTo('body');
       }
 
-      setTimeout(function(){
-        $('#user-registration')[0].style.opacity = 1;},
-      100);
+      setTimeout(function() {
+        $('#user-registration')[0].style.opacity = 1;
+      }, 250);
 
       return React.render(
         <UserRegistrationView {...data} />,
@@ -45,7 +45,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
     e.preventDefault();
     if (this.props.form == "username") {
       userController.setName(this.state.userName);
-    } else {
+    } else if (this.props.form == "groupname") {
       userController.checkGroupName(this.state.groupName);
     }
   },
@@ -86,7 +86,6 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
     if (this.props.form == 'username') {
       form = (
         <div>
-          <h3>&nbsp;</h3>
           <label>
             <span>User Name :</span>
             <input type="text" ref="userName" value={this.state.userName} onChange={this.handleUserNameChange} />

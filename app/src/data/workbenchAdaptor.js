@@ -117,7 +117,7 @@ WorkbenchAdaptor.prototype = {
       if (!~comp.connections.indexOf(":") && comp.type != "powerLead") {
         // jshint bitwise:true
         // ugly
-        var nodes = comp.connections.split(","),
+        var nodes = comp.connections.replace(/ghost/g, '').split(","),
             bbHoles = sparks.workbenchController.breadboardController.getHoles();
         if (bbHoles[nodes[0]] || bbHoles[nodes[1]]) {
           ownCircuit.push(comp);
@@ -128,36 +128,62 @@ WorkbenchAdaptor.prototype = {
     return ownCircuit;
   },
 
-  updateClient: function(client, circuit) {
+  updateClient: function(client, newCircuit, isMyCircuit) {
     var clientCircuit = [],
-        i, ii;
+        clientUIDs = [],
+        comp, oldCircuit, i, ii, j, k, removeMyComponent, removeOtherComponent, uid, newComponent;
 
-    if (!circuit) {
+    if (!newCircuit) {
       return;
     }
 
-    for (i = 0, ii = circuit.length; i < ii; i++) {
-      comp = circuit[i];
+    for (i = 0, ii = newCircuit.length; i < ii; i++) {
+      comp = newCircuit[i];
+
+      // skip remote ghosts
+      if (!isMyCircuit && (comp.connections.indexOf('ghost') != -1)) {
+        continue;
+      }
+
+      // save ghost hole information
+      comp.savedConnectionList = comp.connections.slice(0).split(',');
+      comp.connections = comp.connections.replace(/ghost/g, '');
+
       // transforms other clients connections, e.g. "a1,b2", to "0:a1,0:b2"
-      comp.connections = client+":"+comp.connections.split(",").join(","+client+":");
-      comp.connections = comp.connections.replace(/[abcde](\d)/g,"L$1");
-      comp.connections = comp.connections.replace(/[fghij](\d)/g,"L$1");
+      if (!isMyCircuit) {
+        comp.connections = client+":"+comp.connections.split(",").join(","+client+":");
+        comp.connections = comp.connections.replace(/[abcde](\d)/g,"L$1");
+        comp.connections = comp.connections.replace(/[fghij](\d)/g,"L$1");
+      }
       clientCircuit.push(comp);
+      clientUIDs.push(comp.UID);
     }
 
     // update in place
-    circuit = JSON.parse(sparks.workbenchController.serialize()).circuit;
-    for (i = 0, ii = circuit.length; i < ii; i++) {
-      comp = circuit[i];
-      if (comp.connections.indexOf(client+":") != comp.connections.lastIndexOf(client+":")) {
+    oldCircuit = JSON.parse(sparks.workbenchController.serialize()).circuit;
+    for (i = 0, ii = oldCircuit.length; i < ii; i++) {
+      comp = oldCircuit[i];
+      removeMyComponent = isMyCircuit && (clientUIDs.indexOf(comp.UID) != -1);
+      removeOtherComponent = !isMyCircuit && (comp.connections.indexOf(client+":") != comp.connections.lastIndexOf(client+":"));
+      if (removeMyComponent || removeOtherComponent) {
         sparks.workbenchController.breadboardController.remove(comp.type, comp.connections);
       }
     }
 
     for (i = 0, ii = clientCircuit.length; i < ii; i++) {
-      var comp = clientCircuit[i];
-      comp.hidden = true;
-      sparks.workbenchController.breadboardController.insertComponent(comp.type, comp);
+      comp = clientCircuit[i];
+      comp.hidden = !isMyCircuit;
+      uid = sparks.workbenchController.breadboardController.insertComponent(comp.type, comp);
+      newComponent = sparks.workbenchController.breadboardView.component[uid];
+
+      // disconnect the leads of components with ghost holes
+      if (newComponent) {
+        for (j = 0, k = comp.savedConnectionList.length; j < k; j++) {
+          if (comp.savedConnectionList[j].indexOf('ghost') != -1) {
+            newComponent.leads[j].disconnect();
+          }
+        }
+      }
     }
     sparks.workbenchController.workbench.meter.update();
   }

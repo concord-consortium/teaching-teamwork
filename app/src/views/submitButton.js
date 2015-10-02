@@ -289,9 +289,7 @@ module.exports = SubmitButton = React.createClass({
       }
     });
 
-    return React.DOM.div({className: 'submit-button-wrapper'},
-      React.DOM.button({onClick: this.submitClicked}, this.props.label || 'Submit')
-    );
+    return React.DOM.button({onClick: this.submitClicked}, this.props.label || 'Submit');
   },
 
 });
