@@ -8,7 +8,10 @@ module.exports = {
     dest: app
   },
   js: {
-    src: app + '/src/app.js',
+    src: {
+      app: app + '/src/app.js',
+      pic: app + '/src/pic.js'
+    },
     allSrc: app + '/src/**/*',
     allJS: app + '/src/**/*.js',
     allJSX: app + '/src/**/*.jsx',
@@ -26,7 +29,7 @@ module.exports = {
     dest: dest
   },
   vendor: {
-    src: [bower + '/breadboard/**/*', bower + '/codemirror/**/*', bower + '/jsonlint/**/*', bower + '/mathjs/**/*', bower + '/jquery.cookie/**/*'],
+    src: [bower + '/breadboard/**/*', bower + '/codemirror/**/*', bower + '/jsonlint/**/*', bower + '/mathjs/**/*', bower + '/jquery.cookie/**/*', bower + '/jquery/**/*'],
     base: bower + '/',
     dest: dest + '/vendor'
   }
