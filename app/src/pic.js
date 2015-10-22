@@ -1442,6 +1442,10 @@ BoardView = createComponent({
         self.props.board.addWire(source, dest, (source.color || dest.color || color));
         self.setState({wires: self.props.board.wires});
       }
+      else if (!dest) {
+        self.props.board.removeWire(source);
+        self.setState({wires: self.props.board.wires});
+      }
     };
 
     $window.on('mousemove', drag);
