@@ -1,7 +1,6 @@
 var userController = require('../controllers/user'),
-    //ChatView = require('./chat.jsx'),
     SidebarChatView = require('./sidebar-chat.jsx'),
-    MathPadView = require('./mathpad.jsx'),
+    CalculatorView = require('./calculator.jsx'),
     NotesView = require('./notes'),
     ConnectionView = require('./connection.jsx'),
     EditorView = require('./editor'),
@@ -42,7 +41,7 @@ module.exports = React.createClass({
           <div id="breadboard-wrapper" className={ wrapperClass }></div>
         </div>
         { image }
-        <MathPadView />
+        <CalculatorView />
         { connection }
         { editor }
       </div>
