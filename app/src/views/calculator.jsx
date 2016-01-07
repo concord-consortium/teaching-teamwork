@@ -7,11 +7,9 @@ module.exports = React.createClass({
   displayName: 'Calculator',
 
   getInitialState: function() {
-    this.backspace = String.fromCharCode(8592);
     this.inverse = '1/x';
     this.squareRoot = String.fromCharCode(8730);
     this.equals = '=';
-    this.plusMinus = String.fromCharCode(177);
 
     return {
       input: '',
@@ -215,39 +213,42 @@ module.exports = React.createClass({
       return (
         <div id="calculator" onMouseDown={ this.startDrag } onMouseMove={ this.drag } onMouseUp={ this.endDrag } style={ style }>
           <div className="top very-top">
-            <span className="title">Calculator</span>
             <span className="close" onClick={ this.close }>X</span>
           </div>
 
           <div className="top">
-            <span className="clear" onClick={ this.clear }>C</span>
             <div className={ this.state.error ? 'screen screen-error' : 'screen' }>{ this.state.input }</div>
           </div>
 
+          <div className="topRow">
+            <span className="clear" onClick={ this.clear }>C</span>
+            <span className="memory">MRC</span>
+            <span className="memory">M+</span>
+            <span className="eval squareroot" onClick={ this.eval }>{this.squareRoot}</span>
+            <span className="eval" onClick={ this.eval }>{this.inverse}</span>
+          </div>
+
           <div className="keys" onClick={ this.keyPressed }>
+
             <span>7</span>
             <span>8</span>
             <span>9</span>
             <span className="operator">+</span>
-            <span className="operator operator-right">{this.backspace}</span>
 
             <span>4</span>
             <span>5</span>
             <span>6</span>
-            <span className="operator">-</span>
-            <span className="eval eval-right" onClick={ this.eval }>{this.inverse}</span>
+            <span className="operator">–</span>
 
             <span>1</span>
             <span>2</span>
             <span>3</span>
-            <span className="operator">/</span>
-            <span className="eval eval-right" onClick={ this.eval }>{this.squareRoot}</span>
+            <span className="operator">÷</span>
 
             <span>0</span>
             <span>.</span>
-            <span className="operator">{this.plusMinus}</span>
-            <span className="operator">*</span>
-            <span className="eval eval-right" onClick={ this.eval }>{this.equals}</span>
+            <span className="eval" onClick={ this.eval }>{this.equals}</span>
+            <span className="operator multiply">x</span>
           </div>
         </div>
       );

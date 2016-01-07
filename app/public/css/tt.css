@@ -187,17 +187,17 @@ form button:disabled {
 
   /* the top & right positions are set in the component */
 
-	width: 359px;
+	width: 292px;
 	height: auto;
 
-	padding: 0 20px 9px;
+	padding: 0 20px 19px;
 
   font: bold 14px Arial, sans-serif;
 
-	background: #9dd2ea;
-	background: linear-gradient(#9dd2ea, #8bceec);
-	border-radius: 3px;
-	box-shadow: 0px 4px #009de4, 0px 10px 15px rgba(0, 0, 0, 0.2);
+	background: #8A8F92;
+	background: linear-gradient(#8A8F92, #5E666B)
+	border-radius: 11px;
+	box-shadow: 0px 4px #223E4A, 0px 10px 15px rgba(0, 0, 0, 0.2);
 
   user-select: none;
   -moz-user-select: none;
@@ -208,6 +208,9 @@ form button:disabled {
   cursor: move;
 }
 #open-calculator {
+  background: #f3951d;
+  box-shadow: 0px 4px #AF6507, 0px 10px 15px rgba(0, 0, 0, 0.2);
+  color: white;
   width: auto;
 	padding: 10px;
   cursor: pointer;
@@ -231,7 +234,7 @@ form button:disabled {
   position: relative;
   padding: 3px 5px;
 	background: #ff9fa8;
-	box-shadow: 0px 4px #ff7c87;
+	box-shadow: 0px 3px #ff7c87;
 	color: white;
 	user-select: none;
 	transition: all 0.2s ease;
@@ -247,12 +250,14 @@ form button:disabled {
 	box-shadow: 0px 0px #d3545d;
 }
 
+#calculator .top {
+  padding-bottom: 9px;
+}
+
 /* Inset shadow on the screen to create indent */
 #calculator .top .screen {
 	height: 40px;
 	width: 285px;
-
-	float: right;
 
   margin: 0;
 	padding: 0 10px;
@@ -277,24 +282,26 @@ form button:disabled {
 }
 
 /* Clear floats */
-#calculator .keys, #calculator .top {overflow: hidden;}
+#calculator .keys, #calculator .top, #calculator .topRow {overflow: hidden;}
 
 /* Applying same to the keys */
-#calculator .keys span, #calculator .top span.clear {
+#calculator .keys span, #calculator .top span.clear, #calculator .topRow span {
 	float: left;
 	position: relative;
 	top: 0;
 
 	cursor: pointer;
 
-	width: 66px;
+	width: 67px;
 	height: 36px;
 
 	background: white;
 	border-radius: 3px;
 	box-shadow: 0px 4px rgba(0, 0, 0, 0.2);
 
-	margin: 0 7px 11px 0;
+	margin: 0 3px 11px 3px;
+
+  font-size: 17px;
 
 	color: #888;
 	line-height: 36px;
@@ -307,21 +314,44 @@ form button:disabled {
 	transition: all 0.2s ease;
 }
 
+#calculator .topRow span {
+  height: 23px;
+  width: 52px;
+  line-height: 24px;
+  font-size: 15px;
+}
+
+#calculator .topRow span.clear {
+  background: #FF7777;
+  color: white;
+}
+
+#calculator .topRow span.memory {
+  background: black;
+  color: white;
+}
+
 /* Remove right margins from operator keys */
 /* style different type of keys (operators/evaluate/clear) differently */
 #calculator .keys span.operator {
-	background: #FFF0F5;
+	background: #FFE4C8;
+  font-family: serif;
+  font-size: 24px;
+}
+#calculator .keys span.operator.multiply {
+  font-family: sans-serif;
+  font-weight: lighter;
+}
+#calculator .topRow span.eval.squareroot {
+  font-family: monospace;
 }
 
 #calculator .keys span.operator-right {
 	margin-right: 0;
 }
-#calculator .keys span.eval-right {
-	margin-right: 0;
-}
 
 
-#calculator .keys span.eval {
+#calculator .keys span.eval, #calculator .topRow span.eval {
 	background: #f1ff92;
 	box-shadow: 0px 4px #9da853;
 	color: #888e5f;
@@ -334,36 +364,34 @@ form button:disabled {
 }
 
 /* Some hover effects */
-#calculator .keys span:hover {
-	background: #9c89f6;
-	box-shadow: 0px 4px #6b54d3;
-	color: white;
+#calculator .keys span:hover, #calculator .topRow span:hover {
+  opacity: 0.7;
+  color: #555;
+	box-shadow: 0px 4px #2E2B40;
 }
 
-#calculator .keys span.eval:hover {
-	background: #abb850;
+#calculator .keys span.eval:hover, #calculator .topRow span.eval:hover {
+  opacity: 0.7;
+  color: #555;
 	box-shadow: 0px 4px #717a33;
-	color: #ffffff;
 }
 
-#calculator .top span.clear:hover {
-	background: #f68991;
-	box-shadow: 0px 4px #d3545d;
-	color: white;
+#calculator .topRow span.clear:hover, #calculator .topRow span.memory:hover {
+  color: white;
 }
 
 /* Simulating "pressed" effect on active state of the keys by removing the box-shadow and moving the keys down a bit */
-#calculator .keys span:active {
+#calculator .keys span:active, #calculator .topRow span:active {
 	box-shadow: 0px 0px #6b54d3;
 	top: 4px;
 }
 
-#calculator .keys span.eval:active {
+#calculator .keys span.eval:active, #calculator .topRow span.eval:active {
 	box-shadow: 0px 0px #717a33;
 	top: 4px;
 }
 
-#calculator .top span.clear:active {
+#calculator .topRow span.clear:active {
 	top: 4px;
 	box-shadow: 0px 0px #d3545d;
 }
