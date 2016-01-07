@@ -120,7 +120,7 @@ module.exports = React.createClass({
       }
     }
     else if (key == '.') {
-      if (!input.match(/\./g) && !this.state.evaled) {
+      if (!input.match(/\.\d*$/g) && !this.state.evaled) {
         input += key;
       }
     }
