@@ -216,6 +216,21 @@ form button:disabled {
   cursor: pointer;
 }
 
+#calculator .top {
+  position: relative;
+}
+
+#calculator .top .memory {
+  position: absolute;
+  left: 3px;
+  top: 4px;
+  color: white;
+  font-size: 12px;
+}
+#calculator .top .memory.hidden {
+  display: none;
+}
+
 /* Top portion */
 #calculator .top span.clear {
 	float: left;

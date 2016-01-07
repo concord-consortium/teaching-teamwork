@@ -1,4 +1,5 @@
 // adapted from http://thecodeplayer.com/walkthrough/javascript-css3-calculator
+/*jslint evil: true */
 
 var logController = require('../controllers/log');
 
@@ -16,6 +17,8 @@ module.exports = React.createClass({
       open: false,
       evaled: false,
       error: false,
+      memory: "",
+      mrcPressedOnce: false,
       closeRight: 10,
       closeTop: 10,
       openRight: 10,
@@ -40,7 +43,8 @@ module.exports = React.createClass({
     this.setState({
       input: '',
       evaled: false,
-      error: false
+      error: false,
+      mrcPressedOnce: false
     });
     e.preventDefault();
   },
@@ -74,23 +78,71 @@ module.exports = React.createClass({
           "result": evaled.toString()
         });
       }
-      catch (e) {
+      catch (err) {
         logController.logEvent("Calculation error", null, {
           "key": key,
           "calculation": equation,
-          "error": e.toString()
+          "error": err.toString()
         });
         error = true;
       }
       this.setState({
         input: input,
         evaled: !error,
-        error: error
+        error: error,
+        mrcPressedOnce: false
       });
     }
 
     e.stopPropagation();
     e.preventDefault();
+  },
+
+  mrcPressed: function (e) {
+    if (!this.state.mrcPressedOnce) {
+      var input = this.state.input,
+          endsWithOperator = input.match(/(\+|–|x|÷)$/),
+          evaled = false;
+      if (endsWithOperator) {
+        input += this.state.memory;
+      } else {
+        input = this.state.memory;
+        evaled = true;
+      }
+
+      this.setState({
+        input: input,
+        mrcPressedOnce: true,
+        evaled: evaled
+      });
+    } else {
+      this.setState({
+        memory: "",
+        mrcPressedOnce: false
+      });
+    }
+
+    e.stopPropagation();
+    e.preventDefault();
+  },
+
+  mplusPressed: function() {
+    var evaled = this.state.evaled,
+        input = this.state.input,
+        containsOperator = input.match(/(\+|–|x|÷)/),
+        memory = this.state.memory;
+    if (evaled || !containsOperator) {
+      if (memory) {
+        memory = (parseFloat(memory) + parseFloat(input)).toString();
+      } else {
+        memory = input;
+      }
+    }
+
+    this.setState({
+      memory: memory,
+      mrcPressedOnce: false
+    });
   },
 
   keyPressed: function (e) {
@@ -124,20 +176,6 @@ module.exports = React.createClass({
         input += key;
       }
     }
-    else if (key === this.backspace) {
-      if (!empty && !this.state.error) {
-        input = input.substr(0, input.length - 1);
-      }
-    }
-    else if (key === this.plusMinus) {
-      if (input.match(/^-/)) {
-        input = input.replace(/^-/, '');
-      }
-      else {
-        input = '-' + input;
-      }
-      evaled = this.state.evaled;
-    }
     else if (this.state.evaled) {
       input = key;
     }
@@ -155,7 +193,8 @@ module.exports = React.createClass({
     if (this.state.input != input) {
       this.setState({
         input: input,
-        evaled: evaled
+        evaled: evaled,
+        mrcPressedOnce: false
       });
     }
 
@@ -193,7 +232,7 @@ module.exports = React.createClass({
     }
   },
 
-  endDrag:  function (e) {
+  endDrag:  function () {
     if (this.dragged) {
       logController.logEvent("Calculator dragged", null, {
         "startTop": this.startCalculatorPos.top,
@@ -208,9 +247,11 @@ module.exports = React.createClass({
 
   render: function() {
     var style = {
-      top: this.state.open ? this.state.openTop : this.state.closeTop,
-      right: this.state.open ? this.state.openRight : this.state.closeRight
-    };
+          top: this.state.open ? this.state.openTop : this.state.closeTop,
+          right: this.state.open ? this.state.openRight : this.state.closeRight
+        },
+        mShowing = !!this.state.memory,
+        mClass = "memory" + (mShowing ? "" : " hidden");
 
     if (this.state.open) {
       return (
@@ -220,13 +261,14 @@ module.exports = React.createClass({
           </div>
 
           <div className="top">
+            <div className={ mClass }>M</div>
             <div className={ this.state.error ? 'screen screen-error' : 'screen' }>{ this.state.input }</div>
           </div>
 
           <div className="topRow">
             <span className="clear" onClick={ this.clear }>C</span>
-            <span className="memory">MRC</span>
-            <span className="memory">M+</span>
+            <span className="memory" onClick={ this.mrcPressed }>MRC</span>
+            <span className="memory" onClick={ this.mplusPressed }>M+</span>
             <span className="eval squareroot" onClick={ this.eval }>{this.squareRoot}</span>
             <span className="eval" onClick={ this.eval }>{this.inverse}</span>
           </div>
