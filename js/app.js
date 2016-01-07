@@ -1253,6 +1253,342 @@ module.exports = React.createClass({
 
 
 },{"../config":2,"../controllers/events":3,"../controllers/log":4,"../controllers/user":5,"../data/workbenchAdaptor":6,"../data/workbenchFBConnector":7,"./page.jsx":15,"./view-other-circuit":19}],10:[function(require,module,exports){
+// adapted from http://thecodeplayer.com/walkthrough/javascript-css3-calculator
+/*jslint evil: true */
+
+var logController = require('../controllers/log');
+
+module.exports = React.createClass({
+
+  displayName: 'Calculator',
+
+  getInitialState: function() {
+    this.inverse = '1/x';
+    this.squareRoot = String.fromCharCode(8730);
+    this.equals = '=';
+
+    return {
+      input: '',
+      open: false,
+      evaled: false,
+      error: false,
+      memory: "",
+      mrcPressedOnce: false,
+      closeRight: 10,
+      closeTop: 10,
+      openRight: 10,
+      openTop: 10
+    };
+  },
+
+  open: function (e) {
+    logController.logEvent("Opened calculator");
+    this.setState({open: true});
+    e.preventDefault();
+  },
+
+  close: function (e) {
+    logController.logEvent("Closed calculator");
+    this.setState({open: false});
+    e.preventDefault();
+  },
+
+  clear: function (e) {
+    logController.logEvent("Cleared calculator");
+    this.setState({
+      input: '',
+      evaled: false,
+      error: false,
+      mrcPressedOnce: false
+    });
+    e.preventDefault();
+  },
+
+  eval: function (e) {
+    var input = this.state.input,
+        equation = input.replace(/(\+|\-|\*|\/|\.)$/, '')     // lop off any remaining ops at end.
+                        .replace(/÷/g, '/')                   // replace visually-nice symbols with actual
+                        .replace(/–/g, '-')
+                        .replace(/x/g, '*'),
+        key = e.target.innerHTML,
+        error = false,
+        evaled;
+
+    if (equation) {
+      if (key === this.inverse) {
+        equation = "1/(" + equation + ")";
+      }
+      else if (key === this.squareRoot) {
+        equation = "Math.sqrt(" + equation + ")";
+      }
+      try {
+        evaled = eval(equation);
+        error = isNaN(evaled) || !isFinite(evaled);
+        if (!error) {
+          input = evaled.toString();
+        }
+        logController.logEvent("Calculation performed", null, {
+          "key": key,
+          "calculation": equation,
+          "result": evaled.toString()
+        });
+      }
+      catch (err) {
+        logController.logEvent("Calculation error", null, {
+          "key": key,
+          "calculation": equation,
+          "error": err.toString()
+        });
+        error = true;
+      }
+      this.setState({
+        input: input,
+        evaled: !error,
+        error: error,
+        mrcPressedOnce: false
+      });
+    }
+
+    e.stopPropagation();
+    e.preventDefault();
+  },
+
+  mrcPressed: function (e) {
+    if (!this.state.mrcPressedOnce) {
+      var input = this.state.input,
+          endsWithOperator = input.match(/(\+|–|x|÷)$/),
+          evaled = false;
+      if (endsWithOperator) {
+        input += this.state.memory;
+      } else {
+        input = this.state.memory;
+        evaled = true;
+      }
+
+      this.setState({
+        input: input,
+        mrcPressedOnce: true,
+        evaled: evaled
+      });
+    } else {
+      this.setState({
+        memory: "",
+        mrcPressedOnce: false
+      });
+    }
+
+    e.stopPropagation();
+    e.preventDefault();
+  },
+
+  mplusPressed: function() {
+    var evaled = this.state.evaled,
+        input = this.state.input,
+        containsOperator = input.match(/(\+|–|x|÷)/),
+        memory = this.state.memory;
+    if (evaled || !containsOperator) {
+      if (memory) {
+        memory = (parseFloat(memory) + parseFloat(input)).toString();
+      } else {
+        memory = input;
+      }
+    }
+
+    this.setState({
+      memory: memory,
+      mrcPressedOnce: false
+    });
+  },
+
+  keyPressed: function (e) {
+    var input = this.state.input,
+        preInput = input,
+        empty = input.length === 0,
+        endsWithOperator = input.match(/(\+|–|x|÷)$/),
+        key = e.target.innerHTML,
+        evaled = false;
+
+    // ignore clicks off the buttons
+    if (e.target.nodeName !== 'SPAN') {
+      return;
+    }
+
+    if (key.match(/(\+|–|x|÷)/)) {
+      if (!empty) {
+        if (!endsWithOperator || key == '-') {
+          input += key;
+        }
+        else if (input.length > 1) {
+          input = input.replace(/.$/, key);
+        }
+      }
+      else if (empty && key == '-') {
+        input += key;
+      }
+    }
+    else if (key == '.') {
+      if (!input.match(/\.\d*$/g) && !this.state.evaled) {
+        input += key;
+      }
+    }
+    else if (this.state.evaled) {
+      input = key;
+    }
+    else {
+      input += key;
+    }
+
+    logController.logEvent("Calculator button pressed", null, {
+      "button": key,
+      "preCalculation": preInput,
+      "postCalculation": input,
+      "changed": this.state.input != input
+    });
+
+    if (this.state.input != input) {
+      this.setState({
+        input: input,
+        evaled: evaled,
+        mrcPressedOnce: false
+      });
+    }
+
+    e.preventDefault();
+  },
+
+  keyboardChange: function (e) {
+    var newValue = e.target.value;
+
+    // only allow keyboard updates that match the following format:
+    // start with a number or period, and contains only numbers, periods, or operators
+    if (/^(\d|\.)(\d|\.|\+|-|–|\/|÷|\*|x)*$/.test(newValue) || !newValue) {
+      // update the expression to use our pretty operators
+      newValue = newValue.replace(/\//g, '÷')
+                  .replace(/-/g, '–')
+                  .replace(/\*/g, 'x');
+      this.setState({
+        input: newValue,
+        evaled: false,
+        mrcPressedOnce: false
+      });
+    }
+  },
+
+  keyboardPress: function(e) {
+    if (e.key == "Enter") {
+      this.eval(e);
+    }
+  },
+
+  startDrag: function (e) {
+    this.dragging = (this.state.open && (e.target.nodeName != 'SPAN'));
+    this.dragged = false;
+    if (!this.dragging) {
+      return;
+    }
+    this.startCalculatorPos = {
+      right: this.state.openRight,
+      top: this.state.openTop,
+    };
+    this.startMousePos = {
+      x: e.clientX,
+      y: e.clientY
+    };
+  },
+
+  drag: function (e) {
+    var newPos;
+    if (this.dragging) {
+      // the calculations are reversed here only because we are setting the right pos and not the left
+      newPos = {
+        openRight: this.startCalculatorPos.right + (this.startMousePos.x - e.clientX),
+        openTop: this.startCalculatorPos.top + (e.clientY - this.startMousePos.y)
+      };
+      if ((newPos.openRight != this.state.openRight) || (newPos.openTop != this.state.openTop)) {
+        this.setState(newPos);
+        this.dragged = true;
+      }
+    }
+  },
+
+  endDrag:  function () {
+    if (this.dragged) {
+      logController.logEvent("Calculator dragged", null, {
+        "startTop": this.startCalculatorPos.top,
+        "startRight": this.startCalculatorPos.right,
+        "endTop": this.state.openTop,
+        "endRight": this.state.openRight,
+      });
+      this.dragged = false;
+    }
+    this.dragging = false;
+  },
+
+  render: function() {
+    var style = {
+          top: this.state.open ? this.state.openTop : this.state.closeTop,
+          right: this.state.open ? this.state.openRight : this.state.closeRight
+        },
+        mShowing = !!this.state.memory,
+        mClass = "memory" + (mShowing ? "" : " hidden");
+
+    if (this.state.open) {
+      return (
+        React.createElement("div", {id: "calculator", onMouseDown:  this.startDrag, onMouseMove:  this.drag, onMouseUp:  this.endDrag, style:  style }, 
+          React.createElement("div", {className: "top very-top"}, 
+            React.createElement("span", {className: "close", onClick:  this.close}, "X")
+          ), 
+
+          React.createElement("div", {className: "top"}, 
+            React.createElement("div", {className:  mClass }, "M"), 
+            React.createElement("input", {className:  this.state.error ? 'screen screen-error' : 'screen', value:  this.state.input, onChange:  this.keyboardChange, onKeyPress:  this.keyboardPress})
+          ), 
+
+          React.createElement("div", {className: "topRow"}, 
+            React.createElement("span", {className: "clear", onClick:  this.clear}, "C"), 
+            React.createElement("span", {className: "memory", onClick:  this.mrcPressed}, "MRC"), 
+            React.createElement("span", {className: "memory", onClick:  this.mplusPressed}, "M+"), 
+            React.createElement("span", {className: "eval squareroot", onClick:  this.eval}, this.squareRoot), 
+            React.createElement("span", {className: "eval", onClick:  this.eval}, this.inverse)
+          ), 
+
+          React.createElement("div", {className: "keys", onClick:  this.keyPressed}, 
+
+            React.createElement("span", null, "7"), 
+            React.createElement("span", null, "8"), 
+            React.createElement("span", null, "9"), 
+            React.createElement("span", {className: "operator"}, "+"), 
+
+            React.createElement("span", null, "4"), 
+            React.createElement("span", null, "5"), 
+            React.createElement("span", null, "6"), 
+            React.createElement("span", {className: "operator"}, "–"), 
+
+            React.createElement("span", null, "1"), 
+            React.createElement("span", null, "2"), 
+            React.createElement("span", null, "3"), 
+            React.createElement("span", {className: "operator"}, "÷"), 
+
+            React.createElement("span", null, "0"), 
+            React.createElement("span", null, "."), 
+            React.createElement("span", {className: "eval", onClick:  this.eval}, this.equals), 
+            React.createElement("span", {className: "operator multiply"}, "x")
+          )
+        )
+      );
+    }
+    else {
+      return (
+        React.createElement("div", {id: "open-calculator", onClick:  this.open, style:  style }, 
+          "Calculator"
+        )
+      );
+    }
+  }
+});
+
+
+},{"../controllers/log":4}],11:[function(require,module,exports){
 var xhrObserver = require('../data/xhrObserver');
 var logController = require('../controllers/log');
 
@@ -1299,7 +1635,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../controllers/log":4,"../data/xhrObserver":8}],11:[function(require,module,exports){
+},{"../controllers/log":4,"../data/xhrObserver":8}],12:[function(require,module,exports){
 /* global FirebaseSimpleLogin: false */
 /* global CodeMirror: false */
 
@@ -1886,391 +2222,7 @@ Dialog = React.createFactory(React.createClass({
 
 
 
-},{}],12:[function(require,module,exports){
-/* global math: false */
-
-var logController = require('../controllers/log'),
-    HelpTab, HistoryTab, HistoryItem;
-
-module.exports = React.createClass({
-  displayName: 'MathPad',
-
-  getInitialState: function () {
-    return {
-      open: false,
-      unopened: true,
-      closeRight: 10,
-      closeTop: 10,
-      initialRight: -500,
-      openRight: 25,
-      openTop: 25,
-      output: null,
-      history: [],
-      showHelp: true
-    };
-  },
-
-  evalute: function (input) {
-    var output,
-        error = function (isError, text) {
-          logController.logEvent("MathPad calculation performed", null, {
-            "input": input,
-            "output": text,
-            "error": isError
-          });
-          return {error: isError, text: text};
-        };
-    if (!math || !math.eval) {
-      return error(true, 'math.js needs to be included in html file');
-    }
-    if (input.length === 0) {
-      return null;
-    }
-    try {
-      output = math.eval(input, {});
-      if (typeof output != 'number') {
-        return error(true, 'Unexpected end of expression');
-      }
-      return error(false, output);
-    }
-    catch (e) {
-      return error(true, e.message.replace(/\(char [^)]+\)/, ''));
-    }
-  },
-
-  getInput: function () {
-    return this.refs.input ? this.refs.input.getDOMNode() : null;
-  },
-
-  focus: function (clear) {
-    var input = this.getInput();
-    if (!input) {
-      return;
-    }
-    if (clear) {
-      input.value = '';
-    }
-    input.focus();
-  },
-
-  keyup: function (e) {
-    var input = this.getInput().value.replace(/^\s+|\s+$/, ''),
-        output = this.evalute(input),
-        history;
-
-    if ((e.keyCode == 13) && (input.length > 0)) {
-      if (!output.error) {
-        history = this.state.history.slice(0);
-        history.push({
-          input: input,
-          output: output,
-        });
-        this.setState({
-          output: null,
-          history: history,
-          showHelp: false
-        });
-        logController.logEvent("MathPad item added to history", null, {
-          "input": input,
-          "output": output.text
-        });
-        this.focus(true);
-      }
-    }
-    else {
-      this.setState({output: output});
-    }
-  },
-
-  helpTabClicked: function () {
-    this.setState({showHelp: true});
-    this.focus();
-  },
-
-  historyTabClicked: function () {
-    this.setState({showHelp: false});
-    this.focus();
-  },
-
-  historyItemClicked: function (text) {
-    var input = this.getInput(),
-        startPos, endPos;
-
-    // adapted from http://jsfiddle.net/Znarkus/Z99mK/
-    if (document.selection) {
-      input.focus();
-      document.selection.createRange().text = text;
-    }
-    else if (input.selectionStart || input.selectionStart === 0) {
-      startPos = input.selectionStart;
-      endPos = input.selectionEnd;
-      input.value = input.value.substring(0, startPos) + text + input.value.substring(endPos, input.value.length);
-      input.selectionStart = startPos + text.length;
-      input.selectionEnd = startPos + text.length;
-    }
-    else {
-      input.value += text;
-    }
-
-    logController.logEvent("MathPad history item clicked", null, {
-      "item": text
-    });
-
-    input.focus();
-  },
-
-  startDrag: function (e) {
-    var self = this,
-      dragging = true,
-      dragged = false,
-      startCalculatorPos = {
-        right: this.state.openRight,
-        top: this.state.openTop,
-      },
-      startMousePos = {
-        x: e.clientX,
-        y: e.clientY
-      },
-      mathPadWidth = $(this.getDOMNode()).find('.title').width(),
-      windowWidth = $(window).width(),
-      mousemove, mouseup;
-
-    e.preventDefault();
-
-    mousemove = function (e) {
-      var newPos;
-      if (dragging) {
-        e.preventDefault();
-        // the calculations are reversed here only because we are setting the right pos and not the left
-        newPos = {
-          openRight: Math.min(windowWidth - 50, Math.max((-mathPadWidth + 50), startCalculatorPos.right + (startMousePos.x - e.clientX))),
-          openTop: Math.max(0, startCalculatorPos.top + (e.clientY - startMousePos.y))
-        };
-        if ((newPos.openRight != self.state.openRight) || (newPos.openTop != self.state.openTop)) {
-          self.setState(newPos);
-          dragged = true;
-        }
-      }
-    };
-
-    mouseup = function (e) {
-      if (dragged) {
-        e.preventDefault();
-        logController.logEvent("MathPad dragged", null, {
-          "startTop": startCalculatorPos.top,
-          "startRight": startCalculatorPos.right,
-          "endTop": self.state.openTop,
-          "endRight": self.state.openRight,
-        });
-        dragged = false;
-      }
-      dragging = false;
-
-      if (window.removeEventListener) {
-        window.removeEventListener('mousemove', mousemove);
-        window.removeEventListener('mouseup', mouseup);
-      }
-      else {
-        window.detactEvent('onmousemove', mousemove);
-        window.detactEvent('onmouseup', mouseup);
-      }
-
-      self.focus();
-    };
-
-    if (window.addEventListener) {
-      window.addEventListener('mousemove', mousemove, false);
-      window.addEventListener('mouseup', mouseup, false);
-    }
-    else {
-      window.attachEvent('onmousemove', mousemove);
-      window.attachEvent('onmouseup', mouseup);
-    }
-  },
-
-  open: function (e) {
-    var self = this;
-    logController.logEvent("Opened MathPad");
-    this.setState({open: true});
-    setTimeout(function() {
-      self.focus();
-      self.setState({unopened: false});
-    }, 1200);
-    e.preventDefault();
-  },
-
-  close: function (e) {
-    logController.logEvent("Closed MathPad");
-    this.setState({open: false});
-    e.preventDefault();
-  },
-
-  render: function () {
-    var output, outputClass, right, padClass;
-
-    outputClass = 'output';
-    if (this.state.output !== null) {
-      if (this.state.output.error) {
-        outputClass += ' output-error';
-        output = this.state.output.text;
-      }
-      else {
-        output = 'Result: ' + this.state.output.text;
-      }
-    }
-    else {
-      output = 'Please enter a math expression above and press enter';
-    }
-
-    right = this.state.open ? this.state.openRight : this.state.initialRight;
-
-    padClass = 'mathpad mathpad-open' + (this.state.unopened ? ' unopened' : '');
-
-    return React.createElement("div", null, 
-      React.createElement("button", {className: "mathpad mathpad-closed", onClick: this.open, style: {top: this.state.closeTop, right: this.state.closeRight}}, "MathPad"), 
-      React.createElement("div", {className: padClass, style: {top: this.state.openTop, right: right, visibility: this.state.open ? 'visible' : 'visible'}}, 
-        React.createElement("div", {className: "title", onMouseDown: this.startDrag}, 
-          "MathPad", 
-          React.createElement("span", {className: "close", onClick: this.close}, "X")
-        ), 
-        React.createElement("div", {className: "tabs"}, 
-          React.createElement("div", {onClick: this.helpTabClicked, className: 'tab ' + (this.state.showHelp ? 'active' : 'inactive')}, "Help"), 
-          React.createElement("div", {onClick: this.historyTabClicked, className: 'tab ' + (!this.state.showHelp ? 'active' : 'inactive')}, "History", this.state.history.length > 0 ? ' (' + this.state.history.length + ')' : '')
-        ), 
-        this.state.showHelp ? React.createElement(HelpTab, null) : React.createElement(HistoryTab, {history: this.state.history, itemClicked: this.historyItemClicked}), 
-        React.createElement("div", {className: "input"}, 
-          React.createElement("input", {ref: "input", onKeyUp: this.keyup})
-        ), 
-        React.createElement("div", {className: outputClass}, output)
-      )
-    );
-  }
-});
-
-HelpTab = React.createClass({displayName: "HelpTab",
-  shouldComponentUpdate: function () {
-    return false;
-  },
-
-  render: function () {
-    return React.createElement("div", {className: "help"}, 
-      React.createElement("div", {className: "intro"}, 
-        React.createElement("p", null, 
-          "Enter an math expression and it will be solved as you type it.  To save it in the history hit the \"Enter\" key.  To recall an item from this history just click on it."
-        ), 
-        React.createElement("p", null, 
-          "You can enter either calculations like this: \"1 + 1\" or formulas like this: \"sin(e)/cos(1) + 1\".  A list of functions and constants are shown below."
-        )
-      ), 
-      React.createElement("div", {className: "header"}, "Example calculations"), 
-      React.createElement("table", null, 
-        React.createElement("tbody", null, 
-          React.createElement("tr", null, 
-            React.createElement("td", null, React.createElement("code", null, "5 * 2")), 
-            React.createElement("td", null, " = 10")
-          ), 
-          React.createElement("tr", null, 
-            React.createElement("td", null, React.createElement("code", null, "(7 + 3) / 2")), 
-            React.createElement("td", null, " = 5")
-          )
-        )
-      ), 
-      React.createElement("div", {className: "header"}, "Functions"), 
-      React.createElement("table", null, 
-        React.createElement("tbody", null, 
-          React.createElement("tr", null, 
-            React.createElement("td", null, React.createElement("code", null, "sqrt(x)")), 
-            React.createElement("td", null, "The square root of a number.")
-          ), 
-          React.createElement("tr", null, 
-            React.createElement("td", null, React.createElement("code", null, "pow(x, y)")), 
-            React.createElement("td", null, React.createElement("i", null, "x"), " raised to the power ", React.createElement("i", null, "y"), ".")
-          ), 
-          React.createElement("tr", null, 
-            React.createElement("td", null, React.createElement("code", null, "cos(x)")), 
-            React.createElement("td", null, "Returns the cosine of a number.")
-          ), 
-          React.createElement("tr", null, 
-            React.createElement("td", null, React.createElement("code", null, "sin(x)")), 
-            React.createElement("td", null, "Returns the sine of a number.")
-          ), 
-          React.createElement("tr", null, 
-            React.createElement("td", null, React.createElement("code", null, "tan(x)")), 
-            React.createElement("td", null, "Returns the tangent of a number.")
-          ), 
-          React.createElement("tr", null, 
-            React.createElement("td", null, React.createElement("code", null, "log(x)")), 
-            React.createElement("td", null, "Returns the natural logarithm (loge, also ln) of a number.")
-          )
-        )
-      ), 
-      React.createElement("div", {className: "header"}, "Constants"), 
-      React.createElement("table", null, 
-        React.createElement("tbody", null, 
-          React.createElement("tr", null, 
-            React.createElement("td", null, React.createElement("code", null, "e")), 
-            React.createElement("td", null, "Euler's number, the base of the natural logarithm.")
-          ), 
-          React.createElement("tr", null, 
-            React.createElement("td", null, React.createElement("code", null, "LN2")), 
-            React.createElement("td", null, "Returns the natural logarithm of 2.")
-          ), 
-          React.createElement("tr", null, 
-            React.createElement("td", null, React.createElement("code", null, "LN10")), 
-            React.createElement("td", null, "Returns the natural logarithm of 10.")
-          ), 
-          React.createElement("tr", null, 
-            React.createElement("td", null, React.createElement("code", null, "pi")), 
-            React.createElement("td", null, "The number pi is a mathematical constant that is the ratio of a circle\\'s" + ' ' +
-            "circumference to its diameter.")
-          )
-        )
-      )
-    );
-  }
-});
-
-HistoryTab = React.createClass({displayName: "HistoryTab",
-
-  componentDidUpdate: function (prevProps) {
-    // if history changed then scroll to the bottom
-    if ((JSON.stringify(prevProps.history) != JSON.stringify(this.props.history))) {
-      var history = this.refs.history ? this.refs.history.getDOMNode() : null;
-      if (history) {
-        history.scrollTop = history.scrollHeight;
-      }
-    }
-  },
-
-  render: function () {
-    var historyItems = [],
-        i;
-    if (this.props.history.length > 0) {
-      for (i = 0; i < this.props.history.length; i++) {
-        historyItems.push(React.createElement(HistoryItem, {item: this.props.history[i], key: i, itemClicked: this.props.itemClicked}));
-      }
-    }
-    return React.createElement("div", {className: "history", ref: "history"}, historyItems.length > 0 ? historyItems : 'Press enter after entering an expression below to move it to the history...');
-  }
-});
-
-HistoryItem = React.createClass({
-  displayName: 'HistoryItem',
-
-  itemClicked: function (e) {
-    this.props.itemClicked(e.target.innerHTML);
-  },
-
-  render: function () {
-    return React.createElement("div", {className: "history-item"}, 
-      React.createElement("div", {className: "bubble history-input", onClick: this.itemClicked}, this.props.item.input), 
-      React.createElement("div", {className: "bubble history-output", onClick: this.itemClicked}, this.props.item.output.text)
-    );
-  }
-});
-
-
-},{"../controllers/log":4}],13:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 // adapted from SPARKS math-parser.js
 
 module.exports = React.createClass({
@@ -2708,9 +2660,8 @@ Popup = React.createFactory(React.createClass({
 
 },{"../config":2,"../controllers/log":4}],15:[function(require,module,exports){
 var userController = require('../controllers/user'),
-    //ChatView = require('./chat.jsx'),
     SidebarChatView = require('./sidebar-chat.jsx'),
-    MathPadView = require('./mathpad.jsx'),
+    CalculatorView = require('./calculator.jsx'),
     NotesView = require('./notes'),
     ConnectionView = require('./connection.jsx'),
     EditorView = require('./editor'),
@@ -2751,7 +2702,7 @@ module.exports = React.createClass({
           React.createElement("div", {id: "breadboard-wrapper", className:  wrapperClass })
         ), 
          image, 
-        React.createElement(MathPadView, null), 
+        React.createElement(CalculatorView, null), 
          connection, 
          editor 
       )
@@ -2760,7 +2711,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../config":2,"../controllers/user":5,"./connection.jsx":10,"./editor":11,"./mathpad.jsx":12,"./notes":13,"./other-circuits":14,"./sidebar-chat.jsx":16,"./submitButton":17}],16:[function(require,module,exports){
+},{"../config":2,"../controllers/user":5,"./calculator.jsx":10,"./connection.jsx":11,"./editor":12,"./notes":13,"./other-circuits":14,"./sidebar-chat.jsx":16,"./submitButton":17}],16:[function(require,module,exports){
 var userController = require('../controllers/user'),
     logController = require('../controllers/log'),
     ChatItems, ChatItem;
