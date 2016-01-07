@@ -47,7 +47,10 @@ module.exports = React.createClass({
 
   eval: function (e) {
     var input = this.state.input,
-        equation = input.replace(/(\+|\-|\*|\/|\.)$/, ''),
+        equation = input.replace(/(\+|\-|\*|\/|\.)$/, '')     // lop off any remaining ops at end.
+                        .replace(/÷/g, '/')                   // replace visually-nice symbols with actual
+                        .replace(/–/g, '-')
+                        .replace(/x/g, '*'),
         key = e.target.innerHTML,
         error = false,
         evaled;
@@ -94,7 +97,7 @@ module.exports = React.createClass({
     var input = this.state.input,
         preInput = input,
         empty = input.length === 0,
-        endsWithOperator = input.match(/(\+|\-|\*|\/)$/),
+        endsWithOperator = input.match(/(\+|–|x|÷)$/),
         key = e.target.innerHTML,
         evaled = false;
 
@@ -103,7 +106,7 @@ module.exports = React.createClass({
       return;
     }
 
-    if (key.match(/(\+|\-|\*|\/)/)) {
+    if (key.match(/(\+|–|x|÷)/)) {
       if (!empty) {
         if (!endsWithOperator || key == '-') {
           input += key;
