@@ -201,6 +201,30 @@ module.exports = React.createClass({
     e.preventDefault();
   },
 
+  keyboardChange: function (e) {
+    var newValue = e.target.value;
+
+    // only allow keyboard updates that match the following format:
+    // start with a number or period, and contains only numbers, periods, or operators
+    if (/^(\d|\.)(\d|\.|\+|-|–|\/|÷|\*|x)*$/.test(newValue) || !newValue) {
+      // update the expression to use our pretty operators
+      newValue = newValue.replace(/\//g, '÷')
+                  .replace(/-/g, '–')
+                  .replace(/\*/g, 'x');
+      this.setState({
+        input: newValue,
+        evaled: false,
+        mrcPressedOnce: false
+      });
+    }
+  },
+
+  keyboardPress: function(e) {
+    if (e.key == "Enter") {
+      this.eval(e);
+    }
+  },
+
   startDrag: function (e) {
     this.dragging = (this.state.open && (e.target.nodeName != 'SPAN'));
     this.dragged = false;
@@ -262,7 +286,7 @@ module.exports = React.createClass({
 
           <div className="top">
             <div className={ mClass }>M</div>
-            <div className={ this.state.error ? 'screen screen-error' : 'screen' }>{ this.state.input }</div>
+            <input className={ this.state.error ? 'screen screen-error' : 'screen' } value={ this.state.input } onChange={ this.keyboardChange } onKeyPress={ this.keyboardPress }></input>
           </div>
 
           <div className="topRow">

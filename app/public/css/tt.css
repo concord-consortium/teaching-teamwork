@@ -203,6 +203,8 @@ form button:disabled {
   -moz-user-select: none;
   -webkit-user-select: none;
   -ms-user-select: none;
+
+  border-radius: 9px;
 }
 #calculator {
   cursor: move;
