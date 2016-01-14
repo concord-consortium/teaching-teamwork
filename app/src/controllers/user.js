@@ -1,4 +1,5 @@
 var UserRegistrationView = require('../views/userRegistration.jsx'),
+    groups = require('../data/group-names'),
     logController = require('./log'),
     userController,
     numClients,
@@ -13,11 +14,12 @@ var UserRegistrationView = require('../views/userRegistration.jsx'),
     groupRefCreationListeners,
     client,
     callback,
-    serverSkew;
+    serverSkew,
+    ping;
 
 // scratch
 var fbUrlDomain = 'https://teaching-teamwork.firebaseio.com/';
-var fbUrlBase = fbUrlDomain + 'dev/';
+var fbUrlBase = fbUrlDomain + '2016/';
 
 var getDate = function() {
   var today = new Date(),
@@ -57,51 +59,69 @@ module.exports = userController = {
     numClients = _numClients;
     activityName = _activityName;
     callback = _callback;
-    userName = $.trim($.cookie('userName') || '');
-    if (userName.length === 0) {
-      UserRegistrationView.open(this, {form: "username"});
-    }
-    else {
-      userController.setName(userName);
-    }
-  },
+    userName = null;
 
-  setName: function(name) {
-    userName = name;
-    $.cookie('userName', name);
-    logController.setUserName(userName);
     if (numClients > 1) {
-      groupName = $.trim($.cookie('groupName') || '');
-      if (groupName.length === 0) {
-        UserRegistrationView.open(this, {form: "groupname"});
-      }
-      else {
-        userController.checkGroupName(groupName);
-      }
-    } else {
-      UserRegistrationView.close();
-      callback(0);
+      UserRegistrationView.open(this, {form: "groupname", numClients: numClients});
     }
   },
 
-  checkGroupName: function(name) {
-    var self = this;
+  tryToEnterGroup: function(groupName) {
+    var self = this,
+        group, members;
 
-    groupName = name;
+    for (var i = 0, ii = groups.length; i < ii; i++) {
+      if (groups[i].name == groupName) {
+        group = groups[i];
+        break;
+      }
+    }
 
-    this.createFirebaseGroupRef(activityName, name);
+    members = group.members;
+
+    this.createFirebaseGroupRef(activityName, groupName);
 
     firebaseUsersRef = firebaseGroupRef.child('users');
     groupUsersListener = firebaseUsersRef.on("value", function(snapshot) {
-      var users = snapshot.val();
-      // pass only other users in the room
-      if (users) {
+      var users = snapshot.val() || {};
+
+      // remove any users who haven't pinged in 5 seconds from the list,
+      // opening the slot up to another user
+      for (var user in users) {
+        if (!users.hasOwnProperty(user)) {
+          continue;
+        }
+        var age = Math.floor(Date.now()/1000) - users[user].lastAction;
+        if (age > 5) {
+          firebaseUsersRef.child(user).remove();
+          delete users[user];
+        }
+      }
+
+      var numExistingUsers = Object.keys(users).length;
+
+      if (!userName) {
+        if (!users) {
+          userName = members[0];
+        } else if (numExistingUsers < numClients) {
+          for (var i = 0, ii=members.length; i<ii; i++) {
+            if (!users[members[i]]) {
+              userName = members[i];
+              break;
+            }
+          }
+        }
+      } else {
         delete users[userName];
       }
-      UserRegistrationView.open(self, {form: "groupconfirm", users: users});
-    });
 
-    firebaseUsersRef.child(userName).set({lastAction: Math.floor(Date.now()/1000)});
+      if (userName && (!users || Object.keys(users).length) < numClients) {
+        firebaseUsersRef.child(userName).set({lastAction: Math.floor(Date.now()/1000)});
+        self.startPinging();
+      }
+
+      UserRegistrationView.open(self, {form: "groupconfirm", users: users, userName: userName, numExistingUsers: numExistingUsers});
+    });
 
     logController.logEvent("Started to join group", groupName);
   },
@@ -109,34 +129,38 @@ module.exports = userController = {
   rejectGroupName: function() {
     this.stopPinging();
     // clean up
-    firebaseUsersRef.once("value", function(snapshot) {
-      var users = snapshot.val();
-      delete users[userName];
-      if (Object.keys(users).length) {
-        // delete ourselves
-        firebaseUsersRef.child(userName).remove();
-      } else {
-        // delete the room if we are the only member
-        firebaseGroupRef.remove();
-      }
-    });
+    if (userName) {
+      firebaseUsersRef.once("value", function(snapshot) {
+        var users = snapshot.val();
+        delete users[userName];
+        if (Object.keys(users).length) {
+          // delete ourselves
+          firebaseUsersRef.child(userName).remove();
+        } else {
+          // delete the room if we are the only member
+          firebaseGroupRef.remove();
+        }
+      });
+    }
+
+    userName = null;
+
+    firebaseUsersRef.off("value", groupUsersListener);
+
     UserRegistrationView.open(this, {form: "groupname"});
+
 
     logController.logEvent("Rejected Group", groupName);
   },
 
-  setGroupName: function(name) {
+  setGroupName: function(groupName) {
     var self = this;
-    groupName = name;
-    $.cookie('groupName', name);
 
     firebaseUsersRef.off("value", groupUsersListener);
 
     logController.setGroupName(groupName);
 
     notifyGroupRefCreation();
-
-    this.startPinging();
 
     // annoyingly we have to get out of this before the off() call is finalized
     setTimeout(function(){
@@ -154,7 +178,7 @@ module.exports = userController = {
             firebaseUsersRef.child(user).remove();
           }
         }
-        UserRegistrationView.open(self, {form: "selectboard", numClients: numClients, users: users});
+        UserRegistrationView.open(self, {form: "selectboard", numClients: numClients, users: users, userName: userName});
       });
     }, 1);
   },
@@ -172,14 +196,16 @@ module.exports = userController = {
 
   // ping firebase every second so we show we're still an active member of the group.
   startPinging: function() {
-    this.ping = setInterval(function() {
-      firebaseUsersRef.child(userName).child("lastAction").set(Math.floor(Date.now()/1000));
-    }, 1000);
+    if (!ping) {
+      ping = setInterval(function() {
+        firebaseUsersRef.child(userName).child("lastAction").set(Math.floor(Date.now()/1000));
+      }, 1000);
+    }
   },
 
   stopPinging: function() {
-    if (this.ping) {
-      clearInterval(this.ping);
+    if (ping) {
+      clearInterval(ping);
     }
   },
 
