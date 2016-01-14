@@ -141,7 +141,6 @@ form label {
   margin: 0px;
 }
 form label>span {
-  float: left;
   width: 20%;
   text-align: right;
   padding-right: 10px;
@@ -424,6 +423,10 @@ form button:disabled {
 
 #top-button-wrapper button {
   margin: 0 10px;
+}
+
+#user-registration select {
+  font-size: 1.3em;
 }
 
 .submit-button-popup {
