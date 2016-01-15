@@ -285,11 +285,12 @@ var UserRegistrationView = require('../views/userRegistration.jsx'),
     groupRefCreationListeners,
     client,
     callback,
-    serverSkew;
+    serverSkew,
+    ping;
 
 // scratch
 var fbUrlDomain = 'https://teaching-teamwork.firebaseio.com/';
-var fbUrlBase = fbUrlDomain + 'dev/';
+var fbUrlBase = fbUrlDomain + '2016/';
 
 var getDate = function() {
   var today = new Date(),
@@ -329,18 +330,14 @@ module.exports = userController = {
     numClients = _numClients;
     activityName = _activityName;
     callback = _callback;
-    userName = '';
-
-    // GET GROUP NAME AND USER NAME FROM LARA SESSION
-    // GET REAL USERNAME FROM LARA
-    // LOG ALL
+    userName = null;
 
     if (numClients > 1) {
       UserRegistrationView.open(this, {form: "groupname", numClients: numClients});
     }
   },
 
-  checkGroupName: function(groupName) {
+  tryToEnterGroup: function(groupName) {
     var self = this,
         group, members;
 
@@ -359,20 +356,6 @@ module.exports = userController = {
     groupUsersListener = firebaseUsersRef.on("value", function(snapshot) {
       var users = snapshot.val() || {};
 
-      if (!userName) {
-        if (!users) {
-          userName = members[0];
-        } else {
-          for (var i = 0, ii=members.length; i<ii; i++) {
-            if (!users[members[i]]) {
-              userName = members[i];
-              break;
-            }
-          }
-        }
-      } else {
-        delete users[userName];
-      }
       // remove any users who haven't pinged in 5 seconds from the list,
       // opening the slot up to another user
       for (var user in users) {
@@ -386,12 +369,29 @@ module.exports = userController = {
         }
       }
 
+      var numExistingUsers = Object.keys(users).length;
+
+      if (!userName) {
+        if (!users) {
+          userName = members[0];
+        } else if (numExistingUsers < numClients) {
+          for (var i = 0, ii=members.length; i<ii; i++) {
+            if (!users[members[i]]) {
+              userName = members[i];
+              break;
+            }
+          }
+        }
+      } else {
+        delete users[userName];
+      }
+
       if (userName && (!users || Object.keys(users).length) < numClients) {
         firebaseUsersRef.child(userName).set({lastAction: Math.floor(Date.now()/1000)});
         self.startPinging();
       }
 
-      UserRegistrationView.open(self, {form: "groupconfirm", users: users, userName: userName});
+      UserRegistrationView.open(self, {form: "groupconfirm", users: users, userName: userName, numExistingUsers: numExistingUsers});
     });
 
     logController.logEvent("Started to join group", groupName);
@@ -400,18 +400,26 @@ module.exports = userController = {
   rejectGroupName: function() {
     this.stopPinging();
     // clean up
-    firebaseUsersRef.once("value", function(snapshot) {
-      var users = snapshot.val();
-      delete users[userName];
-      if (Object.keys(users).length) {
-        // delete ourselves
-        firebaseUsersRef.child(userName).remove();
-      } else {
-        // delete the room if we are the only member
-        firebaseGroupRef.remove();
-      }
-    });
+    if (userName) {
+      firebaseUsersRef.once("value", function(snapshot) {
+        var users = snapshot.val();
+        delete users[userName];
+        if (Object.keys(users).length) {
+          // delete ourselves
+          firebaseUsersRef.child(userName).remove();
+        } else {
+          // delete the room if we are the only member
+          firebaseGroupRef.remove();
+        }
+      });
+    }
+
+    userName = null;
+
+    firebaseUsersRef.off("value", groupUsersListener);
+
     UserRegistrationView.open(this, {form: "groupname"});
+
 
     logController.logEvent("Rejected Group", groupName);
   },
@@ -459,14 +467,16 @@ module.exports = userController = {
 
   // ping firebase every second so we show we're still an active member of the group.
   startPinging: function() {
-    this.ping = setInterval(function() {
-      firebaseUsersRef.child(userName).child("lastAction").set(Math.floor(Date.now()/1000));
-    }, 1000);
+    if (!ping) {
+      ping = setInterval(function() {
+        firebaseUsersRef.child(userName).child("lastAction").set(Math.floor(Date.now()/1000));
+      }, 1000);
+    }
   },
 
   stopPinging: function() {
-    if (this.ping) {
-      clearInterval(this.ping);
+    if (ping) {
+      clearInterval(ping);
     }
   },
 
@@ -3350,19 +3360,16 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
     }
   },
   getInitialState: function() {
-    var groupName = groups[0].name;
     return {
-      groupName: groupName
+      groupName: ""
     };
   },
   handleGroupNameChange: function(event) {
     this.setState({groupName: event.target.value});
   },
-  handleSubmit: function(e) {
+  handleGroupSelected: function(e) {
     e.preventDefault();
-    if (this.props.form == "groupname") {
-      userController.checkGroupName(this.state.groupName);
-    }
+    userController.tryToEnterGroup(this.state.groupName);
   },
   handleJoinGroup: function() {
     userController.setGroupName(this.state.groupName);
@@ -3402,29 +3409,29 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
       var groupOptions = groups.map(function(group, i) {
         return (React.createElement("option", {key: i, value: group.name}, group.name));
       });
+      groupOptions.unshift(React.createElement("option", {key: "placeholder", value: "", disabled: "disabled"}, "Select a team"));
       form = (
         React.createElement("div", null, 
           React.createElement("h3", null, "Welcome!"), 
           React.createElement("div", null, 
             "This activity requires a team of ", this.props.numClients, " users."
           ), 
-          React.createElement("h3", null, "Please select your group:"), 
+          React.createElement("h3", null, "Please select your team:"), 
           React.createElement("label", null, 
             React.createElement("select", {value: this.state.groupName, onChange:  this.handleGroupNameChange}, 
                groupOptions 
             ), 
-            React.createElement("button", {onClick:  this.handleSubmit}, "Select")
+            React.createElement("button", {onClick:  this.handleGroupSelected}, "Select")
           )
         )
       );
     } else if (this.props.form == 'groupconfirm') {
       if (!this.props.userName) {
-        var numUsers = Object.keys(this.props.users).length;
         form = (
           React.createElement("div", null, 
             React.createElement("h3", null, "Group name: ",  this.state.groupName), 
             React.createElement("div", null, 
-              "There are already ", numUsers, " in this group."
+              "There are already ",  this.props.numExistingUsers, " in this group."
             ), 
             React.createElement("label", null, 
               React.createElement("button", {onClick:  this.handleRejectGroup}, "Enter a different group")
@@ -3523,7 +3530,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
     }
 
     return (
-      React.createElement("form", {onSubmit:  this.handleSubmit}, 
+      React.createElement("form", null, 
          form 
       )
     );
