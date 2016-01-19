@@ -197,6 +197,8 @@ module.exports = React.createClass({
         waitForBreadboardView(function () {
           try {
             sparks.createWorkbench(workbench, "breadboard-wrapper");
+            $('.breadboard svg').css({width: 740});
+            $('.breadboard svg')[0].setAttribute('viewBox', "60 0 740 500");
           }
           catch (e) {
             // sparks is throwing an error when computing the distance between points on load
