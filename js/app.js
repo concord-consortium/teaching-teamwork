@@ -1067,6 +1067,9 @@ module.exports = React.createClass({
       // load blank workbench
       sparks.createWorkbench({"circuit": []}, "breadboard-wrapper");
 
+      $('.breadboard svg').css({width: 740});
+      $('.breadboard svg')[0].setAttribute('viewBox', "60 0 740 500");
+
       // load and start activity if present
       if (activityName.length > 0) {
         this.loadActivity(activityName);
@@ -1208,6 +1211,8 @@ module.exports = React.createClass({
         waitForBreadboardView(function () {
           try {
             sparks.createWorkbench(workbench, "breadboard-wrapper");
+            $('.breadboard svg').css({width: 740});
+            $('.breadboard svg')[0].setAttribute('viewBox', "60 0 740 500");
           }
           catch (e) {
             // sparks is throwing an error when computing the distance between points on load
