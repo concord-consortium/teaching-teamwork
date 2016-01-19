@@ -1067,9 +1067,6 @@ module.exports = React.createClass({
       // load blank workbench
       sparks.createWorkbench({"circuit": []}, "breadboard-wrapper");
 
-      $('.breadboard svg').css({width: 740});
-      $('.breadboard svg')[0].setAttribute('viewBox', "60 0 740 500");
-
       // load and start activity if present
       if (activityName.length > 0) {
         this.loadActivity(activityName);
