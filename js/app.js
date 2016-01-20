@@ -2822,7 +2822,6 @@ module.exports = React.createClass({
 
   render: function() {
     var activity = this.props.activity ? this.props.activity : {},
-        activityName = activity.name ? ': ' + activity.name : '',
         hasMultipleClients = activity.clients && (activity.clients.length > 1),
         username = userController.getUsername(),
         groupname = userController.getGroupname(),
@@ -2837,7 +2836,6 @@ module.exports = React.createClass({
 
     return (
       React.createElement("div", {className: "tt-page"}, 
-        React.createElement("h1", null, "Teaching Teamwork",  activityName ), 
          circuit, 
         React.createElement("div", {id: "top-button-wrapper"}, 
            submitButton, 
