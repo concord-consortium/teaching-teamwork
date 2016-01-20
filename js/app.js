@@ -274,6 +274,7 @@ var UserRegistrationView = require('../views/userRegistration.jsx'),
     logController = require('./log'),
     userController,
     numClients,
+    numExistingUsers,
     activityName,
     userName,
     groupName,
@@ -356,7 +357,7 @@ module.exports = userController = {
     groupUsersListener = firebaseUsersRef.on("value", function(snapshot) {
       var users = snapshot.val() || {};
 
-      var numExistingUsers = Object.keys(users).length;
+      numExistingUsers = Object.keys(users).length;
       if (!userName) {
         if (!users || !numExistingUsers) {
           userName = members[0];
@@ -443,6 +444,21 @@ module.exports = userController = {
   selectedClient: function() {
     firebaseUsersRef.off("value");
     UserRegistrationView.close();
+
+    var chatRef = firebaseGroupRef.child('chat');
+
+    chatRef.push({
+      user: "System",
+      message: userName + " has joined on circuit "+((client*1)+1)+".    "+
+          numExistingUsers + " out of " + numClients + " users are here.",
+      time: Firebase.ServerValue.TIMESTAMP
+    });
+    var disconnectMessageRef = chatRef.push();
+    disconnectMessageRef.onDisconnect().set({
+      user: "System",
+      message: userName + " has left",
+      time: Firebase.ServerValue.TIMESTAMP
+    });
     callback(client);
   },
 
@@ -2933,7 +2949,8 @@ ChatItems = React.createClass({
     var user = userController.getUsername();
     return React.createElement("div", {ref: "items", className: "sidebar-chat-items"}, 
       this.props.items.map(function(item, i) {
-        return React.createElement(ChatItem, {key:  i, item:  item, me:  item.user == user});
+        var owner = (item.user == user) ? "me" : item.user == "System" ? "system" : "others";
+        return React.createElement(ChatItem, {key:  i, item:  item, owner:  owner });
       })
     );
   }
@@ -2943,7 +2960,8 @@ ChatItem = React.createClass({
   displayName: 'ChatItem',
 
   render: function () {
-    return React.createElement("div", {className:  this.props.me ? 'chat-item chat-item-me' : 'chat-item chat-item-others'}, 
+    var className = 'chat-item chat-item-'+this.props.owner;
+    return React.createElement("div", {className:  className }, 
         React.createElement("b", null,  this.props.item.prefix || (this.props.item.user + ':') ), " ",  this.props.item.message
       );
   }
