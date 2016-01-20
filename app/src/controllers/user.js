@@ -86,10 +86,12 @@ module.exports = userController = {
       var users = snapshot.val() || {};
 
       var numExistingUsers = Object.keys(users).length;
-
       if (!userName) {
-        if (!users) {
+        if (!users || !numExistingUsers) {
           userName = members[0];
+
+          // if we're the first user, delete any existing chat
+          firebaseGroupRef.child('chat').set({});
         } else if (numExistingUsers < numClients) {
           for (var i = 0, ii=members.length; i<ii; i++) {
             if (!users[members[i]]) {
