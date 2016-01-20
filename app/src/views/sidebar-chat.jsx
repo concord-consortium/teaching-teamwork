@@ -23,7 +23,7 @@ module.exports = React.createClass({
     var self = this;
     userController.onGroupRefCreation(function() {
       self.firebaseRef = userController.getFirebaseGroupRef().child("chat");
-      self.firebaseRef.on("child_added", function(dataSnapshot) {
+      self.firebaseRef.orderByChild('time').on("child_added", function(dataSnapshot) {
         var items = self.state.items.slice(0);
         items.push(dataSnapshot.val());
         self.setState({
@@ -43,7 +43,8 @@ module.exports = React.createClass({
     e.preventDefault();
     this.firebaseRef.push({
       user: userController.getUsername(),
-      message: message
+      message: message,
+      time: Firebase.ServerValue.TIMESTAMP
     });
     input.value = '';
     input.focus();
@@ -88,7 +89,8 @@ ChatItems = React.createClass({
     var user = userController.getUsername();
     return <div ref="items" className="sidebar-chat-items">
       {this.props.items.map(function(item, i) {
-        return <ChatItem key={ i } item={ item } me={ item.user == user } />;
+        var owner = (item.user == user) ? "me" : item.user == "System" ? "system" : "others";
+        return <ChatItem key={ i } item={ item } owner={ owner } />;
       })}
     </div>;
   }
@@ -98,7 +100,8 @@ ChatItem = React.createClass({
   displayName: 'ChatItem',
 
   render: function () {
-    return <div className={ this.props.me ? 'chat-item chat-item-me' : 'chat-item chat-item-others' }>
+    var className = 'chat-item chat-item-'+this.props.owner;
+    return <div className={ className }>
         <b>{ this.props.item.prefix || (this.props.item.user + ':') }</b> { this.props.item.message }
       </div>;
   }

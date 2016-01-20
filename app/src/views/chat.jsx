@@ -14,7 +14,7 @@ module.exports = React.createClass({
     var self = this;
     userController.onGroupRefCreation(function() {
       self.firebaseRef = userController.getFirebaseGroupRef().child("chat");
-      self.firebaseRef.on("child_added", function(dataSnapshot) {
+      self.firebaseRef.orderByChild('time').on("child_added", function(dataSnapshot) {
         self.items.push(dataSnapshot.val());
         self.setState({
           items: self.items
@@ -32,7 +32,8 @@ module.exports = React.createClass({
     e.preventDefault();
     this.firebaseRef.push({
       user: userController.getUsername(),
-      message: this.state.text
+      message: this.state.text,
+      time: Firebase.ServerValue.TIMESTAMP
     });
     logController.logEvent("Sent message", this.state.text);
     this.setState({text: ""});
@@ -46,7 +47,8 @@ module.exports = React.createClass({
       user: userController.getUsername(),
       message: val+" "+units,
       val: val,
-      units: units
+      units: units,
+      time: Firebase.ServerValue.TIMESTAMP
     });
     logController.logEvent("Sent value", val+" "+units);
   },
