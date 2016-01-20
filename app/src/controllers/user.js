@@ -15,7 +15,7 @@ var UserRegistrationView = require('../views/userRegistration.jsx'),
     client,
     callback,
     serverSkew,
-    ping;
+    onDisconnectRef;
 
 // scratch
 var fbUrlDomain = 'https://teaching-teamwork.firebaseio.com/';
@@ -85,19 +85,6 @@ module.exports = userController = {
     groupUsersListener = firebaseUsersRef.on("value", function(snapshot) {
       var users = snapshot.val() || {};
 
-      // remove any users who haven't pinged in 5 seconds from the list,
-      // opening the slot up to another user
-      for (var user in users) {
-        if (!users.hasOwnProperty(user)) {
-          continue;
-        }
-        var age = Math.floor(Date.now()/1000) - users[user].lastAction;
-        if (age > 5) {
-          firebaseUsersRef.child(user).remove();
-          delete users[user];
-        }
-      }
-
       var numExistingUsers = Object.keys(users).length;
 
       if (!userName) {
@@ -116,8 +103,9 @@ module.exports = userController = {
       }
 
       if (userName && (!users || Object.keys(users).length) < numClients) {
-        firebaseUsersRef.child(userName).set({lastAction: Math.floor(Date.now()/1000)});
-        self.startPinging();
+        firebaseUsersRef.child(userName).set({here: true});
+        onDisconnectRef = firebaseUsersRef.child(userName).onDisconnect();
+        onDisconnectRef.set({});
       }
 
       UserRegistrationView.open(self, {form: "groupconfirm", users: users, userName: userName, numExistingUsers: numExistingUsers});
@@ -127,8 +115,12 @@ module.exports = userController = {
   },
 
   rejectGroupName: function() {
-    this.stopPinging();
+    firebaseUsersRef.off("value", groupUsersListener);
+
     // clean up
+    if (onDisconnectRef) {
+      onDisconnectRef.cancel();
+    }
     if (userName) {
       firebaseUsersRef.once("value", function(snapshot) {
         var users = snapshot.val();
@@ -140,12 +132,9 @@ module.exports = userController = {
           // delete the room if we are the only member
           firebaseGroupRef.remove();
         }
+        userName = null;
       });
     }
-
-    userName = null;
-
-    firebaseUsersRef.off("value", groupUsersListener);
 
     UserRegistrationView.open(this, {form: "groupname"});
 
@@ -166,18 +155,6 @@ module.exports = userController = {
     setTimeout(function(){
       boardsSelectionListener = firebaseUsersRef.on("value", function(snapshot) {
         var users = snapshot.val();
-
-        // remove any users who haven't pinged in 5 seconds from the list,
-        // opening the slot up to another user
-        for (var user in users) {
-          if (!users.hasOwnProperty(user)) {
-            continue;
-          }
-          var age = Math.floor(Date.now()/1000) - users[user].lastAction;
-          if (age > 5) {
-            firebaseUsersRef.child(user).remove();
-          }
-        }
         UserRegistrationView.open(self, {form: "selectboard", numClients: numClients, users: users, userName: userName});
       });
     }, 1);
@@ -185,28 +162,13 @@ module.exports = userController = {
 
   selectClient: function(_client) {
     client = _client;
-    firebaseUsersRef.child(userName).set({client: client, lastAction: Math.floor(Date.now()/1000)});
+    firebaseUsersRef.child(userName).set({client: client});
   },
 
   selectedClient: function() {
     firebaseUsersRef.off("value");
     UserRegistrationView.close();
     callback(client);
-  },
-
-  // ping firebase every second so we show we're still an active member of the group.
-  startPinging: function() {
-    if (!ping) {
-      ping = setInterval(function() {
-        firebaseUsersRef.child(userName).child("lastAction").set(Math.floor(Date.now()/1000));
-      }, 1000);
-    }
-  },
-
-  stopPinging: function() {
-    if (ping) {
-      clearInterval(ping);
-    }
   },
 
   getUsername: function() {
