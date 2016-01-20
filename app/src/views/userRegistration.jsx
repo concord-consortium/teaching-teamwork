@@ -1,4 +1,5 @@
-var userController, UserRegistrationView;
+var userController, UserRegistrationView,
+    groups = require('../data/group-names');
 
 // add a global UserRegistrationView variable because its statics are called in other modules
 module.exports = window.UserRegistrationView = UserRegistrationView = React.createClass({
@@ -31,23 +32,15 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
   },
   getInitialState: function() {
     return {
-      userName: $.trim($.cookie('userName') || ''),
-      groupName: $.trim($.cookie('groupName') || '')
+      groupName: ""
     };
-  },
-  handleUserNameChange: function(event) {
-    this.setState({userName: event.target.value});
   },
   handleGroupNameChange: function(event) {
     this.setState({groupName: event.target.value});
   },
-  handleSubmit: function(e) {
+  handleGroupSelected: function(e) {
     e.preventDefault();
-    if (this.props.form == "username") {
-      userController.setName(this.state.userName);
-    } else if (this.props.form == "groupname") {
-      userController.checkGroupName(this.state.groupName);
-    }
+    userController.tryToEnterGroup(this.state.groupName);
   },
   handleJoinGroup: function() {
     userController.setGroupName(this.state.groupName);
@@ -83,62 +76,87 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
   },
   render: function() {
     var form;
-    if (this.props.form == 'username') {
+    if (this.props.form == 'groupname' || !this.state.groupName) {
+      var groupOptions = groups.map(function(group, i) {
+        return (<option key={i} value={group.name}>{group.name}</option>);
+      });
+      groupOptions.unshift(<option key="placeholder" value="" disabled="disabled">Select a team</option>);
       form = (
         <div>
+          <h3>Welcome!</h3>
+          <div>
+            This activity requires a team of {this.props.numClients} users.
+          </div>
+          <h3>Please select your team:</h3>
           <label>
-            <span>User Name :</span>
-            <input type="text" ref="userName" value={this.state.userName} onChange={this.handleUserNameChange} />
-          </label>
-        </div>
-      );
-    } else if (this.props.form == 'groupname') {
-      form = (
-        <div>
-          <h3>Hi { this.state.userName }!</h3>
-          <label>
-            <span>Group Name :</span>
-            <input type="text" ref="groupName" value={this.state.groupName} onChange={this.handleGroupNameChange} />
+            <select value={this.state.groupName} onChange={ this.handleGroupNameChange }>
+              { groupOptions }
+            </select>
+            <button onClick={ this.handleGroupSelected } >Select</button>
           </label>
         </div>
       );
     } else if (this.props.form == 'groupconfirm') {
-      var groupDetails,
-          joinStr,
-          keys = Object.keys(this.props.users);
-      if (keys.length === 0) {
-        groupDetails = (
+      if (!this.props.userName) {
+        form = (
           <div>
-            <label>You are the first member of this group.</label>
+            <h3>Group name: { this.state.groupName }</h3>
+            <div>
+              There are already { this.props.numExistingUsers } in this group.
+            </div>
+            <label>
+              <button onClick={ this.handleRejectGroup } >Enter a different group</button>
+            </label>
           </div>
         );
       } else {
-        groupDetails = (
+        var userDetails,
+            groupDetails,
+            joinStr,
+            keys = Object.keys(this.props.users),
+            userName = this.props.userName;
+
+        userDetails = (
           <div>
-            <label>These are the people currently in this group:</label>
-            <ul>
-              {keys.map(function(result) {
-                return <li><b>{result}</b></li>;
-              })}
-            </ul>
+            <label>You have been assigned the name <b>{userName}</b>.</label>
+          </div>
+        );
+
+        if (keys.length === 0) {
+          groupDetails = (
+            <div>
+              <label>You are the first member of this group.</label>
+            </div>
+          );
+        } else {
+          groupDetails = (
+            <div>
+              <label>These are the other people currently in this group:</label>
+              <ul>
+                {keys.map(function(result) {
+                  return <li><b>{result}</b></li>;
+                })}
+              </ul>
+            </div>
+          );
+        }
+
+        joinStr = (keys.length ? "join" : "create");
+
+        form = (
+          <div>
+            <h3>Group name: { this.state.groupName }</h3>
+            { userDetails }
+            { groupDetails }
+            <label>&nbsp;</label>
+            <span>Do you want to { joinStr } this group?</span>
+            <label>
+              <button onClick={ this.handleJoinGroup } >Yes, { joinStr }</button>
+              <button onClick={ this.handleRejectGroup } >No, enter a different group</button>
+            </label>
           </div>
         );
       }
-
-      joinStr = (keys.length ? "join" : "create");
-
-      form = (
-        <div>
-          <h3>Group name: { this.state.groupName }</h3>
-          { groupDetails }
-          <label>&nbsp;</label>
-          <span>Do you want to { joinStr } this group?</span>
-          <label>
-            <button onClick={ this.handleJoinGroup } >Yes, { joinStr }</button>
-            <button onClick={ this.handleRejectGroup } >No, enter a different group</button>
-          </label>
-        </div>
-      );
     } else if (this.props.form == 'selectboard') {
       var clientChoices = [],
           submittable = false;
@@ -151,7 +169,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
         for (var user in this.props.users) {
           if (this.props.users[user].client == i) {
             selectedUsers.push(user);
-            if (user == this.state.userName) {
+            if (user == this.props.userName) {
               isOwn = true;
               selected = true;
             }
@@ -183,7 +201,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
     }
 
     return (
-      <form onSubmit={ this.handleSubmit }>
+      <form>
         { form }
       </form>
     );
