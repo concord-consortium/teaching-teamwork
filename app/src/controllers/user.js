@@ -63,6 +63,8 @@ module.exports = userController = {
 
     if (numClients > 1) {
       UserRegistrationView.open(this, {form: "groupname", numClients: numClients});
+    } else {
+      callback(0);
     }
   },
 
