@@ -483,6 +483,10 @@ form button:disabled {
   float: left;
   background-color: #86c6ff;
 }
+.sidebar-chat .sidebar-chat-items .chat-item-system {
+  color: #666;
+  line-height: 16px;
+}
 .sidebar-chat .sidebar-chat-input {
   padding: 10px;
 }

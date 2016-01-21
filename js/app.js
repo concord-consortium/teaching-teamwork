@@ -335,6 +335,8 @@ module.exports = userController = {
 
     if (numClients > 1) {
       UserRegistrationView.open(this, {form: "groupname", numClients: numClients});
+    } else {
+      callback(0);
     }
   },
 
@@ -445,12 +447,27 @@ module.exports = userController = {
     firebaseUsersRef.off("value");
     UserRegistrationView.close();
 
-    var chatRef = firebaseGroupRef.child('chat');
+    var chatRef = firebaseGroupRef.child('chat'),
+        slotsRemaining = numClients - numExistingUsers,
+        nums = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"],
+        cap = function (string) {
+          return string.charAt(0).toUpperCase() + string.slice(1);
+        },
+        message = userName + " has joined on Circuit "+((client*1)+1)+". ";
+
+    if (slotsRemaining > 1 || (slotsRemaining == 1 && numClients == 2)) {
+      // One of three users is here
+      message += cap(nums[numExistingUsers]) + " of " + nums[numClients] + " users is here.";
+    } else if (slotsRemaining == 1) {
+      // Two of you are now here. One more to go before you can get started!
+      message += cap(nums[numExistingUsers]) + " of you are now here. One more to go before you can get started!";
+    } else {
+      message += "You're all here! Time to start this challenge.";
+    }
 
     chatRef.push({
       user: "System",
-      message: userName + " has joined on circuit "+((client*1)+1)+".    "+
-          numExistingUsers + " out of " + numClients + " users are here.",
+      message: message,
       time: Firebase.ServerValue.TIMESTAMP
     });
     var disconnectMessageRef = chatRef.push();
@@ -1192,6 +1209,7 @@ module.exports = React.createClass({
             sparks.createWorkbench(workbench, "breadboard-wrapper");
             $('.breadboard svg').css({width: 740});
             $('.breadboard svg')[0].setAttribute('viewBox', "60 0 740 500");
+            $("g[info=probes]").attr({transform: "matrix(0.05 0 0 0.05 60 -100)"});
           }
           catch (e) {
             // sparks is throwing an error when computing the distance between points on load
@@ -2822,6 +2840,9 @@ module.exports = React.createClass({
 
   render: function() {
     var activity = this.props.activity ? this.props.activity : {},
+        inIframe = (function() { try { return window.self !== window.top; } catch (e) { return true; } })(),
+        activityName = activity.name ? ': ' + activity.name : '',
+        title = inIframe ? null : (React.createElement("h1", null, "Teaching Teamwork",  activityName )),
         hasMultipleClients = activity.clients && (activity.clients.length > 1),
         username = userController.getUsername(),
         groupname = userController.getGroupname(),
@@ -2832,10 +2853,12 @@ module.exports = React.createClass({
         wrapperClass = hasMultipleClients ? 'multiple-clients' : null,
         image = activity.image ? (React.createElement("div", {id: "image-wrapper", className:  wrapperClass }, React.createElement("img", {src:  /^https?:\/\//.test(activity.image) ? activity.image : config.modelsBase + activity.image}))) : null,
         submitButton = this.props.showSubmit && this.props.circuit ? (React.createElement(SubmitButtonView, {label: hasMultipleClients ? 'We got it!' : "I got it!", goals:  this.props.goals, nextActivity:  this.props.nextActivity})) : null,
-        otherCircuitsButton = hasMultipleClients && this.props.circuit ? (React.createElement(OtherCircuitsView, {circuit:  this.props.circuit, numClients:  activity.clients.length, activityName:  this.props.activityName, groupName:  userController.getGroupname(), ttWorkbench:  this.props.ttWorkbench})) : null;
+        otherCircuitsButton = hasMultipleClients && this.props.circuit ? (React.createElement(OtherCircuitsView, {circuit:  this.props.circuit, numClients:  activity.clients.length, activityName:  this.props.activityName, groupName:  userController.getGroupname(), ttWorkbench:  this.props.ttWorkbench})) : null,
+        calculator = this.props.circuit ? (React.createElement(CalculatorView, null)) : null;
 
     return (
       React.createElement("div", {className: "tt-page"}, 
+         title, 
          circuit, 
         React.createElement("div", {id: "top-button-wrapper"}, 
            submitButton, 
@@ -2847,7 +2870,7 @@ module.exports = React.createClass({
           React.createElement("div", {id: "breadboard-wrapper", className:  wrapperClass })
         ), 
          image, 
-        React.createElement(CalculatorView, null), 
+         calculator, 
          connection, 
          editor 
       )
@@ -2882,7 +2905,7 @@ module.exports = React.createClass({
     var self = this;
     userController.onGroupRefCreation(function() {
       self.firebaseRef = userController.getFirebaseGroupRef().child("chat");
-      self.firebaseRef.on("child_added", function(dataSnapshot) {
+      self.firebaseRef.orderByChild('time').on("child_added", function(dataSnapshot) {
         var items = self.state.items.slice(0);
         items.push(dataSnapshot.val());
         self.setState({
@@ -2902,7 +2925,8 @@ module.exports = React.createClass({
     e.preventDefault();
     this.firebaseRef.push({
       user: userController.getUsername(),
-      message: message
+      message: message,
+      time: Firebase.ServerValue.TIMESTAMP
     });
     input.value = '';
     input.focus();
