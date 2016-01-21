@@ -14,7 +14,9 @@ module.exports = React.createClass({
 
   render: function() {
     var activity = this.props.activity ? this.props.activity : {},
+        inIframe = (function() { try { return window.self !== window.top; } catch (e) { return true; } })(),
         activityName = activity.name ? ': ' + activity.name : '',
+        title = inIframe ? null : (<h1>Teaching Teamwork{ activityName }</h1>),
         hasMultipleClients = activity.clients && (activity.clients.length > 1),
         username = userController.getUsername(),
         groupname = userController.getGroupname(),
@@ -25,11 +27,12 @@ module.exports = React.createClass({
         wrapperClass = hasMultipleClients ? 'multiple-clients' : null,
         image = activity.image ? (<div id="image-wrapper" className={ wrapperClass }><img src={ /^https?:\/\//.test(activity.image) ? activity.image : config.modelsBase + activity.image } /></div>) : null,
         submitButton = this.props.showSubmit && this.props.circuit ? (<SubmitButtonView label={hasMultipleClients ? 'We got it!' : "I got it!"} goals={ this.props.goals } nextActivity={ this.props.nextActivity } />) : null,
-        otherCircuitsButton = hasMultipleClients && this.props.circuit ? (<OtherCircuitsView circuit={ this.props.circuit } numClients={ activity.clients.length } activityName={ this.props.activityName } groupName={ userController.getGroupname() } ttWorkbench={ this.props.ttWorkbench } />) : null;
+        otherCircuitsButton = hasMultipleClients && this.props.circuit ? (<OtherCircuitsView circuit={ this.props.circuit } numClients={ activity.clients.length } activityName={ this.props.activityName } groupName={ userController.getGroupname() } ttWorkbench={ this.props.ttWorkbench } />) : null,
+        calculator = this.props.circuit ? (<CalculatorView />) : null;
 
     return (
       <div className="tt-page">
-        <h1>Teaching Teamwork{ activityName }</h1>
+        { title }
         { circuit }
         <div id="top-button-wrapper">
           { submitButton }
@@ -41,7 +44,7 @@ module.exports = React.createClass({
           <div id="breadboard-wrapper" className={ wrapperClass }></div>
         </div>
         { image }
-        <CalculatorView />
+        { calculator }
         { connection }
         { editor }
       </div>
