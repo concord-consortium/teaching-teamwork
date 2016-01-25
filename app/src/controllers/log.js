@@ -1,5 +1,8 @@
 var logManagerUrl    = 'http://teaching-teamwork-log-manager.herokuapp.com/api/logs',
     xhrObserver      = require('../data/xhrObserver'),
+    iframePhone      = require('iframe-phone'),
+    laraPhone,
+    laraLoggerReady,
     activityName,
     session,
     username,
@@ -19,8 +22,12 @@ var logManagerUrl    = 'http://teaching-teamwork-log-manager.herokuapp.com/api/l
     },
 
     sendEvent = function(data) {
-      var request = xhrObserver.createObservedXMLHttpRequest();
-      request.repeatablePost(logManagerUrl, 'application/json; charset=UTF-8', JSON.stringify(data));
+      if (laraLoggerReady) {
+        logToLARA(data);
+      } else {
+        var request = xhrObserver.createObservedXMLHttpRequest();
+        request.repeatablePost(logManagerUrl, 'application/json; charset=UTF-8', JSON.stringify(data));
+      }
     },
 
     backfillQueue = function(key, value) {
@@ -68,7 +75,45 @@ var logManagerUrl    = 'http://teaching-teamwork-log-manager.herokuapp.com/api/l
     startSession = function() {
       session = generateGUID();
       logEvent("Started session");
+    },
+
+    logToLARA = function(data) {
+      var laraLogData = {
+        action: data.event,
+        value: data.event_value,
+        data: data
+      };
+
+      // these values are redundant with above
+      delete data.event;
+      delete data.event_value;
+
+      // these values conflict with LARA wrapper
+      delete data.application;
+      delete data.time;
+      delete data.session;
+
+      // rename activity name conflict
+      data.levelName = data.activity;
+      delete data.activity;
+
+      // flatten parameters
+      if (data.parameters) {
+        for (var prop in data.parameters) {
+          if (!data.parameters.hasOwnProperty(prop)) {continue;}
+          data[prop] = data.parameters[prop];
+        }
+        delete data.parameters;
+      }
+
+      laraPhone.post('log', laraLogData);
     };
+
+laraPhone = iframePhone.getIFrameEndpoint();
+laraPhone.addListener('hello', function () {
+  laraLoggerReady = true;
+});
+laraPhone.initialize();
 
 function LogController() {
 }
