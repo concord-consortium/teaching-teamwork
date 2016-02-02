@@ -5,7 +5,7 @@ React.render(App({}), document.getElementById('content'));
 
 
 
-},{"./views/app":10}],2:[function(require,module,exports){
+},{"./views/app":9}],2:[function(require,module,exports){
 module.exports = {
   modelsBase: "activities/"
 };
@@ -268,13 +268,11 @@ LogController.prototype = {
 module.exports = new LogController();
 
 
-},{"../data/xhrObserver":9}],5:[function(require,module,exports){
+},{"../data/xhrObserver":8}],5:[function(require,module,exports){
 var UserRegistrationView = require('../views/userRegistration.jsx'),
-    groups = require('../data/group-names'),
     logController = require('./log'),
     userController,
     numClients,
-    numExistingUsers,
     activityName,
     userName,
     groupName,
@@ -286,12 +284,11 @@ var UserRegistrationView = require('../views/userRegistration.jsx'),
     groupRefCreationListeners,
     client,
     callback,
-    serverSkew,
-    onDisconnectRef;
+    serverSkew;
 
 // scratch
 var fbUrlDomain = 'https://teaching-teamwork.firebaseio.com/';
-var fbUrlBase = fbUrlDomain + '2016/';
+var fbUrlBase = fbUrlDomain + 'dev/';
 
 var getDate = function() {
   var today = new Date(),
@@ -331,97 +328,78 @@ module.exports = userController = {
     numClients = _numClients;
     activityName = _activityName;
     callback = _callback;
-    userName = null;
+    userName = $.trim($.cookie('userName') || '');
+    if (userName.length === 0) {
+      UserRegistrationView.open(this, {form: "username"});
+    }
+    else {
+      userController.setName(userName);
+    }
+  },
 
+  setName: function(name) {
+    userName = name;
+    $.cookie('userName', name);
+    logController.setUserName(userName);
     if (numClients > 1) {
-      UserRegistrationView.open(this, {form: "groupname", numClients: numClients});
+      groupName = $.trim($.cookie('groupName') || '');
+      if (groupName.length === 0) {
+        UserRegistrationView.open(this, {form: "groupname"});
+      }
+      else {
+        userController.checkGroupName(groupName);
+      }
     } else {
+      UserRegistrationView.close();
       callback(0);
     }
   },
 
-  tryToEnterGroup: function(groupName) {
-    var self = this,
-        group, members;
+  checkGroupName: function(name) {
+    var self = this;
 
-    for (var i = 0, ii = groups.length; i < ii; i++) {
-      if (groups[i].name == groupName) {
-        group = groups[i];
-        break;
-      }
-    }
+    groupName = name;
 
-    members = group.members;
-
-    this.createFirebaseGroupRef(activityName, groupName);
+    this.createFirebaseGroupRef(activityName, name);
 
     firebaseUsersRef = firebaseGroupRef.child('users');
     groupUsersListener = firebaseUsersRef.on("value", function(snapshot) {
-      var users = snapshot.val() || {};
-
-      numExistingUsers = Object.keys(users).length;
-      if (!userName) {
-        if (!users || !numExistingUsers) {
-          userName = members[0];
-
-          // if we're the first user, delete any existing data
-          firebaseGroupRef.child('chat').set({});
-          firebaseGroupRef.child('clients').set({});
-          firebaseGroupRef.child('model').set({});
-        } else if (numExistingUsers < numClients) {
-          for (var i = 0, ii=members.length; i<ii; i++) {
-            if (!users[members[i]]) {
-              userName = members[i];
-              break;
-            }
-          }
-        }
-      } else {
+      var users = snapshot.val();
+      // pass only other users in the room
+      if (users) {
         delete users[userName];
       }
-
-      if (userName && (!users || Object.keys(users).length) < numClients) {
-        firebaseUsersRef.child(userName).set({here: true});
-        onDisconnectRef = firebaseUsersRef.child(userName).onDisconnect();
-        onDisconnectRef.set({});
-      }
-
-      UserRegistrationView.open(self, {form: "groupconfirm", users: users, userName: userName, numExistingUsers: numExistingUsers});
+      UserRegistrationView.open(self, {form: "groupconfirm", users: users});
     });
+
+    firebaseUsersRef.child(userName).set({lastAction: Math.floor(Date.now()/1000)});
 
     logController.logEvent("Started to join group", groupName);
   },
 
   rejectGroupName: function() {
-    firebaseUsersRef.off("value", groupUsersListener);
-
+    this.stopPinging();
     // clean up
-    if (onDisconnectRef) {
-      onDisconnectRef.cancel();
-    }
-    if (userName) {
-      firebaseUsersRef.once("value", function(snapshot) {
-        var users = snapshot.val();
-        delete users[userName];
-        if (Object.keys(users).length) {
-          // delete ourselves
-          firebaseUsersRef.child(userName).remove();
-        } else {
-          // delete the room if we are the only member
-          firebaseGroupRef.remove();
-        }
-        userName = null;
-      });
-    }
-
+    firebaseUsersRef.once("value", function(snapshot) {
+      var users = snapshot.val();
+      delete users[userName];
+      if (Object.keys(users).length) {
+        // delete ourselves
+        firebaseUsersRef.child(userName).remove();
+      } else {
+        // delete the room if we are the only member
+        firebaseGroupRef.remove();
+      }
+    });
     UserRegistrationView.open(this, {form: "groupname"});
-
 
     logController.logEvent("Rejected Group", groupName);
   },
 
-  setGroupName: function(groupName) {
+  setGroupName: function(name) {
     var self = this;
+    groupName = name;
+    $.cookie('groupName', name);
 
     firebaseUsersRef.off("value", groupUsersListener);
 
@@ -429,54 +407,51 @@ module.exports = userController = {
 
     notifyGroupRefCreation();
 
+    this.startPinging();
+
     // annoyingly we have to get out of this before the off() call is finalized
     setTimeout(function(){
       boardsSelectionListener = firebaseUsersRef.on("value", function(snapshot) {
         var users = snapshot.val();
-        UserRegistrationView.open(self, {form: "selectboard", numClients: numClients, users: users, userName: userName});
+
+        // remove any users who haven't pinged in 5 seconds from the list,
+        // opening the slot up to another user
+        for (var user in users) {
+          if (!users.hasOwnProperty(user)) {
+            continue;
+          }
+          var age = Math.floor(Date.now()/1000) - users[user].lastAction;
+          if (age > 5) {
+            firebaseUsersRef.child(user).remove();
+          }
+        }
+        UserRegistrationView.open(self, {form: "selectboard", numClients: numClients, users: users});
       });
     }, 1);
   },
 
   selectClient: function(_client) {
     client = _client;
-    firebaseUsersRef.child(userName).set({client: client});
+    firebaseUsersRef.child(userName).set({client: client, lastAction: Math.floor(Date.now()/1000)});
   },
 
   selectedClient: function() {
     firebaseUsersRef.off("value");
     UserRegistrationView.close();
-
-    var chatRef = firebaseGroupRef.child('chat'),
-        slotsRemaining = numClients - numExistingUsers,
-        nums = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"],
-        cap = function (string) {
-          return string.charAt(0).toUpperCase() + string.slice(1);
-        },
-        message = userName + " has joined on Circuit "+((client*1)+1)+". ";
-
-    if (slotsRemaining > 1 || (slotsRemaining == 1 && numClients == 2)) {
-      // One of three users is here
-      message += cap(nums[numExistingUsers]) + " of " + nums[numClients] + " users is here.";
-    } else if (slotsRemaining == 1) {
-      // Two of you are now here. One more to go before you can get started!
-      message += cap(nums[numExistingUsers]) + " of you are now here. One more to go before you can get started!";
-    } else {
-      message += "You're all here! Time to start this challenge.";
-    }
-
-    chatRef.push({
-      user: "System",
-      message: message,
-      time: Firebase.ServerValue.TIMESTAMP
-    });
-    var disconnectMessageRef = chatRef.push();
-    disconnectMessageRef.onDisconnect().set({
-      user: "System",
-      message: userName + " has left",
-      time: Firebase.ServerValue.TIMESTAMP
-    });
     callback(client);
+  },
+
+  // ping firebase every second so we show we're still an active member of the group.
+  startPinging: function() {
+    this.ping = setInterval(function() {
+      firebaseUsersRef.child(userName).child("lastAction").set(Math.floor(Date.now()/1000));
+    }, 1000);
+  },
+
+  stopPinging: function() {
+    if (this.ping) {
+      clearInterval(this.ping);
+    }
   },
 
   getUsername: function() {
@@ -528,144 +503,7 @@ module.exports = userController = {
 };
 
 
-},{"../data/group-names":6,"../views/userRegistration.jsx":19,"./log":4}],6:[function(require,module,exports){
-module.exports = [
-  {
-    name: "Animals",
-    members: [
-      "Lion", "Tiger", "Bear"
-    ]
-  },
-  {
-    name: "Birds",
-    members: [
-      "Eagle", "Seagull", "Hawk"
-    ]
-  },
-  {
-    name: "Vehicles",
-    members: [
-      "Truck", "Car", "Van"
-    ]
-  },
-  {
-    name: "Tools",
-    members: [
-      "Hammer", "Pliers", "Wrench"
-    ]
-  },
-  {
-    name: "Office",
-    members: [
-      "Pencil", "Paper", "Pen"
-    ]
-  },
-  {
-    name: "Geography",
-    members: [
-      "Mountain", "Plain", "Valley"
-    ]
-  },
-  {
-    name: "Water",
-    members: [
-      "Ocean", "River", "Lake"
-    ]
-  },
-  {
-    name: "Weather",
-    members: [
-      "Rain", "Snow", "Sleet"
-    ]
-  },
-  {
-    name: "Dogs",
-    members: [
-      "Poodle", "Collie", "Spaniel"
-    ]
-  },
-  {
-    name: "Pets",
-    members: [
-      "Dog", "Cat", "Hamster"
-    ]
-  },
-  {
-    name: "Kitchen",
-    members: [
-      "Pot", "Pan", "Skillet"
-    ]
-  },
-  {
-    name: "Sides",
-    members: [
-      "Soup", "Salad", "Roll"
-    ]
-  },
-  {
-    name: "Dessert",
-    members: [
-      "Cake", "Icecream", "Pie"
-    ]
-  },
-  {
-    name: "Fruit",
-    members: [
-      "Cherry", "Plum", "Grape"
-    ]
-  },
-  {
-    name: "Vegetable",
-    members: [
-      "Lettuce", "Celery", "Tomato"
-    ]
-  },
-  {
-    name: "Potatoes",
-    members: [
-      "Mashed", "Baked", "Fries"
-    ]
-  },
-  {
-    name: "Colors",
-    members: [
-      "Blue", "Red", "Green"
-    ]
-  },
-  {
-    name: "Instruments",
-    members: [
-      "Guitar", "Horn", "Piano"
-    ]
-  },
-  {
-    name: "Shapes",
-    members: [
-      "Circle", "Square", "Triangle"
-    ]
-  },
-  {
-    name: "Directions",
-    members: [
-      "North", "East", "West"
-    ]
-  },
-  {
-    name: "Towns",
-    members: [
-      "Acton", "Maynard", "Concord"
-    ]
-  },
-  {
-    name: "States",
-    members: [
-      "Utah", "Ohio", "Iowa"
-    ]
-  }
-];
-
-
-},{}],7:[function(require,module,exports){
+},{"../views/userRegistration.jsx":18,"./log":4}],6:[function(require,module,exports){
 /**
  The workbench adaptor takes a TT-workbench definition such as
 
@@ -860,7 +698,7 @@ WorkbenchAdaptor.prototype = {
 module.exports = WorkbenchAdaptor;
 
 
-},{}],8:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 var eventsController = require('../controllers/events'),
     clientListFirebaseRef,
     myCircuitFirebaseRef,
@@ -932,7 +770,7 @@ WorkbenchFBConnector.prototype.resetMeters = function () {
 module.exports = WorkbenchFBConnector;
 
 
-},{"../controllers/events":3}],9:[function(require,module,exports){
+},{"../controllers/events":3}],8:[function(require,module,exports){
 var xhrObserver;
 
 function XHRObserver() {
@@ -1007,7 +845,7 @@ XHRObserver.prototype = {
 module.exports = xhrObserver = new XHRObserver();
 
 
-},{}],10:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 var PageView              = React.createFactory(require('./page.jsx')),
     WorkbenchAdaptor      = require('../data/workbenchAdaptor'),
     WorkbenchFBConnector  = require('../data/workbenchFBConnector'),
@@ -1207,9 +1045,6 @@ module.exports = React.createClass({
         waitForBreadboardView(function () {
           try {
             sparks.createWorkbench(workbench, "breadboard-wrapper");
-            $('.breadboard svg').css({width: 740});
-            $('.breadboard svg')[0].setAttribute('viewBox', "60 0 740 500");
-            $("g[info=probes]").attr({transform: "matrix(0.05 0 0 0.05 60 -100)"});
           }
           catch (e) {
             // sparks is throwing an error when computing the distance between points on load
@@ -1417,7 +1252,7 @@ module.exports = React.createClass({
 
 
 
-},{"../config":2,"../controllers/events":3,"../controllers/log":4,"../controllers/user":5,"../data/workbenchAdaptor":7,"../data/workbenchFBConnector":8,"./page.jsx":16,"./view-other-circuit":20}],11:[function(require,module,exports){
+},{"../config":2,"../controllers/events":3,"../controllers/log":4,"../controllers/user":5,"../data/workbenchAdaptor":6,"../data/workbenchFBConnector":7,"./page.jsx":15,"./view-other-circuit":19}],10:[function(require,module,exports){
 // adapted from http://thecodeplayer.com/walkthrough/javascript-css3-calculator
 /*jslint evil: true */
 
@@ -1753,7 +1588,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../controllers/log":4}],12:[function(require,module,exports){
+},{"../controllers/log":4}],11:[function(require,module,exports){
 var xhrObserver = require('../data/xhrObserver');
 var logController = require('../controllers/log');
 
@@ -1800,7 +1635,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../controllers/log":4,"../data/xhrObserver":9}],13:[function(require,module,exports){
+},{"../controllers/log":4,"../data/xhrObserver":8}],12:[function(require,module,exports){
 /* global FirebaseSimpleLogin: false */
 /* global CodeMirror: false */
 
@@ -2387,7 +2222,7 @@ Dialog = React.createFactory(React.createClass({
 
 
 
-},{}],14:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 // adapted from SPARKS math-parser.js
 
 module.exports = React.createClass({
@@ -2527,7 +2362,7 @@ module.exports = React.createClass({
   }
 });
 
-},{}],15:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 var config = require('../config'),
     logController = require('../controllers/log'),
     OtherCircuits, Popup, PopupIFrame, CircuitLink, CircuitImage, ScaledIFrame;
@@ -2823,7 +2658,7 @@ Popup = React.createFactory(React.createClass({
 }));
 
 
-},{"../config":2,"../controllers/log":4}],16:[function(require,module,exports){
+},{"../config":2,"../controllers/log":4}],15:[function(require,module,exports){
 var userController = require('../controllers/user'),
     SidebarChatView = require('./sidebar-chat.jsx'),
     CalculatorView = require('./calculator.jsx'),
@@ -2840,9 +2675,7 @@ module.exports = React.createClass({
 
   render: function() {
     var activity = this.props.activity ? this.props.activity : {},
-        inIframe = (function() { try { return window.self !== window.top; } catch (e) { return true; } })(),
         activityName = activity.name ? ': ' + activity.name : '',
-        title = inIframe ? null : (React.createElement("h1", null, "Teaching Teamwork",  activityName )),
         hasMultipleClients = activity.clients && (activity.clients.length > 1),
         username = userController.getUsername(),
         groupname = userController.getGroupname(),
@@ -2853,12 +2686,11 @@ module.exports = React.createClass({
         wrapperClass = hasMultipleClients ? 'multiple-clients' : null,
         image = activity.image ? (React.createElement("div", {id: "image-wrapper", className:  wrapperClass }, React.createElement("img", {src:  /^https?:\/\//.test(activity.image) ? activity.image : config.modelsBase + activity.image}))) : null,
         submitButton = this.props.showSubmit && this.props.circuit ? (React.createElement(SubmitButtonView, {label: hasMultipleClients ? 'We got it!' : "I got it!", goals:  this.props.goals, nextActivity:  this.props.nextActivity})) : null,
-        otherCircuitsButton = hasMultipleClients && this.props.circuit ? (React.createElement(OtherCircuitsView, {circuit:  this.props.circuit, numClients:  activity.clients.length, activityName:  this.props.activityName, groupName:  userController.getGroupname(), ttWorkbench:  this.props.ttWorkbench})) : null,
-        calculator = this.props.circuit ? (React.createElement(CalculatorView, null)) : null;
+        otherCircuitsButton = hasMultipleClients && this.props.circuit ? (React.createElement(OtherCircuitsView, {circuit:  this.props.circuit, numClients:  activity.clients.length, activityName:  this.props.activityName, groupName:  userController.getGroupname(), ttWorkbench:  this.props.ttWorkbench})) : null;
 
     return (
       React.createElement("div", {className: "tt-page"}, 
-         title, 
+        React.createElement("h1", null, "Teaching Teamwork",  activityName ), 
          circuit, 
         React.createElement("div", {id: "top-button-wrapper"}, 
            submitButton, 
@@ -2870,7 +2702,7 @@ module.exports = React.createClass({
           React.createElement("div", {id: "breadboard-wrapper", className:  wrapperClass })
         ), 
          image, 
-         calculator, 
+        React.createElement(CalculatorView, null), 
          connection, 
          editor 
       )
@@ -2879,7 +2711,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../config":2,"../controllers/user":5,"./calculator.jsx":11,"./connection.jsx":12,"./editor":13,"./notes":14,"./other-circuits":15,"./sidebar-chat.jsx":17,"./submitButton":18}],17:[function(require,module,exports){
+},{"../config":2,"../controllers/user":5,"./calculator.jsx":10,"./connection.jsx":11,"./editor":12,"./notes":13,"./other-circuits":14,"./sidebar-chat.jsx":16,"./submitButton":17}],16:[function(require,module,exports){
 var userController = require('../controllers/user'),
     logController = require('../controllers/log'),
     ChatItems, ChatItem;
@@ -2905,7 +2737,7 @@ module.exports = React.createClass({
     var self = this;
     userController.onGroupRefCreation(function() {
       self.firebaseRef = userController.getFirebaseGroupRef().child("chat");
-      self.firebaseRef.orderByChild('time').on("child_added", function(dataSnapshot) {
+      self.firebaseRef.on("child_added", function(dataSnapshot) {
         var items = self.state.items.slice(0);
         items.push(dataSnapshot.val());
         self.setState({
@@ -2925,8 +2757,7 @@ module.exports = React.createClass({
     e.preventDefault();
     this.firebaseRef.push({
       user: userController.getUsername(),
-      message: message,
-      time: Firebase.ServerValue.TIMESTAMP
+      message: message
     });
     input.value = '';
     input.focus();
@@ -2971,8 +2802,7 @@ ChatItems = React.createClass({
     var user = userController.getUsername();
     return React.createElement("div", {ref: "items", className: "sidebar-chat-items"}, 
       this.props.items.map(function(item, i) {
-        var owner = (item.user == user) ? "me" : item.user == "System" ? "system" : "others";
-        return React.createElement(ChatItem, {key:  i, item:  item, owner:  owner });
+        return React.createElement(ChatItem, {key:  i, item:  item, me:  item.user == user});
       })
     );
   }
@@ -2982,8 +2812,7 @@ ChatItem = React.createClass({
   displayName: 'ChatItem',
 
   render: function () {
-    var className = 'chat-item chat-item-'+this.props.owner;
-    return React.createElement("div", {className:  className }, 
+    return React.createElement("div", {className:  this.props.me ? 'chat-item chat-item-me' : 'chat-item chat-item-others'}, 
         React.createElement("b", null,  this.props.item.prefix || (this.props.item.user + ':') ), " ",  this.props.item.message
       );
   }
@@ -2991,7 +2820,7 @@ ChatItem = React.createClass({
 
 
 
-},{"../controllers/log":4,"../controllers/user":5}],18:[function(require,module,exports){
+},{"../controllers/log":4,"../controllers/user":5}],17:[function(require,module,exports){
 var userController = require('../controllers/user'),
     logController = require('../controllers/log'),
     SubmitButton, Popup;
@@ -3334,9 +3163,8 @@ Popup = React.createFactory(React.createClass({
 }));
 
 
-},{"../controllers/log":4,"../controllers/user":5}],19:[function(require,module,exports){
-var userController, UserRegistrationView,
-    groups = require('../data/group-names');
+},{"../controllers/log":4,"../controllers/user":5}],18:[function(require,module,exports){
+var userController, UserRegistrationView;
 
 // add a global UserRegistrationView variable because its statics are called in other modules
 module.exports = window.UserRegistrationView = UserRegistrationView = React.createClass({
@@ -3369,15 +3197,23 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
   },
   getInitialState: function() {
     return {
-      groupName: ""
+      userName: $.trim($.cookie('userName') || ''),
+      groupName: $.trim($.cookie('groupName') || '')
     };
+  },
+  handleUserNameChange: function(event) {
+    this.setState({userName: event.target.value});
   },
   handleGroupNameChange: function(event) {
     this.setState({groupName: event.target.value});
   },
-  handleGroupSelected: function(e) {
+  handleSubmit: function(e) {
     e.preventDefault();
-    userController.tryToEnterGroup(this.state.groupName);
+    if (this.props.form == "username") {
+      userController.setName(this.state.userName);
+    } else if (this.props.form == "groupname") {
+      userController.checkGroupName(this.state.groupName);
+    }
   },
   handleJoinGroup: function() {
     userController.setGroupName(this.state.groupName);
@@ -3413,87 +3249,62 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
   },
   render: function() {
     var form;
-    if (this.props.form == 'groupname' || !this.state.groupName) {
-      var groupOptions = groups.map(function(group, i) {
-        return (React.createElement("option", {key: i, value: group.name}, group.name));
-      });
-      groupOptions.unshift(React.createElement("option", {key: "placeholder", value: "", disabled: "disabled"}, "Select a team"));
+    if (this.props.form == 'username') {
       form = (
         React.createElement("div", null, 
-          React.createElement("h3", null, "Welcome!"), 
-          React.createElement("div", null, 
-            "This activity requires a team of ", this.props.numClients, " users."
-          ), 
-          React.createElement("h3", null, "Please select your team:"), 
           React.createElement("label", null, 
-            React.createElement("select", {value: this.state.groupName, onChange:  this.handleGroupNameChange}, 
-               groupOptions 
-            ), 
-            React.createElement("button", {onClick:  this.handleGroupSelected}, "Select")
+            React.createElement("span", null, "User Name :"), 
+            React.createElement("input", {type: "text", ref: "userName", value: this.state.userName, onChange: this.handleUserNameChange})
+          )
+        )
+      );
+    } else if (this.props.form == 'groupname') {
+      form = (
+        React.createElement("div", null, 
+          React.createElement("h3", null, "Hi ",  this.state.userName, "!"), 
+          React.createElement("label", null, 
+            React.createElement("span", null, "Group Name :"), 
+            React.createElement("input", {type: "text", ref: "groupName", value: this.state.groupName, onChange: this.handleGroupNameChange})
           )
         )
       );
     } else if (this.props.form == 'groupconfirm') {
-      if (!this.props.userName) {
-        form = (
+      var groupDetails,
+          joinStr,
+          keys = Object.keys(this.props.users);
+      if (keys.length === 0) {
+        groupDetails = (
           React.createElement("div", null, 
-            React.createElement("h3", null, "Group name: ",  this.state.groupName), 
-            React.createElement("div", null, 
-              "There are already ",  this.props.numExistingUsers, " in this group."
-            ), 
-            React.createElement("label", null, 
-              React.createElement("button", {onClick:  this.handleRejectGroup}, "Enter a different group")
-            )
+            React.createElement("label", null, "You are the first member of this group.")
           )
         );
       } else {
-        var userDetails,
-            groupDetails,
-            joinStr,
-            keys = Object.keys(this.props.users),
-            userName = this.props.userName;
-
-        userDetails = (
+        groupDetails = (
           React.createElement("div", null, 
-            React.createElement("label", null, "You have been assigned the name ", React.createElement("b", null, userName), ".")
-          )
-        );
-
-        if (keys.length === 0) {
-          groupDetails = (
-            React.createElement("div", null, 
-              React.createElement("label", null, "You are the first member of this group.")
-            )
-          );
-        } else {
-          groupDetails = (
-            React.createElement("div", null, 
-              React.createElement("label", null, "These are the other people currently in this group:"), 
-              React.createElement("ul", null, 
-                keys.map(function(result) {
-                  return React.createElement("li", null, React.createElement("b", null, result));
-                })
-              )
-            )
-          );
-        }
-
-        joinStr = (keys.length ? "join" : "create");
-
-        form = (
-          React.createElement("div", null, 
-            React.createElement("h3", null, "Group name: ",  this.state.groupName), 
-             userDetails, 
-             groupDetails, 
-            React.createElement("label", null, " "), 
-            React.createElement("span", null, "Do you want to ",  joinStr, " this group?"), 
-            React.createElement("label", null, 
-              React.createElement("button", {onClick:  this.handleJoinGroup}, "Yes, ",  joinStr ), 
-              React.createElement("button", {onClick:  this.handleRejectGroup}, "No, enter a different group")
+            React.createElement("label", null, "These are the people currently in this group:"), 
+            React.createElement("ul", null, 
+              keys.map(function(result) {
+                return React.createElement("li", null, React.createElement("b", null, result));
+              })
             )
           )
         );
       }
+
+      joinStr = (keys.length ? "join" : "create");
+
+      form = (
+        React.createElement("div", null, 
+          React.createElement("h3", null, "Group name: ",  this.state.groupName), 
+           groupDetails, 
+          React.createElement("label", null, " "), 
+          React.createElement("span", null, "Do you want to ",  joinStr, " this group?"), 
+          React.createElement("label", null, 
+            React.createElement("button", {onClick:  this.handleJoinGroup}, "Yes, ",  joinStr ), 
+            React.createElement("button", {onClick:  this.handleRejectGroup}, "No, enter a different group")
+          )
+        )
+      );
     } else if (this.props.form == 'selectboard') {
       var clientChoices = [],
           submittable = false;
@@ -3506,7 +3317,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
         for (var user in this.props.users) {
           if (this.props.users[user].client == i) {
             selectedUsers.push(user);
-            if (user == this.props.userName) {
+            if (user == this.state.userName) {
               isOwn = true;
               selected = true;
             }
@@ -3538,7 +3349,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
     }
 
     return (
-      React.createElement("form", null, 
+      React.createElement("form", {onSubmit:  this.handleSubmit}, 
          form 
       )
     );
@@ -3546,7 +3357,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
 });
 
 
-},{"../data/group-names":6}],20:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 var userController       = require('../controllers/user'),
     WorkbenchAdaptor     = require('../data/workbenchAdaptor'),
     WorkbenchFBConnector = require('../data/workbenchFBConnector');
@@ -3750,4 +3561,4 @@ module.exports = React.createClass({
 
 
 
-},{"../controllers/user":5,"../data/workbenchAdaptor":7,"../data/workbenchFBConnector":8}]},{},[1]);
+},{"../controllers/user":5,"../data/workbenchAdaptor":6,"../data/workbenchFBConnector":7}]},{},[1]);
