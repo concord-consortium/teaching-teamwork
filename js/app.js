@@ -8,7 +8,7 @@ React.render(App({}), document.getElementById('content'));
 
 
 
-},{"../vendor/pathseg.js":20,"./views/app":9}],2:[function(require,module,exports){
+},{"../vendor/pathseg.js":21,"./views/app":10}],2:[function(require,module,exports){
 module.exports = {
   modelsBase: "activities/"
 };
@@ -271,7 +271,7 @@ LogController.prototype = {
 module.exports = new LogController();
 
 
-},{"../data/xhrObserver":8}],5:[function(require,module,exports){
+},{"../data/xhrObserver":9}],5:[function(require,module,exports){
 var UserRegistrationView = require('../views/userRegistration.jsx'),
     logController = require('./log'),
     userController,
@@ -506,7 +506,144 @@ module.exports = userController = {
 };
 
 
-},{"../views/userRegistration.jsx":18,"./log":4}],6:[function(require,module,exports){
+},{"../views/userRegistration.jsx":19,"./log":4}],6:[function(require,module,exports){
+module.exports = [
+  {
+    name: "Animals",
+    members: [
+      "Lion", "Tiger", "Bear"
+    ]
+  },
+  {
+    name: "Birds",
+    members: [
+      "Eagle", "Seagull", "Hawk"
+    ]
+  },
+  {
+    name: "Vehicles",
+    members: [
+      "Truck", "Car", "Van"
+    ]
+  },
+  {
+    name: "Tools",
+    members: [
+      "Hammer", "Pliers", "Wrench"
+    ]
+  },
+  {
+    name: "Office",
+    members: [
+      "Pencil", "Paper", "Pen"
+    ]
+  },
+  {
+    name: "Geography",
+    members: [
+      "Mountain", "Plain", "Valley"
+    ]
+  },
+  {
+    name: "Water",
+    members: [
+      "Ocean", "River", "Lake"
+    ]
+  },
+  {
+    name: "Weather",
+    members: [
+      "Rain", "Snow", "Sleet"
+    ]
+  },
+  {
+    name: "Dogs",
+    members: [
+      "Poodle", "Collie", "Spaniel"
+    ]
+  },
+  {
+    name: "Pets",
+    members: [
+      "Dog", "Cat", "Hamster"
+    ]
+  },
+  {
+    name: "Kitchen",
+    members: [
+      "Pot", "Pan", "Skillet"
+    ]
+  },
+  {
+    name: "Sides",
+    members: [
+      "Soup", "Salad", "Roll"
+    ]
+  },
+  {
+    name: "Dessert",
+    members: [
+      "Cake", "Icecream", "Pie"
+    ]
+  },
+  {
+    name: "Fruit",
+    members: [
+      "Cherry", "Plum", "Grape"
+    ]
+  },
+  {
+    name: "Vegetable",
+    members: [
+      "Lettuce", "Celery", "Tomato"
+    ]
+  },
+  {
+    name: "Potatoes",
+    members: [
+      "Mashed", "Baked", "Fries"
+    ]
+  },
+  {
+    name: "Colors",
+    members: [
+      "Blue", "Red", "Green"
+    ]
+  },
+  {
+    name: "Instruments",
+    members: [
+      "Guitar", "Horn", "Piano"
+    ]
+  },
+  {
+    name: "Shapes",
+    members: [
+      "Circle", "Square", "Triangle"
+    ]
+  },
+  {
+    name: "Directions",
+    members: [
+      "North", "East", "West"
+    ]
+  },
+  {
+    name: "Towns",
+    members: [
+      "Acton", "Maynard", "Concord"
+    ]
+  },
+  {
+    name: "States",
+    members: [
+      "Utah", "Ohio", "Iowa"
+    ]
+  }
+];
+
+
+},{}],7:[function(require,module,exports){
 /**
  The workbench adaptor takes a TT-workbench definition such as
 
@@ -701,7 +838,7 @@ WorkbenchAdaptor.prototype = {
 module.exports = WorkbenchAdaptor;
 
 
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 var eventsController = require('../controllers/events'),
     clientListFirebaseRef,
     myCircuitFirebaseRef,
@@ -773,7 +910,7 @@ WorkbenchFBConnector.prototype.resetMeters = function () {
 module.exports = WorkbenchFBConnector;
 
 
-},{"../controllers/events":3}],8:[function(require,module,exports){
+},{"../controllers/events":3}],9:[function(require,module,exports){
 var xhrObserver;
 
 function XHRObserver() {
@@ -848,7 +985,7 @@ XHRObserver.prototype = {
 module.exports = xhrObserver = new XHRObserver();
 
 
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 var PageView              = React.createFactory(require('./page.jsx')),
     WorkbenchAdaptor      = require('../data/workbenchAdaptor'),
     WorkbenchFBConnector  = require('../data/workbenchFBConnector'),
@@ -1255,7 +1392,7 @@ module.exports = React.createClass({
 
 
 
-},{"../config":2,"../controllers/events":3,"../controllers/log":4,"../controllers/user":5,"../data/workbenchAdaptor":6,"../data/workbenchFBConnector":7,"./page.jsx":15,"./view-other-circuit":19}],10:[function(require,module,exports){
+},{"../config":2,"../controllers/events":3,"../controllers/log":4,"../controllers/user":5,"../data/workbenchAdaptor":7,"../data/workbenchFBConnector":8,"./page.jsx":16,"./view-other-circuit":20}],11:[function(require,module,exports){
 // adapted from http://thecodeplayer.com/walkthrough/javascript-css3-calculator
 /*jslint evil: true */
 
@@ -1591,7 +1728,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../controllers/log":4}],11:[function(require,module,exports){
+},{"../controllers/log":4}],12:[function(require,module,exports){
 var xhrObserver = require('../data/xhrObserver');
 var logController = require('../controllers/log');
 
@@ -1638,7 +1775,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../controllers/log":4,"../data/xhrObserver":8}],12:[function(require,module,exports){
+},{"../controllers/log":4,"../data/xhrObserver":9}],13:[function(require,module,exports){
 /* global FirebaseSimpleLogin: false */
 /* global CodeMirror: false */
 
@@ -2225,7 +2362,7 @@ Dialog = React.createFactory(React.createClass({
 
 
 
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 // adapted from SPARKS math-parser.js
 
 module.exports = React.createClass({
@@ -2365,7 +2502,7 @@ module.exports = React.createClass({
   }
 });
 
-},{}],14:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 var config = require('../config'),
     logController = require('../controllers/log'),
     OtherCircuits, Popup, PopupIFrame, CircuitLink, CircuitImage, ScaledIFrame;
@@ -2661,7 +2798,7 @@ Popup = React.createFactory(React.createClass({
 }));
 
 
-},{"../config":2,"../controllers/log":4}],15:[function(require,module,exports){
+},{"../config":2,"../controllers/log":4}],16:[function(require,module,exports){
 var userController = require('../controllers/user'),
     SidebarChatView = require('./sidebar-chat.jsx'),
     CalculatorView = require('./calculator.jsx'),
@@ -2714,7 +2851,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../config":2,"../controllers/user":5,"./calculator.jsx":10,"./connection.jsx":11,"./editor":12,"./notes":13,"./other-circuits":14,"./sidebar-chat.jsx":16,"./submitButton":17}],16:[function(require,module,exports){
+},{"../config":2,"../controllers/user":5,"./calculator.jsx":11,"./connection.jsx":12,"./editor":13,"./notes":14,"./other-circuits":15,"./sidebar-chat.jsx":17,"./submitButton":18}],17:[function(require,module,exports){
 var userController = require('../controllers/user'),
     logController = require('../controllers/log'),
     ChatItems, ChatItem;
@@ -2823,7 +2960,7 @@ ChatItem = React.createClass({
 
 
 
-},{"../controllers/log":4,"../controllers/user":5}],17:[function(require,module,exports){
+},{"../controllers/log":4,"../controllers/user":5}],18:[function(require,module,exports){
 var userController = require('../controllers/user'),
     logController = require('../controllers/log'),
     SubmitButton, Popup;
@@ -3166,8 +3303,9 @@ Popup = React.createFactory(React.createClass({
 }));
 
 
-},{"../controllers/log":4,"../controllers/user":5}],18:[function(require,module,exports){
-var userController, UserRegistrationView;
+},{"../controllers/log":4,"../controllers/user":5}],19:[function(require,module,exports){
+var userController, UserRegistrationView,
+    groups = require('../data/group-names');
 
 // add a global UserRegistrationView variable because its statics are called in other modules
 module.exports = window.UserRegistrationView = UserRegistrationView = React.createClass({
@@ -3262,12 +3400,19 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
         )
       );
     } else if (this.props.form == 'groupname') {
+      var groupOptions = groups.map(function(group, i) {
+        return (React.createElement("option", {key: i, value: group.name}, group.name));
+      });
+      groupOptions.unshift(React.createElement("option", {key: "placeholder", value: "", disabled: "disabled"}, "Select a team"));
       form = (
         React.createElement("div", null, 
           React.createElement("h3", null, "Hi ",  this.state.userName, "!"), 
+          React.createElement("p", null, "Please select your team:"), 
           React.createElement("label", null, 
-            React.createElement("span", null, "Group Name :"), 
-            React.createElement("input", {type: "text", ref: "groupName", value: this.state.groupName, onChange: this.handleGroupNameChange})
+            React.createElement("select", {value: this.state.groupName, onChange:  this.handleGroupNameChange}, 
+               groupOptions 
+            ), 
+            React.createElement("button", {onClick:  this.handleGroupSelected}, "Select")
           )
         )
       );
@@ -3360,7 +3505,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
 });
 
 
-},{}],19:[function(require,module,exports){
+},{"../data/group-names":6}],20:[function(require,module,exports){
 var userController       = require('../controllers/user'),
     WorkbenchAdaptor     = require('../data/workbenchAdaptor'),
     WorkbenchFBConnector = require('../data/workbenchFBConnector');
@@ -3564,7 +3709,7 @@ module.exports = React.createClass({
 
 
 
-},{"../controllers/user":5,"../data/workbenchAdaptor":6,"../data/workbenchFBConnector":7}],20:[function(require,module,exports){
+},{"../controllers/user":5,"../data/workbenchAdaptor":7,"../data/workbenchFBConnector":8}],21:[function(require,module,exports){
 // SVGPathSeg API polyfill
 // https://github.com/progers/pathseg
 //
