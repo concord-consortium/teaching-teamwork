@@ -50,7 +50,7 @@
       "type": "battery",
       "UID": "source",
       "voltage": "$E",
-      "connections": "battery_1,0:off_11"
+      "connections": "0:off_11,battery_1"
     },
     {
       "type": "wire",

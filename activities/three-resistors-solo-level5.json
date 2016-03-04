@@ -41,12 +41,12 @@
       "type": "resistor",
       "UID": "rX",
       "resistance": "$R",
-      "connections": "battery_1,0:off_11",
+      "connections": "battery_2,0:off_11",
       "hidden": true
     },
     {
       "type": "wire",
-      "connections": "battery_2,0:off_10",
+      "connections": "battery_1,0:off_10",
       "hidden": true
     }
    ],
