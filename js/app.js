@@ -521,15 +521,51 @@ module.exports = [
     ]
   },
   {
-    name: "Vehicles",
+    name: "Colors",
     members: [
-      "Truck", "Car", "Van"
+      "Blue", "Red", "Green"
     ]
   },
   {
-    name: "Tools",
+    name: "Dessert",
     members: [
-      "Hammer", "Pliers", "Wrench"
+      "Cake", "Icecream", "Pie"
+    ]
+  },
+  {
+    name: "Directions",
+    members: [
+      "North", "East", "West"
+    ]
+  },
+  {
+    name: "Dogs",
+    members: [
+      "Poodle", "Collie", "Spaniel"
+    ]
+  },
+  {
+    name: "Fruit",
+    members: [
+      "Cherry", "Plum", "Grape"
+    ]
+  },
+  {
+    name: "Geography",
+    members: [
+      "Mountain", "Plain", "Valley"
+    ]
+  },
+  {
+    name: "Instruments",
+    members: [
+      "Guitar", "Horn", "Piano"
+    ]
+  },
+  {
+    name: "Kitchen",
+    members: [
+      "Pot", "Pan", "Skillet"
     ]
   },
   {
@@ -539,9 +575,57 @@ module.exports = [
     ]
   },
   {
-    name: "Geography",
+    name: "Pets",
     members: [
-      "Mountain", "Plain", "Valley"
+      "Dog", "Cat", "Hamster"
+    ]
+  },
+  {
+    name: "Potatoes",
+    members: [
+      "Mashed", "Baked", "Fries"
+    ]
+  },
+  {
+    name: "Shapes",
+    members: [
+      "Circle", "Square", "Triangle"
+    ]
+  },
+  {
+    name: "Sides",
+    members: [
+      "Soup", "Salad", "Roll"
+    ]
+  },
+  {
+    name: "States",
+    members: [
+      "Utah", "Ohio", "Iowa"
+    ]
+  },
+  {
+    name: "Tools",
+    members: [
+      "Hammer", "Pliers", "Wrench"
+    ]
+  },
+  {
+    name: "Towns",
+    members: [
+      "Acton", "Maynard", "Concord"
+    ]
+  },
+  {
+    name: "Vegetables",
+    members: [
+      "Lettuce", "Celery", "Tomato"
+    ]
+  },
+  {
+    name: "Vehicles",
+    members: [
+      "Truck", "Car", "Van"
     ]
   },
   {
@@ -554,90 +638,6 @@ module.exports = [
     name: "Weather",
     members: [
       "Rain", "Snow", "Sleet"
-    ]
-  },
-  {
-    name: "Dogs",
-    members: [
-      "Poodle", "Collie", "Spaniel"
-    ]
-  },
-  {
-    name: "Pets",
-    members: [
-      "Dog", "Cat", "Hamster"
-    ]
-  },
-  {
-    name: "Kitchen",
-    members: [
-      "Pot", "Pan", "Skillet"
-    ]
-  },
-  {
-    name: "Sides",
-    members: [
-      "Soup", "Salad", "Roll"
-    ]
-  },
-  {
-    name: "Dessert",
-    members: [
-      "Cake", "Icecream", "Pie"
-    ]
-  },
-  {
-    name: "Fruit",
-    members: [
-      "Cherry", "Plum", "Grape"
-    ]
-  },
-  {
-    name: "Vegetable",
-    members: [
-      "Lettuce", "Celery", "Tomato"
-    ]
-  },
-  {
-    name: "Potatoes",
-    members: [
-      "Mashed", "Baked", "Fries"
-    ]
-  },
-  {
-    name: "Colors",
-    members: [
-      "Blue", "Red", "Green"
-    ]
-  },
-  {
-    name: "Instruments",
-    members: [
-      "Guitar", "Horn", "Piano"
-    ]
-  },
-  {
-    name: "Shapes",
-    members: [
-      "Circle", "Square", "Triangle"
-    ]
-  },
-  {
-    name: "Directions",
-    members: [
-      "North", "East", "West"
-    ]
-  },
-  {
-    name: "Towns",
-    members: [
-      "Acton", "Maynard", "Concord"
-    ]
-  },
-  {
-    name: "States",
-    members: [
-      "Utah", "Ohio", "Iowa"
     ]
   }
 ];

@@ -50,7 +50,7 @@
       "type": "battery",
       "UID": "source",
       "voltage": "$E",
-      "connections": "battery_1,0:off_11"
+      "connections": "0:off_11,battery_1"
     },
     {
       "type": "wire",
@@ -128,7 +128,7 @@
     {
       "show_multimeter": true,
       "showComponentEditor": true,
-      "notes": "Level 1: E = $E, R = 0, your goal is to make your voltage $V2 volts.",
+      "notes": "Level 1: E = $E volts, R = 0 Ω, your goal is to make your voltage $V2 volts.",
       "circuit": [
         {
           "type": "wire",
@@ -153,7 +153,7 @@
     {
       "show_multimeter": true,
       "showComponentEditor": true,
-      "notes": "Level 1: E = $E, R = 0, your goal is to make your voltage $V3 volts.",
+      "notes": "Level 1: E = $E volts, R = 0 Ω, your goal is to make your voltage $V3 volts.",
       "circuit": [
         {
           "type": "wire",
