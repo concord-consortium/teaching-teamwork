@@ -55,7 +55,7 @@
       "type": "resistor",
       "UID": "rX",
       "resistance": "$R",
-      "connections": "battery_2,0:off_11",
+      "connections": "battery_1,0:off_11",
       "hidden": true
     },
     {
@@ -70,7 +70,7 @@
     },
     {
       "type": "wire",
-      "connections": "2:off_1,battery_1",
+      "connections": "2:off_1,battery_2",
       "hidden": true
     }
   ],
