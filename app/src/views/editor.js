@@ -1,4 +1,3 @@
-/* global FirebaseSimpleLogin: false */
 /* global CodeMirror: false */
 
 var div = React.DOM.div,
@@ -192,50 +191,39 @@ module.exports = React.createClass({
     }
   },
 
-  getAuthClient: function (callback) {
-    var self = this;
-    this.authClient = this.authClient || new FirebaseSimpleLogin(this.firebase, function(error, user) {
-      var atPos = user && user.email ? user.email.indexOf('@') : 0,
-          username = atPos ? user.email.substr(0, atPos) : null;
-      if (error) {
-        alert(error);
-      }
-      self.setState({
-        user: user,
-        username: username,
-        remoteUrl: self.getRemoteUrl(self.state.filename)
-      });
-      if (callback) {
-        callback(error, user);
-      }
-    });
-    return this.authClient;
-  },
-
   login: function (email, password) {
-    var saveLogin = function (error) {
-          if (!error) {
-            localStorage.setItem(loginKey, JSON.stringify({
-              email: email,
-              password: password
-            }));
-          }
-        };
-
     email = email || prompt('Email?');
     password = password || (email ? prompt('Password?') : null);
 
     if (email && password) {
-      this.getAuthClient(saveLogin).login("password", {
+      var self = this;
+      this.firebase.authWithPassword({
         email: email,
         password: password
+      }, function (error, authData) {
+        var atPos = authData && authData.password && authData.password.email ? authData.password.email.indexOf('@') : 0,
+            username = atPos ? authData.password.email.substr(0, atPos) : null;
+        if (error) {
+          alert(error);
+        }
+        else {
+          localStorage.setItem(loginKey, JSON.stringify({
+            email: email,
+            password: password
+          }));
+        }
+        self.setState({
+          user: authData,
+          username: username,
+          remoteUrl: self.getRemoteUrl(self.state.filename)
+        });
       });
     }
   },
 
   logout: function () {
     if (confirm('Are you sure you want to logout?')) {
-      this.getAuthClient().logout();
+      this.firebase.unauth();
       this.setState({user: null});
       localStorage.setItem(loginKey, null);
     }
@@ -376,7 +364,7 @@ Header = React.createFactory(React.createClass({
       alert('warning', this.props.dirty, 'UNSAVED'),
       alert('info', this.props.published && !this.props.dirty, 'PUBLISHED'),
       alert('warning', this.props.published && this.props.dirty, 'CHANGES NOT PUBLISHED'),
-      div({style: {float: 'right'}}, this.props.user ? (this.props.user.email + ' (' + this.props.username + ')') : null)
+      div({style: {float: 'right'}}, this.props.user ? (this.props.user.password.email + ' (' + this.props.username + ')') : null)
     );
   }
 }));
@@ -580,5 +568,3 @@ Dialog = React.createFactory(React.createClass({
     );
   }
 }));
-
-
