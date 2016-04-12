@@ -21,7 +21,6 @@ var logManagerUrl  = 'http://teaching-teamwork-log-manager.herokuapp.com/api/log
     },
 
     sendEvent = function(data) {
-      console.log('Log:', data);
       if (laraLoggerReady) {
         logToLARA(data);
       } else {

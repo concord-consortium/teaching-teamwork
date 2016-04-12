@@ -285,7 +285,6 @@ module.exports = userController = {
 
   createFirebaseGroupRef: function (activityName, groupName) {
     fbUrl = fbUrlBase + getDate() + "-" + groupName + "/activities/" + activityName + "/";
-    console.log("fbUrl", fbUrl);
     firebaseGroupRef = new Firebase(fbUrl);
     return firebaseGroupRef;
   }
