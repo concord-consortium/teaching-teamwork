@@ -32,7 +32,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
   },
   getInitialState: function() {
     return {
-      groupName: ""
+      groupName: this.props.groupName || ""
     };
   },
   handleGroupNameChange: function(event) {
@@ -76,7 +76,14 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
   },
   render: function() {
     var form;
-    if (this.props.form == 'groupname' || !this.state.groupName) {
+    if (this.props.form == 'gettingGlobalState') {
+      form = (
+        <div>
+          <h3>Checking for previously set group and username</h3>
+        </div>
+      );
+    }
+    else if (this.props.form == 'groupname' || !this.state.groupName) {
       var groupOptions = groups.map(function(group, i) {
         return (<option key={i} value={group.name}>{group.name}</option>);
       });
