@@ -174,8 +174,10 @@ module.exports = userController = {
     logController.logEvent("Rejected Group", groupName);
   },
 
-  setGroupName: function(groupName) {
+  setGroupName: function(_groupName) {
     var self = this;
+
+    groupName = _groupName;
 
     firebaseUsersRef.off("value", groupUsersListener);
 
@@ -283,6 +285,7 @@ module.exports = userController = {
 
   createFirebaseGroupRef: function (activityName, groupName) {
     fbUrl = fbUrlBase + getDate() + "-" + groupName + "/activities/" + activityName + "/";
+    console.log("fbUrl", fbUrl);
     firebaseGroupRef = new Firebase(fbUrl);
     return firebaseGroupRef;
   }
