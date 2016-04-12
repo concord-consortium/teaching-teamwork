@@ -36,6 +36,10 @@ module.exports = SubmitButton = React.createClass({
 
         // get the measurements and create the popup data
         self.getPopupData(function (table, allCorrect) {
+          // only log from the submitters instance
+          if (submitValue && (submitValue.user == userController.getUsername())) {
+            logController.logEvent("Submit clicked when all correct", allCorrect);
+          }
           self.setState({
             submitted: submitValue,
             table: table,
@@ -211,9 +215,12 @@ module.exports = SubmitButton = React.createClass({
 
     e.preventDefault();
 
+    logController.logEvent("Submit clicked", username);
+
     // if in solo mode then just populate the table
     if (!this.submitRef) {
       this.getPopupData(function (table, allCorrect) {
+        logController.logEvent("Submit clicked when all correct", allCorrect);
         self.setState({
           submitted: true,
           table: table,
@@ -229,7 +236,6 @@ module.exports = SubmitButton = React.createClass({
         at: Firebase.ServerValue.TIMESTAMP
       });
     }
-    logController.logEvent("Submit clicked", username);
   },
 
   popupButtonClicked: function () {
@@ -303,28 +309,28 @@ Popup = React.createFactory(React.createClass({
       td = React.DOM.td,
       i, row, title, label;
 
-    circuitRows.push(React.DOM.tr({key: 'header'},
-      this.props.multipleClients ? th({}, 'Circuit') : null,
-      th({}, 'Goal'),
-      th({}, 'Goal Value'),
-      th({}, 'Measured Value'),
-      th({}, 'Correct')
-    ));
-
-    for (i = 0; i < this.props.table.length; i++) {
-      row = this.props.table[i];
-      circuitRows.push(React.DOM.tr({key: i},
-        this.props.multipleClients ? td({}, row.client + 1) : null,
-        td({}, row.goal),
-        td({}, row.goalValue),
-        td({}, row.currentValue),
-        td({className: row.correctClass}, row.correct)
-      ));
-    }
-
     if (this.props.allCorrect) {
       title = 'All Goals Are Correct!';
       label = this.props.nextActivity ? this.props.nextActivity : 'All Done!';
+
+      circuitRows.push(React.DOM.tr({key: 'header'},
+        this.props.multipleClients ? th({}, 'Circuit') : null,
+        th({}, 'Goal'),
+        th({}, 'Goal Value'),
+        th({}, 'Measured Value'),
+        th({}, 'Correct')
+      ));
+
+      for (i = 0; i < this.props.table.length; i++) {
+        row = this.props.table[i];
+        circuitRows.push(React.DOM.tr({key: i},
+          this.props.multipleClients ? td({}, row.client + 1) : null,
+          td({}, row.goal),
+          td({}, row.goalValue),
+          td({}, row.currentValue),
+          td({className: row.correctClass}, row.correct)
+        ));
+      }
     }
     else {
       title = 'Some Goals Have Not Been Met';
