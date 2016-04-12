@@ -180,6 +180,7 @@ module.exports = userController = {
     firebaseUsersRef.off("value", groupUsersListener);
 
     logController.setGroupName(groupName);
+    logController.setUserName(userName);
     laraController.setGlobalState({
       identity: {
         groupName: groupName,
