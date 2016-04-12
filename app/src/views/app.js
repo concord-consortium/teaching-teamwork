@@ -343,14 +343,13 @@ module.exports = React.createClass({
 
   threeResistorsModel: function (options) {
     var level = options.level || 1,
-        R1 = this.uniformResistor(100, 1000, []),
-        R2 = this.uniformResistor(100, 1000, [R1]),
-        R3 = this.uniformResistor(100, 1000, [R1, R2]),
-
-        GoalR = this.uniformResistor(100, 1000, []),
-        GoalR1 = this.uniformResistor(100, 1000, [GoalR]),
-        GoalR2 = this.uniformResistor(100, 1000, [GoalR, GoalR1]),
-        GoalR3 = this.uniformResistor(100, 1000, [GoalR, GoalR1, GoalR2]),
+        R1     = this.uniformResistor(100, 1000, []),
+        R2     = this.uniformResistor(100, 1000, [R1]),
+        R3     = this.uniformResistor(100, 1000, [R1, R2]),
+        GoalR  = this.uniformResistor(100, 1000, [R1, R2, R3]),
+        GoalR1 = this.uniformResistor(100, 1000, [R1, R2, R3, GoalR]),
+        GoalR2 = this.uniformResistor(100, 1000, [R1, R2, R3, GoalR, GoalR1]),
+        GoalR3 = this.uniformResistor(100, 1000, [R1, R2, R3, GoalR, GoalR1, GoalR2]),
 
         model = {
           E: 6 + Math.round(Math.random() * (20 - 6)), // from 6 to 20 volts
@@ -399,9 +398,3 @@ module.exports = React.createClass({
     return model;
   }
 });
-
-
-
-
-
-
