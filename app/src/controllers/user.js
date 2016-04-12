@@ -1,6 +1,7 @@
 var UserRegistrationView = require('../views/userRegistration.jsx'),
     groups = require('../data/group-names'),
     logController = require('./log'),
+    laraController = require('./lara'),
     userController,
     numClients,
     numExistingUsers,
@@ -20,7 +21,8 @@ var UserRegistrationView = require('../views/userRegistration.jsx'),
 
 // scratch
 var fbUrlDomain = 'https://teaching-teamwork.firebaseio.com/';
-var fbUrlBase = fbUrlDomain + '2016/';
+var fbUrlDir = (localStorage ? localStorage.getItem('fbUrlDir') || null : null) || '2016/';  // to make local dev testing easier
+var fbUrlBase = fbUrlDomain + fbUrlDir;
 
 var getDate = function() {
   var today = new Date(),
@@ -63,13 +65,34 @@ module.exports = userController = {
     userName = null;
 
     if (numClients > 1) {
-      UserRegistrationView.open(this, {form: "groupname", numClients: numClients});
+      var self = this;
+      this.getIdentityFromLara(function (identity) {
+        if (identity && identity.groupName) {
+          self.tryToEnterGroup(identity.groupName, identity.userName);
+        }
+        else {
+          UserRegistrationView.open(self, {form: "groupname", numClients: numClients});
+        }
+      });
     } else {
       callback(0);
     }
   },
 
-  tryToEnterGroup: function(groupName) {
+  getIdentityFromLara: function (callback) {
+    if (laraController.loadedFromLara) {
+      UserRegistrationView.open(this, {form: "gettingGlobalState"});
+      laraController.waitForGlobalState(function (state) {
+        UserRegistrationView.close();
+        callback(state && state.identity ? state.identity : null);
+      });
+    }
+    else {
+      callback(null);
+    }
+  },
+
+  tryToEnterGroup: function(groupName, preferredUserName) {
     var self = this,
         group, members;
 
@@ -87,6 +110,8 @@ module.exports = userController = {
     firebaseUsersRef = firebaseGroupRef.child('users');
     groupUsersListener = firebaseUsersRef.on("value", function(snapshot) {
       var users = snapshot.val() || {};
+
+      userName = preferredUserName || userName;
 
       numExistingUsers = Object.keys(users).length;
       if (!userName) {
@@ -115,7 +140,7 @@ module.exports = userController = {
         onDisconnectRef.set({});
       }
 
-      UserRegistrationView.open(self, {form: "groupconfirm", users: users, userName: userName, numExistingUsers: numExistingUsers});
+      UserRegistrationView.open(self, {form: "groupconfirm", users: users, userName: userName, groupName: groupName, numExistingUsers: numExistingUsers});
     });
 
     logController.logEvent("Started to join group", groupName);
@@ -155,6 +180,12 @@ module.exports = userController = {
     firebaseUsersRef.off("value", groupUsersListener);
 
     logController.setGroupName(groupName);
+    laraController.setGlobalState({
+      identity: {
+        groupName: groupName,
+        userName: userName
+      }
+    });
 
     notifyGroupRefCreation();
 

@@ -1,7 +1,6 @@
-var logManagerUrl    = 'http://teaching-teamwork-log-manager.herokuapp.com/api/logs',
-    xhrObserver      = require('../data/xhrObserver'),
-    iframePhone      = require('iframe-phone'),
-    laraPhone,
+var logManagerUrl  = 'http://teaching-teamwork-log-manager.herokuapp.com/api/logs',
+    xhrObserver    = require('../data/xhrObserver'),
+    laraController = require('./lara'),
     laraLoggerReady,
     activityName,
     session,
@@ -106,14 +105,12 @@ var logManagerUrl    = 'http://teaching-teamwork-log-manager.herokuapp.com/api/l
         delete data.parameters;
       }
 
-      laraPhone.post('log', laraLogData);
+      laraController.log(laraLogData);
     };
 
-laraPhone = iframePhone.getIFrameEndpoint();
-laraPhone.addListener('hello', function () {
+laraController.waitForConnection(function () {
   laraLoggerReady = true;
 });
-laraPhone.initialize();
 
 function LogController() {
 }
