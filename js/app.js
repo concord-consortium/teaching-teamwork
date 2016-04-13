@@ -230,7 +230,7 @@ module.exports = controller;
 
 
 },{"iframe-phone":27}],5:[function(require,module,exports){
-var logManagerUrl  = 'http://teaching-teamwork-log-manager.herokuapp.com/api/logs',
+var logManagerUrl  = '//teaching-teamwork-log-manager.herokuapp.com/api/logs',
     xhrObserver    = require('../data/xhrObserver'),
     laraController = require('./lara'),
     laraLoggerReady,
