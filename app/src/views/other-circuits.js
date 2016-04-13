@@ -87,7 +87,7 @@ PopupIFrame = React.createFactory(React.createClass({
   },
 
   render: function () {
-    return React.DOM.iframe({ref: 'iframe', src: '?view-other-circuit!', style: {width: 800, height: 500}}, 'Loading...');
+    return React.DOM.iframe({ref: 'iframe', src: '?view-other-circuit!', style: {width: 740, height: 500}}, 'Loading...');
   }
 }));
 
@@ -125,7 +125,7 @@ ScaledIFrame = React.createFactory(React.createClass({
     var scale = 'scale(' + this.props.scale + ')',
         origin = '0 0',
         style = {
-          width: 800,
+          width: 740,
           height: 500,
           display: 'none',
           msTransform: scale,
@@ -233,7 +233,7 @@ CircuitImage = React.createFactory(React.createClass({
         top: breadboard.y,
         left: breadboard.x
       };
-      iframes.push(React.DOM.div({key: i, style: iframeStyle}, ScaledIFrame({scale: breadboard.width / 800, circuit: i + 1, activityName: this.props.activityName, groupName: this.props.groupName, ttWorkbench: this.props.ttWorkbench})));
+      iframes.push(React.DOM.div({key: i, style: iframeStyle}, ScaledIFrame({scale: breadboard.width / 740, circuit: i + 1, activityName: this.props.activityName, groupName: this.props.groupName, ttWorkbench: this.props.ttWorkbench})));
     }
 
     return React.DOM.div({style: {position: 'relative', margin: 10, width: this.imageInfo.width, height: this.imageInfo.height}},
