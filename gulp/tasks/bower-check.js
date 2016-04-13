@@ -20,18 +20,24 @@ gulp.task('bower-check', function() {
       },
       bower = require(getPath('bower.json')),
       component;
-      
+
   for (component in bower.dependencies) {
     (function (component) {
       // note: we are loading the dotfile which is maintained by bower with the currently installed package
-      var componentPackagePath = getPath('bower_components/' + component + '/.bower.json'),
+      var requiredVersion = bower.dependencies[component],
+          componentPackagePath = getPath('bower_components/' + component + '/.bower.json'),
           componentPackage;
-          
+
+      // handle the react#0.12.2 case
+      if (requiredVersion.indexOf('#') !== -1) {
+        requiredVersion = requiredVersion.split('#')[1];
+      }
+
       fs.exists(componentPackagePath, function (exists) {
         if (exists) {
           componentPackage = require(componentPackagePath);
-          if (componentPackage.version != bower.dependencies[component]) {
-            error('Please run "bower update".  The ' + component + ' bower component installed version number (' +  componentPackage.version + ') does not match the required version number (' + bower.dependencies[component] + ')');
+          if (componentPackage.version != requiredVersion) {
+            error('Please run "bower update".  The ' + component + ' bower component installed version number (' +  componentPackage.version + ') does not match the required version number (' + requiredVersion + ')');
           }
         }
         else {
@@ -41,4 +47,3 @@ gulp.task('bower-check', function() {
     })(component);
   }
 });
-
