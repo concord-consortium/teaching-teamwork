@@ -8,6 +8,8 @@ var logManagerUrl  = 'http://teaching-teamwork-log-manager.herokuapp.com/api/log
     groupname,
     client,
     logEventListeners,
+    wa,
+    currentFlowing = true,
     queue = [],
 
     generateGUID = function() {
@@ -21,6 +23,7 @@ var logManagerUrl  = 'http://teaching-teamwork-log-manager.herokuapp.com/api/log
     },
 
     sendEvent = function(data) {
+      //console.log('Log:', data);
       if (laraLoggerReady) {
         logToLARA(data);
       } else {
@@ -51,6 +54,7 @@ var logManagerUrl  = 'http://teaching-teamwork-log-manager.herokuapp.com/api/log
         username: username,
         groupname: groupname,
         board: client,
+        currentFlowing: currentFlowing,
         session: session,
         time: Date.now(),
         event: eventName,
@@ -148,9 +152,23 @@ LogController.prototype = {
   },
 
   startListeningToCircuitEvents: function() {
+    var self = this;
     sparks.logController.addListener(function(evt) {
+      if (evt.name === "Changed circuit") {
+        self.updateIfCurrentFlowing(wa.getClientCircuit());
+      }
       logEvent(evt.name, null, evt.value);
     });
+  },
+
+  updateIfCurrentFlowing: function (circuit) {
+    if (wa) {
+      currentFlowing = wa.isCurrentFlowing(circuit);
+    }
+  },
+
+  setWorkbenchAdapter: function (_wa) {
+    wa = _wa;
   },
 
   logEvents: function(events) {
