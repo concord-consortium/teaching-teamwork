@@ -186,6 +186,17 @@ WorkbenchAdaptor.prototype = {
       }
     }
     sparks.workbenchController.workbench.meter.update();
+  },
+
+  isCurrentFlowing: function (circuit) {
+    if (circuit) {
+      for (var i = 0, ii = circuit.length; i < ii; i++) {
+        if (circuit[i].connections.indexOf("ghost") !== -1) {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 };
 

@@ -1,4 +1,5 @@
 var eventsController = require('../controllers/events'),
+    logController = require('../controllers/log'),
     clientListFirebaseRef,
     myCircuitFirebaseRef,
     myMeterFirebaseRef,
@@ -35,7 +36,9 @@ function init() {
 
 function addClientListener(client) {
   clientListFirebaseRef.child(client).on("value", function(snapshot) {
-    wa.updateClient(client, snapshot.val(), false);
+    var circuit = snapshot.val();
+    logController.updateIfCurrentFlowing(circuit);
+    wa.updateClient(client, circuit, false);
   });
 }
 
@@ -51,6 +54,7 @@ function WorkbenchFBConnector(_userController, _clientNumber, _wa) {
   myMeterFirebaseRef = userController.getFirebaseGroupRef().child('meters').child(clientNumber);
 
   wa = _wa;
+  logController.setWorkbenchAdapter(_wa);
   init();
 }
 
