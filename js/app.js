@@ -8,7 +8,7 @@ React.render(App({}), document.getElementById('content'));
 
 
 
-},{"../vendor/pathseg.js":21,"./views/app":10}],2:[function(require,module,exports){
+},{"../vendor/pathseg.js":22,"./views/app":11}],2:[function(require,module,exports){
 module.exports = {
   modelsBase: "activities/"
 };
@@ -135,15 +135,113 @@ EventsController.prototype = {
 module.exports = new EventsController();
 
 
-},{"./user":5}],4:[function(require,module,exports){
-var logManagerUrl    = 'http://teaching-teamwork-log-manager.herokuapp.com/api/logs',
-    xhrObserver      = require('../data/xhrObserver'),
+},{"./user":6}],4:[function(require,module,exports){
+var iframePhone = require('iframe-phone'),
+    controller;
+
+function LaraController() {
+}
+LaraController.prototype = {
+  laraPhone: null,
+  loadedFromLara: false,
+  loadedGlobalState: false,
+  globalState: null,
+  loadedGlobalStateCallback: null,
+  connected: false,
+  connectionCallback: null,
+
+  init: function() {
+    var self = this;
+
+    // for now just check if in iframe
+    try {
+      this.loadedFromLara = window.self !== window.top;
+    } catch (e) {
+      this.loadedFromLara = true;
+    }
+
+    if (this.loadedFromLara) {
+      this.laraPhone = iframePhone.getIFrameEndpoint();
+      this.laraPhone.addListener('hello', function () {
+        self.connected = true;
+        if (self.connectionCallback) {
+          self.connectionCallback();
+        }
+      });
+      this.laraPhone.addListener("loadInteractiveGlobal", function(state) {
+        self._globalStateLoaded(state);
+      });
+      // this message is not in the production lara
+      this.laraPhone.addListener("loadInteractiveNullGlobal", function() {
+        //self._globalStateLoaded(null);
+      });
+      this.laraPhone.initialize();
+    }
+  },
+
+  waitForConnection: function (callback) {
+    if (this.connected) {
+      callback();
+    }
+    else {
+      this.connectionCallback = callback;
+    }
+  },
+
+  waitForGlobalState: function (callback) {
+    var self = this;
+    if (this.loadedGlobalState) {
+      callback(this.globalState);
+    }
+    else {
+      this.loadedGlobalStateCallback = callback;
+      setTimeout(function () {
+        if (!self.loadedGlobalState) {
+          this.loadedGlobalStateCallback = null;
+          callback(null);
+        }
+      }, 5000);
+    }
+  },
+
+  log: function (data) {
+    this.laraPhone.post('log', data);
+  },
+
+  setGlobalState: function (state) {
+    if (this.loadedFromLara) {
+      this.laraPhone.post('interactiveStateGlobal', state);
+    }
+  },
+
+  _globalStateLoaded: function (state) {
+    this.loadedGlobalState = true;
+    this.globalState = state;
+    if (this.loadedGlobalStateCallback) {
+      this.loadedGlobalStateCallback(state);
+    }
+  }
+};
+
+controller = new LaraController();
+controller.init();
+
+module.exports = controller;
+
+
+},{"iframe-phone":27}],5:[function(require,module,exports){
+var logManagerUrl  = 'http://teaching-teamwork-log-manager.herokuapp.com/api/logs',
+    xhrObserver    = require('../data/xhrObserver'),
+    laraController = require('./lara'),
+    laraLoggerReady,
     activityName,
     session,
     username,
     groupname,
     client,
     logEventListeners,
+    wa,
+    currentFlowing = true,
     queue = [],
 
     generateGUID = function() {
@@ -157,8 +255,13 @@ var logManagerUrl    = 'http://teaching-teamwork-log-manager.herokuapp.com/api/l
     },
 
     sendEvent = function(data) {
-      var request = xhrObserver.createObservedXMLHttpRequest();
-      request.repeatablePost(logManagerUrl, 'application/json; charset=UTF-8', JSON.stringify(data));
+      //console.log('Log:', data);
+      if (laraLoggerReady) {
+        logToLARA(data);
+      } else {
+        var request = xhrObserver.createObservedXMLHttpRequest();
+        request.repeatablePost(logManagerUrl, 'application/json; charset=UTF-8', JSON.stringify(data));
+      }
     },
 
     backfillQueue = function(key, value) {
@@ -183,6 +286,7 @@ var logManagerUrl    = 'http://teaching-teamwork-log-manager.herokuapp.com/api/l
         username: username,
         groupname: groupname,
         board: client,
+        currentFlowing: currentFlowing,
         session: session,
         time: Date.now(),
         event: eventName,
@@ -206,7 +310,43 @@ var logManagerUrl    = 'http://teaching-teamwork-log-manager.herokuapp.com/api/l
     startSession = function() {
       session = generateGUID();
       logEvent("Started session");
+    },
+
+    logToLARA = function(data) {
+      var laraLogData = {
+        action: data.event,
+        value: data.event_value,
+        data: data
+      };
+
+      // these values are redundant with above
+      delete data.event;
+      delete data.event_value;
+
+      // these values conflict with LARA wrapper
+      delete data.application;
+      delete data.time;
+      delete data.session;
+
+      // rename activity name conflict
+      data.levelName = data.activity;
+      delete data.activity;
+
+      // flatten parameters
+      if (data.parameters) {
+        for (var prop in data.parameters) {
+          if (!data.parameters.hasOwnProperty(prop)) {continue;}
+          data[prop] = data.parameters[prop];
+        }
+        delete data.parameters;
+      }
+
+      laraController.log(laraLogData);
     };
+
+laraController.waitForConnection(function () {
+  laraLoggerReady = true;
+});
 
 function LogController() {
 }
@@ -244,9 +384,23 @@ LogController.prototype = {
   },
 
   startListeningToCircuitEvents: function() {
+    var self = this;
     sparks.logController.addListener(function(evt) {
+      if (evt.name === "Changed circuit") {
+        self.updateIfCurrentFlowing(wa.getClientCircuit());
+      }
       logEvent(evt.name, null, evt.value);
     });
+  },
+
+  updateIfCurrentFlowing: function (circuit) {
+    if (wa) {
+      currentFlowing = wa.isCurrentFlowing(circuit);
+    }
+  },
+
+  setWorkbenchAdapter: function (_wa) {
+    wa = _wa;
   },
 
   logEvents: function(events) {
@@ -271,11 +425,14 @@ LogController.prototype = {
 module.exports = new LogController();
 
 
-},{"../data/xhrObserver":9}],5:[function(require,module,exports){
+},{"../data/xhrObserver":10,"./lara":4}],6:[function(require,module,exports){
 var UserRegistrationView = require('../views/userRegistration.jsx'),
+    groups = require('../data/group-names'),
     logController = require('./log'),
+    laraController = require('./lara'),
     userController,
     numClients,
+    numExistingUsers,
     activityName,
     userName,
     groupName,
@@ -287,11 +444,13 @@ var UserRegistrationView = require('../views/userRegistration.jsx'),
     groupRefCreationListeners,
     client,
     callback,
-    serverSkew;
+    serverSkew,
+    onDisconnectRef;
 
 // scratch
 var fbUrlDomain = 'https://teaching-teamwork.firebaseio.com/';
-var fbUrlBase = fbUrlDomain + 'dev/';
+var fbUrlDir = (localStorage ? localStorage.getItem('fbUrlDir') || null : null) || '2016/';  // to make local dev testing easier
+var fbUrlBase = fbUrlDomain + fbUrlDir;
 
 var getDate = function() {
   var today = new Date(),
@@ -331,130 +490,184 @@ module.exports = userController = {
     numClients = _numClients;
     activityName = _activityName;
     callback = _callback;
-    userName = $.trim($.cookie('userName') || '');
-    if (userName.length === 0) {
-      UserRegistrationView.open(this, {form: "username"});
-    }
-    else {
-      userController.setName(userName);
-    }
-  },
+    userName = null;
 
-  setName: function(name) {
-    userName = name;
-    $.cookie('userName', name);
-    logController.setUserName(userName);
     if (numClients > 1) {
-      groupName = $.trim($.cookie('groupName') || '');
-      if (groupName.length === 0) {
-        UserRegistrationView.open(this, {form: "groupname"});
-      }
-      else {
-        userController.checkGroupName(groupName);
-      }
+      var self = this;
+      this.getIdentityFromLara(function (identity) {
+        if (identity && identity.groupName) {
+          self.tryToEnterGroup(identity.groupName, identity.userName);
+        }
+        else {
+          UserRegistrationView.open(self, {form: "groupname", numClients: numClients});
+        }
+      });
     } else {
-      UserRegistrationView.close();
       callback(0);
     }
   },
 
-  checkGroupName: function(name) {
-    var self = this;
+  getIdentityFromLara: function (callback) {
+    if (laraController.loadedFromLara) {
+      UserRegistrationView.open(this, {form: "gettingGlobalState"});
+      laraController.waitForGlobalState(function (state) {
+        UserRegistrationView.close();
+        callback(state && state.identity ? state.identity : null);
+      });
+    }
+    else {
+      callback(null);
+    }
+  },
 
-    groupName = name;
+  tryToEnterGroup: function(groupName, preferredUserName) {
+    var self = this,
+        group, members;
 
-    this.createFirebaseGroupRef(activityName, name);
+    for (var i = 0, ii = groups.length; i < ii; i++) {
+      if (groups[i].name == groupName) {
+        group = groups[i];
+        break;
+      }
+    }
+
+    members = group.members;
+
+    this.createFirebaseGroupRef(activityName, groupName);
 
     firebaseUsersRef = firebaseGroupRef.child('users');
     groupUsersListener = firebaseUsersRef.on("value", function(snapshot) {
-      var users = snapshot.val();
-      // pass only other users in the room
-      if (users) {
+      var users = snapshot.val() || {};
+
+      userName = preferredUserName || userName;
+
+      numExistingUsers = Object.keys(users).length;
+      if (!userName) {
+        if (!users || !numExistingUsers) {
+          userName = members[0];
+
+          // if we're the first user, delete any existing data
+          firebaseGroupRef.child('chat').set({});
+          firebaseGroupRef.child('clients').set({});
+          firebaseGroupRef.child('model').set({});
+        } else if (numExistingUsers < numClients) {
+          for (var i = 0, ii=members.length; i<ii; i++) {
+            if (!users[members[i]]) {
+              userName = members[i];
+              break;
+            }
+          }
+        }
+      } else {
         delete users[userName];
       }
-      UserRegistrationView.open(self, {form: "groupconfirm", users: users});
-    });
 
-    firebaseUsersRef.child(userName).set({lastAction: Math.floor(Date.now()/1000)});
+      if (userName && (!users || Object.keys(users).length) < numClients) {
+        firebaseUsersRef.child(userName).set({here: true});
+        onDisconnectRef = firebaseUsersRef.child(userName).onDisconnect();
+        onDisconnectRef.set({});
+      }
+
+      UserRegistrationView.open(self, {form: "groupconfirm", users: users, userName: userName, groupName: groupName, numExistingUsers: numExistingUsers});
+    });
 
     logController.logEvent("Started to join group", groupName);
   },
 
   rejectGroupName: function() {
-    this.stopPinging();
+    firebaseUsersRef.off("value", groupUsersListener);
+
     // clean up
-    firebaseUsersRef.once("value", function(snapshot) {
-      var users = snapshot.val();
-      delete users[userName];
-      if (Object.keys(users).length) {
-        // delete ourselves
-        firebaseUsersRef.child(userName).remove();
-      } else {
-        // delete the room if we are the only member
-        firebaseGroupRef.remove();
-      }
-    });
+    if (onDisconnectRef) {
+      onDisconnectRef.cancel();
+    }
+    if (userName) {
+      firebaseUsersRef.once("value", function(snapshot) {
+        var users = snapshot.val();
+        delete users[userName];
+        if (Object.keys(users).length) {
+          // delete ourselves
+          firebaseUsersRef.child(userName).remove();
+        } else {
+          // delete the room if we are the only member
+          firebaseGroupRef.remove();
+        }
+        userName = null;
+      });
+    }
+
     UserRegistrationView.open(this, {form: "groupname"});
+
 
     logController.logEvent("Rejected Group", groupName);
   },
 
-  setGroupName: function(name) {
+  setGroupName: function(_groupName) {
     var self = this;
-    groupName = name;
-    $.cookie('groupName', name);
+
+    groupName = _groupName;
 
     firebaseUsersRef.off("value", groupUsersListener);
 
     logController.setGroupName(groupName);
+    logController.setUserName(userName);
+    laraController.setGlobalState({
+      identity: {
+        groupName: groupName,
+        userName: userName
+      }
+    });
 
     notifyGroupRefCreation();
-
-    this.startPinging();
 
     // annoyingly we have to get out of this before the off() call is finalized
     setTimeout(function(){
       boardsSelectionListener = firebaseUsersRef.on("value", function(snapshot) {
         var users = snapshot.val();
-
-        // remove any users who haven't pinged in 5 seconds from the list,
-        // opening the slot up to another user
-        for (var user in users) {
-          if (!users.hasOwnProperty(user)) {
-            continue;
-          }
-          var age = Math.floor(Date.now()/1000) - users[user].lastAction;
-          if (age > 5) {
-            firebaseUsersRef.child(user).remove();
-          }
-        }
-        UserRegistrationView.open(self, {form: "selectboard", numClients: numClients, users: users});
+        UserRegistrationView.open(self, {form: "selectboard", numClients: numClients, users: users, userName: userName});
       });
     }, 1);
   },
 
   selectClient: function(_client) {
     client = _client;
-    firebaseUsersRef.child(userName).set({client: client, lastAction: Math.floor(Date.now()/1000)});
+    firebaseUsersRef.child(userName).set({client: client});
   },
 
   selectedClient: function() {
     firebaseUsersRef.off("value");
     UserRegistrationView.close();
-    callback(client);
-  },
 
-  // ping firebase every second so we show we're still an active member of the group.
-  startPinging: function() {
-    this.ping = setInterval(function() {
-      firebaseUsersRef.child(userName).child("lastAction").set(Math.floor(Date.now()/1000));
-    }, 1000);
-  },
+    var chatRef = firebaseGroupRef.child('chat'),
+        slotsRemaining = numClients - numExistingUsers,
+        nums = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"],
+        cap = function (string) {
+          return string.charAt(0).toUpperCase() + string.slice(1);
+        },
+        message = userName + " has joined on Circuit "+((client*1)+1)+". ";
 
-  stopPinging: function() {
-    if (this.ping) {
-      clearInterval(this.ping);
+    if (slotsRemaining > 1 || (slotsRemaining == 1 && numClients == 2)) {
+      // One of three users is here
+      message += cap(nums[numExistingUsers]) + " of " + nums[numClients] + " users is here.";
+    } else if (slotsRemaining == 1) {
+      // Two of you are now here. One more to go before you can get started!
+      message += cap(nums[numExistingUsers]) + " of you are now here. One more to go before you can get started!";
+    } else {
+      message += "You're all here! Time to start this challenge.";
     }
+
+    chatRef.push({
+      user: "System",
+      message: message,
+      time: Firebase.ServerValue.TIMESTAMP
+    });
+    var disconnectMessageRef = chatRef.push();
+    disconnectMessageRef.onDisconnect().set({
+      user: "System",
+      message: userName + " has left",
+      time: Firebase.ServerValue.TIMESTAMP
+    });
+    callback(client);
   },
 
   getUsername: function() {
@@ -506,7 +719,7 @@ module.exports = userController = {
 };
 
 
-},{"../views/userRegistration.jsx":19,"./log":4}],6:[function(require,module,exports){
+},{"../data/group-names":7,"../views/userRegistration.jsx":20,"./lara":4,"./log":5}],7:[function(require,module,exports){
 module.exports = [
   {
     name: "Animals",
@@ -521,87 +734,9 @@ module.exports = [
     ]
   },
   {
-    name: "Colors",
+    name: "Vehicles",
     members: [
-      "Blue", "Red", "Green"
-    ]
-  },
-  {
-    name: "Dessert",
-    members: [
-      "Cake", "Icecream", "Pie"
-    ]
-  },
-  {
-    name: "Directions",
-    members: [
-      "North", "East", "West"
-    ]
-  },
-  {
-    name: "Dogs",
-    members: [
-      "Poodle", "Collie", "Spaniel"
-    ]
-  },
-  {
-    name: "Fruit",
-    members: [
-      "Cherry", "Plum", "Grape"
-    ]
-  },
-  {
-    name: "Geography",
-    members: [
-      "Mountain", "Plain", "Valley"
-    ]
-  },
-  {
-    name: "Instruments",
-    members: [
-      "Guitar", "Horn", "Piano"
-    ]
-  },
-  {
-    name: "Kitchen",
-    members: [
-      "Pot", "Pan", "Skillet"
-    ]
-  },
-  {
-    name: "Office",
-    members: [
-      "Pencil", "Paper", "Pen"
-    ]
-  },
-  {
-    name: "Pets",
-    members: [
-      "Dog", "Cat", "Hamster"
-    ]
-  },
-  {
-    name: "Potatoes",
-    members: [
-      "Mashed", "Baked", "Fries"
-    ]
-  },
-  {
-    name: "Shapes",
-    members: [
-      "Circle", "Square", "Triangle"
-    ]
-  },
-  {
-    name: "Sides",
-    members: [
-      "Soup", "Salad", "Roll"
-    ]
-  },
-  {
-    name: "States",
-    members: [
-      "Utah", "Ohio", "Iowa"
+      "Truck", "Car", "Van"
     ]
   },
   {
@@ -611,21 +746,15 @@ module.exports = [
     ]
   },
   {
-    name: "Towns",
+    name: "Office",
     members: [
-      "Acton", "Maynard", "Concord"
+      "Pencil", "Paper", "Pen"
     ]
   },
   {
-    name: "Vegetables",
+    name: "Geography",
     members: [
-      "Lettuce", "Celery", "Tomato"
-    ]
-  },
-  {
-    name: "Vehicles",
-    members: [
-      "Truck", "Car", "Van"
+      "Mountain", "Plain", "Valley"
     ]
   },
   {
@@ -639,11 +768,95 @@ module.exports = [
     members: [
       "Rain", "Snow", "Sleet"
     ]
+  },
+  {
+    name: "Dogs",
+    members: [
+      "Poodle", "Collie", "Spaniel"
+    ]
+  },
+  {
+    name: "Pets",
+    members: [
+      "Dog", "Cat", "Hamster"
+    ]
+  },
+  {
+    name: "Kitchen",
+    members: [
+      "Pot", "Pan", "Skillet"
+    ]
+  },
+  {
+    name: "Sides",
+    members: [
+      "Soup", "Salad", "Roll"
+    ]
+  },
+  {
+    name: "Dessert",
+    members: [
+      "Cake", "Icecream", "Pie"
+    ]
+  },
+  {
+    name: "Fruit",
+    members: [
+      "Cherry", "Plum", "Grape"
+    ]
+  },
+  {
+    name: "Vegetable",
+    members: [
+      "Lettuce", "Celery", "Tomato"
+    ]
+  },
+  {
+    name: "Potatoes",
+    members: [
+      "Mashed", "Baked", "Fries"
+    ]
+  },
+  {
+    name: "Colors",
+    members: [
+      "Blue", "Red", "Green"
+    ]
+  },
+  {
+    name: "Instruments",
+    members: [
+      "Guitar", "Horn", "Piano"
+    ]
+  },
+  {
+    name: "Shapes",
+    members: [
+      "Circle", "Square", "Triangle"
+    ]
+  },
+  {
+    name: "Directions",
+    members: [
+      "North", "East", "West"
+    ]
+  },
+  {
+    name: "Towns",
+    members: [
+      "Acton", "Maynard", "Concord"
+    ]
+  },
+  {
+    name: "States",
+    members: [
+      "Utah", "Ohio", "Iowa"
+    ]
   }
 ];
 
 
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 /**
  The workbench adaptor takes a TT-workbench definition such as
 
@@ -832,14 +1045,26 @@ WorkbenchAdaptor.prototype = {
       }
     }
     sparks.workbenchController.workbench.meter.update();
+  },
+
+  isCurrentFlowing: function (circuit) {
+    if (circuit) {
+      for (var i = 0, ii = circuit.length; i < ii; i++) {
+        if (circuit[i].connections.indexOf("ghost") !== -1) {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 };
 
 module.exports = WorkbenchAdaptor;
 
 
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 var eventsController = require('../controllers/events'),
+    logController = require('../controllers/log'),
     clientListFirebaseRef,
     myCircuitFirebaseRef,
     myMeterFirebaseRef,
@@ -876,7 +1101,9 @@ function init() {
 
 function addClientListener(client) {
   clientListFirebaseRef.child(client).on("value", function(snapshot) {
-    wa.updateClient(client, snapshot.val(), false);
+    var circuit = snapshot.val();
+    logController.updateIfCurrentFlowing(circuit);
+    wa.updateClient(client, circuit, false);
   });
 }
 
@@ -892,6 +1119,7 @@ function WorkbenchFBConnector(_userController, _clientNumber, _wa) {
   myMeterFirebaseRef = userController.getFirebaseGroupRef().child('meters').child(clientNumber);
 
   wa = _wa;
+  logController.setWorkbenchAdapter(_wa);
   init();
 }
 
@@ -910,7 +1138,7 @@ WorkbenchFBConnector.prototype.resetMeters = function () {
 module.exports = WorkbenchFBConnector;
 
 
-},{"../controllers/events":3}],9:[function(require,module,exports){
+},{"../controllers/events":3,"../controllers/log":5}],10:[function(require,module,exports){
 var xhrObserver;
 
 function XHRObserver() {
@@ -985,7 +1213,7 @@ XHRObserver.prototype = {
 module.exports = xhrObserver = new XHRObserver();
 
 
-},{}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 var PageView              = React.createFactory(require('./page.jsx')),
     WorkbenchAdaptor      = require('../data/workbenchAdaptor'),
     WorkbenchFBConnector  = require('../data/workbenchFBConnector'),
@@ -1185,6 +1413,9 @@ module.exports = React.createClass({
         waitForBreadboardView(function () {
           try {
             sparks.createWorkbench(workbench, "breadboard-wrapper");
+            $('.breadboard svg').css({width: 740});
+            $('.breadboard svg')[0].setAttribute('viewBox', "60 0 740 500");
+            $("g[info=probes]").attr({transform: "matrix(0.05 0 0 0.05 60 -100)"});
           }
           catch (e) {
             // sparks is throwing an error when computing the distance between points on load
@@ -1328,14 +1559,13 @@ module.exports = React.createClass({
 
   threeResistorsModel: function (options) {
     var level = options.level || 1,
-        R1 = this.uniformResistor(100, 1000, []),
-        R2 = this.uniformResistor(100, 1000, [R1]),
-        R3 = this.uniformResistor(100, 1000, [R1, R2]),
-
-        GoalR = this.uniformResistor(100, 1000, []),
-        GoalR1 = this.uniformResistor(100, 1000, [GoalR]),
-        GoalR2 = this.uniformResistor(100, 1000, [GoalR, GoalR1]),
-        GoalR3 = this.uniformResistor(100, 1000, [GoalR, GoalR1, GoalR2]),
+        R1     = this.uniformResistor(100, 1000, []),
+        R2     = this.uniformResistor(100, 1000, [R1]),
+        R3     = this.uniformResistor(100, 1000, [R1, R2]),
+        GoalR  = this.uniformResistor(100, 1000, [R1, R2, R3]),
+        GoalR1 = this.uniformResistor(100, 1000, [R1, R2, R3, GoalR]),
+        GoalR2 = this.uniformResistor(100, 1000, [R1, R2, R3, GoalR, GoalR1]),
+        GoalR3 = this.uniformResistor(100, 1000, [R1, R2, R3, GoalR, GoalR1, GoalR2]),
 
         model = {
           E: 6 + Math.round(Math.random() * (20 - 6)), // from 6 to 20 volts
@@ -1386,13 +1616,7 @@ module.exports = React.createClass({
 });
 
 
-
-
-
-
-
-
-},{"../config":2,"../controllers/events":3,"../controllers/log":4,"../controllers/user":5,"../data/workbenchAdaptor":7,"../data/workbenchFBConnector":8,"./page.jsx":16,"./view-other-circuit":20}],11:[function(require,module,exports){
+},{"../config":2,"../controllers/events":3,"../controllers/log":5,"../controllers/user":6,"../data/workbenchAdaptor":8,"../data/workbenchFBConnector":9,"./page.jsx":17,"./view-other-circuit":21}],12:[function(require,module,exports){
 // adapted from http://thecodeplayer.com/walkthrough/javascript-css3-calculator
 /*jslint evil: true */
 
@@ -1728,7 +1952,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../controllers/log":4}],12:[function(require,module,exports){
+},{"../controllers/log":5}],13:[function(require,module,exports){
 var xhrObserver = require('../data/xhrObserver');
 var logController = require('../controllers/log');
 
@@ -1775,8 +1999,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../controllers/log":4,"../data/xhrObserver":9}],13:[function(require,module,exports){
-/* global FirebaseSimpleLogin: false */
+},{"../controllers/log":5,"../data/xhrObserver":10}],14:[function(require,module,exports){
 /* global CodeMirror: false */
 
 var div = React.DOM.div,
@@ -1970,50 +2193,39 @@ module.exports = React.createClass({
     }
   },
 
-  getAuthClient: function (callback) {
-    var self = this;
-    this.authClient = this.authClient || new FirebaseSimpleLogin(this.firebase, function(error, user) {
-      var atPos = user && user.email ? user.email.indexOf('@') : 0,
-          username = atPos ? user.email.substr(0, atPos) : null;
-      if (error) {
-        alert(error);
-      }
-      self.setState({
-        user: user,
-        username: username,
-        remoteUrl: self.getRemoteUrl(self.state.filename)
-      });
-      if (callback) {
-        callback(error, user);
-      }
-    });
-    return this.authClient;
-  },
-
   login: function (email, password) {
-    var saveLogin = function (error) {
-          if (!error) {
-            localStorage.setItem(loginKey, JSON.stringify({
-              email: email,
-              password: password
-            }));
-          }
-        };
-
     email = email || prompt('Email?');
     password = password || (email ? prompt('Password?') : null);
 
     if (email && password) {
-      this.getAuthClient(saveLogin).login("password", {
+      var self = this;
+      this.firebase.authWithPassword({
         email: email,
         password: password
+      }, function (error, authData) {
+        var atPos = authData && authData.password && authData.password.email ? authData.password.email.indexOf('@') : 0,
+            username = atPos ? authData.password.email.substr(0, atPos) : null;
+        if (error) {
+          alert(error);
+        }
+        else {
+          localStorage.setItem(loginKey, JSON.stringify({
+            email: email,
+            password: password
+          }));
+        }
+        self.setState({
+          user: authData,
+          username: username,
+          remoteUrl: self.getRemoteUrl(self.state.filename)
+        });
       });
     }
   },
 
   logout: function () {
     if (confirm('Are you sure you want to logout?')) {
-      this.getAuthClient().logout();
+      this.firebase.unauth();
       this.setState({user: null});
       localStorage.setItem(loginKey, null);
     }
@@ -2154,7 +2366,7 @@ Header = React.createFactory(React.createClass({
       alert('warning', this.props.dirty, 'UNSAVED'),
       alert('info', this.props.published && !this.props.dirty, 'PUBLISHED'),
       alert('warning', this.props.published && this.props.dirty, 'CHANGES NOT PUBLISHED'),
-      div({style: {float: 'right'}}, this.props.user ? (this.props.user.email + ' (' + this.props.username + ')') : null)
+      div({style: {float: 'right'}}, this.props.user ? (this.props.user.password.email + ' (' + this.props.username + ')') : null)
     );
   }
 }));
@@ -2360,9 +2572,7 @@ Dialog = React.createFactory(React.createClass({
 }));
 
 
-
-
-},{}],14:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 // adapted from SPARKS math-parser.js
 
 module.exports = React.createClass({
@@ -2502,7 +2712,7 @@ module.exports = React.createClass({
   }
 });
 
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 var config = require('../config'),
     logController = require('../controllers/log'),
     OtherCircuits, Popup, PopupIFrame, CircuitLink, CircuitImage, ScaledIFrame;
@@ -2592,7 +2802,7 @@ PopupIFrame = React.createFactory(React.createClass({
   },
 
   render: function () {
-    return React.DOM.iframe({ref: 'iframe', src: '?view-other-circuit!', style: {width: 800, height: 500}}, 'Loading...');
+    return React.DOM.iframe({ref: 'iframe', src: '?view-other-circuit!', style: {width: 740, height: 500}}, 'Loading...');
   }
 }));
 
@@ -2630,7 +2840,7 @@ ScaledIFrame = React.createFactory(React.createClass({
     var scale = 'scale(' + this.props.scale + ')',
         origin = '0 0',
         style = {
-          width: 800,
+          width: 740,
           height: 500,
           display: 'none',
           msTransform: scale,
@@ -2738,7 +2948,7 @@ CircuitImage = React.createFactory(React.createClass({
         top: breadboard.y,
         left: breadboard.x
       };
-      iframes.push(React.DOM.div({key: i, style: iframeStyle}, ScaledIFrame({scale: breadboard.width / 800, circuit: i + 1, activityName: this.props.activityName, groupName: this.props.groupName, ttWorkbench: this.props.ttWorkbench})));
+      iframes.push(React.DOM.div({key: i, style: iframeStyle}, ScaledIFrame({scale: breadboard.width / 740, circuit: i + 1, activityName: this.props.activityName, groupName: this.props.groupName, ttWorkbench: this.props.ttWorkbench})));
     }
 
     return React.DOM.div({style: {position: 'relative', margin: 10, width: this.imageInfo.width, height: this.imageInfo.height}},
@@ -2798,7 +3008,7 @@ Popup = React.createFactory(React.createClass({
 }));
 
 
-},{"../config":2,"../controllers/log":4}],16:[function(require,module,exports){
+},{"../config":2,"../controllers/log":5}],17:[function(require,module,exports){
 var userController = require('../controllers/user'),
     SidebarChatView = require('./sidebar-chat.jsx'),
     CalculatorView = require('./calculator.jsx'),
@@ -2815,7 +3025,9 @@ module.exports = React.createClass({
 
   render: function() {
     var activity = this.props.activity ? this.props.activity : {},
+        inIframe = (function() { try { return window.self !== window.top; } catch (e) { return true; } })(),
         activityName = activity.name ? ': ' + activity.name : '',
+        title = inIframe ? null : (React.createElement("h1", null, "Teaching Teamwork",  activityName )),
         hasMultipleClients = activity.clients && (activity.clients.length > 1),
         username = userController.getUsername(),
         groupname = userController.getGroupname(),
@@ -2826,11 +3038,12 @@ module.exports = React.createClass({
         wrapperClass = hasMultipleClients ? 'multiple-clients' : null,
         image = activity.image ? (React.createElement("div", {id: "image-wrapper", className:  wrapperClass }, React.createElement("img", {src:  /^https?:\/\//.test(activity.image) ? activity.image : config.modelsBase + activity.image}))) : null,
         submitButton = this.props.showSubmit && this.props.circuit ? (React.createElement(SubmitButtonView, {label: hasMultipleClients ? 'We got it!' : "I got it!", goals:  this.props.goals, nextActivity:  this.props.nextActivity})) : null,
-        otherCircuitsButton = hasMultipleClients && this.props.circuit ? (React.createElement(OtherCircuitsView, {circuit:  this.props.circuit, numClients:  activity.clients.length, activityName:  this.props.activityName, groupName:  userController.getGroupname(), ttWorkbench:  this.props.ttWorkbench})) : null;
+        otherCircuitsButton = hasMultipleClients && this.props.circuit ? (React.createElement(OtherCircuitsView, {circuit:  this.props.circuit, numClients:  activity.clients.length, activityName:  this.props.activityName, groupName:  userController.getGroupname(), ttWorkbench:  this.props.ttWorkbench})) : null,
+        calculator = this.props.circuit ? (React.createElement(CalculatorView, null)) : null;
 
     return (
       React.createElement("div", {className: "tt-page"}, 
-        React.createElement("h1", null, "Teaching Teamwork",  activityName ), 
+         title, 
          circuit, 
         React.createElement("div", {id: "top-button-wrapper"}, 
            submitButton, 
@@ -2842,7 +3055,7 @@ module.exports = React.createClass({
           React.createElement("div", {id: "breadboard-wrapper", className:  wrapperClass })
         ), 
          image, 
-        React.createElement(CalculatorView, null), 
+         calculator, 
          connection, 
          editor 
       )
@@ -2851,7 +3064,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../config":2,"../controllers/user":5,"./calculator.jsx":11,"./connection.jsx":12,"./editor":13,"./notes":14,"./other-circuits":15,"./sidebar-chat.jsx":17,"./submitButton":18}],17:[function(require,module,exports){
+},{"../config":2,"../controllers/user":6,"./calculator.jsx":12,"./connection.jsx":13,"./editor":14,"./notes":15,"./other-circuits":16,"./sidebar-chat.jsx":18,"./submitButton":19}],18:[function(require,module,exports){
 var userController = require('../controllers/user'),
     logController = require('../controllers/log'),
     ChatItems, ChatItem;
@@ -2877,7 +3090,7 @@ module.exports = React.createClass({
     var self = this;
     userController.onGroupRefCreation(function() {
       self.firebaseRef = userController.getFirebaseGroupRef().child("chat");
-      self.firebaseRef.on("child_added", function(dataSnapshot) {
+      self.firebaseRef.orderByChild('time').on("child_added", function(dataSnapshot) {
         var items = self.state.items.slice(0);
         items.push(dataSnapshot.val());
         self.setState({
@@ -2897,7 +3110,8 @@ module.exports = React.createClass({
     e.preventDefault();
     this.firebaseRef.push({
       user: userController.getUsername(),
-      message: message
+      message: message,
+      time: Firebase.ServerValue.TIMESTAMP
     });
     input.value = '';
     input.focus();
@@ -2942,7 +3156,8 @@ ChatItems = React.createClass({
     var user = userController.getUsername();
     return React.createElement("div", {ref: "items", className: "sidebar-chat-items"}, 
       this.props.items.map(function(item, i) {
-        return React.createElement(ChatItem, {key:  i, item:  item, me:  item.user == user});
+        var owner = (item.user == user) ? "me" : item.user == "System" ? "system" : "others";
+        return React.createElement(ChatItem, {key:  i, item:  item, owner:  owner });
       })
     );
   }
@@ -2952,7 +3167,8 @@ ChatItem = React.createClass({
   displayName: 'ChatItem',
 
   render: function () {
-    return React.createElement("div", {className:  this.props.me ? 'chat-item chat-item-me' : 'chat-item chat-item-others'}, 
+    var className = 'chat-item chat-item-'+this.props.owner;
+    return React.createElement("div", {className:  className }, 
         React.createElement("b", null,  this.props.item.prefix || (this.props.item.user + ':') ), " ",  this.props.item.message
       );
   }
@@ -2960,7 +3176,7 @@ ChatItem = React.createClass({
 
 
 
-},{"../controllers/log":4,"../controllers/user":5}],18:[function(require,module,exports){
+},{"../controllers/log":5,"../controllers/user":6}],19:[function(require,module,exports){
 var userController = require('../controllers/user'),
     logController = require('../controllers/log'),
     SubmitButton, Popup;
@@ -2999,6 +3215,10 @@ module.exports = SubmitButton = React.createClass({
 
         // get the measurements and create the popup data
         self.getPopupData(function (table, allCorrect) {
+          // only log from the submitters instance
+          if (submitValue && (submitValue.user == userController.getUsername())) {
+            logController.logEvent("Submit clicked when all correct", allCorrect);
+          }
           self.setState({
             submitted: submitValue,
             table: table,
@@ -3174,9 +3394,12 @@ module.exports = SubmitButton = React.createClass({
 
     e.preventDefault();
 
+    logController.logEvent("Submit clicked", username);
+
     // if in solo mode then just populate the table
     if (!this.submitRef) {
       this.getPopupData(function (table, allCorrect) {
+        logController.logEvent("Submit clicked when all correct", allCorrect);
         self.setState({
           submitted: true,
           table: table,
@@ -3192,7 +3415,6 @@ module.exports = SubmitButton = React.createClass({
         at: Firebase.ServerValue.TIMESTAMP
       });
     }
-    logController.logEvent("Submit clicked", username);
   },
 
   popupButtonClicked: function () {
@@ -3266,28 +3488,28 @@ Popup = React.createFactory(React.createClass({
       td = React.DOM.td,
       i, row, title, label;
 
-    circuitRows.push(React.DOM.tr({key: 'header'},
-      this.props.multipleClients ? th({}, 'Circuit') : null,
-      th({}, 'Goal'),
-      th({}, 'Goal Value'),
-      th({}, 'Measured Value'),
-      th({}, 'Correct')
-    ));
-
-    for (i = 0; i < this.props.table.length; i++) {
-      row = this.props.table[i];
-      circuitRows.push(React.DOM.tr({key: i},
-        this.props.multipleClients ? td({}, row.client + 1) : null,
-        td({}, row.goal),
-        td({}, row.goalValue),
-        td({}, row.currentValue),
-        td({className: row.correctClass}, row.correct)
-      ));
-    }
-
     if (this.props.allCorrect) {
       title = 'All Goals Are Correct!';
       label = this.props.nextActivity ? this.props.nextActivity : 'All Done!';
+
+      circuitRows.push(React.DOM.tr({key: 'header'},
+        this.props.multipleClients ? th({}, 'Circuit') : null,
+        th({}, 'Goal'),
+        th({}, 'Goal Value'),
+        th({}, 'Measured Value'),
+        th({}, 'Correct')
+      ));
+
+      for (i = 0; i < this.props.table.length; i++) {
+        row = this.props.table[i];
+        circuitRows.push(React.DOM.tr({key: i},
+          this.props.multipleClients ? td({}, row.client + 1) : null,
+          td({}, row.goal),
+          td({}, row.goalValue),
+          td({}, row.currentValue),
+          td({className: row.correctClass}, row.correct)
+        ));
+      }
     }
     else {
       title = 'Some Goals Have Not Been Met';
@@ -3303,7 +3525,7 @@ Popup = React.createFactory(React.createClass({
 }));
 
 
-},{"../controllers/log":4,"../controllers/user":5}],19:[function(require,module,exports){
+},{"../controllers/log":5,"../controllers/user":6}],20:[function(require,module,exports){
 var userController, UserRegistrationView,
     groups = require('../data/group-names');
 
@@ -3338,23 +3560,15 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
   },
   getInitialState: function() {
     return {
-      userName: $.trim($.cookie('userName') || ''),
-      groupName: $.trim($.cookie('groupName') || '')
+      groupName: this.props.groupName || ""
     };
-  },
-  handleUserNameChange: function(event) {
-    this.setState({userName: event.target.value});
   },
   handleGroupNameChange: function(event) {
     this.setState({groupName: event.target.value});
   },
-  handleSubmit: function(e) {
+  handleGroupSelected: function(e) {
     e.preventDefault();
-    if (this.props.form == "username") {
-      userController.setName(this.state.userName);
-    } else if (this.props.form == "groupname") {
-      userController.checkGroupName(this.state.groupName);
-    }
+    userController.tryToEnterGroup(this.state.groupName);
   },
   handleJoinGroup: function() {
     userController.setGroupName(this.state.groupName);
@@ -3390,24 +3604,25 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
   },
   render: function() {
     var form;
-    if (this.props.form == 'username') {
+    if (this.props.form == 'gettingGlobalState') {
       form = (
         React.createElement("div", null, 
-          React.createElement("label", null, 
-            React.createElement("span", null, "User Name :"), 
-            React.createElement("input", {type: "text", ref: "userName", value: this.state.userName, onChange: this.handleUserNameChange})
-          )
+          React.createElement("h3", null, "Checking for previously set group and username")
         )
       );
-    } else if (this.props.form == 'groupname') {
+    }
+    else if (this.props.form == 'groupname' || !this.state.groupName) {
       var groupOptions = groups.map(function(group, i) {
         return (React.createElement("option", {key: i, value: group.name}, group.name));
       });
       groupOptions.unshift(React.createElement("option", {key: "placeholder", value: "", disabled: "disabled"}, "Select a team"));
       form = (
         React.createElement("div", null, 
-          React.createElement("h3", null, "Hi ",  this.state.userName, "!"), 
-          React.createElement("p", null, "Please select your team:"), 
+          React.createElement("h3", null, "Welcome!"), 
+          React.createElement("div", null, 
+            "This activity requires a team of ", this.props.numClients, " users."
+          ), 
+          React.createElement("h3", null, "Please select your team:"), 
           React.createElement("label", null, 
             React.createElement("select", {value: this.state.groupName, onChange:  this.handleGroupNameChange}, 
                groupOptions 
@@ -3417,42 +3632,66 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
         )
       );
     } else if (this.props.form == 'groupconfirm') {
-      var groupDetails,
-          joinStr,
-          keys = Object.keys(this.props.users);
-      if (keys.length === 0) {
-        groupDetails = (
+      if (!this.props.userName) {
+        form = (
           React.createElement("div", null, 
-            React.createElement("label", null, "You are the first member of this group.")
+            React.createElement("h3", null, "Group name: ",  this.state.groupName), 
+            React.createElement("div", null, 
+              "There are already ",  this.props.numExistingUsers, " in this group."
+            ), 
+            React.createElement("label", null, 
+              React.createElement("button", {onClick:  this.handleRejectGroup}, "Enter a different group")
+            )
           )
         );
       } else {
-        groupDetails = (
+        var userDetails,
+            groupDetails,
+            joinStr,
+            keys = Object.keys(this.props.users),
+            userName = this.props.userName;
+
+        userDetails = (
           React.createElement("div", null, 
-            React.createElement("label", null, "These are the people currently in this group:"), 
-            React.createElement("ul", null, 
-              keys.map(function(result) {
-                return React.createElement("li", null, React.createElement("b", null, result));
-              })
+            React.createElement("label", null, "You have been assigned the name ", React.createElement("b", null, userName), ".")
+          )
+        );
+
+        if (keys.length === 0) {
+          groupDetails = (
+            React.createElement("div", null, 
+              React.createElement("label", null, "You are the first member of this group.")
+            )
+          );
+        } else {
+          groupDetails = (
+            React.createElement("div", null, 
+              React.createElement("label", null, "These are the other people currently in this group:"), 
+              React.createElement("ul", null, 
+                keys.map(function(result) {
+                  return React.createElement("li", null, React.createElement("b", null, result));
+                })
+              )
+            )
+          );
+        }
+
+        joinStr = (keys.length ? "join" : "create");
+
+        form = (
+          React.createElement("div", null, 
+            React.createElement("h3", null, "Group name: ",  this.state.groupName), 
+             userDetails, 
+             groupDetails, 
+            React.createElement("label", null, " "), 
+            React.createElement("span", null, "Do you want to ",  joinStr, " this group?"), 
+            React.createElement("label", null, 
+              React.createElement("button", {onClick:  this.handleJoinGroup}, "Yes, ",  joinStr ), 
+              React.createElement("button", {onClick:  this.handleRejectGroup}, "No, enter a different group")
             )
           )
         );
       }
-
-      joinStr = (keys.length ? "join" : "create");
-
-      form = (
-        React.createElement("div", null, 
-          React.createElement("h3", null, "Group name: ",  this.state.groupName), 
-           groupDetails, 
-          React.createElement("label", null, " "), 
-          React.createElement("span", null, "Do you want to ",  joinStr, " this group?"), 
-          React.createElement("label", null, 
-            React.createElement("button", {onClick:  this.handleJoinGroup}, "Yes, ",  joinStr ), 
-            React.createElement("button", {onClick:  this.handleRejectGroup}, "No, enter a different group")
-          )
-        )
-      );
     } else if (this.props.form == 'selectboard') {
       var clientChoices = [],
           submittable = false;
@@ -3465,7 +3704,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
         for (var user in this.props.users) {
           if (this.props.users[user].client == i) {
             selectedUsers.push(user);
-            if (user == this.state.userName) {
+            if (user == this.props.userName) {
               isOwn = true;
               selected = true;
             }
@@ -3497,7 +3736,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
     }
 
     return (
-      React.createElement("form", {onSubmit:  this.handleSubmit}, 
+      React.createElement("form", null, 
          form 
       )
     );
@@ -3505,7 +3744,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
 });
 
 
-},{"../data/group-names":6}],20:[function(require,module,exports){
+},{"../data/group-names":7}],21:[function(require,module,exports){
 var userController       = require('../controllers/user'),
     WorkbenchAdaptor     = require('../data/workbenchAdaptor'),
     WorkbenchFBConnector = require('../data/workbenchFBConnector');
@@ -3566,6 +3805,11 @@ module.exports = React.createClass({
           var leadForHole, prevProbes;
 
           if (sparks.workbenchController && sparks.workbenchController.breadboardView && sparks.workbenchController.breadboardView.multimeter && sparks.workbenchController.breadboardController) {
+
+            $('.breadboard svg').css({width: 740});
+            $('.breadboard svg')[0].setAttribute('viewBox', "60 0 740 500");
+            $("g[info=probes]").attr({transform: "matrix(0.05 0 0 0.05 60 -100)"});
+
             multimeter = sparks.workbenchController.breadboardView.multimeter;
             meter = sparks.workbenchController.workbench.meter;
 
@@ -3703,13 +3947,7 @@ module.exports = React.createClass({
 });
 
 
-
-
-
-
-
-
-},{"../controllers/user":5,"../data/workbenchAdaptor":7,"../data/workbenchFBConnector":8}],21:[function(require,module,exports){
+},{"../controllers/user":6,"../data/workbenchAdaptor":8,"../data/workbenchFBConnector":9}],22:[function(require,module,exports){
 // SVGPathSeg API polyfill
 // https://github.com/progers/pathseg
 //
@@ -4527,4 +4765,474 @@ module.exports = React.createClass({
 }());
 
 
-},{}]},{},[1]);
+},{}],23:[function(require,module,exports){
+var structuredClone = require('./structured-clone');
+var HELLO_INTERVAL_LENGTH = 200;
+var HELLO_TIMEOUT_LENGTH = 60000;
+
+function IFrameEndpoint() {
+  var parentOrigin;
+  var listeners = {};
+  var isInitialized = false;
+  var connected = false;
+  var postMessageQueue = [];
+  var helloInterval;
+
+  function postToTarget(message, target) {
+    // See http://dev.opera.com/articles/view/window-postmessage-messagechannel/#crossdoc
+    //     https://github.com/Modernizr/Modernizr/issues/388
+    //     http://jsfiddle.net/ryanseddon/uZTgD/2/
+    if (structuredClone.supported()) {
+      window.parent.postMessage(message, target);
+    } else {
+      window.parent.postMessage(JSON.stringify(message), target);
+    }
+  }
+
+  function post(type, content) {
+    var message;
+    // Message object can be constructed from 'type' and 'content' arguments or it can be passed
+    // as the first argument.
+    if (arguments.length === 1 && typeof type === 'object' && typeof type.type === 'string') {
+      message = type;
+    } else {
+      message = {
+        type: type,
+        content: content
+      };
+    }
+    if (connected) {
+      postToTarget(message, parentOrigin);
+    } else {
+      postMessageQueue.push(message);
+    }
+  }
+
+  // Only the initial 'hello' message goes permissively to a '*' target (because due to cross origin
+  // restrictions we can't find out our parent's origin until they voluntarily send us a message
+  // with it.)
+  function postHello() {
+    postToTarget({
+      type: 'hello',
+      origin: document.location.href.match(/(.*?\/\/.*?)\//)[1]
+    }, '*');
+  }
+
+  function addListener(type, fn) {
+    listeners[type] = fn;
+  }
+
+  function removeAllListeners() {
+    listeners = {};
+  }
+
+  function getListenerNames() {
+    return Object.keys(listeners);
+  }
+
+  function messageListener(message) {
+      // Anyone can send us a message. Only pay attention to messages from parent.
+      if (message.source !== window.parent) return;
+
+      var messageData = message.data;
+
+      if (typeof messageData === 'string') messageData = JSON.parse(messageData);
+
+      // We don't know origin property of parent window until it tells us.
+      if (!connected && messageData.type === 'hello') {
+        // This is the return handshake from the embedding window.
+        parentOrigin = messageData.origin;
+        connected = true;
+        stopPostingHello();
+        while(postMessageQueue.length > 0) {
+          post(postMessageQueue.shift());
+        }
+      }
+
+      // Perhaps-redundantly insist on checking origin as well as source window of message.
+      if (message.origin === parentOrigin) {
+        if (listeners[messageData.type]) listeners[messageData.type](messageData.content);
+      }
+   }
+
+   function disconnect() {
+     connected = false;
+     stopPostingHello();
+     window.removeEventListener('message', messsageListener);
+   }
+
+  /**
+    Initialize communication with the parent frame. This should not be called until the app's custom
+    listeners are registered (via our 'addListener' public method) because, once we open the
+    communication, the parent window may send any messages it may have queued. Messages for which
+    we don't have handlers will be silently ignored.
+  */
+  function initialize() {
+    if (isInitialized) {
+      return;
+    }
+    isInitialized = true;
+    if (window.parent === window) return;
+
+    // We kick off communication with the parent window by sending a "hello" message. Then we wait
+    // for a handshake (another "hello" message) from the parent window.
+    postHello();
+    startPostingHello();
+    window.addEventListener('message', messageListener, false);
+  }
+
+  function startPostingHello() {
+    if (helloInterval) {
+      stopPostingHello();
+    }
+    helloInterval = window.setInterval(postHello, HELLO_INTERVAL_LENGTH);
+    window.setTimeout(stopPostingHello, HELLO_TIMEOUT_LENGTH);
+  }
+
+  function stopPostingHello() {
+    window.clearInterval(helloInterval);
+    helloInterval = null;
+  }
+
+  // Public API.
+  return {
+    initialize        : initialize,
+    getListenerNames  : getListenerNames,
+    addListener       : addListener,
+    removeAllListeners: removeAllListeners,
+    disconnect        : disconnect,
+    post              : post
+  };
+}
+
+var instance = null;
+
+// IFrameEndpoint is a singleton, as iframe can't have multiple parents anyway.
+module.exports = function getIFrameEndpoint() {
+  if (!instance) {
+    instance = new IFrameEndpoint();
+  }
+  return instance;
+};
+},{"./structured-clone":26}],24:[function(require,module,exports){
+"use strict";
+
+var ParentEndpoint = require('./parent-endpoint');
+var getIFrameEndpoint = require('./iframe-endpoint');
+
+// Not a real UUID as there's an RFC for that (needed for proper distributed computing).
+// But in this fairly parochial situation, we just need to be fairly sure to avoid repeats.
+function getPseudoUUID() {
+    var chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    var len = chars.length;
+    var ret = [];
+
+    for (var i = 0; i < 10; i++) {
+        ret.push(chars[Math.floor(Math.random() * len)]);
+    }
+    return ret.join('');
+}
+
+module.exports = function IframePhoneRpcEndpoint(handler, namespace, targetWindow, targetOrigin, phone) {
+    var pendingCallbacks = Object.create({});
+
+    // if it's a non-null object, rather than a function, 'handler' is really an options object
+    if (handler && typeof handler === 'object') {
+        namespace = handler.namespace;
+        targetWindow = handler.targetWindow;
+        targetOrigin = handler.targetOrigin;
+        phone = handler.phone;
+        handler = handler.handler;
+    }
+
+    if ( ! phone ) {
+        if (targetWindow === window.parent) {
+            phone = getIFrameEndpoint();
+            phone.initialize();
+        } else {
+            phone = new ParentEndpoint(targetWindow, targetOrigin);
+        }
+    }
+
+    phone.addListener(namespace, function(message) {
+        var callbackObj;
+
+        if (message.messageType === 'call' && typeof this.handler === 'function') {
+            this.handler.call(undefined, message.value, function(returnValue) {
+                phone.post(namespace, {
+                    messageType: 'returnValue',
+                    uuid: message.uuid,
+                    value: returnValue
+                });
+            });
+        } else if (message.messageType === 'returnValue') {
+            callbackObj = pendingCallbacks[message.uuid];
+
+            if (callbackObj) {
+                window.clearTimeout(callbackObj.timeout);
+                if (callbackObj.callback) {
+                    callbackObj.callback.call(undefined, message.value);
+                }
+                pendingCallbacks[message.uuid] = null;
+            }
+        }
+    }.bind(this));
+
+    function call(message, callback) {
+        var uuid = getPseudoUUID();
+
+        pendingCallbacks[uuid] = {
+            callback: callback,
+            timeout: window.setTimeout(function() {
+                if (callback) {
+                    callback(undefined, new Error("IframePhone timed out waiting for reply"));
+                }
+            }, 2000)
+        };
+
+        phone.post(namespace, {
+            messageType: 'call',
+            uuid: uuid,
+            value: message
+        });
+    }
+
+    function disconnect() {
+        phone.disconnect();
+    }
+
+    this.handler = handler;
+    this.call = call.bind(this);
+    this.disconnect = disconnect.bind(this);
+};
+
+},{"./iframe-endpoint":23,"./parent-endpoint":25}],25:[function(require,module,exports){
+var structuredClone = require('./structured-clone');
+
+/**
+  Call as:
+    new ParentEndpoint(targetWindow, targetOrigin, afterConnectedCallback)
+      targetWindow is a WindowProxy object. (Messages will be sent to it)
+
+      targetOrigin is the origin of the targetWindow. (Messages will be restricted to this origin)
+
+      afterConnectedCallback is an optional callback function to be called when the connection is
+        established.
+
+  OR (less secure):
+    new ParentEndpoint(targetIframe, afterConnectedCallback)
+
+      targetIframe is a DOM object (HTMLIframeElement); messages will be sent to its contentWindow.
+
+      afterConnectedCallback is an optional callback function
+
+    In this latter case, targetOrigin will be inferred from the value of the src attribute of the
+    provided DOM object at the time of the constructor invocation. This is less secure because the
+    iframe might have been navigated to an unexpected domain before constructor invocation.
+
+  Note that it is important to specify the expected origin of the iframe's content to safeguard
+  against sending messages to an unexpected domain. This might happen if our iframe is navigated to
+  a third-party URL unexpectedly. Furthermore, having a reference to Window object (as in the first
+  form of the constructor) does not protect against sending a message to the wrong domain. The
+  window object is actualy a WindowProxy which transparently proxies the Window object of the
+  underlying iframe, so that when the iframe is navigated, the "same" WindowProxy now references a
+  completely differeent Window object, possibly controlled by a hostile domain.
+
+  See http://www.esdiscuss.org/topic/a-dom-use-case-that-can-t-be-emulated-with-direct-proxies for
+  more about this weird behavior of WindowProxies (the type returned by <iframe>.contentWindow).
+*/
+
+module.exports = function ParentEndpoint(targetWindowOrIframeEl, targetOrigin, afterConnectedCallback) {
+  var selfOrigin = window.location.href.match(/(.*?\/\/.*?)\//)[1];
+  var postMessageQueue = [];
+  var connected = false;
+  var handlers = {};
+  var targetWindowIsIframeElement;
+
+  function getOrigin(iframe) {
+    return iframe.src.match(/(.*?\/\/.*?)\//)[1];
+  }
+
+  function post(type, content) {
+    var message;
+    // Message object can be constructed from 'type' and 'content' arguments or it can be passed
+    // as the first argument.
+    if (arguments.length === 1 && typeof type === 'object' && typeof type.type === 'string') {
+      message = type;
+    } else {
+      message = {
+        type: type,
+        content: content
+      };
+    }
+    if (connected) {
+      var tWindow = getTargetWindow();
+      // if we are laready connected ... send the message
+      message.origin = selfOrigin;
+      // See http://dev.opera.com/articles/view/window-postmessage-messagechannel/#crossdoc
+      //     https://github.com/Modernizr/Modernizr/issues/388
+      //     http://jsfiddle.net/ryanseddon/uZTgD/2/
+      if (structuredClone.supported()) {
+        tWindow.postMessage(message, targetOrigin);
+      } else {
+        tWindow.postMessage(JSON.stringify(message), targetOrigin);
+      }
+    } else {
+      // else queue up the messages to send after connection complete.
+      postMessageQueue.push(message);
+    }
+  }
+
+  function addListener(messageName, func) {
+    handlers[messageName] = func;
+  }
+
+  function removeListener(messageName) {
+    handlers[messageName] = null;
+  }
+
+  // Note that this function can't be used when IFrame element hasn't been added to DOM yet
+  // (.contentWindow would be null). At the moment risk is purely theoretical, as the parent endpoint
+  // only listens for an incoming 'hello' message and the first time we call this function
+  // is in #receiveMessage handler (so iframe had to be initialized before, as it could send 'hello').
+  // It would become important when we decide to refactor the way how communication is initialized.
+  function getTargetWindow() {
+    if (targetWindowIsIframeElement) {
+      var tWindow = targetWindowOrIframeEl.contentWindow;
+      if (!tWindow) {
+        throw "IFrame element needs to be added to DOM before communication " +
+              "can be started (.contentWindow is not available)";
+      }
+      return tWindow;
+    }
+    return targetWindowOrIframeEl;
+  }
+
+  function receiveMessage(message) {
+    var messageData;
+    if (message.source === getTargetWindow() && message.origin === targetOrigin) {
+      messageData = message.data;
+      if (typeof messageData === 'string') {
+        messageData = JSON.parse(messageData);
+      }
+      if (handlers[messageData.type]) {
+        handlers[messageData.type](messageData.content);
+      } else {
+        console.log("cant handle type: " + messageData.type);
+      }
+    }
+  }
+
+  function disconnect() {
+    connected = false;
+    window.removeEventListener('message', receiveMessage);
+  }
+
+  // handle the case that targetWindowOrIframeEl is actually an <iframe> rather than a Window(Proxy) object
+  // Note that if it *is* a WindowProxy, this probe will throw a SecurityException, but in that case
+  // we also don't need to do anything
+  try {
+    targetWindowIsIframeElement = targetWindowOrIframeEl.constructor === HTMLIFrameElement;
+  } catch (e) {
+    targetWindowIsIframeElement = false;
+  }
+
+  if (targetWindowIsIframeElement) {
+    // Infer the origin ONLY if the user did not supply an explicit origin, i.e., if the second
+    // argument is empty or is actually a callback (meaning it is supposed to be the
+    // afterConnectionCallback)
+    if (!targetOrigin || targetOrigin.constructor === Function) {
+      afterConnectedCallback = targetOrigin;
+      targetOrigin = getOrigin(targetWindowOrIframeEl);
+    }
+  }
+
+  // when we receive 'hello':
+  addListener('hello', function() {
+    connected = true;
+
+    // send hello response
+    post('hello');
+
+    // give the user a chance to do things now that we are connected
+    // note that is will happen before any queued messages
+    if (afterConnectedCallback && typeof afterConnectedCallback === "function") {
+      afterConnectedCallback();
+    }
+
+    // Now send any messages that have been queued up ...
+    while(postMessageQueue.length > 0) {
+      post(postMessageQueue.shift());
+    }
+  });
+
+  window.addEventListener('message', receiveMessage, false);
+
+  // Public API.
+  return {
+    post: post,
+    addListener: addListener,
+    removeListener: removeListener,
+    disconnect: disconnect,
+    getTargetWindow: getTargetWindow,
+    targetOrigin: targetOrigin
+  };
+};
+
+},{"./structured-clone":26}],26:[function(require,module,exports){
+var featureSupported = false;
+
+(function () {
+  var result = 0;
+
+  if (!!window.postMessage) {
+    try {
+      // Safari 5.1 will sometimes throw an exception and sometimes won't, lolwut?
+      // When it doesn't we capture the message event and check the
+      // internal [[Class]] property of the message being passed through.
+      // Safari will pass through DOM nodes as Null iOS safari on the other hand
+      // passes it through as DOMWindow, gotcha.
+      window.onmessage = function(e){
+        var type = Object.prototype.toString.call(e.data);
+        result = (type.indexOf("Null") != -1 || type.indexOf("DOMWindow") != -1) ? 1 : 0;
+        featureSupported = {
+          'structuredClones': result
+        };
+      };
+      // Spec states you can't transmit DOM nodes and it will throw an error
+      // postMessage implimentations that support cloned data will throw.
+      window.postMessage(document.createElement("a"),"*");
+    } catch(e) {
+      // BBOS6 throws but doesn't pass through the correct exception
+      // so check error message
+      result = (e.DATA_CLONE_ERR || e.message == "Cannot post cyclic structures.") ? 1 : 0;
+      featureSupported = {
+        'structuredClones': result
+      };
+    }
+  }
+}());
+
+exports.supported = function supported() {
+  return featureSupported && featureSupported.structuredClones > 0;
+};
+
+},{}],27:[function(require,module,exports){
+module.exports = {
+  /**
+   * Allows to communicate with an iframe.
+   */
+  ParentEndpoint:  require('./lib/parent-endpoint'),
+  /**
+   * Allows to communicate with a parent page.
+   * IFrameEndpoint is a singleton, as iframe can't have multiple parents anyway.
+   */
+  getIFrameEndpoint: require('./lib/iframe-endpoint'),
+  structuredClone: require('./lib/structured-clone'),
+
+  // TODO: May be misnamed
+  IframePhoneRpcEndpoint: require('./lib/iframe-phone-rpc-endpoint')
+
+};
+
+},{"./lib/iframe-endpoint":23,"./lib/iframe-phone-rpc-endpoint":24,"./lib/parent-endpoint":25,"./lib/structured-clone":26}]},{},[1]);
