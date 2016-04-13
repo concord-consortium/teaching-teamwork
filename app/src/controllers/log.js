@@ -1,4 +1,4 @@
-var logManagerUrl  = 'http://teaching-teamwork-log-manager.herokuapp.com/api/logs',
+var logManagerUrl  = '//teaching-teamwork-log-manager.herokuapp.com/api/logs',
     xhrObserver    = require('../data/xhrObserver'),
     laraController = require('./lara'),
     laraLoggerReady,
