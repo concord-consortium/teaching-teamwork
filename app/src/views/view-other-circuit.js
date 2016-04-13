@@ -58,6 +58,11 @@ module.exports = React.createClass({
           var leadForHole, prevProbes;
 
           if (sparks.workbenchController && sparks.workbenchController.breadboardView && sparks.workbenchController.breadboardView.multimeter && sparks.workbenchController.breadboardController) {
+
+            $('.breadboard svg').css({width: 740});
+            $('.breadboard svg')[0].setAttribute('viewBox', "60 0 740 500");
+            $("g[info=probes]").attr({transform: "matrix(0.05 0 0 0.05 60 -100)"});
+
             multimeter = sparks.workbenchController.breadboardView.multimeter;
             meter = sparks.workbenchController.workbench.meter;
 
@@ -193,9 +198,3 @@ module.exports = React.createClass({
     }, false);
   }
 });
-
-
-
-
-
-

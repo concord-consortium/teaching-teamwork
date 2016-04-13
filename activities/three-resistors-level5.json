@@ -2,13 +2,13 @@
   "name": "Three Resistors - Level 5",
   "image": "images/three-resistors-circuit.v2.png",
   "otherCircuits": {
-    "image": "images/three-resistors-breadboards.png",
-    "width": 800,
+    "image": "images/three-resistors-breadboards.v2.png",
+    "width": 740,
     "height": 250,
     "breadboards": [
-      {"x": 20, "y": 80, "width": 240, "height": 150},
-      {"x": 280, "y": 80, "width": 240, "height": 150},
-      {"x": 540, "y": 80, "width": 240, "height": 150}
+      {"x": 19, "y": 80, "width": 222, "height": 150},
+      {"x": 260, "y": 80, "width": 222, "height": 150},
+      {"x": 501, "y": 80, "width": 222, "height": 150}
     ]
   },
   "model": {
