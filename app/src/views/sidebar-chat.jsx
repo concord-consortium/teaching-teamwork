@@ -39,16 +39,18 @@ module.exports = React.createClass({
 
   handleSubmit: function(e) {
     var input = this.refs.text.getDOMNode(),
-        message = input.value;
+        message = input.value.replace(/^\s+|\s+$/, '');
     e.preventDefault();
-    this.firebaseRef.push({
-      user: userController.getUsername(),
-      message: message,
-      time: Firebase.ServerValue.TIMESTAMP
-    });
-    input.value = '';
-    input.focus();
-    logController.logEvent("Sent message", message);
+    if (message.length > 0) {
+      this.firebaseRef.push({
+        user: userController.getUsername(),
+        message: message,
+        time: Firebase.ServerValue.TIMESTAMP
+      });
+      input.value = '';
+      input.focus();
+      logController.logEvent("Sent message", message);
+    }
   },
 
   listenForEnter: function (e) {
@@ -106,4 +108,3 @@ ChatItem = React.createClass({
       </div>;
   }
 });
-

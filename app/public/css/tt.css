@@ -474,6 +474,8 @@ form button:disabled {
   -webkit-border-radius: 5px;
   -moz-border-radius: 5px;
   border-radius: 5px;
+  word-wrap: break-word;
+  max-width: 135px;
 }
 .sidebar-chat .sidebar-chat-items .chat-item-me {
   float: right;
