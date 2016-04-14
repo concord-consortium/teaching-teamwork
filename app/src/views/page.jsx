@@ -40,7 +40,7 @@ module.exports = React.createClass({
         </div>
         <div id="notes-wrapper" className={ wrapperClass }><NotesView text={ notes } className="tt-notes" breadboard={ this.props.breadboard } /></div>
         <div id="breadboard-and-chat-wrapper" className={ wrapperClass }>
-          { hasMultipleClients ? (<div id="sidebar-chat-wrapper" className={ wrapperClass }><SidebarChatView {...activity} /></div>) : null }
+          { hasMultipleClients ? (<div id="sidebar-chat-wrapper" className={ wrapperClass }><SidebarChatView numClients={ activity.clients.length } {...activity} /></div>) : null }
           <div id="breadboard-wrapper" className={ wrapperClass }></div>
         </div>
         { image }
