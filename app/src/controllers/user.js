@@ -211,32 +211,19 @@ module.exports = userController = {
     UserRegistrationView.close();
 
     var chatRef = firebaseGroupRef.child('chat'),
-        slotsRemaining = numClients - numExistingUsers,
-        nums = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"],
-        cap = function (string) {
-          return string.charAt(0).toUpperCase() + string.slice(1);
-        },
-        message = userName + " has joined on Circuit "+((client*1)+1)+". ";
-
-    if (slotsRemaining > 1 || (slotsRemaining == 1 && numClients == 2)) {
-      // One of three users is here
-      message += cap(nums[numExistingUsers]) + " of " + nums[numClients] + " users is here.";
-    } else if (slotsRemaining == 1) {
-      // Two of you are now here. One more to go before you can get started!
-      message += cap(nums[numExistingUsers]) + " of you are now here. One more to go before you can get started!";
-    } else {
-      message += "You're all here! Time to start this challenge.";
-    }
+        message = userName + " has joined on Circuit "+((client*1)+1)+".";
 
     chatRef.push({
       user: "System",
       message: message,
+      type: "joined",
       time: Firebase.ServerValue.TIMESTAMP
     });
     var disconnectMessageRef = chatRef.push();
     disconnectMessageRef.onDisconnect().set({
       user: "System",
       message: userName + " has left",
+      type: "left",
       time: Firebase.ServerValue.TIMESTAMP
     });
     callback(client);
