@@ -514,8 +514,6 @@ Keypad.prototype.resolveOutputValues = function () {
   var colValue = 7,
       intValue, bottomButtonIndex;
 
-  console.log(this.pushedButton);
-
   if (this.pushedButton) {
     intValue = this.pushedButton.intValue;
     bottomButtonIndex = this.bottomButtonValues.indexOf(this.pushedButton.value);
@@ -1695,7 +1693,7 @@ FakeSidebarView = createComponent({
   },
 
   handleSubmit: function(e) {
-    var input = this.refs.text.getDOMNode(),
+    var input = this.refs.text,
         text = $.trim(input.value);
 
     e.preventDefault();
@@ -1737,9 +1735,8 @@ ChatItems = createComponent({
 
   componentDidUpdate: function (prevProps) {
     if (prevProps.items.length !== this.props.items.length) {
-      var items = this.refs.items ? this.refs.items.getDOMNode() : null;
-      if (items) {
-        items.scrollTop = items.scrollHeight;
+      if (this.refs.items) {
+        this.refs.items.scrollTop = this.refs.items.scrollHeight;
       }
     }
   },
@@ -1922,7 +1919,7 @@ AppView = createComponent({
 // Main
 //
 
-React.render(AppView({}), document.getElementById('content'));
+ReactDOM.render(AppView({}), document.getElementById('content'));
 
 
 },{"./data/pic-code":2}],2:[function(require,module,exports){

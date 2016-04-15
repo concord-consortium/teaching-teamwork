@@ -3,9 +3,7 @@
 require('../vendor/pathseg.js');
 
 var App = React.createFactory(require('./views/app'));
-React.render(App({}), document.getElementById('content'));
-
-
+ReactDOM.render(App({}), document.getElementById('content'));
 
 
 },{"../vendor/pathseg.js":22,"./views/app":11}],2:[function(require,module,exports){
@@ -639,32 +637,19 @@ module.exports = userController = {
     UserRegistrationView.close();
 
     var chatRef = firebaseGroupRef.child('chat'),
-        slotsRemaining = numClients - numExistingUsers,
-        nums = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"],
-        cap = function (string) {
-          return string.charAt(0).toUpperCase() + string.slice(1);
-        },
-        message = userName + " has joined on Circuit "+((client*1)+1)+". ";
-
-    if (slotsRemaining > 1 || (slotsRemaining == 1 && numClients == 2)) {
-      // One of three users is here
-      message += cap(nums[numExistingUsers]) + " of " + nums[numClients] + " users is here.";
-    } else if (slotsRemaining == 1) {
-      // Two of you are now here. One more to go before you can get started!
-      message += cap(nums[numExistingUsers]) + " of you are now here. One more to go before you can get started!";
-    } else {
-      message += "You're all here! Time to start this challenge.";
-    }
+        message = userName + " has joined on Circuit "+((client*1)+1)+".";
 
     chatRef.push({
       user: "System",
       message: message,
+      type: "joined",
       time: Firebase.ServerValue.TIMESTAMP
     });
     var disconnectMessageRef = chatRef.push();
     disconnectMessageRef.onDisconnect().set({
       user: "System",
       message: userName + " has left",
+      type: "left",
       time: Firebase.ServerValue.TIMESTAMP
     });
     callback(client);
@@ -2408,7 +2393,7 @@ Editor = React.createFactory(React.createClass({
   displayName: 'Editor',
 
   componentDidMount: function() {
-    this.editor = CodeMirror.fromTextArea(this.refs.editor.getDOMNode(), {
+    this.editor = CodeMirror.fromTextArea(this.refs.editor, {
       lineNumbers: true,
       matchBrackets: true,
       autoCloseBrackets: true,
@@ -2505,7 +2490,7 @@ Dialog = React.createFactory(React.createClass({
 
   componentWillReceiveProps: function (nextProps) {
     if (nextProps.show) {
-      var input = this.refs.fileinput.getDOMNode();
+      var input = this.refs.fileinput;
       input.value = '';
       setTimeout(function () {
         input.focus();
@@ -2521,7 +2506,7 @@ Dialog = React.createFactory(React.createClass({
   },
 
   buttonClicked: function () {
-    var filename = this.refs.fileinput.getDOMNode().value.replace(/^\s+|\s+$/g, '');
+    var filename = this.refs.fileinput.value.replace(/^\s+|\s+$/g, '');
     if (filename.length > 0) {
       switch (this.props.show) {
         case 'Open':
@@ -2536,7 +2521,7 @@ Dialog = React.createFactory(React.createClass({
   },
 
   fileClicked: function (filename) {
-    this.refs.fileinput.getDOMNode().value = filename;
+    this.refs.fileinput.value = filename;
     var now = (new Date()).getTime();
     if (now - this.lastFileClick < 250) {
       this.buttonClicked();
@@ -2743,7 +2728,7 @@ module.exports = OtherCircuits = React.createClass({
         $anchor[0].style.opacity = 1;
       }, 100);
 
-      return React.render(Popup({
+      return ReactDOM.render(Popup({
         circuit: props.circuit,
         activityName: props.activityName,
         groupName: props.groupName,
@@ -2754,8 +2739,11 @@ module.exports = OtherCircuits = React.createClass({
     },
 
     closePopup: function () {
-      var $anchor = $('#other-circuits-popup');
-      React.unmountComponentAtNode($anchor.get(0));
+      var $anchor = $('#other-circuits-popup'),
+          node = $anchor.get(0);
+      if (node) {
+        ReactDOM.unmountComponentAtNode(node);
+      }
       $anchor.remove();
     }
   },
@@ -2789,7 +2777,7 @@ PopupIFrame = React.createFactory(React.createClass({
   },
 
   componentDidMount: function () {
-    var iframe = this.refs.iframe.getDOMNode(),
+    var iframe = this.refs.iframe,
         payload = {
           circuit: this.props.circuit,
           activityName: this.props.activityName,
@@ -2814,7 +2802,7 @@ ScaledIFrame = React.createFactory(React.createClass({
   },
 
   componentDidMount: function () {
-    var iframe = this.refs.iframe.getDOMNode(),
+    var iframe = this.refs.iframe,
         loadMessage = 'loaded:scaled:' + this.props.circuit,
         payload = {
           circuit: this.props.circuit,
@@ -2882,7 +2870,7 @@ CircuitImage = React.createFactory(React.createClass({
   },
 
   drawImageLayer: function () {
-    var context = this.refs.imageLayer.getDOMNode().getContext('2d'),
+    var context = this.refs.imageLayer.getContext('2d'),
         image = new Image(),
         self = this;
 
@@ -2894,7 +2882,7 @@ CircuitImage = React.createFactory(React.createClass({
   },
 
   drawClickLayer: function () {
-    var canvas = this.refs.clickLayer.getDOMNode(),
+    var canvas = this.refs.clickLayer,
         context = canvas.getContext('2d'),
         breadboard = this.breadboards[this.props.selectedCircuit - 1];
 
@@ -2908,7 +2896,7 @@ CircuitImage = React.createFactory(React.createClass({
   },
 
   canvasClicked: function (e) {
-    var canvas = this.refs.clickLayer.getDOMNode(),
+    var canvas = this.refs.clickLayer,
         offset = $(canvas).offset(),
         x = e.pageX - offset.left,
         y = e.pageY - offset.top,
@@ -3011,6 +2999,7 @@ Popup = React.createFactory(React.createClass({
 },{"../config":2,"../controllers/log":5}],17:[function(require,module,exports){
 var userController = require('../controllers/user'),
     SidebarChatView = require('./sidebar-chat.jsx'),
+    SidebarChatViewFactory = React.createFactory(SidebarChatView),
     CalculatorView = require('./calculator.jsx'),
     NotesView = require('./notes'),
     ConnectionView = require('./connection.jsx'),
@@ -3039,7 +3028,8 @@ module.exports = React.createClass({
         image = activity.image ? (React.createElement("div", {id: "image-wrapper", className:  wrapperClass }, React.createElement("img", {src:  /^https?:\/\//.test(activity.image) ? activity.image : config.modelsBase + activity.image}))) : null,
         submitButton = this.props.showSubmit && this.props.circuit ? (React.createElement(SubmitButtonView, {label: hasMultipleClients ? 'We got it!' : "I got it!", goals:  this.props.goals, nextActivity:  this.props.nextActivity})) : null,
         otherCircuitsButton = hasMultipleClients && this.props.circuit ? (React.createElement(OtherCircuitsView, {circuit:  this.props.circuit, numClients:  activity.clients.length, activityName:  this.props.activityName, groupName:  userController.getGroupname(), ttWorkbench:  this.props.ttWorkbench})) : null,
-        calculator = this.props.circuit ? (React.createElement(CalculatorView, null)) : null;
+        calculator = this.props.circuit ? (React.createElement(CalculatorView, null)) : null,
+        chatProps = hasMultipleClients ? $.extend({}, activity, {numClients: activity.clients.length}) : null;
 
     return (
       React.createElement("div", {className: "tt-page"}, 
@@ -3051,7 +3041,7 @@ module.exports = React.createClass({
         ), 
         React.createElement("div", {id: "notes-wrapper", className:  wrapperClass }, React.createElement(NotesView, {text:  notes, className: "tt-notes", breadboard:  this.props.breadboard})), 
         React.createElement("div", {id: "breadboard-and-chat-wrapper", className:  wrapperClass }, 
-           hasMultipleClients ? (React.createElement("div", {id: "sidebar-chat-wrapper", className:  wrapperClass }, React.createElement(SidebarChatView, React.__spread({},  activity)))) : null, 
+           hasMultipleClients ? (React.DOM.div({id: "sidebar-chat-wrapper", className: wrapperClass}, SidebarChatViewFactory(chatProps))) : null, 
           React.createElement("div", {id: "breadboard-wrapper", className:  wrapperClass })
         ), 
          image, 
@@ -3083,7 +3073,31 @@ module.exports = React.createClass({
       });
     }
 
-    return {items: items};
+    return {
+      items: items,
+      numExistingUsers: 0
+    };
+  },
+
+  getJoinedMessage: function (numExistingUsers) {
+    var slotsRemaining = this.props.numClients - numExistingUsers,
+        nums = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"],
+        cap = function (string) {
+          return string.charAt(0).toUpperCase() + string.slice(1);
+        },
+        message = " ";
+
+    if (slotsRemaining > 1) {
+      // One of three users is here
+      message += cap(nums[numExistingUsers]) + " of " + nums[this.props.numClients] + " users is here.";
+    } else if (slotsRemaining == 1) {
+      // Two of you are now here. One more to go before you can get started!
+      message += cap(nums[numExistingUsers]) + " of you are now here. One more to go before you can get started!";
+    } else {
+      message += "You're all here! Time to start this challenge.";
+    }
+
+    return message;
   },
 
   componentWillMount: function() {
@@ -3091,8 +3105,24 @@ module.exports = React.createClass({
     userController.onGroupRefCreation(function() {
       self.firebaseRef = userController.getFirebaseGroupRef().child("chat");
       self.firebaseRef.orderByChild('time').on("child_added", function(dataSnapshot) {
-        var items = self.state.items.slice(0);
-        items.push(dataSnapshot.val());
+        var items = self.state.items.slice(0),
+            item = dataSnapshot.val(),
+            numExistingUsers = self.state.numExistingUsers;
+
+        if (item.type == "joined") {
+          numExistingUsers = Math.min(self.state.numExistingUsers + 1, self.props.numClients);
+          item.message += self.getJoinedMessage(numExistingUsers);
+        }
+        else if (item.type == "left") {
+          numExistingUsers = Math.max(self.state.numExistingUsers - 1, 0);
+        }
+
+        if (numExistingUsers !== self.state.numExistingUsers) {
+          self.setState({numExistingUsers: numExistingUsers});
+        }
+
+        items.push(item);
+
         self.setState({
           items: items
         });
@@ -3105,17 +3135,19 @@ module.exports = React.createClass({
   },
 
   handleSubmit: function(e) {
-    var input = this.refs.text.getDOMNode(),
-        message = input.value;
+    var input = this.refs.text,
+        message = input.value.replace(/^\s+|\s+$/, '');
     e.preventDefault();
-    this.firebaseRef.push({
-      user: userController.getUsername(),
-      message: message,
-      time: Firebase.ServerValue.TIMESTAMP
-    });
-    input.value = '';
-    input.focus();
-    logController.logEvent("Sent message", message);
+    if (message.length > 0) {
+      this.firebaseRef.push({
+        user: userController.getUsername(),
+        message: message,
+        time: Firebase.ServerValue.TIMESTAMP
+      });
+      input.value = '';
+      input.focus();
+      logController.logEvent("Sent message", message);
+    }
   },
 
   listenForEnter: function (e) {
@@ -3145,9 +3177,8 @@ ChatItems = React.createClass({
 
   componentDidUpdate: function (prevProps) {
     if (prevProps.items.length !== this.props.items.length) {
-      var items = this.refs.items ? this.refs.items.getDOMNode() : null;
-      if (items) {
-        items.scrollTop = items.scrollHeight;
+      if (this.refs.items) {
+        this.refs.items.scrollTop = this.refs.items.scrollHeight;
       }
     }
   },
@@ -3173,7 +3204,6 @@ ChatItem = React.createClass({
       );
   }
 });
-
 
 
 },{"../controllers/log":5,"../controllers/user":6}],19:[function(require,module,exports){
@@ -3445,7 +3475,7 @@ module.exports = SubmitButton = React.createClass({
         $anchor[0].style.opacity = 1;
       }, 100);
 
-      return React.render(Popup({
+      return ReactDOM.render(Popup({
         table: props.table,
         waiting: props.waiting,
         allCorrect: props.allCorrect,
@@ -3456,8 +3486,11 @@ module.exports = SubmitButton = React.createClass({
     },
 
     closePopup: function () {
-      var $anchor = $('#submit-popup');
-      React.unmountComponentAtNode($anchor.get(0));
+      var $anchor = $('#submit-popup'),
+          node = $anchor.get(0);
+      if (node) {
+        ReactDOM.unmountComponentAtNode(node);
+      }
       $anchor.remove();
     }
   },
@@ -3526,7 +3559,7 @@ Popup = React.createFactory(React.createClass({
 
 
 },{"../controllers/log":5,"../controllers/user":6}],20:[function(require,module,exports){
-var userController, UserRegistrationView,
+var userController, UserRegistrationView, UserRegistrationViewFactory,
     groups = require('../data/group-names');
 
 // add a global UserRegistrationView variable because its statics are called in other modules
@@ -3546,15 +3579,18 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
         $('#user-registration')[0].style.opacity = 1;
       }, 250);
 
-      return React.render(
-        React.createElement(UserRegistrationView, React.__spread({},  data)),
+      return ReactDOM.render(
+        UserRegistrationViewFactory(data),
         $anchor.get(0)
       );
     },
 
     // close a dialog
     close: function() {
-      React.unmountComponentAtNode($('#user-registration').get(0));
+      var node = $('#user-registration').get(0);
+      if (node) {
+        ReactDOM.unmountComponentAtNode(node);
+      }
       $('#user-registration').remove();
     }
   },
@@ -3589,7 +3625,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
   componentDidMount: function () {
     var self = this,
         focusAndSelect = function (ref) {
-          var node = self.refs[ref] ? self.refs[ref].getDOMNode() : null;
+          var node = self.refs[ref] ? self.refs[ref] : null;
           if (node) {
             node.focus();
             node.select();
@@ -3720,7 +3756,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
 
         clientChoices.push(
           React.createElement("div", {key:  i }, 
-            React.createElement("input", {type: "radio", name: "clientSelection", defaultChecked:  selected, value:  i, onClick:  this.handleClientSelection}), "Circuit ",  i+1, " (",  userSpan, ")"
+            React.createElement("input", {type: "radio", name: "clientSelection", value:  i, onClick:  this.handleClientSelection}), "Circuit ",  i+1, " (",  userSpan, ")"
           ) );
       }
 
@@ -3742,6 +3778,9 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
     );
   }
 });
+
+// used because JSX deprecated the spread function in the transformer
+UserRegistrationViewFactory = React.createFactory(UserRegistrationView);
 
 
 },{"../data/group-names":7}],21:[function(require,module,exports){
