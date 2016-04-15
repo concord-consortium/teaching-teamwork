@@ -406,7 +406,7 @@ Editor = React.createFactory(React.createClass({
   displayName: 'Editor',
 
   componentDidMount: function() {
-    this.editor = CodeMirror.fromTextArea(this.refs.editor.getDOMNode(), {
+    this.editor = CodeMirror.fromTextArea(this.refs.editor, {
       lineNumbers: true,
       matchBrackets: true,
       autoCloseBrackets: true,
@@ -503,7 +503,7 @@ Dialog = React.createFactory(React.createClass({
 
   componentWillReceiveProps: function (nextProps) {
     if (nextProps.show) {
-      var input = this.refs.fileinput.getDOMNode();
+      var input = this.refs.fileinput;
       input.value = '';
       setTimeout(function () {
         input.focus();
@@ -519,7 +519,7 @@ Dialog = React.createFactory(React.createClass({
   },
 
   buttonClicked: function () {
-    var filename = this.refs.fileinput.getDOMNode().value.replace(/^\s+|\s+$/g, '');
+    var filename = this.refs.fileinput.value.replace(/^\s+|\s+$/g, '');
     if (filename.length > 0) {
       switch (this.props.show) {
         case 'Open':
@@ -534,7 +534,7 @@ Dialog = React.createFactory(React.createClass({
   },
 
   fileClicked: function (filename) {
-    this.refs.fileinput.getDOMNode().value = filename;
+    this.refs.fileinput.value = filename;
     var now = (new Date()).getTime();
     if (now - this.lastFileClick < 250) {
       this.buttonClicked();

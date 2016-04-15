@@ -85,6 +85,7 @@
     // Custom Globals
     "globals"       : {
       "React": false,
+      "ReactDOM": false,
       "sparks": false,
       "Firebase": false,
       "fabric": false

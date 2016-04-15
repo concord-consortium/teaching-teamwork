@@ -266,7 +266,7 @@ module.exports = SubmitButton = React.createClass({
         $anchor[0].style.opacity = 1;
       }, 100);
 
-      return React.render(Popup({
+      return ReactDOM.render(Popup({
         table: props.table,
         waiting: props.waiting,
         allCorrect: props.allCorrect,
@@ -277,8 +277,11 @@ module.exports = SubmitButton = React.createClass({
     },
 
     closePopup: function () {
-      var $anchor = $('#submit-popup');
-      React.unmountComponentAtNode($anchor.get(0));
+      var $anchor = $('#submit-popup'),
+          node = $anchor.get(0);
+      if (node) {
+        ReactDOM.unmountComponentAtNode(node);
+      }
       $anchor.remove();
     }
   },

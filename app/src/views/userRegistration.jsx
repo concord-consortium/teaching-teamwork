@@ -1,4 +1,4 @@
-var userController, UserRegistrationView,
+var userController, UserRegistrationView, UserRegistrationViewFactory,
     groups = require('../data/group-names');
 
 // add a global UserRegistrationView variable because its statics are called in other modules
@@ -18,15 +18,18 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
         $('#user-registration')[0].style.opacity = 1;
       }, 250);
 
-      return React.render(
-        <UserRegistrationView {...data} />,
+      return ReactDOM.render(
+        UserRegistrationViewFactory(data),
         $anchor.get(0)
       );
     },
 
     // close a dialog
     close: function() {
-      React.unmountComponentAtNode($('#user-registration').get(0));
+      var node = $('#user-registration').get(0);
+      if (node) {
+        ReactDOM.unmountComponentAtNode(node);
+      }
       $('#user-registration').remove();
     }
   },
@@ -61,7 +64,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
   componentDidMount: function () {
     var self = this,
         focusAndSelect = function (ref) {
-          var node = self.refs[ref] ? self.refs[ref].getDOMNode() : null;
+          var node = self.refs[ref] ? self.refs[ref] : null;
           if (node) {
             node.focus();
             node.select();
@@ -192,7 +195,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
 
         clientChoices.push(
           <div key={ i } >
-            <input type="radio" name="clientSelection"  defaultChecked={ selected } value={ i } onClick={ this.handleClientSelection }/>Circuit { i+1 } ({ userSpan })
+            <input type="radio" name="clientSelection" value={ i } onClick={ this.handleClientSelection }/>Circuit { i+1 } ({ userSpan })
           </div> );
       }
 
@@ -214,3 +217,6 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
     );
   }
 });
+
+// used because JSX deprecated the spread function in the transformer
+UserRegistrationViewFactory = React.createFactory(UserRegistrationView);
