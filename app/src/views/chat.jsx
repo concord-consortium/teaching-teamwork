@@ -1,4 +1,5 @@
 var GoalTable = require('./goalTable.jsx'),
+    GoalTableFactory = React.createFactory(GoalTable),
     ReactTransitionGroup = React.addons.TransitionGroup,
     userController = require('../controllers/user'),
     logController = require('../controllers/log');
@@ -58,7 +59,7 @@ module.exports = React.createClass({
         sendMeas = null;
 
     if (this.props.simpleMeasurementGame) {
-      table = <GoalTable {...this.props.simpleMeasurementGame}/>;
+      table = GoalTableFactory(this.props.simpleMeasurementGame);
       sendMeas = <button id="send-val" onClick={ this.handleSendVal }>Send measurement</button>;
     }
 

@@ -28,11 +28,6 @@ gulp.task('bower-check', function() {
           componentPackagePath = getPath('bower_components/' + component + '/.bower.json'),
           componentPackage;
 
-      // handle the react#0.12.2 case
-      if (requiredVersion.indexOf('#') !== -1) {
-        requiredVersion = requiredVersion.split('#')[1];
-      }
-
       fs.exists(componentPackagePath, function (exists) {
         if (exists) {
           componentPackage = require(componentPackagePath);

@@ -28,7 +28,7 @@ module.exports = OtherCircuits = React.createClass({
         $anchor[0].style.opacity = 1;
       }, 100);
 
-      return React.render(Popup({
+      return ReactDOM.render(Popup({
         circuit: props.circuit,
         activityName: props.activityName,
         groupName: props.groupName,
@@ -39,8 +39,11 @@ module.exports = OtherCircuits = React.createClass({
     },
 
     closePopup: function () {
-      var $anchor = $('#other-circuits-popup');
-      React.unmountComponentAtNode($anchor.get(0));
+      var $anchor = $('#other-circuits-popup'),
+          node = $anchor.get(0);
+      if (node) {
+        ReactDOM.unmountComponentAtNode(node);
+      }
       $anchor.remove();
     }
   },
@@ -74,7 +77,7 @@ PopupIFrame = React.createFactory(React.createClass({
   },
 
   componentDidMount: function () {
-    var iframe = this.refs.iframe.getDOMNode(),
+    var iframe = this.refs.iframe,
         payload = {
           circuit: this.props.circuit,
           activityName: this.props.activityName,
@@ -99,7 +102,7 @@ ScaledIFrame = React.createFactory(React.createClass({
   },
 
   componentDidMount: function () {
-    var iframe = this.refs.iframe.getDOMNode(),
+    var iframe = this.refs.iframe,
         loadMessage = 'loaded:scaled:' + this.props.circuit,
         payload = {
           circuit: this.props.circuit,
@@ -167,7 +170,7 @@ CircuitImage = React.createFactory(React.createClass({
   },
 
   drawImageLayer: function () {
-    var context = this.refs.imageLayer.getDOMNode().getContext('2d'),
+    var context = this.refs.imageLayer.getContext('2d'),
         image = new Image(),
         self = this;
 
@@ -179,7 +182,7 @@ CircuitImage = React.createFactory(React.createClass({
   },
 
   drawClickLayer: function () {
-    var canvas = this.refs.clickLayer.getDOMNode(),
+    var canvas = this.refs.clickLayer,
         context = canvas.getContext('2d'),
         breadboard = this.breadboards[this.props.selectedCircuit - 1];
 
@@ -193,7 +196,7 @@ CircuitImage = React.createFactory(React.createClass({
   },
 
   canvasClicked: function (e) {
-    var canvas = this.refs.clickLayer.getDOMNode(),
+    var canvas = this.refs.clickLayer,
         offset = $(canvas).offset(),
         x = e.pageX - offset.left,
         y = e.pageY - offset.top,

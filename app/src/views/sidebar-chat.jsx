@@ -78,7 +78,7 @@ module.exports = React.createClass({
   },
 
   handleSubmit: function(e) {
-    var input = this.refs.text.getDOMNode(),
+    var input = this.refs.text,
         message = input.value.replace(/^\s+|\s+$/, '');
     e.preventDefault();
     if (message.length > 0) {
@@ -120,9 +120,8 @@ ChatItems = React.createClass({
 
   componentDidUpdate: function (prevProps) {
     if (prevProps.items.length !== this.props.items.length) {
-      var items = this.refs.items ? this.refs.items.getDOMNode() : null;
-      if (items) {
-        items.scrollTop = items.scrollHeight;
+      if (this.refs.items) {
+        this.refs.items.scrollTop = this.refs.items.scrollHeight;
       }
     }
   },
