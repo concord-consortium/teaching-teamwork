@@ -1715,7 +1715,8 @@ FakeSidebarView = createComponent({
   },
 
   render: function () {
-    return div({id: 'sidebar-chat'},
+    var style = this.props.demo ? {} : {top: 75};
+    return div({id: 'sidebar-chat', style: style},
       div({id: 'sidebar-chat-title'}, 'Chat'),
       ChatItems({items: this.state.items}),
       div({className: 'sidebar-chat-input'},
@@ -1789,7 +1790,8 @@ AppView = createComponent({
       boards: boards,
       running: false,
       showDebugPins: true,
-      addedAllWires: false
+      addedAllWires: false,
+      demo: window.location.search.indexOf('demo') !== -1
     };
   },
 
@@ -1908,8 +1910,8 @@ AppView = createComponent({
     return div({id: 'picapp'},
       WorkspaceView({boards: this.state.boards, stepping: !this.state.running, showDebugPins: this.state.showDebugPins}),
       SimulatorControlView({running: this.state.running, run: this.run, step: this.step, reset: this.reset}),
-      DemoControlView({running: this.state.running, toggleAllWires: this.toggleAllWires, toggleDebugPins: this.toggleDebugPins, showDebugPins: this.state.showDebugPins, addedAllWires: this.state.addedAllWires}),
-      FakeSidebarView({})
+      this.state.demo ? DemoControlView({running: this.state.running, toggleAllWires: this.toggleAllWires, toggleDebugPins: this.toggleDebugPins, showDebugPins: this.state.showDebugPins, addedAllWires: this.state.addedAllWires}) : null,
+      FakeSidebarView({demo: this.state.demo})
     );
   }
 });
