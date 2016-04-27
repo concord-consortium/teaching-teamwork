@@ -14,23 +14,25 @@
 
   Todo for full collaborative environment:
 
-  1. Add user and group dialogs with Firebase connections and update board label
-  2. Add concept of read/write and read-only boards based on the user's assigned board
+  x. Add user and group dialogs with Firebase connections and update board label
+  x. Add concept of read/write and read-only boards based on the user's assigned board
   3. Send events to Firebase for
-    a. Keypad selects
-    b. Probe moves
-    c. Wiring setup/changes
+    x. Keypad selects
+    x. Probe moves
+    x. Wiring setup/changes
   4. Send events to Log Manager for
-    a. Board zoom in/out
-    b. Add/remove wire
-    c. Move probe
-    d. Start/Stop/Step/Reset simulator
-  5. Add back Firebase support to chat
+    x. Board zoom in/out
+    x. Add/remove wire
+    x. Move probe
+    x. Start/Stop/Step/Reset simulator
+  x. Add back Firebase support to chat
   6. Add a "All done!" button
 
 */
 
 var picCode = require('./data/pic-code'),
+    logController = require('./controllers/log'),
+    userController = require('./controllers/user'),
     div = React.DOM.div,
     span = React.DOM.span,
     svg = React.DOM.svg,
@@ -46,18 +48,101 @@ var picCode = require('./data/pic-code'),
     textarea = React.DOM.textarea,
     br = React.DOM.br,
     WORKSPACE_HEIGHT = 768,
-    WORKSPACE_WIDTH = 1024 - 200,
+    WORKSPACE_WIDTH = 936 - 200,
     RIBBON_HEIGHT = 21,
     SELECTED_FILL = '#bbb',
     UNSELECTED_FILL = '#777',
-    AppView, FakeSidebarView, WorkspaceView, BoardView, Board, RibbonView, ConnectorView,
+
+    MOVED_PROBE_EVENT = 'Moved probe',
+    PUSHED_BUTTON_EVENT = 'Pushed button',
+    ADD_WIRE_EVENT = 'Add wire',
+    REMOVE_WIRE_EVENT = 'Remove wire',
+    OPENED_BOARD_EVENT = 'Opened board',
+    CLOSED_BOARD_EVENT = 'Closed board',
+    RUN_EVENT = 'Run',
+    STOP_EVENT = 'Stop',
+    STEP_EVENT = 'Step',
+    RESET_EVENT = 'Reset',
+
+    AppView, SidebarChatView, WorkspaceView, BoardView, Board, RibbonView, ConnectorView,
     Keypad, LED, PIC, Connector, KeypadView, LEDView, PICView,
     ConnectorHoleView, Hole, Pin, PinView,
-    BoardEditorView, SimulatorControlView, Wire, Button, ButtonView, Segment, Circuit, DemoControlView, ChatItem, ChatItems, ProbeView;
+    BoardEditorView, SimulatorControlView, Wire, Button, ButtonView, Segment, Circuit, DemoControlView, ChatItem, ChatItems, ProbeView, BoardWatcher, boardWatcher;
 
 //
 // Helper functions
 //
+
+function logEvent(eventName, value, parameters) {
+  var loggedValue = null,
+      loggedParameters = null;
+
+  function getHoleInfo(hole, label) {
+    var info = {
+      hole: {
+        index: hole.index,
+        color: hole.color
+      },
+      connector: hole.connector.type,
+      board: hole.connector.board.number
+    };
+    info[label] = 'hole';
+    return info;
+  }
+
+  function getPinInfo(pin, label) {
+    var info = {
+      pin: {
+        index: pin.number,
+        name: pin.label.text
+      },
+      component: pin.component.name,
+      board: pin.component.board.number
+    };
+    info[label] = 'pin';
+    return info;
+  }
+
+  if (eventName === MOVED_PROBE_EVENT) {
+    loggedParameters = {
+      to: null
+    };
+    if (value instanceof Hole) {
+      loggedParameters = value ? getHoleInfo(value, 'to') : {board: parameters.board.number};
+    }
+    else {
+      loggedParameters = value ? getPinInfo(value, 'to') : {board: parameters.board.number};
+    }
+    boardWatcher.movedProbe(parameters.board, loggedParameters);
+  }
+  else if (eventName == PUSHED_BUTTON_EVENT) {
+    loggedValue = value.value;
+    loggedParameters = {
+      board: value.component.board.number
+    };
+    boardWatcher.pushedButton(parameters.board, value.value);
+  }
+  else if (eventName == ADD_WIRE_EVENT) {
+    loggedParameters = {
+      source: parameters.source instanceof Hole ? getHoleInfo(parameters.source, 'type') : getPinInfo(parameters.source, 'type'),
+      dest: parameters.dest instanceof Hole ? getHoleInfo(parameters.dest, 'type') : getPinInfo(parameters.dest, 'type')
+    };
+    boardWatcher.circuitChanged(parameters.board);
+  }
+  else if (eventName == REMOVE_WIRE_EVENT) {
+    loggedParameters = {
+      source: parameters.source instanceof Hole ? getHoleInfo(parameters.source, 'type') : getPinInfo(parameters.source, 'type')
+    };
+    boardWatcher.circuitChanged(parameters.board);
+  }
+  else {
+    // log the raw event value and parameters
+    logController.logEvent(eventName, value, parameters);
+    return;
+  }
+
+  logController.logEvent(eventName, loggedValue, loggedParameters);
+}
 
 function createComponent(def) {
   return React.createFactory(React.createClass(def));
@@ -150,6 +235,45 @@ function calculateComponentRect(selected, index, count, componentWidth, componen
 
   return position;
 }
+
+//
+// Board Watcher (using Firebase)
+//
+BoardWatcher = function () {
+  this.firebase = null;
+  this.listeners = {};
+};
+BoardWatcher.prototype.startListeners = function () {
+  var self = this,
+      listenerCallbackFn = function (boardNumber) {
+        return function (snapshot) {
+          if (self.listeners[boardNumber]) {
+            self.listeners[boardNumber](snapshot.val());
+          }
+        };
+      };
+
+  this.firebase = userController.getFirebaseGroupRef().child('clients');
+  this.firebase.child(0).on('value', listenerCallbackFn(0));
+  this.firebase.child(1).on('value', listenerCallbackFn(1));
+  this.firebase.child(2).on('value', listenerCallbackFn(2));
+};
+BoardWatcher.prototype.movedProbe = function (board, probeInfo) {
+  this.firebase.child(board.number).child('probe').set(probeInfo);
+};
+BoardWatcher.prototype.pushedButton = function (board, buttonValue) {
+  this.firebase.child(board.number).child('button').set(buttonValue);
+};
+BoardWatcher.prototype.circuitChanged = function (board) {
+  // TODO
+  console.log(board);
+};
+BoardWatcher.prototype.addListener = function (board, listener) {
+  this.listeners[board.number] = listener;
+};
+BoardWatcher.prototype.removeListener = function (board) {
+  delete this.listeners[board.number];
+};
 
 //
 // State models
@@ -270,6 +394,7 @@ Segment = function (options) {
 };
 
 Pin = function (options) {
+  this.board = options.component.board;
   this.isPin = true; // to allow for easy checks against holes in circuits
   this.inputMode = options.inputMode;
   this.placement = options.placement;
@@ -369,6 +494,7 @@ Connector.prototype.calculatePosition = function (selected) {
 Keypad = function () {
   var i, pin, button, values;
 
+  this.name = 'keypad';
   this.view = KeypadView;
 
   this.pushedButton = null;
@@ -422,6 +548,8 @@ Keypad = function () {
     this.buttons.push(new Button(button));
   }
   this.bottomButtonValues = [this.buttons[9].value, this.buttons[10].value, this.buttons[11].value];
+
+  this.listeners = [];
 };
 Keypad.prototype.calculatePosition = function (selected, index, count) {
   var constants = selectedConstants(selected),
@@ -489,8 +617,6 @@ Keypad.prototype.calculatePosition = function (selected, index, count) {
     pin.height = constants.PIN_HEIGHT;
     pin.labelSize = constants.PIC_FONT_SIZE;
   }
-
-  this.listeners = [];
 };
 Keypad.prototype.addListener = function (listener) {
   this.listeners.push(listener);
@@ -509,6 +635,15 @@ Keypad.prototype.reset = function () {
 Keypad.prototype.pushButton = function (button) {
   this.pushedButton = button;
   this.notify();
+};
+Keypad.prototype.selectButtonValue = function (value) {
+  var self = this;
+  $.each(this.buttons, function (index, button) {
+    if (button.value == value) {
+      self.pushButton(button);
+      return false;
+    }
+  });
 };
 Keypad.prototype.resolveOutputValues = function () {
   var colValue = 7,
@@ -540,6 +675,7 @@ Keypad.prototype.resolveOutputValues = function () {
 LED = function () {
   var i, pin, segmentLayoutMap, segment;
 
+  this.name = 'led';
   this.view = LEDView;
 
   this.pins = [];
@@ -668,6 +804,7 @@ LED.prototype.resolveOutputValues = function () {
 PIC = function (options) {
   var i, pin, notConnectable;
 
+  this.name = 'pic';
   this.view = PICView;
   this.board = options.board;
 
@@ -834,6 +971,7 @@ Board = function (options) {
       for (i = 0; i < this.components[name].pins.length; i++) {
         this.pinsAndHoles.push(this.components[name].pins[i]);
       }
+      this.components[name].board = this;
     }
   }
   for (i = 0; i < this.connectors.length; i++) {
@@ -842,8 +980,7 @@ Board = function (options) {
     }
   }
 
-  // link the pic to the board and reset it so the pin output is set
-  this.components.pic.board = this;
+  // reset the pic so the pin output is set
   this.components.pic.reset();
 };
 Board.prototype.clear = function () {
@@ -979,8 +1116,11 @@ KeypadView = createComponent({
   },
 
   pushButton: function (button) {
-    this.props.component.pushButton(button);
-    this.setState({pushedButton: this.props.component.pushedButton});
+    if (this.props.editable) {
+      this.props.component.pushButton(button);
+      this.setState({pushedButton: this.props.component.pushedButton});
+      logEvent(PUSHED_BUTTON_EVENT, button, {board: this.props.component.board});
+    }
   },
 
   render: function () {
@@ -991,13 +1131,13 @@ KeypadView = createComponent({
 
     for (i = 0; i < this.props.component.pins.length; i++) {
       pin = this.props.component.pins[i];
-      pins.push(PinView({key: 'pin' + i, pin: pin, selected: this.props.selected, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
+      pins.push(PinView({key: 'pin' + i, pin: pin, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
       pins.push(text({key: 'label' + i, x: pin.label.x, y: pin.label.y, fontSize: pin.labelSize, fill: '#333', style: {textAnchor: pin.label.anchor}}, pin.label.text));
     }
 
     for (i = 0; i < this.props.component.buttons.length; i++) {
       button = this.props.component.buttons[i];
-      buttons.push(ButtonView({key: i, button: button, selected: this.props.selected, pushed: button === this.state.pushedButton, pushButton: this.pushButton}));
+      buttons.push(ButtonView({key: i, button: button, selected: this.props.selected, editable: this.props.editable, pushed: button === this.state.pushedButton, pushButton: this.pushButton}));
     }
 
     return g({},
@@ -1023,7 +1163,7 @@ LEDView = createComponent({
 
     for (i = 0; i < this.props.component.pins.length; i++) {
       pin = this.props.component.pins[i];
-      pins.push(PinView({key: 'pin' + i, pin: pin, selected: this.props.selected, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
+      pins.push(PinView({key: 'pin' + i, pin: pin, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
       pins.push(text({key: 'label' + i, x: pin.label.x, y: pin.label.y, fontSize: pin.labelSize, fill: '#fff', style: {textAnchor: pin.label.anchor}}, pin.label.text));
     }
 
@@ -1086,6 +1226,7 @@ PinView = createComponent({
   render: function () {
     var pin = this.props.pin,
         showColors = this.props.stepping && this.props.showDebugPins && !pin.notConnectable,
+        enableHandlers = this.props.selected && this.props.editable,
         inputRect, outputRect;
 
     switch (pin.placement) {
@@ -1110,7 +1251,7 @@ PinView = createComponent({
     inputRect.fill = showColors && pin.inputMode && pin.connected ? (pin.value ? 'red' : 'green') : '#777';
     outputRect.fill = showColors && !pin.inputMode ? (pin.value ? 'red' : 'green') : '#777';
 
-    return g({onMouseDown: this.props.selected ? this.startDrag : null, onMouseOver: this.props.selected ? this.mouseOver : null, onMouseOut: this.props.selected ? this.mouseOut : null},
+    return g({onMouseDown: enableHandlers ? this.startDrag : null, onMouseOver: enableHandlers ? this.mouseOver : null, onMouseOut: enableHandlers ? this.mouseOut : null},
       rect(inputRect),
       rect(outputRect)
     );
@@ -1205,7 +1346,7 @@ PICView = createComponent({
 
     for (i = 0; i < this.props.component.pins.length; i++) {
       pin = this.props.component.pins[i];
-      pins.push(PinView({key: 'pin' + i, pin: pin, selected: this.props.selected, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
+      pins.push(PinView({key: 'pin' + i, pin: pin, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
       pins.push(text({key: 'label' + i, x: pin.label.x, y: pin.label.y, fontSize: pin.labelSize, fill: '#fff', style: {textAnchor: pin.label.anchor}}, pin.label.text));
     }
 
@@ -1298,6 +1439,7 @@ ProbeView = createComponent({
         self.props.hoverSource.pulseProbeDuration = 0;
       }
       self.props.setProbe({source: self.props.hoverSource, pos: null});
+      logEvent(MOVED_PROBE_EVENT, self.props.hoverSource, {board: self.props.board});
     };
 
     $window.on('mousemove', drag);
@@ -1364,7 +1506,7 @@ ProbeView = createComponent({
       'L', x + height, ',', middleY + halfNeedleHeight, ' '
     ].join('');
 
-    return g({transform: ['rotate(-15 ', x, ' ', y + (height / 2), ')'].join(''), onMouseDown: this.startDrag},
+    return g({transform: ['rotate(-15 ', x, ' ', y + (height / 2), ')'].join(''), onMouseDown: this.props.selected ? this.startDrag : null},
       path({d: needlePath, fill: '#c0c0c0', stroke: '#777', style: {pointerEvents: 'none'}}),
       path({d: handlePath, fill: '#eee', stroke: '#777'}), // '#FDCA6E'
       circle({cx: x + (4 * height), cy: middleY, r: height / 4, fill: 'red', fillOpacity: redFill}),
@@ -1389,6 +1531,41 @@ BoardView = createComponent({
       probeSource: this.props.board.probe ? this.props.board.probe.source : null,
       probePos: this.props.board.probe ? this.props.board.probe.pos : null
     };
+  },
+
+  componentDidMount: function () {
+    boardWatcher.addListener(this.props.board, this.updateWatchedBoard);
+  },
+
+  componentWillUnmount: function () {
+    boardWatcher.removeListener(this.props.board);
+  },
+
+  updateWatchedBoard: function (boardInfo) {
+    var board = this.props.board,
+        probe = {source: null, pos: null},
+        probeInfo;
+
+    if (!boardInfo) {
+      return;
+    }
+
+    if (board.components.keypad) {
+      board.components.keypad.selectButtonValue(boardInfo.button);
+    }
+    //console.log(boardInfo, board);
+
+    // move the probe
+    probeInfo = boardInfo.probe;
+    if (probeInfo) {
+      if (probeInfo.to === 'pin') {
+        probe.source = board.components[probeInfo.component].pins[probeInfo.pin.index];
+      }
+      else if (probeInfo.to === 'hole') {
+        probe.source = board.connectors[probeInfo.connector].holes[probeInfo.hole.index];
+      }
+    }
+    this.setProbe(probe);
   },
 
   reportHover: function (hoverSource) {
@@ -1440,10 +1617,12 @@ BoardView = createComponent({
       if (dest && (dest !== source)) {
         self.props.board.addWire(source, dest, (source.color || dest.color || color));
         self.setState({wires: self.props.board.wires});
+        logEvent(ADD_WIRE_EVENT, null, {board: self.props.board, source: source, dest: dest});
       }
       else if (!dest) {
         self.props.board.removeWire(source);
         self.setState({wires: self.props.board.wires});
+        logEvent(REMOVE_WIRE_EVENT, null, {board: self.props.board, source: source});
       }
     };
 
@@ -1472,18 +1651,18 @@ BoardView = createComponent({
     // calculate the position so the wires can be updated
     if (this.props.board.connectors.input) {
       this.props.board.connectors.input.calculatePosition(this.props.selected);
-      connectors.push(ConnectorView({key: 'input', connector: this.props.board.connectors.input, selected: this.props.selected, drawConnection: this.drawConnection, reportHover: this.reportHover}));
+      connectors.push(ConnectorView({key: 'input', connector: this.props.board.connectors.input, selected: this.props.selected, editable: this.props.editable, drawConnection: this.drawConnection, reportHover: this.reportHover}));
     }
     if (this.props.board.connectors.output) {
       this.props.board.connectors.output.calculatePosition(this.props.selected);
-      connectors.push(ConnectorView({key: 'output', connector: this.props.board.connectors.output, selected: this.props.selected, drawConnection: this.drawConnection, reportHover: this.reportHover}));
+      connectors.push(ConnectorView({key: 'output', connector: this.props.board.connectors.output, selected: this.props.selected, editable: this.props.editable, drawConnection: this.drawConnection, reportHover: this.reportHover}));
     }
 
     for (name in this.props.board.components) {
       if (this.props.board.components.hasOwnProperty(name)) {
         component = this.props.board.components[name];
         component.calculatePosition(this.props.selected, componentIndex++, this.props.board.numComponents);
-        components.push(component.view({key: name, component: component, selected: this.props.selected, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.drawConnection, reportHover: this.reportHover}));
+        components.push(component.view({key: name, component: component, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.drawConnection, reportHover: this.reportHover}));
       }
     }
 
@@ -1501,15 +1680,15 @@ BoardView = createComponent({
       wires.push(path({key: i, className: 'wire', d: getBezierPath({x1: wire.source.cx, y1: wire.source.cy, x2: wire.dest.cx, y2: wire.dest.cy, reflection: wire.getBezierReflection() * this.props.board.bezierReflectionModifier}), strokeWidth: constants.WIRE_WIDTH, stroke: stroke, fill: 'none', style: {pointerEvents: 'none'}}));
     }
 
-    return div({className: 'board', style: style, onClick: this.props.selected ? null : this.toggleBoard},
-      span({className: 'board-user'}, 'Student ' + (this.props.board.number + 1)),
+    return div({className: this.props.editable ? 'board editable-board' : 'board', style: style, onClick: this.props.selected ? null : this.toggleBoard},
+      span({className: 'board-user'}, ('Circuit ' + (this.props.board.number + 1) + ': ') + (this.props.user ? this.props.user.name : '(unclaimed)')),
       svg({className: 'board-area'},
         closeButton,
         connectors,
         components,
         wires,
         (this.state.drawConnection ? line({x1: this.state.drawConnection.x1, x2: this.state.drawConnection.x2, y1: this.state.drawConnection.y1, y2: this.state.drawConnection.y2, stroke: this.state.drawConnection.stroke, strokeWidth: this.state.drawConnection.strokeWidth, fill: 'none', style: {pointerEvents: 'none'}}) : null),
-        ProbeView({selected: this.props.selected, stepping: this.props.stepping, probeSource: this.state.probeSource, hoverSource: this.state.hoverSource, pos: this.state.probePos, setProbe: this.setProbe})
+        ProbeView({board: this.props.board, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, probeSource: this.state.probeSource, hoverSource: this.state.hoverSource, pos: this.state.probePos, setProbe: this.setProbe})
       )
     );
   }
@@ -1531,8 +1710,9 @@ ConnectorHoleView = createComponent({
   },
 
   render: function () {
+    var enableHandlers = this.props.selected && this.props.editable;
     return g({},
-      circle({cx: this.props.hole.cx, cy: this.props.hole.cy, r: this.props.hole.radius, fill: this.props.hole.color, onMouseDown: this.props.selected ? this.startDrag : null, onMouseOver: this.props.selected ? this.mouseOver : null, onMouseOut: this.props.selected ? this.mouseOut : null})
+      circle({cx: this.props.hole.cx, cy: this.props.hole.cy, r: this.props.hole.radius, fill: this.props.hole.color, onMouseDown: enableHandlers ? this.startDrag : null, onMouseOver: enableHandlers ? this.mouseOver : null, onMouseOut: enableHandlers ? this.mouseOut : null})
     );
   }
 });
@@ -1547,7 +1727,7 @@ ConnectorView = createComponent({
 
     for (i = 0; i < this.props.connector.holes.length; i++) {
       hole = this.props.connector.holes[i];
-      holes.push(ConnectorHoleView({key: i, connector: this.props.connector, hole: hole, selected: this.props.selected, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
+      holes.push(ConnectorHoleView({key: i, connector: this.props.connector, hole: hole, selected: this.props.selected, editable: this.props.editable, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
     }
 
     return svg({},
@@ -1604,23 +1784,61 @@ WorkspaceView = createComponent({
   },
 
   toggleBoard: function (board) {
-    this.setState({selectedBoard: board === this.state.selectedBoard ? null : board});
+    var previousBoard = this.state.selectedBoard,
+        selectedBoard = board === this.state.selectedBoard ? null : board;
+    this.setState({selectedBoard: selectedBoard});
+    if (selectedBoard) {
+      logEvent(OPENED_BOARD_EVENT, selectedBoard.number);
+    }
+    else {
+      logEvent(CLOSED_BOARD_EVENT, previousBoard ? previousBoard.number : -1);
+    }
   },
 
   render: function () {
     if (this.state.selectedBoard) {
       return div({id: 'workspace'},
-        BoardView({key: 'selectedBoard' + this.state.selectedBoard.number, board: this.state.selectedBoard, selected: true, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, toggleBoard: this.toggleBoard}),
+        BoardView({
+          key: 'selectedBoard' + this.state.selectedBoard.number,
+          board: this.state.selectedBoard,
+          selected: true,
+          editable: this.props.userBoardNumber === this.state.selectedBoard.number,
+          user: this.props.users[this.state.selectedBoard.number],
+          stepping: this.props.stepping,
+          showDebugPins: this.props.showDebugPins,
+          toggleBoard: this.toggleBoard
+        }),
         BoardEditorView({board: this.state.selectedBoard})
       );
     }
     else {
       return div({id: 'workspace', style: {width: WORKSPACE_WIDTH}},
-        BoardView({board: this.props.boards[0], stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, toggleBoard: this.toggleBoard}),
+        BoardView({
+          board: this.props.boards[0],
+          editable: this.props.userBoardNumber === 0,
+          user: this.props.users[0],
+          stepping: this.props.stepping,
+          showDebugPins: this.props.showDebugPins,
+          toggleBoard: this.toggleBoard
+        }),
         RibbonView({connector: this.props.boards[0].connectors.output}),
-        BoardView({board: this.props.boards[1], stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, toggleBoard: this.toggleBoard}),
+        BoardView({
+          board: this.props.boards[1],
+          editable: this.props.userBoardNumber === 1,
+          user: this.props.users[1],
+          stepping: this.props.stepping,
+          showDebugPins: this.props.showDebugPins,
+          toggleBoard: this.toggleBoard
+        }),
         RibbonView({connector: this.props.boards[1].connectors.output}),
-        BoardView({board: this.props.boards[2], stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, toggleBoard: this.toggleBoard})
+        BoardView({
+          board: this.props.boards[2],
+          editable: this.props.userBoardNumber === 2,
+          user: this.props.users[2],
+          stepping: this.props.stepping,
+          showDebugPins: this.props.showDebugPins,
+          toggleBoard: this.toggleBoard
+        })
       );
     }
   }
@@ -1685,27 +1903,95 @@ DemoControlView = createComponent({
   }
 });
 
-FakeSidebarView = createComponent({
-  displayName: 'FakeSidebarView',
+SidebarChatView = createComponent({
+  displayName: 'SidebarChatView',
 
   getInitialState: function() {
-    return {items: []};
+    var items = [];
+
+    if (this.props.initialChatMessage) {
+      items.push({
+        prefix: 'Welcome!',
+        message: this.props.initialChatMessage
+      });
+    }
+
+    return {
+      items: items,
+      numExistingUsers: 0
+    };
+  },
+
+  getJoinedMessage: function (numExistingUsers) {
+    var slotsRemaining = 3 - numExistingUsers,
+        nums = ["zero", "one", "two", "three"],
+        cap = function (string) {
+          return string.charAt(0).toUpperCase() + string.slice(1);
+        },
+        message = " ";
+
+    if (slotsRemaining > 1) {
+      // One of three users is here
+      message += cap(nums[numExistingUsers]) + " of 3 users is here.";
+    } else if (slotsRemaining == 1) {
+      // Two of you are now here. One more to go before you can get started!
+      message += cap(nums[numExistingUsers]) + " of you are now here. One more to go before you can get started!";
+    } else {
+      message += "You're all here! Time to start this challenge.";
+    }
+
+    return message;
+  },
+
+  componentWillMount: function() {
+    var self = this;
+    userController.onGroupRefCreation(function() {
+      self.firebaseRef = userController.getFirebaseGroupRef().child("chat");
+      self.firebaseRef.orderByChild('time').on("child_added", function(dataSnapshot) {
+        var items = self.state.items.slice(0),
+            item = dataSnapshot.val(),
+            numExistingUsers = self.state.numExistingUsers;
+
+        if (item.type == "joined") {
+          numExistingUsers = Math.min(self.state.numExistingUsers + 1, 3);
+          item.message += self.getJoinedMessage(numExistingUsers);
+        }
+        else if (item.type == "left") {
+          numExistingUsers = Math.max(self.state.numExistingUsers - 1, 0);
+        }
+
+        if (numExistingUsers !== self.state.numExistingUsers) {
+          self.setState({numExistingUsers: numExistingUsers});
+        }
+
+        items.push(item);
+
+        self.setState({
+          items: items
+        });
+      }.bind(self));
+    });
+  },
+
+  componentWillUnmount: function() {
+    this.firebaseRef.off();
   },
 
   handleSubmit: function(e) {
     var input = this.refs.text,
-        text = $.trim(input.value);
+        message = $.trim(input.value);
 
     e.preventDefault();
 
-    if (text.length > 0) {
-      this.state.items.push({
-        user: 'Student 1',
-        message: text
+    if (message.length > 0) {
+      this.firebaseRef.push({
+        user: userController.getUsername(),
+        message: message,
+        time: Firebase.ServerValue.TIMESTAMP
       });
-      this.setState({items: this.state.items});
       input.value = '';
       input.focus();
+      logEvent("Sent message", message);
     }
   },
 
@@ -1716,7 +2002,8 @@ FakeSidebarView = createComponent({
   },
 
   render: function () {
-    return div({id: 'sidebar-chat'},
+    var style = this.props.demo ? {} : {top: 75};
+    return div({id: 'sidebar-chat', style: style},
       div({id: 'sidebar-chat-title'}, 'Chat'),
       ChatItems({items: this.state.items}),
       div({className: 'sidebar-chat-input'},
@@ -1742,7 +2029,7 @@ ChatItems = createComponent({
   },
 
   render: function () {
-    var user = 'Student 1',
+    var user = userController.getUsername(),
         items;
     items = this.props.items.map(function(item, i) {
       return ChatItem({key: i, item: item, me: item.user == user});
@@ -1757,6 +2044,7 @@ ChatItem = createComponent({
   render: function () {
     return div({className: this.props.me ? 'chat-item chat-item-me' : 'chat-item chat-item-others'},
       b({}, this.props.item.prefix || (this.props.item.user + ':')),
+      ' ',
       this.props.item.message
     );
   }
@@ -1790,8 +2078,44 @@ AppView = createComponent({
       boards: boards,
       running: false,
       showDebugPins: true,
-      addedAllWires: false
+      addedAllWires: false,
+      demo: window.location.search.indexOf('demo') !== -1,
+      userBoardNumber: -1,
+      users: {}
     };
+  },
+
+  componentDidMount: function() {
+    var activityName = 'pic',
+        self = this;
+
+    logController.init(activityName);
+    userController.init(3, activityName, function(userBoardNumber) {
+      var users = self.state.users;
+      userBoardNumber = parseInt(userBoardNumber, 10);
+      users[userBoardNumber] = {
+        name: userController.getUsername()
+      };
+
+      self.setState({
+        userBoardNumber: userBoardNumber,
+        users: users
+      });
+
+      userController.onGroupRefCreation(function() {
+        boardWatcher.startListeners();
+        userController.getFirebaseGroupRef().child('users').on("value", function(snapshot) {
+          var fbUsers = snapshot.val(),
+              users = {};
+          $.each(fbUsers, function (user) {
+            users[parseInt(fbUsers[user].client)] = {
+              name: user
+            };
+          });
+          self.setState({users: users});
+        });
+      });
+    });
   },
 
   simulate: function (step) {
@@ -1816,6 +2140,7 @@ AppView = createComponent({
       this.state.boards[i].reset();
     }
     this.setState({boards: this.state.boards});
+    logEvent(RESET_EVENT);
   },
 
   run: function (run) {
@@ -1824,10 +2149,12 @@ AppView = createComponent({
       this.simulatorInterval = setInterval(this.simulate.bind(this), 100);
     }
     this.setState({running: run});
+    logEvent(run ? RUN_EVENT : STOP_EVENT);
   },
 
   step: function () {
     this.simulate(true);
+    logEvent(STEP_EVENT);
   },
 
   toggleAllWires: function () {
@@ -1907,10 +2234,10 @@ AppView = createComponent({
 
   render: function () {
     return div({id: 'picapp'},
-      WorkspaceView({boards: this.state.boards, stepping: !this.state.running, showDebugPins: this.state.showDebugPins}),
+      WorkspaceView({boards: this.state.boards, stepping: !this.state.running, showDebugPins: this.state.showDebugPins, users: this.state.users, userBoardNumber: this.state.userBoardNumber}),
       SimulatorControlView({running: this.state.running, run: this.run, step: this.step, reset: this.reset}),
-      DemoControlView({running: this.state.running, toggleAllWires: this.toggleAllWires, toggleDebugPins: this.toggleDebugPins, showDebugPins: this.state.showDebugPins, addedAllWires: this.state.addedAllWires}),
-      FakeSidebarView({})
+      this.state.demo ? DemoControlView({running: this.state.running, toggleAllWires: this.toggleAllWires, toggleDebugPins: this.toggleDebugPins, showDebugPins: this.state.showDebugPins, addedAllWires: this.state.addedAllWires}) : null,
+      SidebarChatView({demo: this.state.demo})
     );
   }
 });
@@ -1919,10 +2246,719 @@ AppView = createComponent({
 // Main
 //
 
+boardWatcher = new BoardWatcher();
 ReactDOM.render(AppView({}), document.getElementById('content'));
 
 
-},{"./data/pic-code":2}],2:[function(require,module,exports){
+},{"./controllers/log":3,"./controllers/user":4,"./data/pic-code":6}],2:[function(require,module,exports){
+var iframePhone = require('iframe-phone'),
+    controller;
+
+function LaraController() {
+}
+LaraController.prototype = {
+  laraPhone: null,
+  loadedFromLara: false,
+  loadedGlobalState: false,
+  globalState: null,
+  loadedGlobalStateCallback: null,
+  connected: false,
+  connectionCallback: null,
+
+  init: function() {
+    var self = this;
+
+    // for now just check if in iframe
+    try {
+      this.loadedFromLara = window.self !== window.top;
+    } catch (e) {
+      this.loadedFromLara = true;
+    }
+
+    if (this.loadedFromLara) {
+      this.laraPhone = iframePhone.getIFrameEndpoint();
+      this.laraPhone.addListener('hello', function () {
+        self.connected = true;
+        if (self.connectionCallback) {
+          self.connectionCallback();
+        }
+      });
+      this.laraPhone.addListener("loadInteractiveGlobal", function(state) {
+        self._globalStateLoaded(state);
+      });
+      // this message is not in the production lara
+      this.laraPhone.addListener("loadInteractiveNullGlobal", function() {
+        //self._globalStateLoaded(null);
+      });
+      this.laraPhone.initialize();
+    }
+  },
+
+  waitForConnection: function (callback) {
+    if (this.connected) {
+      callback();
+    }
+    else {
+      this.connectionCallback = callback;
+    }
+  },
+
+  waitForGlobalState: function (callback) {
+    var self = this;
+    if (this.loadedGlobalState) {
+      callback(this.globalState);
+    }
+    else {
+      this.loadedGlobalStateCallback = callback;
+      setTimeout(function () {
+        if (!self.loadedGlobalState) {
+          this.loadedGlobalStateCallback = null;
+          callback(null);
+        }
+      }, 5000);
+    }
+  },
+
+  log: function (data) {
+    this.laraPhone.post('log', data);
+  },
+
+  setGlobalState: function (state) {
+    if (this.loadedFromLara) {
+      this.laraPhone.post('interactiveStateGlobal', state);
+    }
+  },
+
+  _globalStateLoaded: function (state) {
+    this.loadedGlobalState = true;
+    this.globalState = state;
+    if (this.loadedGlobalStateCallback) {
+      this.loadedGlobalStateCallback(state);
+    }
+  }
+};
+
+controller = new LaraController();
+controller.init();
+
+module.exports = controller;
+
+
+},{"iframe-phone":13}],3:[function(require,module,exports){
+var logManagerUrl  = '//teaching-teamwork-log-manager.herokuapp.com/api/logs',
+    xhrObserver    = require('../data/xhrObserver'),
+    laraController = require('./lara'),
+    laraLoggerReady,
+    activityName,
+    session,
+    username,
+    groupname,
+    client,
+    logEventListeners,
+    wa,
+    currentFlowing = true,
+    queue = [],
+
+    generateGUID = function() {
+      function S4() {
+        // turn off bitwise checking for this line
+        // jshint bitwise:false
+        return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
+        // jshint bitwise:true
+      }
+      return S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4();
+    },
+
+    sendEvent = function(data) {
+      //console.log('Log:', data);
+      if (laraLoggerReady) {
+        logToLARA(data);
+      } else {
+        var request = xhrObserver.createObservedXMLHttpRequest();
+        request.repeatablePost(logManagerUrl, 'application/json; charset=UTF-8', JSON.stringify(data));
+      }
+    },
+
+    backfillQueue = function(key, value) {
+      for (var i = 0, ii = queue.length; i < ii; i++) {
+        queue[i][key] = value;
+      }
+    },
+
+    processQueue = function() {
+      while (queue.length) {
+        var event = queue.shift();
+        sendEvent(event);
+      }
+    },
+
+    // value: simple value (string, boolean, number)
+    // parameters: object
+    logEvent = function(eventName, value, parameters) {
+      var data = {
+        application: "Teaching Teamwork",
+        activity: activityName,
+        username: username,
+        groupname: groupname,
+        board: client,
+        currentFlowing: currentFlowing,
+        session: session,
+        time: Date.now(),
+        event: eventName,
+        event_value: value,
+        parameters: parameters
+      },
+      i;
+
+      // signal the listeners we are logging
+      for (i=0; i < logEventListeners.length; i++) {
+        logEventListeners[i](data);
+      }
+
+      if (typeof client == "undefined") {
+        queue.push(data);
+      } else {
+        sendEvent(data);
+      }
+    },
+
+    startSession = function() {
+      session = generateGUID();
+      logEvent("Started session");
+    },
+
+    logToLARA = function(data) {
+      var laraLogData = {
+        action: data.event,
+        value: data.event_value,
+        data: data
+      };
+
+      // these values are redundant with above
+      delete data.event;
+      delete data.event_value;
+
+      // these values conflict with LARA wrapper
+      delete data.application;
+      delete data.time;
+      delete data.session;
+
+      // rename activity name conflict
+      data.levelName = data.activity;
+      delete data.activity;
+
+      // flatten parameters
+      if (data.parameters) {
+        for (var prop in data.parameters) {
+          if (!data.parameters.hasOwnProperty(prop)) {continue;}
+          data[prop] = data.parameters[prop];
+        }
+        delete data.parameters;
+      }
+
+      laraController.log(laraLogData);
+    };
+
+laraController.waitForConnection(function () {
+  laraLoggerReady = true;
+});
+
+function LogController() {
+}
+
+LogController.prototype = {
+  logEvent: logEvent,
+
+  init: function(_activityName) {
+    activityName = _activityName;
+    logEventListeners = [];
+    startSession();
+  },
+
+  addLogEventListener: function(listener) {
+    logEventListeners.push(listener);
+  },
+
+  setUserName: function(name) {
+    username = name;
+    backfillQueue("username", username);
+    logEvent("Selected Username", username);
+  },
+
+  setGroupName: function(name) {
+    groupname = name;
+    backfillQueue("groupname", groupname);
+    logEvent("Joined Group", groupname);
+  },
+
+  setClientNumber: function(clientNumber) {
+    client = clientNumber;
+    backfillQueue("board", client);
+    processQueue();
+    logEvent("Selected board", client);
+  },
+
+  startListeningToCircuitEvents: function() {
+    var self = this;
+    sparks.logController.addListener(function(evt) {
+      if (evt.name === "Changed circuit") {
+        self.updateIfCurrentFlowing(wa.getClientCircuit());
+      }
+      logEvent(evt.name, null, evt.value);
+    });
+  },
+
+  updateIfCurrentFlowing: function (circuit) {
+    if (wa) {
+      currentFlowing = wa.isCurrentFlowing(circuit);
+    }
+  },
+
+  setWorkbenchAdapter: function (_wa) {
+    wa = _wa;
+  },
+
+  logEvents: function(events) {
+    var eventName, event, value, parameters;
+
+    if (!events) {
+      return;
+    }
+    for (eventName in events) {
+      if (events.hasOwnProperty(eventName)) {
+        event = events[eventName];
+        value = event.hasOwnProperty("value") ? event.value : null;
+        parameters = event.hasOwnProperty("parameters") ? event.parameters : null;
+        if (value || parameters) {
+          logEvent(eventName, value, parameters);
+        }
+      }
+    }
+  }
+};
+
+module.exports = new LogController();
+
+
+},{"../data/xhrObserver":7,"./lara":2}],4:[function(require,module,exports){
+var UserRegistrationView = require('../views/userRegistration.jsx'),
+    groups = require('../data/group-names'),
+    logController = require('./log'),
+    laraController = require('./lara'),
+    userController,
+    numClients,
+    numExistingUsers,
+    activityName,
+    userName,
+    groupName,
+    firebaseGroupRef,
+    firebaseUsersRef,
+    fbUrl,
+    groupUsersListener,
+    boardsSelectionListener,
+    groupRefCreationListeners,
+    client,
+    callback,
+    serverSkew,
+    onDisconnectRef;
+
+// scratch
+var fbUrlDomain = 'https://teaching-teamwork.firebaseio.com/';
+var fbUrlDir = (localStorage ? localStorage.getItem('fbUrlDir') || null : null) || '2016/';  // to make local dev testing easier
+var fbUrlBase = fbUrlDomain + fbUrlDir;
+
+var getDate = function() {
+  var today = new Date(),
+      dd = today.getDate(),
+      mm = today.getMonth()+1,
+      yyyy = today.getFullYear();
+
+  if(dd<10) {
+      dd='0'+dd;
+  }
+
+  if(mm<10) {
+      mm='0'+mm;
+  }
+
+  return yyyy+'-'+mm+'-'+dd;
+};
+
+var notifyGroupRefCreation = function() {
+  if (groupRefCreationListeners) {
+    for (var i = 0, ii = groupRefCreationListeners.length; i < ii; i++) {
+      groupRefCreationListeners.pop()();
+    }
+  }
+};
+
+// listen for timestamp skews
+serverSkew = 0;
+var offsetRef = new Firebase(fbUrlDomain + '.info/serverTimeOffset');
+offsetRef.on("value", function(snap) {
+  serverSkew = snap.val();
+});
+
+module.exports = userController = {
+
+  init: function(_numClients, _activityName, _callback) {
+    numClients = _numClients;
+    activityName = _activityName;
+    callback = _callback;
+    userName = null;
+
+    if (numClients > 1) {
+      var self = this;
+      this.getIdentityFromLara(function (identity) {
+        if (identity && identity.groupName) {
+          self.tryToEnterGroup(identity.groupName, identity.userName);
+        }
+        else {
+          UserRegistrationView.open(self, {form: "groupname", numClients: numClients});
+        }
+      });
+    } else {
+      callback(0);
+    }
+  },
+
+  getIdentityFromLara: function (callback) {
+    if (laraController.loadedFromLara) {
+      UserRegistrationView.open(this, {form: "gettingGlobalState"});
+      laraController.waitForGlobalState(function (state) {
+        UserRegistrationView.close();
+        callback(state && state.identity ? state.identity : null);
+      });
+    }
+    else {
+      callback(null);
+    }
+  },
+
+  tryToEnterGroup: function(groupName, preferredUserName) {
+    var self = this,
+        group, members;
+
+    for (var i = 0, ii = groups.length; i < ii; i++) {
+      if (groups[i].name == groupName) {
+        group = groups[i];
+        break;
+      }
+    }
+
+    members = group.members;
+
+    this.createFirebaseGroupRef(activityName, groupName);
+
+    firebaseUsersRef = firebaseGroupRef.child('users');
+    groupUsersListener = firebaseUsersRef.on("value", function(snapshot) {
+      var users = snapshot.val() || {};
+
+      userName = preferredUserName || userName;
+
+      numExistingUsers = Object.keys(users).length;
+      if (!userName) {
+        if (!users || !numExistingUsers) {
+          userName = members[0];
+
+          // if we're the first user, delete any existing data
+          firebaseGroupRef.child('chat').set({});
+          firebaseGroupRef.child('clients').set({});
+          firebaseGroupRef.child('model').set({});
+        } else if (numExistingUsers < numClients) {
+          for (var i = 0, ii=members.length; i<ii; i++) {
+            if (!users[members[i]]) {
+              userName = members[i];
+              break;
+            }
+          }
+        }
+      } else {
+        delete users[userName];
+      }
+
+      if (userName && (!users || Object.keys(users).length) < numClients) {
+        firebaseUsersRef.child(userName).set({here: true});
+        onDisconnectRef = firebaseUsersRef.child(userName).onDisconnect();
+        onDisconnectRef.set({});
+      }
+
+      UserRegistrationView.open(self, {form: "groupconfirm", users: users, userName: userName, groupName: groupName, numExistingUsers: numExistingUsers});
+    });
+
+    logController.logEvent("Started to join group", groupName);
+  },
+
+  rejectGroupName: function() {
+    firebaseUsersRef.off("value", groupUsersListener);
+
+    // clean up
+    if (onDisconnectRef) {
+      onDisconnectRef.cancel();
+    }
+    if (userName) {
+      firebaseUsersRef.once("value", function(snapshot) {
+        var users = snapshot.val();
+        delete users[userName];
+        if (Object.keys(users).length) {
+          // delete ourselves
+          firebaseUsersRef.child(userName).remove();
+        } else {
+          // delete the room if we are the only member
+          firebaseGroupRef.remove();
+        }
+        userName = null;
+      });
+    }
+
+    UserRegistrationView.open(this, {form: "groupname"});
+
+
+    logController.logEvent("Rejected Group", groupName);
+  },
+
+  setGroupName: function(_groupName) {
+    var self = this;
+
+    groupName = _groupName;
+
+    firebaseUsersRef.off("value", groupUsersListener);
+
+    logController.setGroupName(groupName);
+    logController.setUserName(userName);
+    laraController.setGlobalState({
+      identity: {
+        groupName: groupName,
+        userName: userName
+      }
+    });
+
+    notifyGroupRefCreation();
+
+    // annoyingly we have to get out of this before the off() call is finalized
+    setTimeout(function(){
+      boardsSelectionListener = firebaseUsersRef.on("value", function(snapshot) {
+        var users = snapshot.val();
+        UserRegistrationView.open(self, {form: "selectboard", numClients: numClients, users: users, userName: userName});
+      });
+    }, 1);
+  },
+
+  selectClient: function(_client) {
+    client = _client;
+    firebaseUsersRef.child(userName).set({client: client});
+  },
+
+  selectedClient: function() {
+    firebaseUsersRef.off("value");
+    UserRegistrationView.close();
+
+    var chatRef = firebaseGroupRef.child('chat'),
+        message = userName + " has joined on Circuit "+((client*1)+1)+".";
+
+    chatRef.push({
+      user: "System",
+      message: message,
+      type: "joined",
+      time: Firebase.ServerValue.TIMESTAMP
+    });
+    var disconnectMessageRef = chatRef.push();
+    disconnectMessageRef.onDisconnect().set({
+      user: "System",
+      message: userName + " has left",
+      type: "left",
+      time: Firebase.ServerValue.TIMESTAMP
+    });
+    callback(client);
+  },
+
+  getUsername: function() {
+    return userName;
+  },
+
+  getGroupname: function() {
+    return groupName;
+  },
+
+  getClient: function () {
+    return client;
+  },
+
+  getServerSkew: function () {
+    return serverSkew;
+  },
+
+  getFirebaseGroupRef: function() {
+    return firebaseGroupRef;
+  },
+
+  getOtherClientNos: function() {
+    var ret = [];
+    for (var i = 0; i < numClients; i++) {
+      if (i != client) {
+        ret.push(i);
+      }
+    }
+    return ret;
+  },
+
+  onGroupRefCreation: function(callback) {
+    if (firebaseGroupRef) {
+      callback();
+    } else {
+      if (!groupRefCreationListeners) {
+        groupRefCreationListeners = [];
+      }
+      groupRefCreationListeners.push(callback);
+    }
+  },
+
+  createFirebaseGroupRef: function (activityName, groupName) {
+    fbUrl = fbUrlBase + getDate() + "-" + groupName + "/activities/" + activityName + "/";
+    firebaseGroupRef = new Firebase(fbUrl);
+    return firebaseGroupRef;
+  }
+};
+
+
+},{"../data/group-names":5,"../views/userRegistration.jsx":8,"./lara":2,"./log":3}],5:[function(require,module,exports){
+module.exports = [
+  {
+    name: "Animals",
+    members: [
+      "Lion", "Tiger", "Bear"
+    ]
+  },
+  {
+    name: "Birds",
+    members: [
+      "Eagle", "Seagull", "Hawk"
+    ]
+  },
+  {
+    name: "Vehicles",
+    members: [
+      "Truck", "Car", "Van"
+    ]
+  },
+  {
+    name: "Tools",
+    members: [
+      "Hammer", "Pliers", "Wrench"
+    ]
+  },
+  {
+    name: "Office",
+    members: [
+      "Pencil", "Paper", "Pen"
+    ]
+  },
+  {
+    name: "Geography",
+    members: [
+      "Mountain", "Plain", "Valley"
+    ]
+  },
+  {
+    name: "Water",
+    members: [
+      "Ocean", "River", "Lake"
+    ]
+  },
+  {
+    name: "Weather",
+    members: [
+      "Rain", "Snow", "Sleet"
+    ]
+  },
+  {
+    name: "Dogs",
+    members: [
+      "Poodle", "Collie", "Spaniel"
+    ]
+  },
+  {
+    name: "Pets",
+    members: [
+      "Dog", "Cat", "Hamster"
+    ]
+  },
+  {
+    name: "Kitchen",
+    members: [
+      "Pot", "Pan", "Skillet"
+    ]
+  },
+  {
+    name: "Sides",
+    members: [
+      "Soup", "Salad", "Roll"
+    ]
+  },
+  {
+    name: "Dessert",
+    members: [
+      "Cake", "Icecream", "Pie"
+    ]
+  },
+  {
+    name: "Fruit",
+    members: [
+      "Cherry", "Plum", "Grape"
+    ]
+  },
+  {
+    name: "Vegetable",
+    members: [
+      "Lettuce", "Celery", "Tomato"
+    ]
+  },
+  {
+    name: "Potatoes",
+    members: [
+      "Mashed", "Baked", "Fries"
+    ]
+  },
+  {
+    name: "Colors",
+    members: [
+      "Blue", "Red", "Green"
+    ]
+  },
+  {
+    name: "Instruments",
+    members: [
+      "Guitar", "Horn", "Piano"
+    ]
+  },
+  {
+    name: "Shapes",
+    members: [
+      "Circle", "Square", "Triangle"
+    ]
+  },
+  {
+    name: "Directions",
+    members: [
+      "North", "East", "West"
+    ]
+  },
+  {
+    name: "Towns",
+    members: [
+      "Acton", "Maynard", "Concord"
+    ]
+  },
+  {
+    name: "States",
+    members: [
+      "Utah", "Ohio", "Iowa"
+    ]
+  }
+];
+
+
+},{}],6:[function(require,module,exports){
 var code = [];
 code.push({
   asm: [
@@ -2446,4 +3482,775 @@ code.push({
 module.exports = code;
 
 
-},{}]},{},[1]);
+},{}],7:[function(require,module,exports){
+var xhrObserver;
+
+function XHRObserver() {
+  this.connectionListeners = [];
+}
+
+XHRObserver.prototype = {
+
+  online: true,
+
+  setOnline: function(online) {
+    this.online = online;
+    this.notifyListeners();
+  },
+
+  addConnectionListener: function(listener) {
+    this.connectionListeners.push(listener);
+  },
+
+  notifyListeners: function() {
+    for (var i = 0; i < this.connectionListeners.length; i++) {
+      this.connectionListeners[i](this.online);
+    }
+  },
+
+  createObservedXMLHttpRequest: function(successCallback) {
+    var request = new XMLHttpRequest();
+
+    request.repeatablePost = function(url, contentHeader, data) {
+      request._repeat = true;
+      request._url = url;
+      request._contentHeader = contentHeader;
+      request._data = data;
+
+      request.open('POST', url, true);
+      request.setRequestHeader('Content-Type', contentHeader);
+      request.send(data);
+    };
+
+    request.onerror = this.onError;
+    request.onload = function(evt) {
+      if (request.status >= 200 && request.status < 400) {
+        xhrObserver.setOnline(true);
+        if (successCallback) {
+          successCallback();
+        }
+      } else {
+        xhrObserver.onError(evt);
+      }
+    };
+
+
+
+    return request;
+  },
+
+  onError: function(evt) {
+    xhrObserver.setOnline(false);
+
+    if (evt.currentTarget._repeat) {
+      setTimeout(function() {
+        var request = evt.currentTarget;
+        request.open('POST', request._url, true);
+        request.setRequestHeader('Content-Type', request._contentHeader);
+        request.send(request._data);
+      }, 2000);
+    }
+  }
+
+};
+
+module.exports = xhrObserver = new XHRObserver();
+
+
+},{}],8:[function(require,module,exports){
+var userController, UserRegistrationView, UserRegistrationViewFactory,
+    groups = require('../data/group-names');
+
+// add a global UserRegistrationView variable because its statics are called in other modules
+module.exports = window.UserRegistrationView = UserRegistrationView = React.createClass({
+  displayName: 'UserRegistration',
+
+  statics: {
+    // open a dialog with props object as props
+    open: function(_userController, data) {
+      userController = _userController;
+      var $anchor = $('#user-registration');
+      if (!$anchor.length) {
+        $anchor = $('<div id="user-registration" class="modalDialog"></div>').appendTo('body');
+      }
+
+      setTimeout(function() {
+        $('#user-registration')[0].style.opacity = 1;
+      }, 250);
+
+      return ReactDOM.render(
+        UserRegistrationViewFactory(data),
+        $anchor.get(0)
+      );
+    },
+
+    // close a dialog
+    close: function() {
+      var node = $('#user-registration').get(0);
+      if (node) {
+        ReactDOM.unmountComponentAtNode(node);
+      }
+      $('#user-registration').remove();
+    }
+  },
+  getInitialState: function() {
+    return {
+      groupName: this.props.groupName || ""
+    };
+  },
+  handleGroupNameChange: function(event) {
+    this.setState({groupName: event.target.value});
+  },
+  handleGroupSelected: function(e) {
+    e.preventDefault();
+    userController.tryToEnterGroup(this.state.groupName);
+  },
+  handleJoinGroup: function() {
+    userController.setGroupName(this.state.groupName);
+  },
+  handleRejectGroup: function() {
+    this.setState({groupName: ''});
+    userController.rejectGroupName();
+  },
+  handleClientSelection: function(event) {
+    userController.selectClient(event.target.value);
+  },
+  handleClientSelected: function(e) {
+    e.preventDefault();
+    userController.selectedClient();
+  },
+  handleSubmit: function (e) {
+    e.preventDefault();
+  },
+  componentDidMount: function () {
+    var self = this,
+        focusAndSelect = function (ref) {
+          var node = self.refs[ref] ? self.refs[ref] : null;
+          if (node) {
+            node.focus();
+            node.select();
+          }
+        };
+    if (this.props.form == 'username') {
+      focusAndSelect('userName');
+    }
+    else if (this.props.form == 'groupname') {
+      focusAndSelect('groupName');
+    }
+  },
+  render: function() {
+    var form;
+    if (this.props.form == 'gettingGlobalState') {
+      form = (
+        React.createElement("div", null, 
+          React.createElement("h3", null, "Checking for previously set group and username")
+        )
+      );
+    }
+    else if (this.props.form == 'groupname' || !this.state.groupName) {
+      var groupOptions = groups.map(function(group, i) {
+        return (React.createElement("option", {key: i, value: group.name}, group.name));
+      });
+      groupOptions.unshift(React.createElement("option", {key: "placeholder", value: "", disabled: "disabled"}, "Select a team"));
+      form = (
+        React.createElement("div", null, 
+          React.createElement("h3", null, "Welcome!"), 
+          React.createElement("div", null, 
+            "This activity requires a team of ", this.props.numClients, " users."
+          ), 
+          React.createElement("h3", null, "Please select your team:"), 
+          React.createElement("label", null, 
+            React.createElement("select", {value: this.state.groupName, onChange:  this.handleGroupNameChange}, 
+               groupOptions 
+            ), 
+            React.createElement("button", {onClick:  this.handleGroupSelected}, "Select")
+          )
+        )
+      );
+    } else if (this.props.form == 'groupconfirm') {
+      if (!this.props.userName) {
+        form = (
+          React.createElement("div", null, 
+            React.createElement("h3", null, "Group name: ",  this.state.groupName), 
+            React.createElement("div", null, 
+              "There are already ",  this.props.numExistingUsers, " in this group."
+            ), 
+            React.createElement("label", null, 
+              React.createElement("button", {onClick:  this.handleRejectGroup}, "Enter a different group")
+            )
+          )
+        );
+      } else {
+        var userDetails,
+            groupDetails,
+            joinStr,
+            keys = Object.keys(this.props.users),
+            userName = this.props.userName;
+
+        userDetails = (
+          React.createElement("div", null, 
+            React.createElement("label", null, "You have been assigned the name ", React.createElement("b", null, userName), ".")
+          )
+        );
+
+        if (keys.length === 0) {
+          groupDetails = (
+            React.createElement("div", null, 
+              React.createElement("label", null, "You are the first member of this group.")
+            )
+          );
+        } else {
+          groupDetails = (
+            React.createElement("div", null, 
+              React.createElement("label", null, "These are the other people currently in this group:"), 
+              React.createElement("ul", null, 
+                keys.map(function(result) {
+                  return React.createElement("li", null, React.createElement("b", null, result));
+                })
+              )
+            )
+          );
+        }
+
+        joinStr = (keys.length ? "join" : "create");
+
+        form = (
+          React.createElement("div", null, 
+            React.createElement("h3", null, "Group name: ",  this.state.groupName), 
+             userDetails, 
+             groupDetails, 
+            React.createElement("label", null, " "), 
+            React.createElement("span", null, "Do you want to ",  joinStr, " this group?"), 
+            React.createElement("label", null, 
+              React.createElement("button", {onClick:  this.handleJoinGroup}, "Yes, ",  joinStr ), 
+              React.createElement("button", {onClick:  this.handleRejectGroup}, "No, enter a different group")
+            )
+          )
+        );
+      }
+    } else if (this.props.form == 'selectboard') {
+      var clientChoices = [],
+          submittable = false;
+      for (var i = 0, ii = this.props.numClients; i < ii; i++) {
+        var userSpan = ( React.createElement("i", null, "currently unclaimed") ),
+            isOwn = false,
+            selected = false,
+            valid = true,
+            selectedUsers = [];
+        for (var user in this.props.users) {
+          if (this.props.users[user].client == i) {
+            selectedUsers.push(user);
+            if (user == this.props.userName) {
+              isOwn = true;
+              selected = true;
+            }
+            if (selectedUsers.length > 1) {
+              valid = false;
+            }
+            userSpan = ( React.createElement("span", {className:  valid ? "" : "error"},  selectedUsers.join(", ") ) );
+          }
+        }
+        if (isOwn && selectedUsers.length == 1) {
+          submittable = true;
+        }
+
+        clientChoices.push(
+          React.createElement("div", {key:  i }, 
+            React.createElement("input", {type: "radio", name: "clientSelection", value:  i, onClick:  this.handleClientSelection}), "Circuit ",  i+1, " (",  userSpan, ")"
+          ) );
+      }
+
+      form = (
+        React.createElement("div", null, 
+           clientChoices, 
+          React.createElement("label", null, 
+            React.createElement("button", {disabled:  !submittable, onClick:  this.handleClientSelected}, "Select"), 
+            React.createElement("button", {onClick:  this.handleRejectGroup}, "Enter a different group")
+          )
+        )
+      );
+    }
+
+    return (
+      React.createElement("form", {onSubmit:  this.handleSubmit}, 
+         form 
+      )
+    );
+  }
+});
+
+// used because JSX deprecated the spread function in the transformer
+UserRegistrationViewFactory = React.createFactory(UserRegistrationView);
+
+
+},{"../data/group-names":5}],9:[function(require,module,exports){
+var structuredClone = require('./structured-clone');
+var HELLO_INTERVAL_LENGTH = 200;
+var HELLO_TIMEOUT_LENGTH = 60000;
+
+function IFrameEndpoint() {
+  var parentOrigin;
+  var listeners = {};
+  var isInitialized = false;
+  var connected = false;
+  var postMessageQueue = [];
+  var helloInterval;
+
+  function postToTarget(message, target) {
+    // See http://dev.opera.com/articles/view/window-postmessage-messagechannel/#crossdoc
+    //     https://github.com/Modernizr/Modernizr/issues/388
+    //     http://jsfiddle.net/ryanseddon/uZTgD/2/
+    if (structuredClone.supported()) {
+      window.parent.postMessage(message, target);
+    } else {
+      window.parent.postMessage(JSON.stringify(message), target);
+    }
+  }
+
+  function post(type, content) {
+    var message;
+    // Message object can be constructed from 'type' and 'content' arguments or it can be passed
+    // as the first argument.
+    if (arguments.length === 1 && typeof type === 'object' && typeof type.type === 'string') {
+      message = type;
+    } else {
+      message = {
+        type: type,
+        content: content
+      };
+    }
+    if (connected) {
+      postToTarget(message, parentOrigin);
+    } else {
+      postMessageQueue.push(message);
+    }
+  }
+
+  // Only the initial 'hello' message goes permissively to a '*' target (because due to cross origin
+  // restrictions we can't find out our parent's origin until they voluntarily send us a message
+  // with it.)
+  function postHello() {
+    postToTarget({
+      type: 'hello',
+      origin: document.location.href.match(/(.*?\/\/.*?)\//)[1]
+    }, '*');
+  }
+
+  function addListener(type, fn) {
+    listeners[type] = fn;
+  }
+
+  function removeAllListeners() {
+    listeners = {};
+  }
+
+  function getListenerNames() {
+    return Object.keys(listeners);
+  }
+
+  function messageListener(message) {
+      // Anyone can send us a message. Only pay attention to messages from parent.
+      if (message.source !== window.parent) return;
+
+      var messageData = message.data;
+
+      if (typeof messageData === 'string') messageData = JSON.parse(messageData);
+
+      // We don't know origin property of parent window until it tells us.
+      if (!connected && messageData.type === 'hello') {
+        // This is the return handshake from the embedding window.
+        parentOrigin = messageData.origin;
+        connected = true;
+        stopPostingHello();
+        while(postMessageQueue.length > 0) {
+          post(postMessageQueue.shift());
+        }
+      }
+
+      // Perhaps-redundantly insist on checking origin as well as source window of message.
+      if (message.origin === parentOrigin) {
+        if (listeners[messageData.type]) listeners[messageData.type](messageData.content);
+      }
+   }
+
+   function disconnect() {
+     connected = false;
+     stopPostingHello();
+     window.removeEventListener('message', messsageListener);
+   }
+
+  /**
+    Initialize communication with the parent frame. This should not be called until the app's custom
+    listeners are registered (via our 'addListener' public method) because, once we open the
+    communication, the parent window may send any messages it may have queued. Messages for which
+    we don't have handlers will be silently ignored.
+  */
+  function initialize() {
+    if (isInitialized) {
+      return;
+    }
+    isInitialized = true;
+    if (window.parent === window) return;
+
+    // We kick off communication with the parent window by sending a "hello" message. Then we wait
+    // for a handshake (another "hello" message) from the parent window.
+    postHello();
+    startPostingHello();
+    window.addEventListener('message', messageListener, false);
+  }
+
+  function startPostingHello() {
+    if (helloInterval) {
+      stopPostingHello();
+    }
+    helloInterval = window.setInterval(postHello, HELLO_INTERVAL_LENGTH);
+    window.setTimeout(stopPostingHello, HELLO_TIMEOUT_LENGTH);
+  }
+
+  function stopPostingHello() {
+    window.clearInterval(helloInterval);
+    helloInterval = null;
+  }
+
+  // Public API.
+  return {
+    initialize        : initialize,
+    getListenerNames  : getListenerNames,
+    addListener       : addListener,
+    removeAllListeners: removeAllListeners,
+    disconnect        : disconnect,
+    post              : post
+  };
+}
+
+var instance = null;
+
+// IFrameEndpoint is a singleton, as iframe can't have multiple parents anyway.
+module.exports = function getIFrameEndpoint() {
+  if (!instance) {
+    instance = new IFrameEndpoint();
+  }
+  return instance;
+};
+},{"./structured-clone":12}],10:[function(require,module,exports){
+"use strict";
+
+var ParentEndpoint = require('./parent-endpoint');
+var getIFrameEndpoint = require('./iframe-endpoint');
+
+// Not a real UUID as there's an RFC for that (needed for proper distributed computing).
+// But in this fairly parochial situation, we just need to be fairly sure to avoid repeats.
+function getPseudoUUID() {
+    var chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    var len = chars.length;
+    var ret = [];
+
+    for (var i = 0; i < 10; i++) {
+        ret.push(chars[Math.floor(Math.random() * len)]);
+    }
+    return ret.join('');
+}
+
+module.exports = function IframePhoneRpcEndpoint(handler, namespace, targetWindow, targetOrigin, phone) {
+    var pendingCallbacks = Object.create({});
+
+    // if it's a non-null object, rather than a function, 'handler' is really an options object
+    if (handler && typeof handler === 'object') {
+        namespace = handler.namespace;
+        targetWindow = handler.targetWindow;
+        targetOrigin = handler.targetOrigin;
+        phone = handler.phone;
+        handler = handler.handler;
+    }
+
+    if ( ! phone ) {
+        if (targetWindow === window.parent) {
+            phone = getIFrameEndpoint();
+            phone.initialize();
+        } else {
+            phone = new ParentEndpoint(targetWindow, targetOrigin);
+        }
+    }
+
+    phone.addListener(namespace, function(message) {
+        var callbackObj;
+
+        if (message.messageType === 'call' && typeof this.handler === 'function') {
+            this.handler.call(undefined, message.value, function(returnValue) {
+                phone.post(namespace, {
+                    messageType: 'returnValue',
+                    uuid: message.uuid,
+                    value: returnValue
+                });
+            });
+        } else if (message.messageType === 'returnValue') {
+            callbackObj = pendingCallbacks[message.uuid];
+
+            if (callbackObj) {
+                window.clearTimeout(callbackObj.timeout);
+                if (callbackObj.callback) {
+                    callbackObj.callback.call(undefined, message.value);
+                }
+                pendingCallbacks[message.uuid] = null;
+            }
+        }
+    }.bind(this));
+
+    function call(message, callback) {
+        var uuid = getPseudoUUID();
+
+        pendingCallbacks[uuid] = {
+            callback: callback,
+            timeout: window.setTimeout(function() {
+                if (callback) {
+                    callback(undefined, new Error("IframePhone timed out waiting for reply"));
+                }
+            }, 2000)
+        };
+
+        phone.post(namespace, {
+            messageType: 'call',
+            uuid: uuid,
+            value: message
+        });
+    }
+
+    function disconnect() {
+        phone.disconnect();
+    }
+
+    this.handler = handler;
+    this.call = call.bind(this);
+    this.disconnect = disconnect.bind(this);
+};
+
+},{"./iframe-endpoint":9,"./parent-endpoint":11}],11:[function(require,module,exports){
+var structuredClone = require('./structured-clone');
+
+/**
+  Call as:
+    new ParentEndpoint(targetWindow, targetOrigin, afterConnectedCallback)
+      targetWindow is a WindowProxy object. (Messages will be sent to it)
+
+      targetOrigin is the origin of the targetWindow. (Messages will be restricted to this origin)
+
+      afterConnectedCallback is an optional callback function to be called when the connection is
+        established.
+
+  OR (less secure):
+    new ParentEndpoint(targetIframe, afterConnectedCallback)
+
+      targetIframe is a DOM object (HTMLIframeElement); messages will be sent to its contentWindow.
+
+      afterConnectedCallback is an optional callback function
+
+    In this latter case, targetOrigin will be inferred from the value of the src attribute of the
+    provided DOM object at the time of the constructor invocation. This is less secure because the
+    iframe might have been navigated to an unexpected domain before constructor invocation.
+
+  Note that it is important to specify the expected origin of the iframe's content to safeguard
+  against sending messages to an unexpected domain. This might happen if our iframe is navigated to
+  a third-party URL unexpectedly. Furthermore, having a reference to Window object (as in the first
+  form of the constructor) does not protect against sending a message to the wrong domain. The
+  window object is actualy a WindowProxy which transparently proxies the Window object of the
+  underlying iframe, so that when the iframe is navigated, the "same" WindowProxy now references a
+  completely differeent Window object, possibly controlled by a hostile domain.
+
+  See http://www.esdiscuss.org/topic/a-dom-use-case-that-can-t-be-emulated-with-direct-proxies for
+  more about this weird behavior of WindowProxies (the type returned by <iframe>.contentWindow).
+*/
+
+module.exports = function ParentEndpoint(targetWindowOrIframeEl, targetOrigin, afterConnectedCallback) {
+  var selfOrigin = window.location.href.match(/(.*?\/\/.*?)\//)[1];
+  var postMessageQueue = [];
+  var connected = false;
+  var handlers = {};
+  var targetWindowIsIframeElement;
+
+  function getOrigin(iframe) {
+    return iframe.src.match(/(.*?\/\/.*?)\//)[1];
+  }
+
+  function post(type, content) {
+    var message;
+    // Message object can be constructed from 'type' and 'content' arguments or it can be passed
+    // as the first argument.
+    if (arguments.length === 1 && typeof type === 'object' && typeof type.type === 'string') {
+      message = type;
+    } else {
+      message = {
+        type: type,
+        content: content
+      };
+    }
+    if (connected) {
+      var tWindow = getTargetWindow();
+      // if we are laready connected ... send the message
+      message.origin = selfOrigin;
+      // See http://dev.opera.com/articles/view/window-postmessage-messagechannel/#crossdoc
+      //     https://github.com/Modernizr/Modernizr/issues/388
+      //     http://jsfiddle.net/ryanseddon/uZTgD/2/
+      if (structuredClone.supported()) {
+        tWindow.postMessage(message, targetOrigin);
+      } else {
+        tWindow.postMessage(JSON.stringify(message), targetOrigin);
+      }
+    } else {
+      // else queue up the messages to send after connection complete.
+      postMessageQueue.push(message);
+    }
+  }
+
+  function addListener(messageName, func) {
+    handlers[messageName] = func;
+  }
+
+  function removeListener(messageName) {
+    handlers[messageName] = null;
+  }
+
+  // Note that this function can't be used when IFrame element hasn't been added to DOM yet
+  // (.contentWindow would be null). At the moment risk is purely theoretical, as the parent endpoint
+  // only listens for an incoming 'hello' message and the first time we call this function
+  // is in #receiveMessage handler (so iframe had to be initialized before, as it could send 'hello').
+  // It would become important when we decide to refactor the way how communication is initialized.
+  function getTargetWindow() {
+    if (targetWindowIsIframeElement) {
+      var tWindow = targetWindowOrIframeEl.contentWindow;
+      if (!tWindow) {
+        throw "IFrame element needs to be added to DOM before communication " +
+              "can be started (.contentWindow is not available)";
+      }
+      return tWindow;
+    }
+    return targetWindowOrIframeEl;
+  }
+
+  function receiveMessage(message) {
+    var messageData;
+    if (message.source === getTargetWindow() && message.origin === targetOrigin) {
+      messageData = message.data;
+      if (typeof messageData === 'string') {
+        messageData = JSON.parse(messageData);
+      }
+      if (handlers[messageData.type]) {
+        handlers[messageData.type](messageData.content);
+      } else {
+        console.log("cant handle type: " + messageData.type);
+      }
+    }
+  }
+
+  function disconnect() {
+    connected = false;
+    window.removeEventListener('message', receiveMessage);
+  }
+
+  // handle the case that targetWindowOrIframeEl is actually an <iframe> rather than a Window(Proxy) object
+  // Note that if it *is* a WindowProxy, this probe will throw a SecurityException, but in that case
+  // we also don't need to do anything
+  try {
+    targetWindowIsIframeElement = targetWindowOrIframeEl.constructor === HTMLIFrameElement;
+  } catch (e) {
+    targetWindowIsIframeElement = false;
+  }
+
+  if (targetWindowIsIframeElement) {
+    // Infer the origin ONLY if the user did not supply an explicit origin, i.e., if the second
+    // argument is empty or is actually a callback (meaning it is supposed to be the
+    // afterConnectionCallback)
+    if (!targetOrigin || targetOrigin.constructor === Function) {
+      afterConnectedCallback = targetOrigin;
+      targetOrigin = getOrigin(targetWindowOrIframeEl);
+    }
+  }
+
+  // when we receive 'hello':
+  addListener('hello', function() {
+    connected = true;
+
+    // send hello response
+    post('hello');
+
+    // give the user a chance to do things now that we are connected
+    // note that is will happen before any queued messages
+    if (afterConnectedCallback && typeof afterConnectedCallback === "function") {
+      afterConnectedCallback();
+    }
+
+    // Now send any messages that have been queued up ...
+    while(postMessageQueue.length > 0) {
+      post(postMessageQueue.shift());
+    }
+  });
+
+  window.addEventListener('message', receiveMessage, false);
+
+  // Public API.
+  return {
+    post: post,
+    addListener: addListener,
+    removeListener: removeListener,
+    disconnect: disconnect,
+    getTargetWindow: getTargetWindow,
+    targetOrigin: targetOrigin
+  };
+};
+
+},{"./structured-clone":12}],12:[function(require,module,exports){
+var featureSupported = false;
+
+(function () {
+  var result = 0;
+
+  if (!!window.postMessage) {
+    try {
+      // Safari 5.1 will sometimes throw an exception and sometimes won't, lolwut?
+      // When it doesn't we capture the message event and check the
+      // internal [[Class]] property of the message being passed through.
+      // Safari will pass through DOM nodes as Null iOS safari on the other hand
+      // passes it through as DOMWindow, gotcha.
+      window.onmessage = function(e){
+        var type = Object.prototype.toString.call(e.data);
+        result = (type.indexOf("Null") != -1 || type.indexOf("DOMWindow") != -1) ? 1 : 0;
+        featureSupported = {
+          'structuredClones': result
+        };
+      };
+      // Spec states you can't transmit DOM nodes and it will throw an error
+      // postMessage implimentations that support cloned data will throw.
+      window.postMessage(document.createElement("a"),"*");
+    } catch(e) {
+      // BBOS6 throws but doesn't pass through the correct exception
+      // so check error message
+      result = (e.DATA_CLONE_ERR || e.message == "Cannot post cyclic structures.") ? 1 : 0;
+      featureSupported = {
+        'structuredClones': result
+      };
+    }
+  }
+}());
+
+exports.supported = function supported() {
+  return featureSupported && featureSupported.structuredClones > 0;
+};
+
+},{}],13:[function(require,module,exports){
+module.exports = {
+  /**
+   * Allows to communicate with an iframe.
+   */
+  ParentEndpoint:  require('./lib/parent-endpoint'),
+  /**
+   * Allows to communicate with a parent page.
+   * IFrameEndpoint is a singleton, as iframe can't have multiple parents anyway.
+   */
+  getIFrameEndpoint: require('./lib/iframe-endpoint'),
+  structuredClone: require('./lib/structured-clone'),
+
+  // TODO: May be misnamed
+  IframePhoneRpcEndpoint: require('./lib/iframe-phone-rpc-endpoint')
+
+};
+
+},{"./lib/iframe-endpoint":9,"./lib/iframe-phone-rpc-endpoint":10,"./lib/parent-endpoint":11,"./lib/structured-clone":12}]},{},[1]);

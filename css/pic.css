@@ -10,7 +10,7 @@ svg {
 }
 
 #picapp {
-  width: 1024px;
+  width: 936px;
   height: 768px;
   margin: 0 auto;
   background-color: #ddd;
@@ -40,7 +40,7 @@ svg {
 
 #demo-control {
   position: absolute;
-  top: 75;
+  top: 75px;
   right: 0;
   width: 200px;
   height: 75px;
@@ -75,7 +75,11 @@ svg {
 #sidebar-chat .sidebar-chat-items {
   padding: 10px;
   overflow: auto;
-  height: 465px;
+  position: absolute;
+  top: 26px;
+  right: 0;
+  left: 0;
+  bottom: 110px;
 }
 #sidebar-chat .sidebar-chat-items .chat-item {
   clear: both;
@@ -84,6 +88,8 @@ svg {
   -webkit-border-radius: 5px;
   -moz-border-radius: 5px;
   border-radius: 5px;
+  word-wrap: break-word;
+  max-width: 135px;
 }
 #sidebar-chat .sidebar-chat-items .chat-item-me {
   float: right;
@@ -95,6 +101,10 @@ svg {
 }
 #sidebar-chat .sidebar-chat-input {
   padding: 10px;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  left: 0;
 }
 #sidebar-chat .sidebar-chat-input textarea {
   width: 100%;
@@ -116,6 +126,9 @@ svg {
 
 .board {
   background-color: #bbb;
+}
+.editable-board {
+  background-color: #f0f0f0 !important;
 }
 
 .board-area {

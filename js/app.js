@@ -3620,7 +3620,8 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
     e.preventDefault();
     userController.selectedClient();
   },
-  selectInput: function () {
+  handleSubmit: function (e) {
+    e.preventDefault();
   },
   componentDidMount: function () {
     var self = this,
@@ -3772,7 +3773,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
     }
 
     return (
-      React.createElement("form", null, 
+      React.createElement("form", {onSubmit:  this.handleSubmit}, 
          form 
       )
     );
