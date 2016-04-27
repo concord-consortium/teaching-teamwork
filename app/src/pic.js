@@ -16,14 +16,14 @@
   x. Add user and group dialogs with Firebase connections and update board label
   x. Add concept of read/write and read-only boards based on the user's assigned board
   3. Send events to Firebase for
-    a. Keypad selects
-    b. Probe moves
-    c. Wiring setup/changes
+    x. Keypad selects
+    x. Probe moves
+    x. Wiring setup/changes
   4. Send events to Log Manager for
-    a. Board zoom in/out
-    b. Add/remove wire
-    c. Move probe
-    d. Start/Stop/Step/Reset simulator
+    x. Board zoom in/out
+    x. Add/remove wire
+    x. Move probe
+    x. Start/Stop/Step/Reset simulator
   x. Add back Firebase support to chat
   6. Add a "All done!" button
 
@@ -51,14 +51,97 @@ var picCode = require('./data/pic-code'),
     RIBBON_HEIGHT = 21,
     SELECTED_FILL = '#bbb',
     UNSELECTED_FILL = '#777',
+
+    MOVED_PROBE_EVENT = 'Moved probe',
+    PUSHED_BUTTON_EVENT = 'Pushed button',
+    ADD_WIRE_EVENT = 'Add wire',
+    REMOVE_WIRE_EVENT = 'Remove wire',
+    OPENED_BOARD_EVENT = 'Opened board',
+    CLOSED_BOARD_EVENT = 'Closed board',
+    RUN_EVENT = 'Run',
+    STOP_EVENT = 'Stop',
+    STEP_EVENT = 'Step',
+    RESET_EVENT = 'Reset',
+
     AppView, SidebarChatView, WorkspaceView, BoardView, Board, RibbonView, ConnectorView,
     Keypad, LED, PIC, Connector, KeypadView, LEDView, PICView,
     ConnectorHoleView, Hole, Pin, PinView,
-    BoardEditorView, SimulatorControlView, Wire, Button, ButtonView, Segment, Circuit, DemoControlView, ChatItem, ChatItems, ProbeView;
+    BoardEditorView, SimulatorControlView, Wire, Button, ButtonView, Segment, Circuit, DemoControlView, ChatItem, ChatItems, ProbeView, BoardWatcher, boardWatcher;
 
 //
 // Helper functions
 //
+
+function logEvent(eventName, value, parameters) {
+  var loggedValue = null,
+      loggedParameters = null;
+
+  function getHoleInfo(hole, label) {
+    var info = {
+      hole: {
+        index: hole.index,
+        color: hole.color
+      },
+      connector: hole.connector.type,
+      board: hole.connector.board.number
+    };
+    info[label] = 'hole';
+    return info;
+  }
+
+  function getPinInfo(pin, label) {
+    var info = {
+      pin: {
+        index: pin.number,
+        name: pin.label.text
+      },
+      component: pin.component.name,
+      board: pin.component.board.number
+    };
+    info[label] = 'pin';
+    return info;
+  }
+
+  if (eventName === MOVED_PROBE_EVENT) {
+    loggedParameters = {
+      to: null
+    };
+    if (value instanceof Hole) {
+      loggedParameters = value ? getHoleInfo(value, 'to') : {board: parameters.board.number};
+    }
+    else {
+      loggedParameters = value ? getPinInfo(value, 'to') : {board: parameters.board.number};
+    }
+    boardWatcher.movedProbe(parameters.board, loggedParameters);
+  }
+  else if (eventName == PUSHED_BUTTON_EVENT) {
+    loggedValue = value.value;
+    loggedParameters = {
+      board: value.component.board.number
+    };
+    boardWatcher.pushedButton(parameters.board, value.value);
+  }
+  else if (eventName == ADD_WIRE_EVENT) {
+    loggedParameters = {
+      source: parameters.source instanceof Hole ? getHoleInfo(parameters.source, 'type') : getPinInfo(parameters.source, 'type'),
+      dest: parameters.dest instanceof Hole ? getHoleInfo(parameters.dest, 'type') : getPinInfo(parameters.dest, 'type')
+    };
+    boardWatcher.circuitChanged(parameters.board);
+  }
+  else if (eventName == REMOVE_WIRE_EVENT) {
+    loggedParameters = {
+      source: parameters.source instanceof Hole ? getHoleInfo(parameters.source, 'type') : getPinInfo(parameters.source, 'type')
+    };
+    boardWatcher.circuitChanged(parameters.board);
+  }
+  else {
+    // log the raw event value and parameters
+    logController.logEvent(eventName, value, parameters);
+    return;
+  }
+
+  logController.logEvent(eventName, loggedValue, loggedParameters);
+}
 
 function createComponent(def) {
   return React.createFactory(React.createClass(def));
@@ -151,6 +234,44 @@ function calculateComponentRect(selected, index, count, componentWidth, componen
 
   return position;
 }
+
+//
+// Board Watcher (using Firebase)
+//
+BoardWatcher = function () {
+  this.firebase = null;
+  this.listeners = {};
+};
+BoardWatcher.prototype.startListeners = function () {
+  var self = this,
+      listenerCallbackFn = function (boardNumber) {
+        return function (snapshot) {
+          if (self.listeners[boardNumber]) {
+            self.listeners[boardNumber](snapshot.val());
+          }
+        };
+      };
+
+  this.firebase = userController.getFirebaseGroupRef().child('clients');
+  this.firebase.child(0).on('value', listenerCallbackFn(0));
+  this.firebase.child(1).on('value', listenerCallbackFn(1));
+  this.firebase.child(2).on('value', listenerCallbackFn(2));
+};
+BoardWatcher.prototype.movedProbe = function (board, probeInfo) {
+  this.firebase.child(board.number).child('probe').set(probeInfo);
+};
+BoardWatcher.prototype.pushedButton = function (board, buttonValue) {
+  this.firebase.child(board.number).child('button').set(buttonValue);
+};
+BoardWatcher.prototype.circuitChanged = function (board) {
+  // TODO
+};
+BoardWatcher.prototype.addListener = function (board, listener) {
+  this.listeners[board.number] = listener;
+};
+BoardWatcher.prototype.removeListener = function (board) {
+  delete this.listeners[board.number];
+};
 
 //
 // State models
@@ -271,6 +392,7 @@ Segment = function (options) {
 };
 
 Pin = function (options) {
+  this.board = options.component.board;
   this.isPin = true; // to allow for easy checks against holes in circuits
   this.inputMode = options.inputMode;
   this.placement = options.placement;
@@ -370,6 +492,7 @@ Connector.prototype.calculatePosition = function (selected) {
 Keypad = function () {
   var i, pin, button, values;
 
+  this.name = 'keypad';
   this.view = KeypadView;
 
   this.pushedButton = null;
@@ -423,6 +546,8 @@ Keypad = function () {
     this.buttons.push(new Button(button));
   }
   this.bottomButtonValues = [this.buttons[9].value, this.buttons[10].value, this.buttons[11].value];
+
+  this.listeners = [];
 };
 Keypad.prototype.calculatePosition = function (selected, index, count) {
   var constants = selectedConstants(selected),
@@ -490,8 +615,6 @@ Keypad.prototype.calculatePosition = function (selected, index, count) {
     pin.height = constants.PIN_HEIGHT;
     pin.labelSize = constants.PIC_FONT_SIZE;
   }
-
-  this.listeners = [];
 };
 Keypad.prototype.addListener = function (listener) {
   this.listeners.push(listener);
@@ -510,6 +633,15 @@ Keypad.prototype.reset = function () {
 Keypad.prototype.pushButton = function (button) {
   this.pushedButton = button;
   this.notify();
+};
+Keypad.prototype.selectButtonValue = function (value) {
+  var self = this;
+  $.each(this.buttons, function (index, button) {
+    if (button.value == value) {
+      self.pushButton(button);
+      return false;
+    }
+  });
 };
 Keypad.prototype.resolveOutputValues = function () {
   var colValue = 7,
@@ -541,6 +673,7 @@ Keypad.prototype.resolveOutputValues = function () {
 LED = function () {
   var i, pin, segmentLayoutMap, segment;
 
+  this.name = 'led';
   this.view = LEDView;
 
   this.pins = [];
@@ -669,6 +802,7 @@ LED.prototype.resolveOutputValues = function () {
 PIC = function (options) {
   var i, pin, notConnectable;
 
+  this.name = 'pic';
   this.view = PICView;
   this.board = options.board;
 
@@ -835,6 +969,7 @@ Board = function (options) {
       for (i = 0; i < this.components[name].pins.length; i++) {
         this.pinsAndHoles.push(this.components[name].pins[i]);
       }
+      this.components[name].board = this;
     }
   }
   for (i = 0; i < this.connectors.length; i++) {
@@ -843,8 +978,7 @@ Board = function (options) {
     }
   }
 
-  // link the pic to the board and reset it so the pin output is set
-  this.components.pic.board = this;
+  // reset the pic so the pin output is set
   this.components.pic.reset();
 };
 Board.prototype.clear = function () {
@@ -983,6 +1117,7 @@ KeypadView = createComponent({
     if (this.props.editable) {
       this.props.component.pushButton(button);
       this.setState({pushedButton: this.props.component.pushedButton});
+      logEvent(PUSHED_BUTTON_EVENT, button, {board: this.props.component.board});
     }
   },
 
@@ -1302,6 +1437,7 @@ ProbeView = createComponent({
         self.props.hoverSource.pulseProbeDuration = 0;
       }
       self.props.setProbe({source: self.props.hoverSource, pos: null});
+      logEvent(MOVED_PROBE_EVENT, self.props.hoverSource, {board: self.props.board});
     };
 
     $window.on('mousemove', drag);
@@ -1368,7 +1504,7 @@ ProbeView = createComponent({
       'L', x + height, ',', middleY + halfNeedleHeight, ' '
     ].join('');
 
-    return g({transform: ['rotate(-15 ', x, ' ', y + (height / 2), ')'].join(''), onMouseDown: this.props.selected && this.props.editable ? this.startDrag : null},
+    return g({transform: ['rotate(-15 ', x, ' ', y + (height / 2), ')'].join(''), onMouseDown: this.props.selected ? this.startDrag : null},
       path({d: needlePath, fill: '#c0c0c0', stroke: '#777', style: {pointerEvents: 'none'}}),
       path({d: handlePath, fill: '#eee', stroke: '#777'}), // '#FDCA6E'
       circle({cx: x + (4 * height), cy: middleY, r: height / 4, fill: 'red', fillOpacity: redFill}),
@@ -1393,6 +1529,41 @@ BoardView = createComponent({
       probeSource: this.props.board.probe ? this.props.board.probe.source : null,
       probePos: this.props.board.probe ? this.props.board.probe.pos : null
     };
+  },
+
+  componentDidMount: function () {
+    boardWatcher.addListener(this.props.board, this.updateWatchedBoard);
+  },
+
+  componentWillUnmount: function () {
+    boardWatcher.removeListener(this.props.board);
+  },
+
+  updateWatchedBoard: function (boardInfo) {
+    var board = this.props.board,
+        probe = {source: null, pos: null},
+        probeInfo;
+
+    if (!boardInfo) {
+      return;
+    }
+
+    if (board.components.keypad) {
+      board.components.keypad.selectButtonValue(boardInfo.button);
+    }
+    //console.log(boardInfo, board);
+
+    // move the probe
+    probeInfo = boardInfo.probe;
+    if (probeInfo) {
+      if (probeInfo.to === 'pin') {
+        probe.source = board.components[probeInfo.component].pins[probeInfo.pin.index];
+      }
+      else if (probeInfo.to === 'hole') {
+        probe.source = board.connectors[probeInfo.connector].holes[probeInfo.hole.index];
+      }
+    }
+    this.setProbe(probe);
   },
 
   reportHover: function (hoverSource) {
@@ -1444,10 +1615,12 @@ BoardView = createComponent({
       if (dest && (dest !== source)) {
         self.props.board.addWire(source, dest, (source.color || dest.color || color));
         self.setState({wires: self.props.board.wires});
+        logEvent(ADD_WIRE_EVENT, null, {board: self.props.board, source: source, dest: dest});
       }
       else if (!dest) {
         self.props.board.removeWire(source);
         self.setState({wires: self.props.board.wires});
+        logEvent(REMOVE_WIRE_EVENT, null, {board: self.props.board, source: source});
       }
     };
 
@@ -1513,7 +1686,7 @@ BoardView = createComponent({
         components,
         wires,
         (this.state.drawConnection ? line({x1: this.state.drawConnection.x1, x2: this.state.drawConnection.x2, y1: this.state.drawConnection.y1, y2: this.state.drawConnection.y2, stroke: this.state.drawConnection.stroke, strokeWidth: this.state.drawConnection.strokeWidth, fill: 'none', style: {pointerEvents: 'none'}}) : null),
-        ProbeView({selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, probeSource: this.state.probeSource, hoverSource: this.state.hoverSource, pos: this.state.probePos, setProbe: this.setProbe})
+        ProbeView({board: this.props.board, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, probeSource: this.state.probeSource, hoverSource: this.state.hoverSource, pos: this.state.probePos, setProbe: this.setProbe})
       )
     );
   }
@@ -1609,7 +1782,15 @@ WorkspaceView = createComponent({
   },
 
   toggleBoard: function (board) {
-    this.setState({selectedBoard: board === this.state.selectedBoard ? null : board});
+    var previousBoard = this.state.selectedBoard,
+        selectedBoard = board === this.state.selectedBoard ? null : board;
+    this.setState({selectedBoard: selectedBoard});
+    if (selectedBoard) {
+      logEvent(OPENED_BOARD_EVENT, selectedBoard.number);
+    }
+    else {
+      logEvent(CLOSED_BOARD_EVENT, previousBoard ? previousBoard.number : -1);
+    }
   },
 
   render: function () {
@@ -1808,7 +1989,7 @@ SidebarChatView = createComponent({
       });
       input.value = '';
       input.focus();
-      logController.logEvent("Sent message", message);
+      logEvent("Sent message", message);
     }
   },
 
@@ -1920,6 +2101,7 @@ AppView = createComponent({
       });
 
       userController.onGroupRefCreation(function() {
+        boardWatcher.startListeners();
         userController.getFirebaseGroupRef().child('users').on("value", function(snapshot) {
           var fbUsers = snapshot.val(),
               users = {};
@@ -1956,6 +2138,7 @@ AppView = createComponent({
       this.state.boards[i].reset();
     }
     this.setState({boards: this.state.boards});
+    logEvent(RESET_EVENT);
   },
 
   run: function (run) {
@@ -1964,10 +2147,12 @@ AppView = createComponent({
       this.simulatorInterval = setInterval(this.simulate.bind(this), 100);
     }
     this.setState({running: run});
+    logEvent(run ? RUN_EVENT : STOP_EVENT);
   },
 
   step: function () {
     this.simulate(true);
+    logEvent(STEP_EVENT);
   },
 
   toggleAllWires: function () {
@@ -2059,4 +2244,5 @@ AppView = createComponent({
 // Main
 //
 
+boardWatcher = new BoardWatcher();
 ReactDOM.render(AppView({}), document.getElementById('content'));
