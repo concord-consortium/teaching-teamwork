@@ -1918,6 +1918,19 @@ AppView = createComponent({
         userBoardNumber: userBoardNumber,
         users: users
       });
+
+      userController.onGroupRefCreation(function() {
+        userController.getFirebaseGroupRef().child('users').on("value", function(snapshot) {
+          var fbUsers = snapshot.val(),
+              users = {};
+          $.each(fbUsers, function (user) {
+            users[parseInt(fbUsers[user].client)] = {
+              name: user
+            };
+          });
+          self.setState({users: users});
+        });
+      });
     });
   },
 
