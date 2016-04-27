@@ -24,7 +24,7 @@
     b. Add/remove wire
     c. Move probe
     d. Start/Stop/Step/Reset simulator
-  5. Add back Firebase support to chat
+  x. Add back Firebase support to chat
   6. Add a "All done!" button
 
 */
@@ -51,7 +51,7 @@ var picCode = require('./data/pic-code'),
     RIBBON_HEIGHT = 21,
     SELECTED_FILL = '#bbb',
     UNSELECTED_FILL = '#777',
-    AppView, FakeSidebarView, WorkspaceView, BoardView, Board, RibbonView, ConnectorView,
+    AppView, SidebarChatView, WorkspaceView, BoardView, Board, RibbonView, ConnectorView,
     Keypad, LED, PIC, Connector, KeypadView, LEDView, PICView,
     ConnectorHoleView, Hole, Pin, PinView,
     BoardEditorView, SimulatorControlView, Wire, Button, ButtonView, Segment, Circuit, DemoControlView, ChatItem, ChatItems, ProbeView;
@@ -980,8 +980,10 @@ KeypadView = createComponent({
   },
 
   pushButton: function (button) {
-    this.props.component.pushButton(button);
-    this.setState({pushedButton: this.props.component.pushedButton});
+    if (this.props.editable) {
+      this.props.component.pushButton(button);
+      this.setState({pushedButton: this.props.component.pushedButton});
+    }
   },
 
   render: function () {
@@ -1504,7 +1506,7 @@ BoardView = createComponent({
     }
 
     return div({className: this.props.editable ? 'board editable-board' : 'board', style: style, onClick: this.props.selected ? null : this.toggleBoard},
-      span({className: 'board-user'}, this.props.user ? this.props.user.name : '(unclaimed)'),
+      span({className: 'board-user'}, ('Circuit ' + (this.props.board.number + 1) + ': ') + (this.props.user ? this.props.user.name : '(unclaimed)')),
       svg({className: 'board-area'},
         closeButton,
         connectors,
@@ -1718,27 +1720,95 @@ DemoControlView = createComponent({
   }
 });
 
-FakeSidebarView = createComponent({
-  displayName: 'FakeSidebarView',
+SidebarChatView = createComponent({
+  displayName: 'SidebarChatView',
 
   getInitialState: function() {
-    return {items: []};
+    var items = [];
+
+    if (this.props.initialChatMessage) {
+      items.push({
+        prefix: 'Welcome!',
+        message: this.props.initialChatMessage
+      });
+    }
+
+    return {
+      items: items,
+      numExistingUsers: 0
+    };
+  },
+
+  getJoinedMessage: function (numExistingUsers) {
+    var slotsRemaining = 3 - numExistingUsers,
+        nums = ["zero", "one", "two", "three"],
+        cap = function (string) {
+          return string.charAt(0).toUpperCase() + string.slice(1);
+        },
+        message = " ";
+
+    if (slotsRemaining > 1) {
+      // One of three users is here
+      message += cap(nums[numExistingUsers]) + " of 3 users is here.";
+    } else if (slotsRemaining == 1) {
+      // Two of you are now here. One more to go before you can get started!
+      message += cap(nums[numExistingUsers]) + " of you are now here. One more to go before you can get started!";
+    } else {
+      message += "You're all here! Time to start this challenge.";
+    }
+
+    return message;
+  },
+
+  componentWillMount: function() {
+    var self = this;
+    userController.onGroupRefCreation(function() {
+      self.firebaseRef = userController.getFirebaseGroupRef().child("chat");
+      self.firebaseRef.orderByChild('time').on("child_added", function(dataSnapshot) {
+        var items = self.state.items.slice(0),
+            item = dataSnapshot.val(),
+            numExistingUsers = self.state.numExistingUsers;
+
+        if (item.type == "joined") {
+          numExistingUsers = Math.min(self.state.numExistingUsers + 1, 3);
+          item.message += self.getJoinedMessage(numExistingUsers);
+        }
+        else if (item.type == "left") {
+          numExistingUsers = Math.max(self.state.numExistingUsers - 1, 0);
+        }
+
+        if (numExistingUsers !== self.state.numExistingUsers) {
+          self.setState({numExistingUsers: numExistingUsers});
+        }
+
+        items.push(item);
+
+        self.setState({
+          items: items
+        });
+      }.bind(self));
+    });
+  },
+
+  componentWillUnmount: function() {
+    this.firebaseRef.off();
   },
 
   handleSubmit: function(e) {
     var input = this.refs.text,
-        text = $.trim(input.value);
+        message = $.trim(input.value);
 
     e.preventDefault();
 
-    if (text.length > 0) {
-      this.state.items.push({
-        user: 'Student 1',
-        message: text
+    if (message.length > 0) {
+      this.firebaseRef.push({
+        user: userController.getUsername(),
+        message: message,
+        time: Firebase.ServerValue.TIMESTAMP
       });
-      this.setState({items: this.state.items});
       input.value = '';
       input.focus();
+      logController.logEvent("Sent message", message);
     }
   },
 
@@ -1776,7 +1846,7 @@ ChatItems = createComponent({
   },
 
   render: function () {
-    var user = 'Student 1',
+    var user = userController.getUsername(),
         items;
     items = this.props.items.map(function(item, i) {
       return ChatItem({key: i, item: item, me: item.user == user});
@@ -1791,6 +1861,7 @@ ChatItem = createComponent({
   render: function () {
     return div({className: this.props.me ? 'chat-item chat-item-me' : 'chat-item chat-item-others'},
       b({}, this.props.item.prefix || (this.props.item.user + ':')),
+      ' ',
       this.props.item.message
     );
   }
@@ -1966,7 +2037,7 @@ AppView = createComponent({
       WorkspaceView({boards: this.state.boards, stepping: !this.state.running, showDebugPins: this.state.showDebugPins, users: this.state.users, userBoardNumber: this.state.userBoardNumber}),
       SimulatorControlView({running: this.state.running, run: this.run, step: this.step, reset: this.reset}),
       this.state.demo ? DemoControlView({running: this.state.running, toggleAllWires: this.toggleAllWires, toggleDebugPins: this.toggleDebugPins, showDebugPins: this.state.showDebugPins, addedAllWires: this.state.addedAllWires}) : null,
-      FakeSidebarView({demo: this.state.demo})
+      SidebarChatView({demo: this.state.demo})
     );
   }
 });
