@@ -705,6 +705,16 @@ module.exports = userController = {
 
 
 },{"../data/group-names":7,"../views/userRegistration.jsx":20,"./lara":4,"./log":5}],7:[function(require,module,exports){
+var sortByName = function (a, b) {
+  if (a.name < b.name) {
+    return -1;
+  }
+  if (a.name > b.name) {
+    return 1;
+  }
+  return 0;
+};
+
 module.exports = [
   {
     name: "Animals",
@@ -787,7 +797,7 @@ module.exports = [
   {
     name: "Fruit",
     members: [
-      "Cherry", "Plum", "Grape"
+      "Peach", "Plum", "Grape"
     ]
   },
   {
@@ -838,7 +848,7 @@ module.exports = [
       "Utah", "Ohio", "Iowa"
     ]
   }
-];
+].sort(sortByName);
 
 
 },{}],8:[function(require,module,exports){

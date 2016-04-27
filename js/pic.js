@@ -14,19 +14,7 @@
 
   Todo for full collaborative environment:
 
-  x. Add user and group dialogs with Firebase connections and update board label
-  x. Add concept of read/write and read-only boards based on the user's assigned board
-  3. Send events to Firebase for
-    x. Keypad selects
-    x. Probe moves
-    x. Wiring setup/changes
-  4. Send events to Log Manager for
-    x. Board zoom in/out
-    x. Add/remove wire
-    x. Move probe
-    x. Start/Stop/Step/Reset simulator
-  x. Add back Firebase support to chat
-  6. Add a "All done!" button
+  1. Add a "All done!" button with check to verify circuit validity
 
 */
 
@@ -1635,14 +1623,12 @@ BoardView = createComponent({
         style = {
           width: WORKSPACE_WIDTH,
           height: constants.BOARD_HEIGHT,
-          position: 'relative',
-          cursor: this.props.selected ? 'default' : 'zoom-in'
+          position: 'relative'
         },
         connectors = [],
         components = [],
         wires = [],
         componentIndex = 0,
-        closeButton = null,
         name, component, i, wire, stroke;
 
     // resolve input values
@@ -1666,30 +1652,22 @@ BoardView = createComponent({
       }
     }
 
-    if (this.props.selected) {
-      closeButton = g({onClick: this.toggleBoard},
-        rect({x: style.width - 25, y: 5, width: 20, height: 20, fill: '#f00'}),
-        line({x1: style.width - 20, y1: 10, x2: style.width - 10, y2: 20, strokeWidth: 2, stroke: '#fff'}),
-        line({x1: style.width - 10, y1: 10, x2: style.width - 20, y2: 20, strokeWidth: 2, stroke: '#fff'})
-      );
-    }
-
     for (i = 0; i < this.props.board.wires.length; i++) {
       wire = this.props.board.wires[i];
       stroke = this.state.hoverSource && ((this.state.hoverSource === wire.source) || (this.state.hoverSource === wire.dest)) ? '#ccff00' : wire.color;
       wires.push(path({key: i, className: 'wire', d: getBezierPath({x1: wire.source.cx, y1: wire.source.cy, x2: wire.dest.cx, y2: wire.dest.cy, reflection: wire.getBezierReflection() * this.props.board.bezierReflectionModifier}), strokeWidth: constants.WIRE_WIDTH, stroke: stroke, fill: 'none', style: {pointerEvents: 'none'}}));
     }
 
-    return div({className: this.props.editable ? 'board editable-board' : 'board', style: style, onClick: this.props.selected ? null : this.toggleBoard},
+    return div({className: this.props.editable ? 'board editable-board' : 'board', style: style},
       span({className: 'board-user'}, ('Circuit ' + (this.props.board.number + 1) + ': ') + (this.props.user ? this.props.user.name : '(unclaimed)')),
       svg({className: 'board-area'},
-        closeButton,
         connectors,
         components,
         wires,
         (this.state.drawConnection ? line({x1: this.state.drawConnection.x1, x2: this.state.drawConnection.x2, y1: this.state.drawConnection.y1, y2: this.state.drawConnection.y2, stroke: this.state.drawConnection.stroke, strokeWidth: this.state.drawConnection.strokeWidth, fill: 'none', style: {pointerEvents: 'none'}}) : null),
         ProbeView({board: this.props.board, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, probeSource: this.state.probeSource, hoverSource: this.state.hoverSource, pos: this.state.probePos, setProbe: this.setProbe})
-      )
+      ),
+      span({className: 'board-toggle'}, button({onClick: this.toggleBoard}, this.props.selected ? 'View All Circuits' : (this.props.editable ? 'Edit Circuit' : 'View Circuit')))
     );
   }
 });
@@ -2076,7 +2054,7 @@ AppView = createComponent({
 
     return {
       boards: boards,
-      running: false,
+      running: true,
       showDebugPins: true,
       addedAllWires: false,
       demo: window.location.search.indexOf('demo') !== -1,
@@ -2116,6 +2094,11 @@ AppView = createComponent({
         });
       });
     });
+
+    // start the simulator without the event logged if set to run at startup
+    if (this.state.running) {
+      this.run(true, true);
+    }
   },
 
   simulate: function (step) {
@@ -2143,13 +2126,15 @@ AppView = createComponent({
     logEvent(RESET_EVENT);
   },
 
-  run: function (run) {
+  run: function (run, skipLogging) {
     clearInterval(this.simulatorInterval);
     if (run) {
       this.simulatorInterval = setInterval(this.simulate.bind(this), 100);
     }
     this.setState({running: run});
-    logEvent(run ? RUN_EVENT : STOP_EVENT);
+    if (!skipLogging) {
+      logEvent(run ? RUN_EVENT : STOP_EVENT);
+    }
   },
 
   step: function () {
@@ -2822,6 +2807,16 @@ module.exports = userController = {
 
 
 },{"../data/group-names":5,"../views/userRegistration.jsx":8,"./lara":2,"./log":3}],5:[function(require,module,exports){
+var sortByName = function (a, b) {
+  if (a.name < b.name) {
+    return -1;
+  }
+  if (a.name > b.name) {
+    return 1;
+  }
+  return 0;
+};
+
 module.exports = [
   {
     name: "Animals",
@@ -2904,7 +2899,7 @@ module.exports = [
   {
     name: "Fruit",
     members: [
-      "Cherry", "Plum", "Grape"
+      "Peach", "Plum", "Grape"
     ]
   },
   {
@@ -2955,7 +2950,7 @@ module.exports = [
       "Utah", "Ohio", "Iowa"
     ]
   }
-];
+].sort(sortByName);
 
 
 },{}],6:[function(require,module,exports){
