@@ -89,7 +89,7 @@ svg {
   -moz-border-radius: 5px;
   border-radius: 5px;
   word-wrap: break-word;
-  max-width: 135px;  
+  max-width: 135px;
 }
 #sidebar-chat .sidebar-chat-items .chat-item-me {
   float: right;
@@ -126,6 +126,9 @@ svg {
 
 .board {
   background-color: #bbb;
+}
+.editable-board {
+  background-color: #f0f0f0 !important;
 }
 
 .board-area {

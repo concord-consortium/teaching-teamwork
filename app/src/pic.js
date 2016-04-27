@@ -13,8 +13,8 @@
 
   Todo for full collaborative environment:
 
-  1. Add user and group dialogs with Firebase connections and update board label
-  2. Add concept of read/write and read-only boards based on the user's assigned board
+  x. Add user and group dialogs with Firebase connections and update board label
+  x. Add concept of read/write and read-only boards based on the user's assigned board
   3. Send events to Firebase for
     a. Keypad selects
     b. Probe moves
@@ -30,6 +30,8 @@
 */
 
 var picCode = require('./data/pic-code'),
+    logController = require('./controllers/log'),
+    userController = require('./controllers/user'),
     div = React.DOM.div,
     span = React.DOM.span,
     svg = React.DOM.svg,
@@ -990,13 +992,13 @@ KeypadView = createComponent({
 
     for (i = 0; i < this.props.component.pins.length; i++) {
       pin = this.props.component.pins[i];
-      pins.push(PinView({key: 'pin' + i, pin: pin, selected: this.props.selected, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
+      pins.push(PinView({key: 'pin' + i, pin: pin, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
       pins.push(text({key: 'label' + i, x: pin.label.x, y: pin.label.y, fontSize: pin.labelSize, fill: '#333', style: {textAnchor: pin.label.anchor}}, pin.label.text));
     }
 
     for (i = 0; i < this.props.component.buttons.length; i++) {
       button = this.props.component.buttons[i];
-      buttons.push(ButtonView({key: i, button: button, selected: this.props.selected, pushed: button === this.state.pushedButton, pushButton: this.pushButton}));
+      buttons.push(ButtonView({key: i, button: button, selected: this.props.selected, editable: this.props.editable, pushed: button === this.state.pushedButton, pushButton: this.pushButton}));
     }
 
     return g({},
@@ -1022,7 +1024,7 @@ LEDView = createComponent({
 
     for (i = 0; i < this.props.component.pins.length; i++) {
       pin = this.props.component.pins[i];
-      pins.push(PinView({key: 'pin' + i, pin: pin, selected: this.props.selected, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
+      pins.push(PinView({key: 'pin' + i, pin: pin, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
       pins.push(text({key: 'label' + i, x: pin.label.x, y: pin.label.y, fontSize: pin.labelSize, fill: '#fff', style: {textAnchor: pin.label.anchor}}, pin.label.text));
     }
 
@@ -1085,6 +1087,7 @@ PinView = createComponent({
   render: function () {
     var pin = this.props.pin,
         showColors = this.props.stepping && this.props.showDebugPins && !pin.notConnectable,
+        enableHandlers = this.props.selected && this.props.editable,
         inputRect, outputRect;
 
     switch (pin.placement) {
@@ -1109,7 +1112,7 @@ PinView = createComponent({
     inputRect.fill = showColors && pin.inputMode && pin.connected ? (pin.value ? 'red' : 'green') : '#777';
     outputRect.fill = showColors && !pin.inputMode ? (pin.value ? 'red' : 'green') : '#777';
 
-    return g({onMouseDown: this.props.selected ? this.startDrag : null, onMouseOver: this.props.selected ? this.mouseOver : null, onMouseOut: this.props.selected ? this.mouseOut : null},
+    return g({onMouseDown: enableHandlers ? this.startDrag : null, onMouseOver: enableHandlers ? this.mouseOver : null, onMouseOut: enableHandlers ? this.mouseOut : null},
       rect(inputRect),
       rect(outputRect)
     );
@@ -1204,7 +1207,7 @@ PICView = createComponent({
 
     for (i = 0; i < this.props.component.pins.length; i++) {
       pin = this.props.component.pins[i];
-      pins.push(PinView({key: 'pin' + i, pin: pin, selected: this.props.selected, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
+      pins.push(PinView({key: 'pin' + i, pin: pin, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
       pins.push(text({key: 'label' + i, x: pin.label.x, y: pin.label.y, fontSize: pin.labelSize, fill: '#fff', style: {textAnchor: pin.label.anchor}}, pin.label.text));
     }
 
@@ -1363,7 +1366,7 @@ ProbeView = createComponent({
       'L', x + height, ',', middleY + halfNeedleHeight, ' '
     ].join('');
 
-    return g({transform: ['rotate(-15 ', x, ' ', y + (height / 2), ')'].join(''), onMouseDown: this.startDrag},
+    return g({transform: ['rotate(-15 ', x, ' ', y + (height / 2), ')'].join(''), onMouseDown: this.props.selected && this.props.editable ? this.startDrag : null},
       path({d: needlePath, fill: '#c0c0c0', stroke: '#777', style: {pointerEvents: 'none'}}),
       path({d: handlePath, fill: '#eee', stroke: '#777'}), // '#FDCA6E'
       circle({cx: x + (4 * height), cy: middleY, r: height / 4, fill: 'red', fillOpacity: redFill}),
@@ -1471,18 +1474,18 @@ BoardView = createComponent({
     // calculate the position so the wires can be updated
     if (this.props.board.connectors.input) {
       this.props.board.connectors.input.calculatePosition(this.props.selected);
-      connectors.push(ConnectorView({key: 'input', connector: this.props.board.connectors.input, selected: this.props.selected, drawConnection: this.drawConnection, reportHover: this.reportHover}));
+      connectors.push(ConnectorView({key: 'input', connector: this.props.board.connectors.input, selected: this.props.selected, editable: this.props.editable, drawConnection: this.drawConnection, reportHover: this.reportHover}));
     }
     if (this.props.board.connectors.output) {
       this.props.board.connectors.output.calculatePosition(this.props.selected);
-      connectors.push(ConnectorView({key: 'output', connector: this.props.board.connectors.output, selected: this.props.selected, drawConnection: this.drawConnection, reportHover: this.reportHover}));
+      connectors.push(ConnectorView({key: 'output', connector: this.props.board.connectors.output, selected: this.props.selected, editable: this.props.editable, drawConnection: this.drawConnection, reportHover: this.reportHover}));
     }
 
     for (name in this.props.board.components) {
       if (this.props.board.components.hasOwnProperty(name)) {
         component = this.props.board.components[name];
         component.calculatePosition(this.props.selected, componentIndex++, this.props.board.numComponents);
-        components.push(component.view({key: name, component: component, selected: this.props.selected, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.drawConnection, reportHover: this.reportHover}));
+        components.push(component.view({key: name, component: component, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.drawConnection, reportHover: this.reportHover}));
       }
     }
 
@@ -1500,15 +1503,15 @@ BoardView = createComponent({
       wires.push(path({key: i, className: 'wire', d: getBezierPath({x1: wire.source.cx, y1: wire.source.cy, x2: wire.dest.cx, y2: wire.dest.cy, reflection: wire.getBezierReflection() * this.props.board.bezierReflectionModifier}), strokeWidth: constants.WIRE_WIDTH, stroke: stroke, fill: 'none', style: {pointerEvents: 'none'}}));
     }
 
-    return div({className: 'board', style: style, onClick: this.props.selected ? null : this.toggleBoard},
-      span({className: 'board-user'}, 'Student ' + (this.props.board.number + 1)),
+    return div({className: this.props.editable ? 'board editable-board' : 'board', style: style, onClick: this.props.selected ? null : this.toggleBoard},
+      span({className: 'board-user'}, this.props.user ? this.props.user.name : '(unclaimed)'),
       svg({className: 'board-area'},
         closeButton,
         connectors,
         components,
         wires,
         (this.state.drawConnection ? line({x1: this.state.drawConnection.x1, x2: this.state.drawConnection.x2, y1: this.state.drawConnection.y1, y2: this.state.drawConnection.y2, stroke: this.state.drawConnection.stroke, strokeWidth: this.state.drawConnection.strokeWidth, fill: 'none', style: {pointerEvents: 'none'}}) : null),
-        ProbeView({selected: this.props.selected, stepping: this.props.stepping, probeSource: this.state.probeSource, hoverSource: this.state.hoverSource, pos: this.state.probePos, setProbe: this.setProbe})
+        ProbeView({selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, probeSource: this.state.probeSource, hoverSource: this.state.hoverSource, pos: this.state.probePos, setProbe: this.setProbe})
       )
     );
   }
@@ -1530,8 +1533,9 @@ ConnectorHoleView = createComponent({
   },
 
   render: function () {
+    var enableHandlers = this.props.selected && this.props.editable;
     return g({},
-      circle({cx: this.props.hole.cx, cy: this.props.hole.cy, r: this.props.hole.radius, fill: this.props.hole.color, onMouseDown: this.props.selected ? this.startDrag : null, onMouseOver: this.props.selected ? this.mouseOver : null, onMouseOut: this.props.selected ? this.mouseOut : null})
+      circle({cx: this.props.hole.cx, cy: this.props.hole.cy, r: this.props.hole.radius, fill: this.props.hole.color, onMouseDown: enableHandlers ? this.startDrag : null, onMouseOver: enableHandlers ? this.mouseOver : null, onMouseOut: enableHandlers ? this.mouseOut : null})
     );
   }
 });
@@ -1546,7 +1550,7 @@ ConnectorView = createComponent({
 
     for (i = 0; i < this.props.connector.holes.length; i++) {
       hole = this.props.connector.holes[i];
-      holes.push(ConnectorHoleView({key: i, connector: this.props.connector, hole: hole, selected: this.props.selected, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
+      holes.push(ConnectorHoleView({key: i, connector: this.props.connector, hole: hole, selected: this.props.selected, editable: this.props.editable, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
     }
 
     return svg({},
@@ -1609,17 +1613,47 @@ WorkspaceView = createComponent({
   render: function () {
     if (this.state.selectedBoard) {
       return div({id: 'workspace'},
-        BoardView({key: 'selectedBoard' + this.state.selectedBoard.number, board: this.state.selectedBoard, selected: true, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, toggleBoard: this.toggleBoard}),
+        BoardView({
+          key: 'selectedBoard' + this.state.selectedBoard.number,
+          board: this.state.selectedBoard,
+          selected: true,
+          editable: this.props.userBoardNumber === this.state.selectedBoard.number,
+          user: this.props.users[this.state.selectedBoard.number],
+          stepping: this.props.stepping,
+          showDebugPins: this.props.showDebugPins,
+          toggleBoard: this.toggleBoard
+        }),
         BoardEditorView({board: this.state.selectedBoard})
       );
     }
     else {
       return div({id: 'workspace', style: {width: WORKSPACE_WIDTH}},
-        BoardView({board: this.props.boards[0], stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, toggleBoard: this.toggleBoard}),
+        BoardView({
+          board: this.props.boards[0],
+          editable: this.props.userBoardNumber === 0,
+          user: this.props.users[0],
+          stepping: this.props.stepping,
+          showDebugPins: this.props.showDebugPins,
+          toggleBoard: this.toggleBoard
+        }),
         RibbonView({connector: this.props.boards[0].connectors.output}),
-        BoardView({board: this.props.boards[1], stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, toggleBoard: this.toggleBoard}),
+        BoardView({
+          board: this.props.boards[1],
+          editable: this.props.userBoardNumber === 1,
+          user: this.props.users[1],
+          stepping: this.props.stepping,
+          showDebugPins: this.props.showDebugPins,
+          toggleBoard: this.toggleBoard
+        }),
         RibbonView({connector: this.props.boards[1].connectors.output}),
-        BoardView({board: this.props.boards[2], stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, toggleBoard: this.toggleBoard})
+        BoardView({
+          board: this.props.boards[2],
+          editable: this.props.userBoardNumber === 2,
+          user: this.props.users[2],
+          stepping: this.props.stepping,
+          showDebugPins: this.props.showDebugPins,
+          toggleBoard: this.toggleBoard
+        })
       );
     }
   }
@@ -1791,8 +1825,29 @@ AppView = createComponent({
       running: false,
       showDebugPins: true,
       addedAllWires: false,
-      demo: window.location.search.indexOf('demo') !== -1
+      demo: window.location.search.indexOf('demo') !== -1,
+      userBoardNumber: -1,
+      users: {}
     };
+  },
+
+  componentDidMount: function() {
+    var activityName = 'pic',
+        self = this;
+
+    logController.init(activityName);
+    userController.init(3, activityName, function(userBoardNumber) {
+      var users = self.state.users;
+      userBoardNumber = parseInt(userBoardNumber, 10);
+      users[userBoardNumber] = {
+        name: userController.getUsername()
+      };
+
+      self.setState({
+        userBoardNumber: userBoardNumber,
+        users: users
+      });
+    });
   },
 
   simulate: function (step) {
@@ -1908,7 +1963,7 @@ AppView = createComponent({
 
   render: function () {
     return div({id: 'picapp'},
-      WorkspaceView({boards: this.state.boards, stepping: !this.state.running, showDebugPins: this.state.showDebugPins}),
+      WorkspaceView({boards: this.state.boards, stepping: !this.state.running, showDebugPins: this.state.showDebugPins, users: this.state.users, userBoardNumber: this.state.userBoardNumber}),
       SimulatorControlView({running: this.state.running, run: this.run, step: this.step, reset: this.reset}),
       this.state.demo ? DemoControlView({running: this.state.running, toggleAllWires: this.toggleAllWires, toggleDebugPins: this.toggleDebugPins, showDebugPins: this.state.showDebugPins, addedAllWires: this.state.addedAllWires}) : null,
       FakeSidebarView({demo: this.state.demo})
