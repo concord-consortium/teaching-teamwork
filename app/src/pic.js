@@ -1621,14 +1621,12 @@ BoardView = createComponent({
         style = {
           width: WORKSPACE_WIDTH,
           height: constants.BOARD_HEIGHT,
-          position: 'relative',
-          cursor: this.props.selected ? 'default' : 'zoom-in'
+          position: 'relative'
         },
         connectors = [],
         components = [],
         wires = [],
         componentIndex = 0,
-        closeButton = null,
         name, component, i, wire, stroke;
 
     // resolve input values
@@ -1652,30 +1650,22 @@ BoardView = createComponent({
       }
     }
 
-    if (this.props.selected) {
-      closeButton = g({onClick: this.toggleBoard},
-        rect({x: style.width - 25, y: 5, width: 20, height: 20, fill: '#f00'}),
-        line({x1: style.width - 20, y1: 10, x2: style.width - 10, y2: 20, strokeWidth: 2, stroke: '#fff'}),
-        line({x1: style.width - 10, y1: 10, x2: style.width - 20, y2: 20, strokeWidth: 2, stroke: '#fff'})
-      );
-    }
-
     for (i = 0; i < this.props.board.wires.length; i++) {
       wire = this.props.board.wires[i];
       stroke = this.state.hoverSource && ((this.state.hoverSource === wire.source) || (this.state.hoverSource === wire.dest)) ? '#ccff00' : wire.color;
       wires.push(path({key: i, className: 'wire', d: getBezierPath({x1: wire.source.cx, y1: wire.source.cy, x2: wire.dest.cx, y2: wire.dest.cy, reflection: wire.getBezierReflection() * this.props.board.bezierReflectionModifier}), strokeWidth: constants.WIRE_WIDTH, stroke: stroke, fill: 'none', style: {pointerEvents: 'none'}}));
     }
 
-    return div({className: this.props.editable ? 'board editable-board' : 'board', style: style, onClick: this.props.selected ? null : this.toggleBoard},
+    return div({className: this.props.editable ? 'board editable-board' : 'board', style: style},
       span({className: 'board-user'}, ('Circuit ' + (this.props.board.number + 1) + ': ') + (this.props.user ? this.props.user.name : '(unclaimed)')),
       svg({className: 'board-area'},
-        closeButton,
         connectors,
         components,
         wires,
         (this.state.drawConnection ? line({x1: this.state.drawConnection.x1, x2: this.state.drawConnection.x2, y1: this.state.drawConnection.y1, y2: this.state.drawConnection.y2, stroke: this.state.drawConnection.stroke, strokeWidth: this.state.drawConnection.strokeWidth, fill: 'none', style: {pointerEvents: 'none'}}) : null),
         ProbeView({board: this.props.board, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, probeSource: this.state.probeSource, hoverSource: this.state.hoverSource, pos: this.state.probePos, setProbe: this.setProbe})
-      )
+      ),
+      span({className: 'board-toggle'}, button({onClick: this.toggleBoard}, this.props.selected ? 'View All Circuits' : (this.props.editable ? 'Edit Circuit' : 'View Circuit')))
     );
   }
 });
