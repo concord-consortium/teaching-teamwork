@@ -253,6 +253,7 @@ BoardWatcher.prototype.pushedButton = function (board, buttonValue) {
 };
 BoardWatcher.prototype.circuitChanged = function (board) {
   // TODO
+  console.log(board);
 };
 BoardWatcher.prototype.addListener = function (board, listener) {
   this.listeners[board.number] = listener;
@@ -937,7 +938,8 @@ PIC.prototype.setPinListInputMode = function (list, mask) {
 };
 
 Board = function (options) {
-  var i, j;
+  var self = this,
+      i;
 
   this.number = options.number;
   this.components = options.components;
@@ -948,6 +950,8 @@ Board = function (options) {
 
   this.pinsAndHoles = [];
   this.componentList = [];
+
+  this.allBoards = [];
 
   this.numComponents = 0;
   for (var name in this.components) {
@@ -960,11 +964,11 @@ Board = function (options) {
       this.components[name].board = this;
     }
   }
-  for (i = 0; i < this.connectors.length; i++) {
-    for (j = 0; j < this.connectors[i].holes.length; i++) {
-      this.pinsAndHoles.push(this.connectors[i].holes[j]);
+  $.each(this.connectors, function (name, connector) {
+    for (var i = 0; i < connector.holes.length; i++) {
+      self.pinsAndHoles.push(connector.holes[i]);
     }
-  }
+  });
 
   // reset the pic so the pin output is set
   this.components.pic.reset();
@@ -1001,7 +1005,7 @@ Board.prototype.removeWire = function (sourceOrDest) {
       }
       this.wires[i].dest.connected = false;
       this.wires.splice(i, 1);
-      this.resolveCircuits();
+      this.resolveCircuitsAcrossAllBoards();
       return true;
     }
   }
@@ -1056,6 +1060,18 @@ Board.prototype.resolveCircuits = function() {
   }
 
   return false;
+};
+Board.prototype.resolveCircuitsAcrossAllBoards = function() {
+  var i;
+  // reset and resolve all the circuits first
+  for (i = 0; i < this.allBoards.length; i++) {
+    this.allBoards[i].reset();
+    this.allBoards[i].resolveCircuits();
+  }
+  // and then resolve all the io values
+  for (i = 0; i < this.allBoards.length; i++) {
+    this.allBoards[i].resolveIOValues();
+  }
 };
 Board.prototype.resolveCircuitInputValues = function () {
   var i;
@@ -1492,7 +1508,7 @@ ProbeView = createComponent({
       'L', x + height, ',', middleY + halfNeedleHeight, ' '
     ].join('');
 
-    return g({transform: ['rotate(-15 ', x, ' ', y + (height / 2), ')'].join(''), onMouseDown: this.props.selected ? this.startDrag : null},
+    return g({transform: ['rotate(-15 ', x, ' ', y + (height / 2), ')'].join(''), onMouseDown: this.props.selected && this.props.editable ? this.startDrag : null},
       path({d: needlePath, fill: '#c0c0c0', stroke: '#777', style: {pointerEvents: 'none'}}),
       path({d: handlePath, fill: '#eee', stroke: '#777'}), // '#FDCA6E'
       circle({cx: x + (4 * height), cy: middleY, r: height / 4, fill: 'red', fillOpacity: redFill}),
@@ -1539,7 +1555,6 @@ BoardView = createComponent({
     if (board.components.keypad) {
       board.components.keypad.selectButtonValue(boardInfo.button);
     }
-    //console.log(boardInfo, board);
 
     // move the probe
     probeInfo = boardInfo.probe;
@@ -2050,6 +2065,10 @@ AppView = createComponent({
     board1Output.board = boards[1];
     board2Input.board = boards[2];
 
+    boards[0].allBoards = boards;
+    boards[1].allBoards = boards;
+    boards[2].allBoards = boards;
+
     return {
       boards: boards,
       running: true,
@@ -2127,7 +2146,7 @@ AppView = createComponent({
   run: function (run, skipLogging) {
     clearInterval(this.simulatorInterval);
     if (run) {
-      this.simulatorInterval = setInterval(this.simulate.bind(this), 100);
+      this.simulatorInterval = setInterval(this.simulate, 100);
     }
     this.setState({running: run});
     if (!skipLogging) {
