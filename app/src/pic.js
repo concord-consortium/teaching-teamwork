@@ -13,19 +13,7 @@
 
   Todo for full collaborative environment:
 
-  x. Add user and group dialogs with Firebase connections and update board label
-  x. Add concept of read/write and read-only boards based on the user's assigned board
-  3. Send events to Firebase for
-    x. Keypad selects
-    x. Probe moves
-    x. Wiring setup/changes
-  4. Send events to Log Manager for
-    x. Board zoom in/out
-    x. Add/remove wire
-    x. Move probe
-    x. Start/Stop/Step/Reset simulator
-  x. Add back Firebase support to chat
-  6. Add a "All done!" button
+  1. Add a "All done!" button with check to verify circuit validity
 
 */
 
@@ -2074,7 +2062,7 @@ AppView = createComponent({
 
     return {
       boards: boards,
-      running: false,
+      running: true,
       showDebugPins: true,
       addedAllWires: false,
       demo: window.location.search.indexOf('demo') !== -1,
@@ -2114,6 +2102,11 @@ AppView = createComponent({
         });
       });
     });
+
+    // start the simulator without the event logged if set to run at startup
+    if (this.state.running) {
+      this.run(true, true);
+    }
   },
 
   simulate: function (step) {
@@ -2141,13 +2134,15 @@ AppView = createComponent({
     logEvent(RESET_EVENT);
   },
 
-  run: function (run) {
+  run: function (run, skipLogging) {
     clearInterval(this.simulatorInterval);
     if (run) {
       this.simulatorInterval = setInterval(this.simulate.bind(this), 100);
     }
     this.setState({running: run});
-    logEvent(run ? RUN_EVENT : STOP_EVENT);
+    if (!skipLogging) {
+      logEvent(run ? RUN_EVENT : STOP_EVENT);
+    }
   },
 
   step: function () {
