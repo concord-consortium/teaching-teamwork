@@ -1624,19 +1624,15 @@ BoardView = createComponent({
   updateWatchedBoard: function (boardInfo) {
     var board = this.props.board,
         probe = {source: null, pos: null},
-        probeInfo;
+        probeInfo, wires;
 
-    if (!boardInfo) {
-      return;
-    }
-
-    if (board.components.keypad) {
+    if (boardInfo && board.components.keypad) {
       board.components.keypad.selectButtonValue(boardInfo.button);
     }
 
     // move the probe
-    probeInfo = boardInfo.probe;
-    if (probeInfo) {
+    if (boardInfo && boardInfo.probe) {
+      probeInfo = boardInfo.probe;
       if (probeInfo.to === 'pin') {
         probe.source = board.components[probeInfo.component].pins[probeInfo.pin.index];
       }
@@ -1647,7 +1643,8 @@ BoardView = createComponent({
     this.setProbe(probe);
 
     // update the wires
-    board.updateWires(boardInfo.wires || []);
+    wires = (boardInfo ? boardInfo.wires : null) || [];
+    board.updateWires(wires);
   },
 
   reportHover: function (hoverSource) {
