@@ -53,7 +53,7 @@ var picCode = require('./data/pic-code'),
     STEP_EVENT = 'Step',
     RESET_EVENT = 'Reset',
 
-    AppView, SidebarChatView, WorkspaceView, BoardView, Board, RibbonView, ConnectorView,
+    AppView, WeGotIt, SidebarChatView, WorkspaceView, BoardView, Board, RibbonView, ConnectorView,
     Keypad, LED, PIC, Connector, KeypadView, LEDView, PICView,
     ConnectorHoleView, Hole, Pin, PinView,
     BoardEditorView, SimulatorControlView, Wire, Button, ButtonView, Segment, Circuit, DemoControlView, ChatItem, ChatItems, ProbeView, BoardWatcher, boardWatcher;
@@ -2127,6 +2127,25 @@ ChatItem = createComponent({
   }
 });
 
+WeGotIt = createComponent({
+  displayName: 'WeGotIt',
+
+  clicked: function () {
+    alert("TBD: Run simulation with each key pressed to check output");
+  },
+
+  render: function () {
+    if (this.props.currentUser) {
+      return div({id: "we-got-it"},
+        button({onClick: this.clicked}, "We got it!")
+      );
+    }
+    else {
+      return null;
+    }
+  }
+});
+
 AppView = createComponent({
   displayName: 'AppView',
 
@@ -2355,6 +2374,7 @@ AppView = createComponent({
     return div({},
       h1({}, "Teaching Teamwork PIC Activity"),
       this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
+      WeGotIt({currentUser: this.state.currentUser}),
       div({id: 'picapp'},
         WorkspaceView({boards: this.state.boards, stepping: !this.state.running, showDebugPins: this.state.showDebugPins, users: this.state.users, userBoardNumber: this.state.userBoardNumber}),
         SimulatorControlView({running: this.state.running, run: this.run, step: this.step, reset: this.reset}),

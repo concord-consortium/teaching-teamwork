@@ -34,6 +34,11 @@ button {
   position: relative;
 }
 
+#we-got-it {
+  text-align: center;
+  margin: 10px;
+}
+
 #simulator-control {
   position: absolute;
   top: 0;
