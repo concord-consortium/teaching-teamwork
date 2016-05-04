@@ -65,42 +65,8 @@ function logEvent(eventName, value, parameters) {
   var loggedValue = null,
       loggedParameters = null;
 
-  function getHoleInfo(hole, label) {
-    var info = {
-      hole: {
-        index: hole.index,
-        color: hole.color
-      },
-      connector: hole.connector.type,
-      board: hole.connector.board.number
-    };
-    info[label] = 'hole';
-    return info;
-  }
-
-  function getPinInfo(pin, label) {
-    var info = {
-      pin: {
-        index: pin.number,
-        name: pin.label.text
-      },
-      component: pin.component.name,
-      board: pin.component.board.number
-    };
-    info[label] = 'pin';
-    return info;
-  }
-
   if (eventName === MOVED_PROBE_EVENT) {
-    loggedParameters = {
-      to: null
-    };
-    if (value instanceof Hole) {
-      loggedParameters = value ? getHoleInfo(value, 'to') : {board: parameters.board.number};
-    }
-    else {
-      loggedParameters = value ? getPinInfo(value, 'to') : {board: parameters.board.number};
-    }
+    loggedParameters = parameters.board.serializeEndpoint(value, 'to');
     boardWatcher.movedProbe(parameters.board, loggedParameters);
   }
   else if (eventName == PUSHED_BUTTON_EVENT) {
@@ -112,14 +78,14 @@ function logEvent(eventName, value, parameters) {
   }
   else if (eventName == ADD_WIRE_EVENT) {
     loggedParameters = {
-      source: parameters.source instanceof Hole ? getHoleInfo(parameters.source, 'type') : getPinInfo(parameters.source, 'type'),
-      dest: parameters.dest instanceof Hole ? getHoleInfo(parameters.dest, 'type') : getPinInfo(parameters.dest, 'type')
+      source: parameters.board.serializeEndpoint(parameters.source, 'type'),
+      dest: parameters.board.serializeEndpoint(parameters.dest, 'type')
     };
     boardWatcher.circuitChanged(parameters.board);
   }
   else if (eventName == REMOVE_WIRE_EVENT) {
     loggedParameters = {
-      source: parameters.source instanceof Hole ? getHoleInfo(parameters.source, 'type') : getPinInfo(parameters.source, 'type')
+      source: parameters.board.serializeEndpoint(parameters.source, 'type')
     };
     boardWatcher.circuitChanged(parameters.board);
   }
@@ -253,8 +219,7 @@ BoardWatcher.prototype.pushedButton = function (board, buttonValue) {
   this.firebase.child(board.number).child('button').set(buttonValue);
 };
 BoardWatcher.prototype.circuitChanged = function (board) {
-  // TODO
-  console.log(board);
+  this.firebase.child(board.number).child('wires').set(board.serializeWiresToArray());
 };
 BoardWatcher.prototype.addListener = function (board, listener) {
   this.listeners[board.number] = listener;
@@ -939,7 +904,8 @@ PIC.prototype.setPinListInputMode = function (list, mask) {
 };
 
 Board = function (options) {
-  var i, j;
+  var self = this,
+      i;
 
   this.number = options.number;
   this.components = options.components;
@@ -950,6 +916,8 @@ Board = function (options) {
 
   this.pinsAndHoles = [];
   this.componentList = [];
+
+  this.allBoards = [];
 
   this.numComponents = 0;
   for (var name in this.components) {
@@ -962,11 +930,11 @@ Board = function (options) {
       this.components[name].board = this;
     }
   }
-  for (i = 0; i < this.connectors.length; i++) {
-    for (j = 0; j < this.connectors[i].holes.length; i++) {
-      this.pinsAndHoles.push(this.connectors[i].holes[j]);
+  $.each(this.connectors, function (name, connector) {
+    for (var i = 0; i < connector.holes.length; i++) {
+      self.pinsAndHoles.push(connector.holes[i]);
     }
-  }
+  });
 
   // reset the pic so the pin output is set
   this.components.pic.reset();
@@ -989,6 +957,119 @@ Board.prototype.reset = function () {
     this.componentList[i].reset();
   }
 };
+Board.prototype.updateWires = function (newSerializedWires) {
+  var toRemove = [],
+      currentSerializedWires, i, index, endpoints;
+
+  // quick check to see if there are changes
+  currentSerializedWires = this.serializeWiresToArray();
+  if (JSON.stringify(newSerializedWires) == JSON.stringify(currentSerializedWires)) {
+    return;
+  }
+
+  // compare the current wires with the new wires
+  for (i = 0; i < currentSerializedWires.length; i++) {
+    index = newSerializedWires.indexOf(currentSerializedWires[i]);
+    if (index === -1) {
+      // in current but not in new so remove
+      toRemove.push(currentSerializedWires[i]);
+    }
+    else {
+      // in both so delete from new
+      newSerializedWires.splice(index, 1);
+    }
+  }
+
+  // now toRemove contains wires to remove and newSerializedWires contains wires to add
+  for (i = 0; i < toRemove.length; i++) {
+    endpoints = this.findSerializedWireEndpoints(toRemove[i]);
+    if (endpoints.source && endpoints.dest) {
+      this.removeWire(endpoints.source);
+    }
+  }
+  for (i = 0; i < newSerializedWires.length; i++) {
+    endpoints = this.findSerializedWireEndpoints(newSerializedWires[i]);
+    if (endpoints.source && endpoints.dest) {
+      this.addWire(endpoints.source, endpoints.dest, endpoints.color);
+    }
+  }
+};
+Board.prototype.serializeWiresToArray = function () {
+  var serialized = [],
+      i, source, dest;
+  for (i = 0; i < this.wires.length; i++) {
+    source = this.serializeEndpoint(this.wires[i].source, 'type');
+    dest = this.serializeEndpoint(this.wires[i].dest, 'type');
+    // not using JSON here so that we can to quick indexOf checks in updateWires() above
+    serialized.push([
+      source.component ? 'component' : 'connector',
+      ':',
+      source.component || source.connector,
+      ':',
+      source[source.type].index,
+      ',',
+      dest.component ? 'component' : 'connector',
+      ':',
+      dest.component || dest.connector,
+      ':',
+      dest[dest.type].index,
+      ',',
+      this.wires[i].color
+    ].join(''));
+  }
+  return serialized;
+};
+Board.prototype.findSerializedWireEndpoints = function (serializedWire) {
+  var self = this,
+      parts = serializedWire.split(','),
+      findEndpoint = function (parts) {
+        var type = parts[0],
+            instance = parts[1] || '',
+            index = parseInt(parts[2] || '0', 10),
+            endpoint = null;
+        if ((type == 'connector') && self.connectors[instance]) {
+          endpoint = self.connectors[instance].holes[index];
+        }
+        else if ((type == 'component') && self.components[instance]) {
+          endpoint = self.components[instance].pins[index];
+        }
+        return endpoint;
+      };
+
+  return {
+    source: findEndpoint(parts[0].split(':')),
+    dest: findEndpoint((parts[1] || '').split(':')),
+    color: parts[2] || ''
+  };
+};
+Board.prototype.serializeEndpoint = function (endPoint, label) {
+  var serialized;
+  if (endPoint instanceof Hole) {
+    serialized = {
+      connector: endPoint.connector.type,
+      hole: {
+        index: endPoint.index,
+        color: endPoint.color
+      }
+    };
+    serialized[label] = 'hole';
+  }
+  else if (endPoint instanceof Pin) {
+    serialized = {
+      component: endPoint.component.name,
+      pin: {
+        index: endPoint.number,
+        name: endPoint.label.text
+      }
+    };
+    serialized[label] = 'pin';
+  }
+  else {
+    serialized = {};
+  }
+  serialized.board = this.number;
+  return serialized;
+};
 Board.prototype.removeWire = function (sourceOrDest) {
   var i;
 
@@ -1003,7 +1084,7 @@ Board.prototype.removeWire = function (sourceOrDest) {
       }
       this.wires[i].dest.connected = false;
       this.wires.splice(i, 1);
-      this.resolveCircuits();
+      this.resolveCircuitsAcrossAllBoards();
       return true;
     }
   }
@@ -1058,6 +1139,18 @@ Board.prototype.resolveCircuits = function() {
   }
 
   return false;
+};
+Board.prototype.resolveCircuitsAcrossAllBoards = function() {
+  var i;
+  // reset and resolve all the circuits first
+  for (i = 0; i < this.allBoards.length; i++) {
+    this.allBoards[i].reset();
+    this.allBoards[i].resolveCircuits();
+  }
+  // and then resolve all the io values
+  for (i = 0; i < this.allBoards.length; i++) {
+    this.allBoards[i].resolveIOValues();
+  }
 };
 Board.prototype.resolveCircuitInputValues = function () {
   var i;
@@ -1494,7 +1587,7 @@ ProbeView = createComponent({
       'L', x + height, ',', middleY + halfNeedleHeight, ' '
     ].join('');
 
-    return g({transform: ['rotate(-15 ', x, ' ', y + (height / 2), ')'].join(''), onMouseDown: this.props.selected ? this.startDrag : null},
+    return g({transform: ['rotate(-15 ', x, ' ', y + (height / 2), ')'].join(''), onMouseDown: this.props.selected && this.props.editable ? this.startDrag : null},
       path({d: needlePath, fill: '#c0c0c0', stroke: '#777', style: {pointerEvents: 'none'}}),
       path({d: handlePath, fill: '#eee', stroke: '#777'}), // '#FDCA6E'
       circle({cx: x + (4 * height), cy: middleY, r: height / 4, fill: 'red', fillOpacity: redFill}),
@@ -1532,20 +1625,15 @@ BoardView = createComponent({
   updateWatchedBoard: function (boardInfo) {
     var board = this.props.board,
         probe = {source: null, pos: null},
-        probeInfo;
+        probeInfo, wires;
 
-    if (!boardInfo) {
-      return;
-    }
-
-    if (board.components.keypad) {
+    if (boardInfo && board.components.keypad) {
       board.components.keypad.selectButtonValue(boardInfo.button);
     }
-    //console.log(boardInfo, board);
 
     // move the probe
-    probeInfo = boardInfo.probe;
-    if (probeInfo) {
+    if (boardInfo && boardInfo.probe) {
+      probeInfo = boardInfo.probe;
       if (probeInfo.to === 'pin') {
         probe.source = board.components[probeInfo.component].pins[probeInfo.pin.index];
       }
@@ -1554,6 +1642,10 @@ BoardView = createComponent({
       }
     }
     this.setProbe(probe);
+
+    // update the wires
+    wires = (boardInfo ? boardInfo.wires : null) || [];
+    board.updateWires(wires);
   },
 
   reportHover: function (hoverSource) {
@@ -2052,6 +2144,10 @@ AppView = createComponent({
     board1Output.board = boards[1];
     board2Input.board = boards[2];
 
+    boards[0].allBoards = boards;
+    boards[1].allBoards = boards;
+    boards[2].allBoards = boards;
+
     return {
       boards: boards,
       running: true,
@@ -2129,7 +2225,7 @@ AppView = createComponent({
   run: function (run, skipLogging) {
     clearInterval(this.simulatorInterval);
     if (run) {
-      this.simulatorInterval = setInterval(this.simulate.bind(this), 100);
+      this.simulatorInterval = setInterval(this.simulate, 100);
     }
     this.setState({running: run});
     if (!skipLogging) {
@@ -2208,6 +2304,7 @@ AppView = createComponent({
           this.state.boards[i].addWire(wire.source, wire.dest, wire.color);
         }
       }
+      boardWatcher.circuitChanged(this.state.boards[i]);
     }
 
     this.setState({boards: this.state.boards, addedAllWires: !this.state.addedAllWires});
