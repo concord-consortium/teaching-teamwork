@@ -203,8 +203,11 @@ BoardWatcher.prototype.startListeners = function () {
   var self = this,
       listenerCallbackFn = function (boardNumber) {
         return function (snapshot) {
+          var i;
           if (self.listeners[boardNumber]) {
-            self.listeners[boardNumber](snapshot.val());
+            for (i = 0; i < self.listeners[boardNumber].length; i++) {
+              self.listeners[boardNumber][i].listener(self.listeners[boardNumber][i].board, snapshot.val());
+            }
           }
         };
       };
@@ -224,10 +227,22 @@ BoardWatcher.prototype.circuitChanged = function (board) {
   this.firebase.child(board.number).child('wires').set(board.serializeWiresToArray());
 };
 BoardWatcher.prototype.addListener = function (board, listener) {
-  this.listeners[board.number] = listener;
+  this.listeners[board.number] = this.listeners[board.number] || [];
+  this.listeners[board.number].push({
+    board: board,
+    listener: listener
+  });
 };
-BoardWatcher.prototype.removeListener = function (board) {
-  delete this.listeners[board.number];
+BoardWatcher.prototype.removeListener = function (board, listener) {
+  var listeners = this.listeners[board.number] || [],
+      newListeners = [],
+      i;
+  for (i = 0; i < listeners.length; i++) {
+    if (listeners[i].listener !== listener) {
+      newListeners.push(listeners[i]);
+    }
+  }
+  this.listeners[board.number] = newListeners;
 };
 
 //
@@ -1621,17 +1636,12 @@ BoardView = createComponent({
   },
 
   componentWillUnmount: function () {
-    boardWatcher.removeListener(this.props.board);
+    boardWatcher.removeListener(this.props.board, this.updateWatchedBoard);
   },
 
-  updateWatchedBoard: function (boardInfo) {
-    var board = this.props.board,
-        probe = {source: null, pos: null},
-        probeInfo, wires;
-
-    if (boardInfo && board.components.keypad) {
-      board.components.keypad.selectButtonValue(boardInfo.button);
-    }
+  updateWatchedBoard: function (board, boardInfo) {
+    var probe = {source: null, pos: null},
+        probeInfo;
 
     // move the probe
     if (boardInfo && boardInfo.probe) {
@@ -1644,10 +1654,6 @@ BoardView = createComponent({
       }
     }
     this.setProbe(probe);
-
-    // update the wires
-    wires = (boardInfo ? boardInfo.wires : null) || [];
-    board.updateWires(wires);
   },
 
   reportHover: function (hoverSource) {
@@ -2168,6 +2174,10 @@ AppView = createComponent({
     var activityName = 'pic',
         self = this;
 
+    boardWatcher.addListener(this.state.boards[0], this.updateWatchedBoard);
+    boardWatcher.addListener(this.state.boards[1], this.updateWatchedBoard);
+    boardWatcher.addListener(this.state.boards[2], this.updateWatchedBoard);
+
     logController.init(activityName);
     userController.init(3, activityName, function(userBoardNumber) {
       var users = self.state.users,
@@ -2205,6 +2215,24 @@ AppView = createComponent({
     if (this.state.running) {
       this.run(true, true);
     }
+  },
+
+  componentWillUnmount: function () {
+    boardWatcher.removeListener(this.state.boards[0], this.updateWatchedBoard);
+    boardWatcher.removeListener(this.state.boards[1], this.updateWatchedBoard);
+    boardWatcher.removeListener(this.state.boards[2], this.updateWatchedBoard);
+  },
+
+  updateWatchedBoard: function (board, boardInfo) {
+    var wires;
+
+    if (boardInfo && board.components.keypad) {
+      board.components.keypad.selectButtonValue(boardInfo.button);
+    }
+
+    // update the wires
+    wires = (boardInfo ? boardInfo.wires : null) || [];
+    board.updateWires(wires);
   },
 
   simulate: function (step) {
