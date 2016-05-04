@@ -34,6 +34,8 @@ var picCode = require('./data/pic-code'),
     form = React.DOM.form,
     textarea = React.DOM.textarea,
     br = React.DOM.br,
+    h1 = React.DOM.h1,
+    h2 = React.DOM.h2,
     WORKSPACE_HEIGHT = 768,
     WORKSPACE_WIDTH = 936 - 200,
     RIBBON_HEIGHT = 21,
@@ -1750,7 +1752,7 @@ BoardView = createComponent({
     }
 
     return div({className: this.props.editable ? 'board editable-board' : 'board', style: style},
-      span({className: 'board-user'}, ('Circuit ' + (this.props.board.number + 1) + ': ') + (this.props.user ? this.props.user.name : '(unclaimed)')),
+      span({className: this.props.editable ? 'board-user editable-board-user' : 'board-user'}, ('Circuit ' + (this.props.board.number + 1) + ': ') + (this.props.user ? this.props.user.name : '(unclaimed)')),
       svg({className: 'board-area'},
         connectors,
         components,
@@ -2154,7 +2156,10 @@ AppView = createComponent({
       addedAllWires: false,
       demo: window.location.search.indexOf('demo') !== -1,
       userBoardNumber: -1,
-      users: {}
+      users: {},
+      currentBoard: 0,
+      currentUser: null,
+      currentGroup: null
     };
   },
 
@@ -2164,15 +2169,20 @@ AppView = createComponent({
 
     logController.init(activityName);
     userController.init(3, activityName, function(userBoardNumber) {
-      var users = self.state.users;
+      var users = self.state.users,
+          currentUser = userController.getUsername();
+
       userBoardNumber = parseInt(userBoardNumber, 10);
       users[userBoardNumber] = {
-        name: userController.getUsername()
+        name: currentUser
       };
 
       self.setState({
         userBoardNumber: userBoardNumber,
-        users: users
+        users: users,
+        currentUser: currentUser,
+        currentGroup: userController.getGroupname(),
+        currentBoard: userBoardNumber
       });
 
       userController.onGroupRefCreation(function() {
@@ -2314,11 +2324,15 @@ AppView = createComponent({
   },
 
   render: function () {
-    return div({id: 'picapp'},
-      WorkspaceView({boards: this.state.boards, stepping: !this.state.running, showDebugPins: this.state.showDebugPins, users: this.state.users, userBoardNumber: this.state.userBoardNumber}),
-      SimulatorControlView({running: this.state.running, run: this.run, step: this.step, reset: this.reset}),
-      this.state.demo ? DemoControlView({running: this.state.running, toggleAllWires: this.toggleAllWires, toggleDebugPins: this.toggleDebugPins, showDebugPins: this.state.showDebugPins, addedAllWires: this.state.addedAllWires}) : null,
-      SidebarChatView({demo: this.state.demo})
+    return div({},
+      h1({}, "Teaching Teamwork PIC Activity"),
+      this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
+      div({id: 'picapp'},
+        WorkspaceView({boards: this.state.boards, stepping: !this.state.running, showDebugPins: this.state.showDebugPins, users: this.state.users, userBoardNumber: this.state.userBoardNumber}),
+        SimulatorControlView({running: this.state.running, run: this.run, step: this.step, reset: this.reset}),
+        this.state.demo ? DemoControlView({running: this.state.running, toggleAllWires: this.toggleAllWires, toggleDebugPins: this.toggleDebugPins, showDebugPins: this.state.showDebugPins, addedAllWires: this.state.addedAllWires}) : null,
+        SidebarChatView({demo: this.state.demo})
+      )
     );
   }
 });

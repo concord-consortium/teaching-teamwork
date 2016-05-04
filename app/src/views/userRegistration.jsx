@@ -159,8 +159,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
             <h3>Group name: { this.state.groupName }</h3>
             { userDetails }
             { groupDetails }
-            <label>&nbsp;</label>
-            <span>Do you want to { joinStr } this group?</span>
+            <div style={{marginTop: 10}}>Do you want to { joinStr } this group?</div>
             <label>
               <button onClick={ this.handleJoinGroup } >Yes, { joinStr }</button>
               <button onClick={ this.handleRejectGroup } >No, enter a different group</button>
@@ -202,6 +201,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
 
       form = (
         <div>
+          <h3>Select Circuit</h3>
           { clientChoices }
           <label>
             <button disabled={ !submittable } onClick={ this.handleClientSelected } >Select</button>
