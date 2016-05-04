@@ -3730,8 +3730,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
             React.createElement("h3", null, "Group name: ",  this.state.groupName), 
              userDetails, 
              groupDetails, 
-            React.createElement("label", null, " "), 
-            React.createElement("span", null, "Do you want to ",  joinStr, " this group?"), 
+            React.createElement("div", {style: {marginTop: 10}}, "Do you want to ",  joinStr, " this group?"), 
             React.createElement("label", null, 
               React.createElement("button", {onClick:  this.handleJoinGroup}, "Yes, ",  joinStr ), 
               React.createElement("button", {onClick:  this.handleRejectGroup}, "No, enter a different group")
@@ -3773,6 +3772,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
 
       form = (
         React.createElement("div", null, 
+          React.createElement("h3", null, "Select Circuit"), 
            clientChoices, 
           React.createElement("label", null, 
             React.createElement("button", {disabled:  !submittable, onClick:  this.handleClientSelected}, "Select"), 
