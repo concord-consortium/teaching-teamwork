@@ -252,6 +252,7 @@ Wire = function (options) {
   this.source = options.source;
   this.dest = options.dest;
   this.color = options.color;
+  this.id = Wire.GenerateId(this.source, this.dest, this.color);
 };
 Wire.prototype.connectsTo = function (sourceOrDest) {
   return (this.source === sourceOrDest) || (this.dest === sourceOrDest);
@@ -261,6 +262,26 @@ Wire.prototype.getBezierReflection = function () {
     return this.dest.getBezierReflection();
   }
   return this.source.getBezierReflection();
+};
+Wire.GenerateId = function (source, dest, color) {
+  var sourceId = Wire.EndpointId(source),
+      destId = Wire.EndpointId(dest),
+      firstId = sourceId < destId ? sourceId : destId,
+      secondId = firstId === sourceId ? destId : sourceId;
+  return [firstId, secondId, color].join(',');
+};
+Wire.EndpointId = function (endPoint) {
+  var id;
+  if (endPoint instanceof Hole) {
+    id = ['connector', endPoint.connector.type, endPoint.index].join(':');
+  }
+  else if (endPoint instanceof Pin) {
+    id = ['component', endPoint.component.name, endPoint.number].join(':');
+  }
+  else {
+    id = 'unknown';
+  }
+  return id;
 };
 
 Circuit = function (options) {
@@ -1012,26 +1033,9 @@ Board.prototype.updateWires = function (newSerializedWires) {
 };
 Board.prototype.serializeWiresToArray = function () {
   var serialized = [],
-      i, source, dest;
+      i;
   for (i = 0; i < this.wires.length; i++) {
-    source = this.serializeEndpoint(this.wires[i].source, 'type');
-    dest = this.serializeEndpoint(this.wires[i].dest, 'type');
-    // not using JSON here so that we can to quick indexOf checks in updateWires() above
-    serialized.push([
-      source.component ? 'component' : 'connector',
-      ':',
-      source.component || source.connector,
-      ':',
-      source[source.type].index,
-      ',',
-      dest.component ? 'component' : 'connector',
-      ':',
-      dest.component || dest.connector,
-      ':',
-      dest[dest.type].index,
-      ',',
-      this.wires[i].color
-    ].join(''));
+    serialized.push(this.wires[i].id);
   }
   return serialized;
 };
@@ -1107,6 +1111,8 @@ Board.prototype.removeWire = function (sourceOrDest) {
   return false;
 };
 Board.prototype.addWire = function (source, dest, color) {
+  var i, id;
+
   if (!source || !dest) {
     return false;
   }
@@ -1125,8 +1131,14 @@ Board.prototype.addWire = function (source, dest, color) {
     return false;
   }
 
-  this.removeWire(source);
-  this.removeWire(dest);
+  // don't allow duplicate wires
+  id = Wire.GenerateId(source, dest, color);
+  for (i = 0; i < this.wires.length; i++) {
+    if (this.wires[i].id === id) {
+      return false;
+    }
+  }
+
   this.wires.push(new Wire({
     source: source,
     dest: dest,
