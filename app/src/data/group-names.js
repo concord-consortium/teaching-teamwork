@@ -1,3 +1,13 @@
+var sortByName = function (a, b) {
+  if (a.name < b.name) {
+    return -1;
+  }
+  if (a.name > b.name) {
+    return 1;
+  }
+  return 0;
+};
+
 module.exports = [
   {
     name: "Animals",
@@ -80,7 +90,7 @@ module.exports = [
   {
     name: "Fruit",
     members: [
-      "Cherry", "Plum", "Grape"
+      "Peach", "Plum", "Grape"
     ]
   },
   {
@@ -131,4 +141,4 @@ module.exports = [
       "Utah", "Ohio", "Iowa"
     ]
   }
-];
+].sort(sortByName);

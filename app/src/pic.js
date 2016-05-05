@@ -13,23 +13,13 @@
 
   Todo for full collaborative environment:
 
-  1. Add user and group dialogs with Firebase connections and update board label
-  2. Add concept of read/write and read-only boards based on the user's assigned board
-  3. Send events to Firebase for
-    a. Keypad selects
-    b. Probe moves
-    c. Wiring setup/changes
-  4. Send events to Log Manager for
-    a. Board zoom in/out
-    b. Add/remove wire
-    c. Move probe
-    d. Start/Stop/Step/Reset simulator
-  5. Add back Firebase support to chat
-  6. Add a "All done!" button
+  1. Add a "All done!" button with check to verify circuit validity
 
 */
 
 var picCode = require('./data/pic-code'),
+    logController = require('./controllers/log'),
+    userController = require('./controllers/user'),
     div = React.DOM.div,
     span = React.DOM.span,
     svg = React.DOM.svg,
@@ -44,19 +34,70 @@ var picCode = require('./data/pic-code'),
     form = React.DOM.form,
     textarea = React.DOM.textarea,
     br = React.DOM.br,
+    h1 = React.DOM.h1,
+    h2 = React.DOM.h2,
     WORKSPACE_HEIGHT = 768,
-    WORKSPACE_WIDTH = 1024 - 200,
+    WORKSPACE_WIDTH = 936 - 200,
     RIBBON_HEIGHT = 21,
     SELECTED_FILL = '#bbb',
     UNSELECTED_FILL = '#777',
-    AppView, FakeSidebarView, WorkspaceView, BoardView, Board, RibbonView, ConnectorView,
+
+    MOVED_PROBE_EVENT = 'Moved probe',
+    PUSHED_BUTTON_EVENT = 'Pushed button',
+    ADD_WIRE_EVENT = 'Add wire',
+    REMOVE_WIRE_EVENT = 'Remove wire',
+    OPENED_BOARD_EVENT = 'Opened board',
+    CLOSED_BOARD_EVENT = 'Closed board',
+    RUN_EVENT = 'Run',
+    STOP_EVENT = 'Stop',
+    STEP_EVENT = 'Step',
+    RESET_EVENT = 'Reset',
+
+    AppView, WeGotIt, SidebarChatView, WorkspaceView, BoardView, Board, RibbonView, ConnectorView,
     Keypad, LED, PIC, Connector, KeypadView, LEDView, PICView,
     ConnectorHoleView, Hole, Pin, PinView,
-    BoardEditorView, SimulatorControlView, Wire, Button, ButtonView, Segment, Circuit, DemoControlView, ChatItem, ChatItems, ProbeView;
+    BoardEditorView, SimulatorControlView, Wire, Button, ButtonView, Segment, Circuit, DemoControlView, ChatItem, ChatItems, ProbeView, BoardWatcher, boardWatcher;
 
 //
 // Helper functions
 //
+
+function logEvent(eventName, value, parameters) {
+  var loggedValue = null,
+      loggedParameters = null;
+
+  if (eventName === MOVED_PROBE_EVENT) {
+    loggedParameters = parameters.board.serializeEndpoint(value, 'to');
+    boardWatcher.movedProbe(parameters.board, loggedParameters);
+  }
+  else if (eventName == PUSHED_BUTTON_EVENT) {
+    loggedValue = value.value;
+    loggedParameters = {
+      board: value.component.board.number
+    };
+    boardWatcher.pushedButton(parameters.board, value.value);
+  }
+  else if (eventName == ADD_WIRE_EVENT) {
+    loggedParameters = {
+      source: parameters.board.serializeEndpoint(parameters.source, 'type'),
+      dest: parameters.board.serializeEndpoint(parameters.dest, 'type')
+    };
+    boardWatcher.circuitChanged(parameters.board);
+  }
+  else if (eventName == REMOVE_WIRE_EVENT) {
+    loggedParameters = {
+      source: parameters.board.serializeEndpoint(parameters.source, 'type')
+    };
+    boardWatcher.circuitChanged(parameters.board);
+  }
+  else {
+    // log the raw event value and parameters
+    logController.logEvent(eventName, value, parameters);
+    return;
+  }
+
+  logController.logEvent(eventName, loggedValue, loggedParameters);
+}
 
 function createComponent(def) {
   return React.createFactory(React.createClass(def));
@@ -149,6 +190,59 @@ function calculateComponentRect(selected, index, count, componentWidth, componen
 
   return position;
 }
+
+//
+// Board Watcher (using Firebase)
+//
+BoardWatcher = function () {
+  this.firebase = null;
+  this.listeners = {};
+};
+BoardWatcher.prototype.startListeners = function () {
+  var self = this,
+      listenerCallbackFn = function (boardNumber) {
+        return function (snapshot) {
+          var i;
+          if (self.listeners[boardNumber]) {
+            for (i = 0; i < self.listeners[boardNumber].length; i++) {
+              self.listeners[boardNumber][i].listener(self.listeners[boardNumber][i].board, snapshot.val());
+            }
+          }
+        };
+      };
+
+  this.firebase = userController.getFirebaseGroupRef().child('clients');
+  this.firebase.child(0).on('value', listenerCallbackFn(0));
+  this.firebase.child(1).on('value', listenerCallbackFn(1));
+  this.firebase.child(2).on('value', listenerCallbackFn(2));
+};
+BoardWatcher.prototype.movedProbe = function (board, probeInfo) {
+  this.firebase.child(board.number).child('probe').set(probeInfo);
+};
+BoardWatcher.prototype.pushedButton = function (board, buttonValue) {
+  this.firebase.child(board.number).child('button').set(buttonValue);
+};
+BoardWatcher.prototype.circuitChanged = function (board) {
+  this.firebase.child(board.number).child('wires').set(board.serializeWiresToArray());
+};
+BoardWatcher.prototype.addListener = function (board, listener) {
+  this.listeners[board.number] = this.listeners[board.number] || [];
+  this.listeners[board.number].push({
+    board: board,
+    listener: listener
+  });
+};
+BoardWatcher.prototype.removeListener = function (board, listener) {
+  var listeners = this.listeners[board.number] || [],
+      newListeners = [],
+      i;
+  for (i = 0; i < listeners.length; i++) {
+    if (listeners[i].listener !== listener) {
+      newListeners.push(listeners[i]);
+    }
+  }
+  this.listeners[board.number] = newListeners;
+};
 
 //
 // State models
@@ -269,6 +363,7 @@ Segment = function (options) {
 };
 
 Pin = function (options) {
+  this.board = options.component.board;
   this.isPin = true; // to allow for easy checks against holes in circuits
   this.inputMode = options.inputMode;
   this.placement = options.placement;
@@ -368,6 +463,7 @@ Connector.prototype.calculatePosition = function (selected) {
 Keypad = function () {
   var i, pin, button, values;
 
+  this.name = 'keypad';
   this.view = KeypadView;
 
   this.pushedButton = null;
@@ -421,6 +517,8 @@ Keypad = function () {
     this.buttons.push(new Button(button));
   }
   this.bottomButtonValues = [this.buttons[9].value, this.buttons[10].value, this.buttons[11].value];
+
+  this.listeners = [];
 };
 Keypad.prototype.calculatePosition = function (selected, index, count) {
   var constants = selectedConstants(selected),
@@ -488,8 +586,6 @@ Keypad.prototype.calculatePosition = function (selected, index, count) {
     pin.height = constants.PIN_HEIGHT;
     pin.labelSize = constants.PIC_FONT_SIZE;
   }
-
-  this.listeners = [];
 };
 Keypad.prototype.addListener = function (listener) {
   this.listeners.push(listener);
@@ -508,6 +604,15 @@ Keypad.prototype.reset = function () {
 Keypad.prototype.pushButton = function (button) {
   this.pushedButton = button;
   this.notify();
+};
+Keypad.prototype.selectButtonValue = function (value) {
+  var self = this;
+  $.each(this.buttons, function (index, button) {
+    if (button.value == value) {
+      self.pushButton(button);
+      return false;
+    }
+  });
 };
 Keypad.prototype.resolveOutputValues = function () {
   var colValue = 7,
@@ -539,6 +644,7 @@ Keypad.prototype.resolveOutputValues = function () {
 LED = function () {
   var i, pin, segmentLayoutMap, segment;
 
+  this.name = 'led';
   this.view = LEDView;
 
   this.pins = [];
@@ -667,6 +773,7 @@ LED.prototype.resolveOutputValues = function () {
 PIC = function (options) {
   var i, pin, notConnectable;
 
+  this.name = 'pic';
   this.view = PICView;
   this.board = options.board;
 
@@ -813,7 +920,8 @@ PIC.prototype.setPinListInputMode = function (list, mask) {
 };
 
 Board = function (options) {
-  var i, j;
+  var self = this,
+      i;
 
   this.number = options.number;
   this.components = options.components;
@@ -825,6 +933,8 @@ Board = function (options) {
   this.pinsAndHoles = [];
   this.componentList = [];
 
+  this.allBoards = [];
+
   this.numComponents = 0;
   for (var name in this.components) {
     if (this.components.hasOwnProperty(name)) {
@@ -833,16 +943,16 @@ Board = function (options) {
       for (i = 0; i < this.components[name].pins.length; i++) {
         this.pinsAndHoles.push(this.components[name].pins[i]);
       }
+      this.components[name].board = this;
     }
   }
-  for (i = 0; i < this.connectors.length; i++) {
-    for (j = 0; j < this.connectors[i].holes.length; i++) {
-      this.pinsAndHoles.push(this.connectors[i].holes[j]);
+  $.each(this.connectors, function (name, connector) {
+    for (var i = 0; i < connector.holes.length; i++) {
+      self.pinsAndHoles.push(connector.holes[i]);
     }
-  }
+  });
 
-  // link the pic to the board and reset it so the pin output is set
-  this.components.pic.board = this;
+  // reset the pic so the pin output is set
   this.components.pic.reset();
 };
 Board.prototype.clear = function () {
@@ -863,6 +973,119 @@ Board.prototype.reset = function () {
     this.componentList[i].reset();
   }
 };
+Board.prototype.updateWires = function (newSerializedWires) {
+  var toRemove = [],
+      currentSerializedWires, i, index, endpoints;
+
+  // quick check to see if there are changes
+  currentSerializedWires = this.serializeWiresToArray();
+  if (JSON.stringify(newSerializedWires) == JSON.stringify(currentSerializedWires)) {
+    return;
+  }
+
+  // compare the current wires with the new wires
+  for (i = 0; i < currentSerializedWires.length; i++) {
+    index = newSerializedWires.indexOf(currentSerializedWires[i]);
+    if (index === -1) {
+      // in current but not in new so remove
+      toRemove.push(currentSerializedWires[i]);
+    }
+    else {
+      // in both so delete from new
+      newSerializedWires.splice(index, 1);
+    }
+  }
+
+  // now toRemove contains wires to remove and newSerializedWires contains wires to add
+  for (i = 0; i < toRemove.length; i++) {
+    endpoints = this.findSerializedWireEndpoints(toRemove[i]);
+    if (endpoints.source && endpoints.dest) {
+      this.removeWire(endpoints.source);
+    }
+  }
+  for (i = 0; i < newSerializedWires.length; i++) {
+    endpoints = this.findSerializedWireEndpoints(newSerializedWires[i]);
+    if (endpoints.source && endpoints.dest) {
+      this.addWire(endpoints.source, endpoints.dest, endpoints.color);
+    }
+  }
+};
+Board.prototype.serializeWiresToArray = function () {
+  var serialized = [],
+      i, source, dest;
+  for (i = 0; i < this.wires.length; i++) {
+    source = this.serializeEndpoint(this.wires[i].source, 'type');
+    dest = this.serializeEndpoint(this.wires[i].dest, 'type');
+    // not using JSON here so that we can to quick indexOf checks in updateWires() above
+    serialized.push([
+      source.component ? 'component' : 'connector',
+      ':',
+      source.component || source.connector,
+      ':',
+      source[source.type].index,
+      ',',
+      dest.component ? 'component' : 'connector',
+      ':',
+      dest.component || dest.connector,
+      ':',
+      dest[dest.type].index,
+      ',',
+      this.wires[i].color
+    ].join(''));
+  }
+  return serialized;
+};
+Board.prototype.findSerializedWireEndpoints = function (serializedWire) {
+  var self = this,
+      parts = serializedWire.split(','),
+      findEndpoint = function (parts) {
+        var type = parts[0],
+            instance = parts[1] || '',
+            index = parseInt(parts[2] || '0', 10),
+            endpoint = null;
+        if ((type == 'connector') && self.connectors[instance]) {
+          endpoint = self.connectors[instance].holes[index];
+        }
+        else if ((type == 'component') && self.components[instance]) {
+          endpoint = self.components[instance].pins[index];
+        }
+        return endpoint;
+      };
+
+  return {
+    source: findEndpoint(parts[0].split(':')),
+    dest: findEndpoint((parts[1] || '').split(':')),
+    color: parts[2] || ''
+  };
+};
+Board.prototype.serializeEndpoint = function (endPoint, label) {
+  var serialized;
+  if (endPoint instanceof Hole) {
+    serialized = {
+      connector: endPoint.connector.type,
+      hole: {
+        index: endPoint.index,
+        color: endPoint.color
+      }
+    };
+    serialized[label] = 'hole';
+  }
+  else if (endPoint instanceof Pin) {
+    serialized = {
+      component: endPoint.component.name,
+      pin: {
+        index: endPoint.number,
+        name: endPoint.label.text
+      }
+    };
+    serialized[label] = 'pin';
+  }
+  else {
+    serialized = {};
+  }
+  serialized.board = this.number;
+  return serialized;
+};
 Board.prototype.removeWire = function (sourceOrDest) {
   var i;
 
@@ -877,7 +1100,7 @@ Board.prototype.removeWire = function (sourceOrDest) {
       }
       this.wires[i].dest.connected = false;
       this.wires.splice(i, 1);
-      this.resolveCircuits();
+      this.resolveCircuitsAcrossAllBoards();
       return true;
     }
   }
@@ -933,6 +1156,18 @@ Board.prototype.resolveCircuits = function() {
 
   return false;
 };
+Board.prototype.resolveCircuitsAcrossAllBoards = function() {
+  var i;
+  // reset and resolve all the circuits first
+  for (i = 0; i < this.allBoards.length; i++) {
+    this.allBoards[i].reset();
+    this.allBoards[i].resolveCircuits();
+  }
+  // and then resolve all the io values
+  for (i = 0; i < this.allBoards.length; i++) {
+    this.allBoards[i].resolveIOValues();
+  }
+};
 Board.prototype.resolveCircuitInputValues = function () {
   var i;
   for (i = 0; i < this.circuits.length; i++) {
@@ -978,8 +1213,11 @@ KeypadView = createComponent({
   },
 
   pushButton: function (button) {
-    this.props.component.pushButton(button);
-    this.setState({pushedButton: this.props.component.pushedButton});
+    if (this.props.editable) {
+      this.props.component.pushButton(button);
+      this.setState({pushedButton: this.props.component.pushedButton});
+      logEvent(PUSHED_BUTTON_EVENT, button, {board: this.props.component.board});
+    }
   },
 
   render: function () {
@@ -990,13 +1228,13 @@ KeypadView = createComponent({
 
     for (i = 0; i < this.props.component.pins.length; i++) {
       pin = this.props.component.pins[i];
-      pins.push(PinView({key: 'pin' + i, pin: pin, selected: this.props.selected, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
+      pins.push(PinView({key: 'pin' + i, pin: pin, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
       pins.push(text({key: 'label' + i, x: pin.label.x, y: pin.label.y, fontSize: pin.labelSize, fill: '#333', style: {textAnchor: pin.label.anchor}}, pin.label.text));
     }
 
     for (i = 0; i < this.props.component.buttons.length; i++) {
       button = this.props.component.buttons[i];
-      buttons.push(ButtonView({key: i, button: button, selected: this.props.selected, pushed: button === this.state.pushedButton, pushButton: this.pushButton}));
+      buttons.push(ButtonView({key: i, button: button, selected: this.props.selected, editable: this.props.editable, pushed: button === this.state.pushedButton, pushButton: this.pushButton}));
     }
 
     return g({},
@@ -1022,7 +1260,7 @@ LEDView = createComponent({
 
     for (i = 0; i < this.props.component.pins.length; i++) {
       pin = this.props.component.pins[i];
-      pins.push(PinView({key: 'pin' + i, pin: pin, selected: this.props.selected, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
+      pins.push(PinView({key: 'pin' + i, pin: pin, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
       pins.push(text({key: 'label' + i, x: pin.label.x, y: pin.label.y, fontSize: pin.labelSize, fill: '#fff', style: {textAnchor: pin.label.anchor}}, pin.label.text));
     }
 
@@ -1085,6 +1323,7 @@ PinView = createComponent({
   render: function () {
     var pin = this.props.pin,
         showColors = this.props.stepping && this.props.showDebugPins && !pin.notConnectable,
+        enableHandlers = this.props.selected && this.props.editable,
         inputRect, outputRect;
 
     switch (pin.placement) {
@@ -1109,7 +1348,7 @@ PinView = createComponent({
     inputRect.fill = showColors && pin.inputMode && pin.connected ? (pin.value ? 'red' : 'green') : '#777';
     outputRect.fill = showColors && !pin.inputMode ? (pin.value ? 'red' : 'green') : '#777';
 
-    return g({onMouseDown: this.props.selected ? this.startDrag : null, onMouseOver: this.props.selected ? this.mouseOver : null, onMouseOut: this.props.selected ? this.mouseOut : null},
+    return g({onMouseDown: enableHandlers ? this.startDrag : null, onMouseOver: enableHandlers ? this.mouseOver : null, onMouseOut: enableHandlers ? this.mouseOut : null},
       rect(inputRect),
       rect(outputRect)
     );
@@ -1204,7 +1443,7 @@ PICView = createComponent({
 
     for (i = 0; i < this.props.component.pins.length; i++) {
       pin = this.props.component.pins[i];
-      pins.push(PinView({key: 'pin' + i, pin: pin, selected: this.props.selected, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
+      pins.push(PinView({key: 'pin' + i, pin: pin, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
       pins.push(text({key: 'label' + i, x: pin.label.x, y: pin.label.y, fontSize: pin.labelSize, fill: '#fff', style: {textAnchor: pin.label.anchor}}, pin.label.text));
     }
 
@@ -1297,6 +1536,7 @@ ProbeView = createComponent({
         self.props.hoverSource.pulseProbeDuration = 0;
       }
       self.props.setProbe({source: self.props.hoverSource, pos: null});
+      logEvent(MOVED_PROBE_EVENT, self.props.hoverSource, {board: self.props.board});
     };
 
     $window.on('mousemove', drag);
@@ -1363,7 +1603,7 @@ ProbeView = createComponent({
       'L', x + height, ',', middleY + halfNeedleHeight, ' '
     ].join('');
 
-    return g({transform: ['rotate(-15 ', x, ' ', y + (height / 2), ')'].join(''), onMouseDown: this.startDrag},
+    return g({transform: ['rotate(-15 ', x, ' ', y + (height / 2), ')'].join(''), onMouseDown: this.props.selected && this.props.editable ? this.startDrag : null},
       path({d: needlePath, fill: '#c0c0c0', stroke: '#777', style: {pointerEvents: 'none'}}),
       path({d: handlePath, fill: '#eee', stroke: '#777'}), // '#FDCA6E'
       circle({cx: x + (4 * height), cy: middleY, r: height / 4, fill: 'red', fillOpacity: redFill}),
@@ -1388,6 +1628,31 @@ BoardView = createComponent({
       probeSource: this.props.board.probe ? this.props.board.probe.source : null,
       probePos: this.props.board.probe ? this.props.board.probe.pos : null
     };
+  },
+
+  componentDidMount: function () {
+    boardWatcher.addListener(this.props.board, this.updateWatchedBoard);
+  },
+
+  componentWillUnmount: function () {
+    boardWatcher.removeListener(this.props.board, this.updateWatchedBoard);
+  },
+
+  updateWatchedBoard: function (board, boardInfo) {
+    var probe = {source: null, pos: null},
+        probeInfo;
+
+    // move the probe
+    if (boardInfo && boardInfo.probe) {
+      probeInfo = boardInfo.probe;
+      if (probeInfo.to === 'pin') {
+        probe.source = board.components[probeInfo.component].pins[probeInfo.pin.index];
+      }
+      else if (probeInfo.to === 'hole') {
+        probe.source = board.connectors[probeInfo.connector].holes[probeInfo.hole.index];
+      }
+    }
+    this.setProbe(probe);
   },
 
   reportHover: function (hoverSource) {
@@ -1439,10 +1704,12 @@ BoardView = createComponent({
       if (dest && (dest !== source)) {
         self.props.board.addWire(source, dest, (source.color || dest.color || color));
         self.setState({wires: self.props.board.wires});
+        logEvent(ADD_WIRE_EVENT, null, {board: self.props.board, source: source, dest: dest});
       }
       else if (!dest) {
         self.props.board.removeWire(source);
         self.setState({wires: self.props.board.wires});
+        logEvent(REMOVE_WIRE_EVENT, null, {board: self.props.board, source: source});
       }
     };
 
@@ -1455,14 +1722,12 @@ BoardView = createComponent({
         style = {
           width: WORKSPACE_WIDTH,
           height: constants.BOARD_HEIGHT,
-          position: 'relative',
-          cursor: this.props.selected ? 'default' : 'zoom-in'
+          position: 'relative'
         },
         connectors = [],
         components = [],
         wires = [],
         componentIndex = 0,
-        closeButton = null,
         name, component, i, wire, stroke;
 
     // resolve input values
@@ -1471,27 +1736,19 @@ BoardView = createComponent({
     // calculate the position so the wires can be updated
     if (this.props.board.connectors.input) {
       this.props.board.connectors.input.calculatePosition(this.props.selected);
-      connectors.push(ConnectorView({key: 'input', connector: this.props.board.connectors.input, selected: this.props.selected, drawConnection: this.drawConnection, reportHover: this.reportHover}));
+      connectors.push(ConnectorView({key: 'input', connector: this.props.board.connectors.input, selected: this.props.selected, editable: this.props.editable, drawConnection: this.drawConnection, reportHover: this.reportHover}));
     }
     if (this.props.board.connectors.output) {
       this.props.board.connectors.output.calculatePosition(this.props.selected);
-      connectors.push(ConnectorView({key: 'output', connector: this.props.board.connectors.output, selected: this.props.selected, drawConnection: this.drawConnection, reportHover: this.reportHover}));
+      connectors.push(ConnectorView({key: 'output', connector: this.props.board.connectors.output, selected: this.props.selected, editable: this.props.editable, drawConnection: this.drawConnection, reportHover: this.reportHover}));
     }
 
     for (name in this.props.board.components) {
       if (this.props.board.components.hasOwnProperty(name)) {
         component = this.props.board.components[name];
         component.calculatePosition(this.props.selected, componentIndex++, this.props.board.numComponents);
-        components.push(component.view({key: name, component: component, selected: this.props.selected, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.drawConnection, reportHover: this.reportHover}));
+        components.push(component.view({key: name, component: component, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.drawConnection, reportHover: this.reportHover}));
       }
-    }
-
-    if (this.props.selected) {
-      closeButton = g({onClick: this.toggleBoard},
-        rect({x: style.width - 25, y: 5, width: 20, height: 20, fill: '#f00'}),
-        line({x1: style.width - 20, y1: 10, x2: style.width - 10, y2: 20, strokeWidth: 2, stroke: '#fff'}),
-        line({x1: style.width - 10, y1: 10, x2: style.width - 20, y2: 20, strokeWidth: 2, stroke: '#fff'})
-      );
     }
 
     for (i = 0; i < this.props.board.wires.length; i++) {
@@ -1500,16 +1757,16 @@ BoardView = createComponent({
       wires.push(path({key: i, className: 'wire', d: getBezierPath({x1: wire.source.cx, y1: wire.source.cy, x2: wire.dest.cx, y2: wire.dest.cy, reflection: wire.getBezierReflection() * this.props.board.bezierReflectionModifier}), strokeWidth: constants.WIRE_WIDTH, stroke: stroke, fill: 'none', style: {pointerEvents: 'none'}}));
     }
 
-    return div({className: 'board', style: style, onClick: this.props.selected ? null : this.toggleBoard},
-      span({className: 'board-user'}, 'Student ' + (this.props.board.number + 1)),
+    return div({className: this.props.editable ? 'board editable-board' : 'board', style: style},
+      span({className: this.props.editable ? 'board-user editable-board-user' : 'board-user'}, ('Circuit ' + (this.props.board.number + 1) + ': ') + (this.props.user ? this.props.user.name : '(unclaimed)')),
       svg({className: 'board-area'},
-        closeButton,
         connectors,
         components,
         wires,
         (this.state.drawConnection ? line({x1: this.state.drawConnection.x1, x2: this.state.drawConnection.x2, y1: this.state.drawConnection.y1, y2: this.state.drawConnection.y2, stroke: this.state.drawConnection.stroke, strokeWidth: this.state.drawConnection.strokeWidth, fill: 'none', style: {pointerEvents: 'none'}}) : null),
-        ProbeView({selected: this.props.selected, stepping: this.props.stepping, probeSource: this.state.probeSource, hoverSource: this.state.hoverSource, pos: this.state.probePos, setProbe: this.setProbe})
-      )
+        ProbeView({board: this.props.board, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, probeSource: this.state.probeSource, hoverSource: this.state.hoverSource, pos: this.state.probePos, setProbe: this.setProbe})
+      ),
+      span({className: 'board-toggle'}, button({onClick: this.toggleBoard}, this.props.selected ? 'View All Circuits' : (this.props.editable ? 'Edit Circuit' : 'View Circuit')))
     );
   }
 });
@@ -1530,8 +1787,9 @@ ConnectorHoleView = createComponent({
   },
 
   render: function () {
+    var enableHandlers = this.props.selected && this.props.editable;
     return g({},
-      circle({cx: this.props.hole.cx, cy: this.props.hole.cy, r: this.props.hole.radius, fill: this.props.hole.color, onMouseDown: this.props.selected ? this.startDrag : null, onMouseOver: this.props.selected ? this.mouseOver : null, onMouseOut: this.props.selected ? this.mouseOut : null})
+      circle({cx: this.props.hole.cx, cy: this.props.hole.cy, r: this.props.hole.radius, fill: this.props.hole.color, onMouseDown: enableHandlers ? this.startDrag : null, onMouseOver: enableHandlers ? this.mouseOver : null, onMouseOut: enableHandlers ? this.mouseOut : null})
     );
   }
 });
@@ -1546,7 +1804,7 @@ ConnectorView = createComponent({
 
     for (i = 0; i < this.props.connector.holes.length; i++) {
       hole = this.props.connector.holes[i];
-      holes.push(ConnectorHoleView({key: i, connector: this.props.connector, hole: hole, selected: this.props.selected, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
+      holes.push(ConnectorHoleView({key: i, connector: this.props.connector, hole: hole, selected: this.props.selected, editable: this.props.editable, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
     }
 
     return svg({},
@@ -1603,23 +1861,61 @@ WorkspaceView = createComponent({
   },
 
   toggleBoard: function (board) {
-    this.setState({selectedBoard: board === this.state.selectedBoard ? null : board});
+    var previousBoard = this.state.selectedBoard,
+        selectedBoard = board === this.state.selectedBoard ? null : board;
+    this.setState({selectedBoard: selectedBoard});
+    if (selectedBoard) {
+      logEvent(OPENED_BOARD_EVENT, selectedBoard.number);
+    }
+    else {
+      logEvent(CLOSED_BOARD_EVENT, previousBoard ? previousBoard.number : -1);
+    }
   },
 
   render: function () {
     if (this.state.selectedBoard) {
       return div({id: 'workspace'},
-        BoardView({key: 'selectedBoard' + this.state.selectedBoard.number, board: this.state.selectedBoard, selected: true, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, toggleBoard: this.toggleBoard}),
+        BoardView({
+          key: 'selectedBoard' + this.state.selectedBoard.number,
+          board: this.state.selectedBoard,
+          selected: true,
+          editable: this.props.userBoardNumber === this.state.selectedBoard.number,
+          user: this.props.users[this.state.selectedBoard.number],
+          stepping: this.props.stepping,
+          showDebugPins: this.props.showDebugPins,
+          toggleBoard: this.toggleBoard
+        }),
         BoardEditorView({board: this.state.selectedBoard})
       );
     }
     else {
       return div({id: 'workspace', style: {width: WORKSPACE_WIDTH}},
-        BoardView({board: this.props.boards[0], stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, toggleBoard: this.toggleBoard}),
+        BoardView({
+          board: this.props.boards[0],
+          editable: this.props.userBoardNumber === 0,
+          user: this.props.users[0],
+          stepping: this.props.stepping,
+          showDebugPins: this.props.showDebugPins,
+          toggleBoard: this.toggleBoard
+        }),
         RibbonView({connector: this.props.boards[0].connectors.output}),
-        BoardView({board: this.props.boards[1], stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, toggleBoard: this.toggleBoard}),
+        BoardView({
+          board: this.props.boards[1],
+          editable: this.props.userBoardNumber === 1,
+          user: this.props.users[1],
+          stepping: this.props.stepping,
+          showDebugPins: this.props.showDebugPins,
+          toggleBoard: this.toggleBoard
+        }),
         RibbonView({connector: this.props.boards[1].connectors.output}),
-        BoardView({board: this.props.boards[2], stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, toggleBoard: this.toggleBoard})
+        BoardView({
+          board: this.props.boards[2],
+          editable: this.props.userBoardNumber === 2,
+          user: this.props.users[2],
+          stepping: this.props.stepping,
+          showDebugPins: this.props.showDebugPins,
+          toggleBoard: this.toggleBoard
+        })
       );
     }
   }
@@ -1684,27 +1980,95 @@ DemoControlView = createComponent({
   }
 });
 
-FakeSidebarView = createComponent({
-  displayName: 'FakeSidebarView',
+SidebarChatView = createComponent({
+  displayName: 'SidebarChatView',
 
   getInitialState: function() {
-    return {items: []};
+    var items = [];
+
+    if (this.props.initialChatMessage) {
+      items.push({
+        prefix: 'Welcome!',
+        message: this.props.initialChatMessage
+      });
+    }
+
+    return {
+      items: items,
+      numExistingUsers: 0
+    };
+  },
+
+  getJoinedMessage: function (numExistingUsers) {
+    var slotsRemaining = 3 - numExistingUsers,
+        nums = ["zero", "one", "two", "three"],
+        cap = function (string) {
+          return string.charAt(0).toUpperCase() + string.slice(1);
+        },
+        message = " ";
+
+    if (slotsRemaining > 1) {
+      // One of three users is here
+      message += cap(nums[numExistingUsers]) + " of 3 users is here.";
+    } else if (slotsRemaining == 1) {
+      // Two of you are now here. One more to go before you can get started!
+      message += cap(nums[numExistingUsers]) + " of you are now here. One more to go before you can get started!";
+    } else {
+      message += "You're all here! Time to start this challenge.";
+    }
+
+    return message;
+  },
+
+  componentWillMount: function() {
+    var self = this;
+    userController.onGroupRefCreation(function() {
+      self.firebaseRef = userController.getFirebaseGroupRef().child("chat");
+      self.firebaseRef.orderByChild('time').on("child_added", function(dataSnapshot) {
+        var items = self.state.items.slice(0),
+            item = dataSnapshot.val(),
+            numExistingUsers = self.state.numExistingUsers;
+
+        if (item.type == "joined") {
+          numExistingUsers = Math.min(self.state.numExistingUsers + 1, 3);
+          item.message += self.getJoinedMessage(numExistingUsers);
+        }
+        else if (item.type == "left") {
+          numExistingUsers = Math.max(self.state.numExistingUsers - 1, 0);
+        }
+
+        if (numExistingUsers !== self.state.numExistingUsers) {
+          self.setState({numExistingUsers: numExistingUsers});
+        }
+
+        items.push(item);
+
+        self.setState({
+          items: items
+        });
+      }.bind(self));
+    });
+  },
+
+  componentWillUnmount: function() {
+    this.firebaseRef.off();
   },
 
   handleSubmit: function(e) {
     var input = this.refs.text,
-        text = $.trim(input.value);
+        message = $.trim(input.value);
 
     e.preventDefault();
 
-    if (text.length > 0) {
-      this.state.items.push({
-        user: 'Student 1',
-        message: text
+    if (message.length > 0) {
+      this.firebaseRef.push({
+        user: userController.getUsername(),
+        message: message,
+        time: Firebase.ServerValue.TIMESTAMP
       });
-      this.setState({items: this.state.items});
       input.value = '';
       input.focus();
+      logEvent("Sent message", message);
     }
   },
 
@@ -1715,7 +2079,8 @@ FakeSidebarView = createComponent({
   },
 
   render: function () {
-    return div({id: 'sidebar-chat'},
+    var style = this.props.demo ? {} : {top: 75};
+    return div({id: 'sidebar-chat', style: style},
       div({id: 'sidebar-chat-title'}, 'Chat'),
       ChatItems({items: this.state.items}),
       div({className: 'sidebar-chat-input'},
@@ -1741,7 +2106,7 @@ ChatItems = createComponent({
   },
 
   render: function () {
-    var user = 'Student 1',
+    var user = userController.getUsername(),
         items;
     items = this.props.items.map(function(item, i) {
       return ChatItem({key: i, item: item, me: item.user == user});
@@ -1756,8 +2121,28 @@ ChatItem = createComponent({
   render: function () {
     return div({className: this.props.me ? 'chat-item chat-item-me' : 'chat-item chat-item-others'},
       b({}, this.props.item.prefix || (this.props.item.user + ':')),
+      ' ',
       this.props.item.message
     );
+  }
+});
+
+WeGotIt = createComponent({
+  displayName: 'WeGotIt',
+
+  clicked: function () {
+    alert("TBD: Run simulation with each key pressed to check output");
+  },
+
+  render: function () {
+    if (this.props.currentUser) {
+      return div({id: "we-got-it"},
+        button({onClick: this.clicked}, "We got it!")
+      );
+    }
+    else {
+      return null;
+    }
   }
 });
 
@@ -1785,12 +2170,87 @@ AppView = createComponent({
     board1Output.board = boards[1];
     board2Input.board = boards[2];
 
+    boards[0].allBoards = boards;
+    boards[1].allBoards = boards;
+    boards[2].allBoards = boards;
+
     return {
       boards: boards,
-      running: false,
+      running: true,
       showDebugPins: true,
-      addedAllWires: false
+      addedAllWires: false,
+      demo: window.location.search.indexOf('demo') !== -1,
+      userBoardNumber: -1,
+      users: {},
+      currentBoard: 0,
+      currentUser: null,
+      currentGroup: null
     };
+  },
+
+  componentDidMount: function() {
+    var activityName = 'pic',
+        self = this;
+
+    boardWatcher.addListener(this.state.boards[0], this.updateWatchedBoard);
+    boardWatcher.addListener(this.state.boards[1], this.updateWatchedBoard);
+    boardWatcher.addListener(this.state.boards[2], this.updateWatchedBoard);
+
+    logController.init(activityName);
+    userController.init(3, activityName, function(userBoardNumber) {
+      var users = self.state.users,
+          currentUser = userController.getUsername();
+
+      userBoardNumber = parseInt(userBoardNumber, 10);
+      users[userBoardNumber] = {
+        name: currentUser
+      };
+
+      self.setState({
+        userBoardNumber: userBoardNumber,
+        users: users,
+        currentUser: currentUser,
+        currentGroup: userController.getGroupname(),
+        currentBoard: userBoardNumber
+      });
+
+      userController.onGroupRefCreation(function() {
+        boardWatcher.startListeners();
+        userController.getFirebaseGroupRef().child('users').on("value", function(snapshot) {
+          var fbUsers = snapshot.val(),
+              users = {};
+          $.each(fbUsers, function (user) {
+            users[parseInt(fbUsers[user].client)] = {
+              name: user
+            };
+          });
+          self.setState({users: users});
+        });
+      });
+    });
+
+    // start the simulator without the event logged if set to run at startup
+    if (this.state.running) {
+      this.run(true, true);
+    }
+  },
+
+  componentWillUnmount: function () {
+    boardWatcher.removeListener(this.state.boards[0], this.updateWatchedBoard);
+    boardWatcher.removeListener(this.state.boards[1], this.updateWatchedBoard);
+    boardWatcher.removeListener(this.state.boards[2], this.updateWatchedBoard);
+  },
+
+  updateWatchedBoard: function (board, boardInfo) {
+    var wires;
+
+    if (boardInfo && board.components.keypad) {
+      board.components.keypad.selectButtonValue(boardInfo.button);
+    }
+
+    // update the wires
+    wires = (boardInfo ? boardInfo.wires : null) || [];
+    board.updateWires(wires);
   },
 
   simulate: function (step) {
@@ -1815,18 +2275,23 @@ AppView = createComponent({
       this.state.boards[i].reset();
     }
     this.setState({boards: this.state.boards});
+    logEvent(RESET_EVENT);
   },
 
-  run: function (run) {
+  run: function (run, skipLogging) {
     clearInterval(this.simulatorInterval);
     if (run) {
-      this.simulatorInterval = setInterval(this.simulate.bind(this), 100);
+      this.simulatorInterval = setInterval(this.simulate, 100);
     }
     this.setState({running: run});
+    if (!skipLogging) {
+      logEvent(run ? RUN_EVENT : STOP_EVENT);
+    }
   },
 
   step: function () {
     this.simulate(true);
+    logEvent(STEP_EVENT);
   },
 
   toggleAllWires: function () {
@@ -1895,6 +2360,7 @@ AppView = createComponent({
           this.state.boards[i].addWire(wire.source, wire.dest, wire.color);
         }
       }
+      boardWatcher.circuitChanged(this.state.boards[i]);
     }
 
     this.setState({boards: this.state.boards, addedAllWires: !this.state.addedAllWires});
@@ -1905,11 +2371,16 @@ AppView = createComponent({
   },
 
   render: function () {
-    return div({id: 'picapp'},
-      WorkspaceView({boards: this.state.boards, stepping: !this.state.running, showDebugPins: this.state.showDebugPins}),
-      SimulatorControlView({running: this.state.running, run: this.run, step: this.step, reset: this.reset}),
-      DemoControlView({running: this.state.running, toggleAllWires: this.toggleAllWires, toggleDebugPins: this.toggleDebugPins, showDebugPins: this.state.showDebugPins, addedAllWires: this.state.addedAllWires}),
-      FakeSidebarView({})
+    return div({},
+      h1({}, "Teaching Teamwork PIC Activity"),
+      this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
+      WeGotIt({currentUser: this.state.currentUser}),
+      div({id: 'picapp'},
+        WorkspaceView({boards: this.state.boards, stepping: !this.state.running, showDebugPins: this.state.showDebugPins, users: this.state.users, userBoardNumber: this.state.userBoardNumber}),
+        SimulatorControlView({running: this.state.running, run: this.run, step: this.step, reset: this.reset}),
+        this.state.demo ? DemoControlView({running: this.state.running, toggleAllWires: this.toggleAllWires, toggleDebugPins: this.toggleDebugPins, showDebugPins: this.state.showDebugPins, addedAllWires: this.state.addedAllWires}) : null,
+        SidebarChatView({demo: this.state.demo})
+      )
     );
   }
 });
@@ -1918,4 +2389,5 @@ AppView = createComponent({
 // Main
 //
 
+boardWatcher = new BoardWatcher();
 ReactDOM.render(AppView({}), document.getElementById('content'));
