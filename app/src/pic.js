@@ -56,7 +56,7 @@ var picCode = require('./data/pic-code'),
     AppView, WeGotIt, SidebarChatView, WorkspaceView, BoardView, Board, RibbonView, ConnectorView,
     Keypad, LED, PIC, Connector, KeypadView, LEDView, PICView,
     ConnectorHoleView, Hole, Pin, PinView,
-    BoardEditorView, SimulatorControlView, Wire, Button, ButtonView, Segment, Circuit, DemoControlView, ChatItem, ChatItems, ProbeView, BoardWatcher, boardWatcher;
+    BoardEditorView, SimulatorControlView, Wire, Button, ButtonView, Segment, Circuit, DemoControlView, ChatItem, ChatItems, ProbeView, BoardWatcher, boardWatcher, WireView;
 
 //
 // Helper functions
@@ -254,8 +254,8 @@ Wire = function (options) {
   this.color = options.color;
   this.id = Wire.GenerateId(this.source, this.dest, this.color);
 };
-Wire.prototype.connectsTo = function (sourceOrDest) {
-  return (this.source === sourceOrDest) || (this.dest === sourceOrDest);
+Wire.prototype.connects = function (source, dest) {
+  return ((this.source === source) && (this.dest === dest)) || ((this.source === dest) && (this.dest === source));
 };
 Wire.prototype.getBezierReflection = function () {
   if (this.dest.connector) {
@@ -1021,7 +1021,7 @@ Board.prototype.updateWires = function (newSerializedWires) {
   for (i = 0; i < toRemove.length; i++) {
     endpoints = this.findSerializedWireEndpoints(toRemove[i]);
     if (endpoints.source && endpoints.dest) {
-      this.removeWire(endpoints.source);
+      this.removeWire(endpoints.source, endpoints.dest);
     }
   }
   for (i = 0; i < newSerializedWires.length; i++) {
@@ -1090,11 +1090,11 @@ Board.prototype.serializeEndpoint = function (endPoint, label) {
   serialized.board = this.number;
   return serialized;
 };
-Board.prototype.removeWire = function (sourceOrDest) {
+Board.prototype.removeWire = function (source, dest) {
   var i;
 
   for (i = 0; i < this.wires.length; i++) {
-    if (this.wires[i].connectsTo(sourceOrDest)) {
+    if (this.wires[i].connects(source, dest)) {
       if (this.wires[i].source.inputMode) {
         this.wires[i].source.reset();
       }
@@ -1638,16 +1638,32 @@ BoardView = createComponent({
       hoverSource: null,
       wires: this.props.board.wires,
       probeSource: this.props.board.probe ? this.props.board.probe.source : null,
-      probePos: this.props.board.probe ? this.props.board.probe.pos : null
+      probePos: this.props.board.probe ? this.props.board.probe.pos : null,
+      selectedWire: null
     };
   },
 
   componentDidMount: function () {
     boardWatcher.addListener(this.props.board, this.updateWatchedBoard);
+    $(window).on('keyup', this.keyUp);
   },
 
   componentWillUnmount: function () {
     boardWatcher.removeListener(this.props.board, this.updateWatchedBoard);
+    $(window).off('keyup', this.keyUp);
+  },
+
+  keyUp: function (e) {
+    var selectedWire = this.state.selectedWire;
+
+    if (this.props.selected && this.props.editable && (e.keyCode == 46) && this.state.selectedWire) { // 46 is the delete key
+      this.props.board.removeWire(selectedWire.source, selectedWire.dest);
+      this.setState({
+        wires: this.props.board.wires,
+        selectedWire: null
+      });
+      logEvent(REMOVE_WIRE_EVENT, null, {board: this.props.board, source: selectedWire.source});
+    }
   },
 
   updateWatchedBoard: function (board, boardInfo) {
@@ -1693,7 +1709,7 @@ BoardView = createComponent({
         x2: source.cx,
         y2: source.cy,
         strokeWidth: selectedConstants(this.props.selected).WIRE_WIDTH,
-        stroke: '#ccff00', //color,
+        stroke: color,
         reflection: source.getBezierReflection() * this.props.board.bezierReflectionModifier
       }
     });
@@ -1708,7 +1724,7 @@ BoardView = createComponent({
     stopDrag = function (e) {
       var dest = self.state.hoverSource;
 
-      e.preventDefault();
+      e.stopPropagation();
       $window.off('mousemove', drag);
       $window.off('mouseup', stopDrag);
       self.setState({drawConnection: null});
@@ -1718,15 +1734,18 @@ BoardView = createComponent({
         self.setState({wires: self.props.board.wires});
         logEvent(ADD_WIRE_EVENT, null, {board: self.props.board, source: source, dest: dest});
       }
-      else if (!dest) {
-        self.props.board.removeWire(source);
-        self.setState({wires: self.props.board.wires});
-        logEvent(REMOVE_WIRE_EVENT, null, {board: self.props.board, source: source});
-      }
     };
 
     $window.on('mousemove', drag);
     $window.on('mouseup', stopDrag);
+  },
+
+  wireSelected: function (wire) {
+    this.setState({selectedWire: wire});
+  },
+
+  backgroundClicked: function () {
+    this.setState({selectedWire: null});
   },
 
   render: function () {
@@ -1740,7 +1759,7 @@ BoardView = createComponent({
         components = [],
         wires = [],
         componentIndex = 0,
-        name, component, i, wire, stroke;
+        name, component, i, wire;
 
     // resolve input values
     this.props.board.resolveCircuitInputValues();
@@ -1765,13 +1784,15 @@ BoardView = createComponent({
 
     for (i = 0; i < this.props.board.wires.length; i++) {
       wire = this.props.board.wires[i];
-      stroke = this.state.hoverSource && ((this.state.hoverSource === wire.source) || (this.state.hoverSource === wire.dest)) ? '#ccff00' : wire.color;
-      wires.push(path({key: i, className: 'wire', d: getBezierPath({x1: wire.source.cx, y1: wire.source.cy, x2: wire.dest.cx, y2: wire.dest.cy, reflection: wire.getBezierReflection() * this.props.board.bezierReflectionModifier}), strokeWidth: constants.WIRE_WIDTH, stroke: stroke, fill: 'none', style: {pointerEvents: 'none'}}));
+      // TODO: remove
+      //stroke = this.state.hoverSource && ((this.state.hoverSource === wire.source) || (this.state.hoverSource === wire.dest)) ? '#ccff00' : wire.color;
+      //wires.push(path({key: i, className: 'wire', d: getBezierPath({x1: wire.source.cx, y1: wire.source.cy, x2: wire.dest.cx, y2: wire.dest.cy, reflection: wire.getBezierReflection() * this.props.board.bezierReflectionModifier}), strokeWidth: constants.WIRE_WIDTH, stroke: stroke, fill: 'none', onMouseOver: this.props.editable ? this.hoverWire : null}));
+      wires.push(WireView({key: i, wire: wire, board: this.props.board, editable: this.props.editable, width: constants.WIRE_WIDTH, wireSelected: this.wireSelected, selected: wire == this.state.selectedWire }));
     }
 
     return div({className: this.props.editable ? 'board editable-board' : 'board', style: style},
       span({className: this.props.editable ? 'board-user editable-board-user' : 'board-user'}, ('Circuit ' + (this.props.board.number + 1) + ': ') + (this.props.user ? this.props.user.name : '(unclaimed)')),
-      svg({className: 'board-area'},
+      svg({className: 'board-area', onClick: this.backgroundClicked},
         connectors,
         components,
         wires,
@@ -1780,6 +1801,44 @@ BoardView = createComponent({
       ),
       span({className: 'board-toggle'}, button({onClick: this.toggleBoard}, this.props.selected ? 'View All Circuits' : (this.props.editable ? 'Edit Circuit' : 'View Circuit')))
     );
+  }
+});
+
+WireView = createComponent({
+  displayName: 'WireView',
+
+  getInitialState: function () {
+    return {
+      hovering: false
+    };
+  },
+
+  click: function (e) {
+    e.stopPropagation();
+    this.props.wireSelected(this.props.wire);
+  },
+
+  mouseOver: function () {
+    this.setState({hovering: true});
+  },
+
+  mouseOut: function () {
+    this.setState({hovering: false});
+  },
+
+  render: function () {
+    var wire = this.props.wire;
+    return path({
+      key: this.props.key,
+      className: 'wire',
+      d: getBezierPath({x1: wire.source.cx, y1: wire.source.cy, x2: wire.dest.cx, y2: wire.dest.cy, reflection: wire.getBezierReflection() * this.props.board.bezierReflectionModifier}),
+      strokeWidth: this.props.width,
+      stroke: this.props.selected ? '#f00' : (this.state.hovering ? '#ccff00' : wire.color),
+      fill: 'none',
+      onClick: this.props.editable ? this.click : null,
+      onMouseOver: this.mouseOver,
+      onMouseOut: this.mouseOut
+    });
   }
 });
 
