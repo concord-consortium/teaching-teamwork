@@ -1111,10 +1111,10 @@ Board.prototype.removeWire = function (source, dest) {
   return false;
 };
 Board.prototype.addWire = function (source, dest, color) {
-  var i, id;
+  var i, id, wire;
 
   if (!source || !dest) {
-    return false;
+    return null;
   }
   /*
   if ((source.connector && dest.connector) && (source.connector === dest.connector)) {
@@ -1128,29 +1128,30 @@ Board.prototype.addWire = function (source, dest, color) {
   */
   if (source.notConnectable || dest.notConnectable) {
     alert("Sorry, you can't add a wire to the " + (source.notConnectable ? source.label.text : dest.label.text) + ' pin.  It is already connected to a breadboard component.');
-    return false;
+    return null;
   }
 
   // don't allow duplicate wires
   id = Wire.GenerateId(source, dest, color);
   for (i = 0; i < this.wires.length; i++) {
     if (this.wires[i].id === id) {
-      return false;
+      return null;
     }
   }
 
-  this.wires.push(new Wire({
+  wire = new Wire({
     source: source,
     dest: dest,
     color: color
-  }));
+  });
+  this.wires.push(wire);
   if (!this.resolveCircuits()) {
     this.wires.pop();
-    return false;
+    return null;
   }
   source.connected = true;
   dest.connected = true;
-  return true;
+  return wire;
 };
 Board.prototype.resolveCircuits = function() {
   var newCircuits;
@@ -1646,6 +1647,9 @@ BoardView = createComponent({
   componentDidMount: function () {
     boardWatcher.addListener(this.props.board, this.updateWatchedBoard);
     $(window).on('keyup', this.keyUp);
+
+    // used to find wire click position
+    this.svgOffset = $(this.refs.svg).offset();
   },
 
   componentWillUnmount: function () {
@@ -1663,6 +1667,7 @@ BoardView = createComponent({
         selectedWire: null
       });
       logEvent(REMOVE_WIRE_EVENT, null, {board: this.props.board, source: selectedWire.source});
+      e.preventDefault();
     }
   },
 
@@ -1722,16 +1727,22 @@ BoardView = createComponent({
     };
 
     stopDrag = function (e) {
-      var dest = self.state.hoverSource;
+      var dest = self.state.hoverSource,
+          wire;
 
       e.stopPropagation();
+      e.preventDefault();
+
       $window.off('mousemove', drag);
       $window.off('mouseup', stopDrag);
       self.setState({drawConnection: null});
 
       if (dest && (dest !== source)) {
-        self.props.board.addWire(source, dest, (source.color || dest.color || color));
-        self.setState({wires: self.props.board.wires});
+        wire = self.props.board.addWire(source, dest, (source.color || dest.color || color));
+        self.setState({
+          wires: self.props.board.wires,
+          selectedWire: wire
+        });
         logEvent(ADD_WIRE_EVENT, null, {board: self.props.board, source: source, dest: dest});
       }
     };
@@ -1740,8 +1751,31 @@ BoardView = createComponent({
     $window.on('mouseup', stopDrag);
   },
 
-  wireSelected: function (wire) {
-    this.setState({selectedWire: wire});
+  distance: function (endpoint, x, y) {
+    var a = endpoint.cx - x,
+        b = endpoint.cy - y;
+    return Math.sqrt((a*a) + (b*b));
+  },
+
+  wireSelected: function (wire, e) {
+    // check if click is near an endpoint
+    var x = e.pageX - this.svgOffset.left,
+        y = e.pageY - this.svgOffset.top,
+        sourceDistance = this.distance(wire.source, x, y),
+        destDistance = this.distance(wire.dest, x, y),
+        shortestDistance = Math.min(sourceDistance, destDistance);
+
+    if (shortestDistance <= 20) {
+      this.props.board.removeWire(wire.source, wire.dest);
+      this.setState({
+        wires: this.props.board.wires,
+        selectedWire: null
+      });
+      this.drawConnection(shortestDistance == sourceDistance ? wire.dest : wire.source, e, wire.color);
+    }
+    else {
+      this.setState({selectedWire: wire});
+    }
   },
 
   backgroundClicked: function () {
@@ -1792,7 +1826,7 @@ BoardView = createComponent({
 
     return div({className: this.props.editable ? 'board editable-board' : 'board', style: style},
       span({className: this.props.editable ? 'board-user editable-board-user' : 'board-user'}, ('Circuit ' + (this.props.board.number + 1) + ': ') + (this.props.user ? this.props.user.name : '(unclaimed)')),
-      svg({className: 'board-area', onClick: this.backgroundClicked},
+      svg({className: 'board-area', onMouseDown: this.backgroundClicked, ref: 'svg'},
         connectors,
         components,
         wires,
@@ -1813,17 +1847,18 @@ WireView = createComponent({
     };
   },
 
-  click: function (e) {
-    e.stopPropagation();
-    this.props.wireSelected(this.props.wire);
-  },
-
   mouseOver: function () {
     this.setState({hovering: true});
   },
 
   mouseOut: function () {
     this.setState({hovering: false});
+  },
+
+  mouseDown: function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    this.props.wireSelected(this.props.wire, e);
   },
 
   render: function () {
@@ -1835,9 +1870,9 @@ WireView = createComponent({
       strokeWidth: this.props.width,
       stroke: this.props.selected ? '#f00' : (this.state.hovering ? '#ccff00' : wire.color),
       fill: 'none',
-      onClick: this.props.editable ? this.click : null,
-      onMouseOver: this.mouseOver,
-      onMouseOut: this.mouseOut
+      onMouseOver: this.props.editable ? this.mouseOver : null,
+      onMouseOut: this.props.editable ? this.mouseOut : null,
+      onMouseDown: this.props.editable ? this.mouseDown : null
     });
   }
 });
