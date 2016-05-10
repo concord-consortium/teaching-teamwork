@@ -1640,7 +1640,8 @@ BoardView = createComponent({
       wires: this.props.board.wires,
       probeSource: this.props.board.probe ? this.props.board.probe.source : null,
       probePos: this.props.board.probe ? this.props.board.probe.pos : null,
-      selectedWire: null
+      selectedWires: [],
+      drawBox: null
     };
   },
 
@@ -1658,15 +1659,18 @@ BoardView = createComponent({
   },
 
   keyUp: function (e) {
-    var selectedWire = this.state.selectedWire;
+    var i, selectedWire;
 
-    if (this.props.selected && this.props.editable && (e.keyCode == 46) && this.state.selectedWire) { // 46 is the delete key
-      this.props.board.removeWire(selectedWire.source, selectedWire.dest);
+    if (this.props.selected && this.props.editable && (e.keyCode == 46) && (this.state.selectedWires.length > 0)) { // 46 is the delete key
+      for (i = 0; i < this.state.selectedWires.length; i++) {
+        selectedWire = this.state.selectedWires[i];
+        this.props.board.removeWire(selectedWire.source, selectedWire.dest);
+        logEvent(REMOVE_WIRE_EVENT, null, {board: this.props.board, source: selectedWire.source});
+      }
       this.setState({
         wires: this.props.board.wires,
-        selectedWire: null
+        selectedWires: []
       });
-      logEvent(REMOVE_WIRE_EVENT, null, {board: this.props.board, source: selectedWire.source});
       e.preventDefault();
     }
   },
@@ -1697,12 +1701,14 @@ BoardView = createComponent({
     this.setState({probeSource: probe.source, probePos: probe.pos});
   },
 
-  drawConnection: function (source, e, color) {
+  drawConnection: function (source, e, color, callback) {
     var $window = $(window),
         self = this,
+        moved = false,
         dx, dy, drag, stopDrag;
 
     e.preventDefault();
+    e.stopPropagation();
 
     dx = e.pageX - e.nativeEvent.offsetX;
     dy = e.pageY - e.nativeEvent.offsetY;
@@ -1720,6 +1726,7 @@ BoardView = createComponent({
     });
 
     drag = function (e) {
+      moved = true;
       e.preventDefault();
       self.state.drawConnection.x2 = e.pageX - dx;
       self.state.drawConnection.y2 = e.pageY - dy;
@@ -1728,6 +1735,7 @@ BoardView = createComponent({
 
     stopDrag = function (e) {
       var dest = self.state.hoverSource,
+          addedWire = false,
           wire;
 
       e.stopPropagation();
@@ -1737,13 +1745,18 @@ BoardView = createComponent({
       $window.off('mouseup', stopDrag);
       self.setState({drawConnection: null});
 
-      if (dest && (dest !== source)) {
+      if (moved && dest && (dest !== source)) {
+        addedWire = true;
         wire = self.props.board.addWire(source, dest, (source.color || dest.color || color));
         self.setState({
           wires: self.props.board.wires,
-          selectedWire: wire
+          selectedWires: [wire]
         });
         logEvent(ADD_WIRE_EVENT, null, {board: self.props.board, source: source, dest: dest});
+      }
+
+      if (callback) {
+        callback(addedWire);
       }
     };
 
@@ -1763,23 +1776,106 @@ BoardView = createComponent({
         y = e.pageY - this.svgOffset.top,
         sourceDistance = this.distance(wire.source, x, y),
         destDistance = this.distance(wire.dest, x, y),
-        shortestDistance = Math.min(sourceDistance, destDistance);
+        shortestDistance = Math.min(sourceDistance, destDistance),
+        self = this;
 
     if (shortestDistance <= 20) {
       this.props.board.removeWire(wire.source, wire.dest);
       this.setState({
         wires: this.props.board.wires,
-        selectedWire: null
+        selectedWires: []
       });
-      this.drawConnection(shortestDistance == sourceDistance ? wire.dest : wire.source, e, wire.color);
+      this.drawConnection(shortestDistance == sourceDistance ? wire.dest : wire.source, e, wire.color, function (addedWire) {
+        var newWire;
+        if (!addedWire) {
+          newWire = self.props.board.addWire(wire.source, wire.dest, wire.color);
+          self.setState({
+            wires: self.props.board.wires,
+            selectedWires: [newWire]
+          });
+        }
+      });
     }
     else {
-      this.setState({selectedWire: wire});
+      this.setState({selectedWires: [wire]});
     }
   },
 
-  backgroundClicked: function () {
-    this.setState({selectedWire: null});
+  backgroundMouseDown: function (e) {
+    var $window = $(window),
+        self = this,
+        dx, dy, drag, stopDrag, getPath, x1, y1;
+
+    this.setState({selectedWires: []});
+
+    // allow for bounding box drawing around wires for mass selection
+    e.preventDefault();
+
+    dx = e.pageX - e.nativeEvent.offsetX;
+    dy = e.pageY - e.nativeEvent.offsetY;
+    x1 = e.pageX - this.svgOffset.left;
+    y1 = e.pageY - this.svgOffset.top;
+
+    // use path instead of rect as svg rect doesn't support negative widths or heights
+    getPath = function (x2, y2) {
+      return ["M", x1, ",", y1, " ", x2, ",", y1, " ", x2, ",", y2, " ", x1, ",", y2, " ", x1, ",", y1].join("");
+    };
+
+    this.setState({
+      drawBox: {
+        x1: x1,
+        y1: y1,
+        path: getPath(x1, y1),
+        strokeWidth: selectedConstants(this.props.selected).WIRE_WIDTH,
+        stroke: '#00f',
+        strokeDasharray: [10, 5]
+      }
+    });
+
+    drag = function (e) {
+      var x2 = e.pageX - self.svgOffset.left,
+          y2 = e.pageY - self.svgOffset.top;
+      e.preventDefault();
+      self.state.drawBox.x2 = x2;
+      self.state.drawBox.y2 = y2;
+      self.state.drawBox.path = getPath(x2, y2);
+      self.setState({drawBox: self.state.drawBox});
+    };
+
+    stopDrag = function (e) {
+      var selectedWires = [],
+          r, enclosed, i, wire;
+
+      e.stopPropagation();
+      e.preventDefault();
+      $window.off('mousemove', drag);
+      $window.off('mouseup', stopDrag);
+
+      // check bounding box for wires
+      r = {
+        x1: Math.min(self.state.drawBox.x1, self.state.drawBox.x2),
+        y1: Math.min(self.state.drawBox.y1, self.state.drawBox.y2),
+        x2: Math.max(self.state.drawBox.x1, self.state.drawBox.x2),
+        y2: Math.max(self.state.drawBox.y1, self.state.drawBox.y2)
+      };
+      enclosed = function (x, y) {
+        return (r.x1 <= x) && (x <= r.x2) && (r.y1 <= y) && (y <= r.y2);
+      };
+      for (i = 0; i < self.props.board.wires.length; i++) {
+        wire = self.props.board.wires[i];
+        if (enclosed(wire.source.cx, wire.source.cy) && enclosed(wire.dest.cx, wire.dest.cy)) {
+          selectedWires.push(wire);
+        }
+      }
+
+      self.setState({
+        drawBox: null,
+        selectedWires: selectedWires
+      });
+    };
+
+    $window.on('mousemove', drag);
+    $window.on('mouseup', stopDrag);
   },
 
   render: function () {
@@ -1818,19 +1914,17 @@ BoardView = createComponent({
 
     for (i = 0; i < this.props.board.wires.length; i++) {
       wire = this.props.board.wires[i];
-      // TODO: remove
-      //stroke = this.state.hoverSource && ((this.state.hoverSource === wire.source) || (this.state.hoverSource === wire.dest)) ? '#ccff00' : wire.color;
-      //wires.push(path({key: i, className: 'wire', d: getBezierPath({x1: wire.source.cx, y1: wire.source.cy, x2: wire.dest.cx, y2: wire.dest.cy, reflection: wire.getBezierReflection() * this.props.board.bezierReflectionModifier}), strokeWidth: constants.WIRE_WIDTH, stroke: stroke, fill: 'none', onMouseOver: this.props.editable ? this.hoverWire : null}));
-      wires.push(WireView({key: i, wire: wire, board: this.props.board, editable: this.props.editable, width: constants.WIRE_WIDTH, wireSelected: this.wireSelected, selected: wire == this.state.selectedWire }));
+      wires.push(WireView({key: i, wire: wire, board: this.props.board, editable: this.props.editable, width: constants.WIRE_WIDTH, wireSelected: this.wireSelected, selected: this.state.selectedWires.indexOf(wire) !== -1}));
     }
 
     return div({className: this.props.editable ? 'board editable-board' : 'board', style: style},
       span({className: this.props.editable ? 'board-user editable-board-user' : 'board-user'}, ('Circuit ' + (this.props.board.number + 1) + ': ') + (this.props.user ? this.props.user.name : '(unclaimed)')),
-      svg({className: 'board-area', onMouseDown: this.backgroundClicked, ref: 'svg'},
+      svg({className: 'board-area', onMouseDown: this.props.selected ? this.backgroundMouseDown : null, ref: 'svg'},
         connectors,
         components,
         wires,
         (this.state.drawConnection ? line({x1: this.state.drawConnection.x1, x2: this.state.drawConnection.x2, y1: this.state.drawConnection.y1, y2: this.state.drawConnection.y2, stroke: this.state.drawConnection.stroke, strokeWidth: this.state.drawConnection.strokeWidth, fill: 'none', style: {pointerEvents: 'none'}}) : null),
+        (this.state.drawBox ? path({d: this.state.drawBox.path, stroke: this.state.drawBox.stroke, strokeWidth: this.state.drawBox.strokeWidth, strokeDasharray: this.state.drawBox.strokeDasharray, fill: 'none', style: {pointerEvents: 'none'}}) : null),
         ProbeView({board: this.props.board, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, probeSource: this.state.probeSource, hoverSource: this.state.hoverSource, pos: this.state.probePos, setProbe: this.setProbe})
       ),
       span({className: 'board-toggle'}, button({onClick: this.toggleBoard}, this.props.selected ? 'View All Circuits' : (this.props.editable ? 'Edit Circuit' : 'View Circuit')))
