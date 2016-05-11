@@ -12,10 +12,6 @@
   seperate models an efficent data structure for simulation can be maintained alongside the
   React component tree.
 
-  Todo for full collaborative environment:
-
-  1. Add a "All done!" button with check to verify circuit validity
-
 */
 
 var picCode = require('./data/pic-code'),
@@ -455,7 +451,7 @@ Connector = function (options) {
       x: 0,
       y: 0,
       radius: 0,
-      color: ['blue', '#0f0', 'purple', 'red'][i],
+      color: ['blue', '#0f0', 'purple', '#cccc00'][i],
       connector: self
     }));
   }
@@ -1323,8 +1319,7 @@ ButtonView = createComponent({
   },
 
   render: function () {
-    // TODO: allowing keypad clicks in global view for demo
-    var onClick = this.onClick; // this.props.selected ? this.onClick : null
+    var onClick = this.onClick;
     return g({onClick: onClick, style: {cursor: 'pointer'}},
       rect({x: this.props.button.x, y: this.props.button.y, width: this.props.button.width, height: this.props.button.height, fill: this.props.pushed ? SELECTED_FILL : UNSELECTED_FILL}),
       text({x: this.props.button.label.x, y: this.props.button.label.y, fontSize: this.props.button.labelSize, fill: '#fff', style: {textAnchor: this.props.button.label.anchor}}, this.props.button.label.text)
@@ -1543,19 +1538,21 @@ ProbeView = createComponent({
     var constants = selectedConstants(this.props.selected),
         $window = $(window),
         self = this,
-        dx, dy, drag, stopDrag;
+        drag, stopDrag;
+
+    this.props.draggingProbe(true);
 
     e.preventDefault();
-
-    dx = e.pageX - e.nativeEvent.offsetX;
-    dy = e.pageY - e.nativeEvent.offsetY;
+    e.stopPropagation();
 
     drag = function (e) {
       e.preventDefault();
-      self.props.setProbe({source: null, pos: {x: (e.pageX - dx), y: (e.pageY - dy) - (constants.PROBE_HEIGHT / 2)}});
+      self.props.setProbe({source: null, pos: {x: (e.pageX - self.props.svgOffset.left), y: (e.pageY - self.props.svgOffset.top) - (constants.PROBE_HEIGHT / 2)}});
     };
 
     stopDrag = function (e) {
+      self.props.draggingProbe(false);
+
       e.preventDefault();
       $window.off('mousemove', drag);
       $window.off('mouseup', stopDrag);
@@ -1655,7 +1652,8 @@ BoardView = createComponent({
       probeSource: this.props.board.probe ? this.props.board.probe.source : null,
       probePos: this.props.board.probe ? this.props.board.probe.pos : null,
       selectedWires: [],
-      drawBox: null
+      drawBox: null,
+      draggingProbe: false
     };
   },
 
@@ -1719,13 +1717,10 @@ BoardView = createComponent({
     var $window = $(window),
         self = this,
         moved = false,
-        dx, dy, drag, stopDrag;
+        drag, stopDrag;
 
     e.preventDefault();
     e.stopPropagation();
-
-    dx = e.pageX - e.nativeEvent.offsetX;
-    dy = e.pageY - e.nativeEvent.offsetY;
 
     this.setState({
       drawConnection: {
@@ -1742,8 +1737,8 @@ BoardView = createComponent({
     drag = function (e) {
       moved = true;
       e.preventDefault();
-      self.state.drawConnection.x2 = e.pageX - dx;
-      self.state.drawConnection.y2 = e.pageY - dy;
+      self.state.drawConnection.x2 = e.pageX - self.svgOffset.left;
+      self.state.drawConnection.y2 = e.pageY - self.svgOffset.top;
       self.setState({drawConnection: self.state.drawConnection});
     };
 
@@ -1818,15 +1813,13 @@ BoardView = createComponent({
   backgroundMouseDown: function (e) {
     var $window = $(window),
         self = this,
-        dx, dy, drag, stopDrag, getPath, x1, y1;
+        drag, stopDrag, getPath, x1, y1;
 
     this.setState({selectedWires: []});
 
     // allow for bounding box drawing around wires for mass selection
     e.preventDefault();
 
-    dx = e.pageX - e.nativeEvent.offsetX;
-    dy = e.pageY - e.nativeEvent.offsetY;
     x1 = e.pageX - this.svgOffset.left;
     y1 = e.pageY - this.svgOffset.top;
 
@@ -1841,7 +1834,7 @@ BoardView = createComponent({
         y1: y1,
         path: getPath(x1, y1),
         strokeWidth: selectedConstants(this.props.selected).WIRE_WIDTH,
-        stroke: '#00f',
+        stroke: '#555',
         strokeDasharray: [10, 5]
       }
     });
@@ -1892,6 +1885,10 @@ BoardView = createComponent({
     $window.on('mouseup', stopDrag);
   },
 
+  draggingProbe: function (draggingProbe) {
+    this.setState({draggingProbe: draggingProbe});
+  },
+
   render: function () {
     var constants = selectedConstants(this.props.selected),
         style = {
@@ -1903,6 +1900,7 @@ BoardView = createComponent({
         components = [],
         wires = [],
         componentIndex = 0,
+        editableWires = !this.state.draggingProbe && !this.state.drawConnection && !this.state.drawBox && (this.props.editable && this.props.selected),
         name, component, i, wire;
 
     // resolve input values
@@ -1928,18 +1926,18 @@ BoardView = createComponent({
 
     for (i = 0; i < this.props.board.wires.length; i++) {
       wire = this.props.board.wires[i];
-      wires.push(WireView({key: i, wire: wire, board: this.props.board, editable: this.props.editable, width: constants.WIRE_WIDTH, wireSelected: this.wireSelected, selected: this.state.selectedWires.indexOf(wire) !== -1}));
+      wires.push(WireView({key: i, wire: wire, board: this.props.board, editable: editableWires, width: constants.WIRE_WIDTH, wireSelected: this.wireSelected, selected: this.state.selectedWires.indexOf(wire) !== -1}));
     }
 
     return div({className: this.props.editable ? 'board editable-board' : 'board', style: style},
       span({className: this.props.editable ? 'board-user editable-board-user' : 'board-user'}, ('Circuit ' + (this.props.board.number + 1) + ': ') + (this.props.user ? this.props.user.name : '(unclaimed)')),
-      svg({className: 'board-area', onMouseDown: this.props.selected ? this.backgroundMouseDown : null, ref: 'svg'},
+      svg({className: 'board-area', onMouseDown: this.props.selected && this.props.editable ? this.backgroundMouseDown : null, ref: 'svg'},
         connectors,
         components,
         wires,
         (this.state.drawConnection ? line({x1: this.state.drawConnection.x1, x2: this.state.drawConnection.x2, y1: this.state.drawConnection.y1, y2: this.state.drawConnection.y2, stroke: this.state.drawConnection.stroke, strokeWidth: this.state.drawConnection.strokeWidth, fill: 'none', style: {pointerEvents: 'none'}}) : null),
         (this.state.drawBox ? path({d: this.state.drawBox.path, stroke: this.state.drawBox.stroke, strokeWidth: this.state.drawBox.strokeWidth, strokeDasharray: this.state.drawBox.strokeDasharray, fill: 'none', style: {pointerEvents: 'none'}}) : null),
-        ProbeView({board: this.props.board, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, probeSource: this.state.probeSource, hoverSource: this.state.hoverSource, pos: this.state.probePos, setProbe: this.setProbe})
+        ProbeView({board: this.props.board, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, probeSource: this.state.probeSource, hoverSource: this.state.hoverSource, pos: this.state.probePos, setProbe: this.setProbe, svgOffset: this.svgOffset, draggingProbe: this.draggingProbe})
       ),
       span({className: 'board-toggle'}, button({onClick: this.toggleBoard}, this.props.selected ? 'View All Circuits' : (this.props.editable ? 'Edit Circuit' : 'View Circuit')))
     );
@@ -2384,7 +2382,7 @@ WeGotIt = createComponent({
             now = (new Date().getTime()) + skew;
 
         // ignore submits over 10 seconds old
-        if (submitValue && (submitValue.at < now - (10 * 1000))) {
+        if (!submitValue || (submitValue.at < now - (10 * 1000))) {
           return;
         }
 
