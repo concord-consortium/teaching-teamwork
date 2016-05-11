@@ -1870,7 +1870,7 @@ BoardView = createComponent({
       };
       for (i = 0; i < self.props.board.wires.length; i++) {
         wire = self.props.board.wires[i];
-        if (enclosed(wire.source.cx, wire.source.cy) && enclosed(wire.dest.cx, wire.dest.cy)) {
+        if (enclosed(wire.source.cx, wire.source.cy) || enclosed(wire.dest.cx, wire.dest.cy)) {
           selectedWires.push(wire);
         }
       }
