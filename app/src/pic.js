@@ -1539,6 +1539,8 @@ ProbeView = createComponent({
         self = this,
         drag, stopDrag;
 
+    this.props.draggingProbe(true);
+
     e.preventDefault();
     e.stopPropagation();
 
@@ -1548,6 +1550,8 @@ ProbeView = createComponent({
     };
 
     stopDrag = function (e) {
+      self.props.draggingProbe(false);
+
       e.preventDefault();
       $window.off('mousemove', drag);
       $window.off('mouseup', stopDrag);
@@ -1647,7 +1651,8 @@ BoardView = createComponent({
       probeSource: this.props.board.probe ? this.props.board.probe.source : null,
       probePos: this.props.board.probe ? this.props.board.probe.pos : null,
       selectedWires: [],
-      drawBox: null
+      drawBox: null,
+      draggingProbe: false
     };
   },
 
@@ -1879,6 +1884,10 @@ BoardView = createComponent({
     $window.on('mouseup', stopDrag);
   },
 
+  draggingProbe: function (draggingProbe) {
+    this.setState({draggingProbe: draggingProbe});
+  },
+
   render: function () {
     var constants = selectedConstants(this.props.selected),
         style = {
@@ -1890,6 +1899,7 @@ BoardView = createComponent({
         components = [],
         wires = [],
         componentIndex = 0,
+        editableWires = !this.state.draggingProbe && !this.state.drawConnection && !this.state.drawBox && (this.props.editable && this.props.selected),
         name, component, i, wire;
 
     // resolve input values
@@ -1915,7 +1925,7 @@ BoardView = createComponent({
 
     for (i = 0; i < this.props.board.wires.length; i++) {
       wire = this.props.board.wires[i];
-      wires.push(WireView({key: i, wire: wire, board: this.props.board, editable: this.props.editable && this.props.selected, width: constants.WIRE_WIDTH, wireSelected: this.wireSelected, selected: this.state.selectedWires.indexOf(wire) !== -1}));
+      wires.push(WireView({key: i, wire: wire, board: this.props.board, editable: editableWires, width: constants.WIRE_WIDTH, wireSelected: this.wireSelected, selected: this.state.selectedWires.indexOf(wire) !== -1}));
     }
 
     return div({className: this.props.editable ? 'board editable-board' : 'board', style: style},
@@ -1926,7 +1936,7 @@ BoardView = createComponent({
         wires,
         (this.state.drawConnection ? line({x1: this.state.drawConnection.x1, x2: this.state.drawConnection.x2, y1: this.state.drawConnection.y1, y2: this.state.drawConnection.y2, stroke: this.state.drawConnection.stroke, strokeWidth: this.state.drawConnection.strokeWidth, fill: 'none', style: {pointerEvents: 'none'}}) : null),
         (this.state.drawBox ? path({d: this.state.drawBox.path, stroke: this.state.drawBox.stroke, strokeWidth: this.state.drawBox.strokeWidth, strokeDasharray: this.state.drawBox.strokeDasharray, fill: 'none', style: {pointerEvents: 'none'}}) : null),
-        ProbeView({board: this.props.board, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, probeSource: this.state.probeSource, hoverSource: this.state.hoverSource, pos: this.state.probePos, setProbe: this.setProbe, svgOffset: this.svgOffset})
+        ProbeView({board: this.props.board, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, probeSource: this.state.probeSource, hoverSource: this.state.hoverSource, pos: this.state.probePos, setProbe: this.setProbe, svgOffset: this.svgOffset, draggingProbe: this.draggingProbe})
       ),
       span({className: 'board-toggle'}, button({onClick: this.toggleBoard}, this.props.selected ? 'View All Circuits' : (this.props.editable ? 'Edit Circuit' : 'View Circuit')))
     );
