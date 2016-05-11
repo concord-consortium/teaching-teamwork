@@ -1542,16 +1542,14 @@ ProbeView = createComponent({
     var constants = selectedConstants(this.props.selected),
         $window = $(window),
         self = this,
-        dx, dy, drag, stopDrag;
+        drag, stopDrag;
 
     e.preventDefault();
-
-    dx = e.pageX - e.nativeEvent.offsetX;
-    dy = e.pageY - e.nativeEvent.offsetY;
+    e.stopPropagation();
 
     drag = function (e) {
       e.preventDefault();
-      self.props.setProbe({source: null, pos: {x: (e.pageX - dx), y: (e.pageY - dy) - (constants.PROBE_HEIGHT / 2)}});
+      self.props.setProbe({source: null, pos: {x: (e.pageX - self.props.svgOffset.left), y: (e.pageY - self.props.svgOffset.top) - (constants.PROBE_HEIGHT / 2)}});
     };
 
     stopDrag = function (e) {
@@ -1817,15 +1815,13 @@ BoardView = createComponent({
   backgroundMouseDown: function (e) {
     var $window = $(window),
         self = this,
-        dx, dy, drag, stopDrag, getPath, x1, y1;
+        drag, stopDrag, getPath, x1, y1;
 
     this.setState({selectedWires: []});
 
     // allow for bounding box drawing around wires for mass selection
     e.preventDefault();
 
-    dx = e.pageX - e.nativeEvent.offsetX;
-    dy = e.pageY - e.nativeEvent.offsetY;
     x1 = e.pageX - this.svgOffset.left;
     y1 = e.pageY - this.svgOffset.top;
 
@@ -1938,7 +1934,7 @@ BoardView = createComponent({
         wires,
         (this.state.drawConnection ? line({x1: this.state.drawConnection.x1, x2: this.state.drawConnection.x2, y1: this.state.drawConnection.y1, y2: this.state.drawConnection.y2, stroke: this.state.drawConnection.stroke, strokeWidth: this.state.drawConnection.strokeWidth, fill: 'none', style: {pointerEvents: 'none'}}) : null),
         (this.state.drawBox ? path({d: this.state.drawBox.path, stroke: this.state.drawBox.stroke, strokeWidth: this.state.drawBox.strokeWidth, strokeDasharray: this.state.drawBox.strokeDasharray, fill: 'none', style: {pointerEvents: 'none'}}) : null),
-        ProbeView({board: this.props.board, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, probeSource: this.state.probeSource, hoverSource: this.state.hoverSource, pos: this.state.probePos, setProbe: this.setProbe})
+        ProbeView({board: this.props.board, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, probeSource: this.state.probeSource, hoverSource: this.state.hoverSource, pos: this.state.probePos, setProbe: this.setProbe, svgOffset: this.svgOffset})
       ),
       span({className: 'board-toggle'}, button({onClick: this.toggleBoard}, this.props.selected ? 'View All Circuits' : (this.props.editable ? 'Edit Circuit' : 'View Circuit')))
     );
