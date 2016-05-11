@@ -1716,13 +1716,12 @@ BoardView = createComponent({
     var $window = $(window),
         self = this,
         moved = false,
-        dx, dy, drag, stopDrag;
+        drag, stopDrag;
 
     e.preventDefault();
     e.stopPropagation();
 
-    dx = e.pageX - e.nativeEvent.offsetX;
-    dy = e.pageY - e.nativeEvent.offsetY;
+    //e.pageX - self.props.svgOffset.left
 
     this.setState({
       drawConnection: {
@@ -1739,8 +1738,8 @@ BoardView = createComponent({
     drag = function (e) {
       moved = true;
       e.preventDefault();
-      self.state.drawConnection.x2 = e.pageX - dx;
-      self.state.drawConnection.y2 = e.pageY - dy;
+      self.state.drawConnection.x2 = e.pageX - self.svgOffset.left;
+      self.state.drawConnection.y2 = e.pageY - self.svgOffset.top;
       self.setState({drawConnection: self.state.drawConnection});
     };
 
