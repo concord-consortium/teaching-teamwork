@@ -53,7 +53,7 @@ var picCode = require('./data/pic-code'),
     STEP_EVENT = 'Step',
     RESET_EVENT = 'Reset',
 
-    AppView, WeGotIt, SidebarChatView, WorkspaceView, BoardView, Board, RibbonView, ConnectorView,
+    AppView, WeGotIt, WeGotItPopup, SidebarChatView, WorkspaceView, BoardView, Board, RibbonView, ConnectorView,
     Keypad, LED, PIC, Connector, KeypadView, LEDView, PICView,
     ConnectorHoleView, Hole, Pin, PinView,
     BoardEditorView, SimulatorControlView, Wire, Button, ButtonView, Segment, Circuit, DemoControlView, ChatItem, ChatItems, ProbeView, BoardWatcher, boardWatcher, WireView;
@@ -622,18 +622,23 @@ Keypad.prototype.notify = function () {
 };
 Keypad.prototype.reset = function () {
 };
-Keypad.prototype.pushButton = function (button) {
+Keypad.prototype.pushButton = function (button, skipNotify) {
   this.pushedButton = button;
-  this.notify();
+  if (!skipNotify) {
+    this.notify();
+  }
 };
-Keypad.prototype.selectButtonValue = function (value) {
+Keypad.prototype.selectButtonValue = function (value, skipNotify) {
   var self = this;
   $.each(this.buttons, function (index, button) {
     if (button.value == value) {
-      self.pushButton(button);
+      self.pushButton(button, skipNotify);
       return false;
     }
   });
+};
+Keypad.prototype.getPushedButtonValue = function () {
+  return this.pushedButton ? this.pushedButton.value : null;
 };
 Keypad.prototype.resolveOutputValues = function () {
   var colValue = 7,
@@ -789,6 +794,14 @@ LED.prototype.reset = function () {
 };
 LED.prototype.resolveOutputValues = function () {
   // nothing to do for LED
+};
+LED.prototype.getPinBitField = function () {
+  var bitfield = 0,
+      i;
+  for (i = 0; i < this.pins.length; i++) {
+    bitfield = bitfield | ((this.pins[i].value ? 1 : 0) << i);
+  }
+  return bitfield;
 };
 
 PIC = function (options) {
@@ -2327,17 +2340,86 @@ ChatItem = createComponent({
   }
 });
 
+WeGotItPopup = createComponent({
+  displayName: 'WeGotItPopup',
+
+  clicked: function () {
+    this.props.hidePopup();
+  },
+
+  render: function () {
+    var allCorrect = this.props.allCorrect;
+    return div({id: "we-got-it-popup"},
+      div({id: "we-got-it-popup-background"}),
+      div({id: "we-got-it-popup-dialog-wrapper"},
+        div({id: "we-got-it-popup-dialog"},
+          h2({}, allCorrect ? "All the wires are correct!" : "Sorry, the circuit is not correctly wired."),
+          div({}, allCorrect ? "Your circuit is correctly wired from the keypad to the LED." : "Your circuit is not correctly wired from the keypad to the LED."),
+          button({onClick: this.clicked}, allCorrect ? "All Done!" : "Keep Trying..." )
+        )
+      )
+    );
+  }
+});
+
 WeGotIt = createComponent({
   displayName: 'WeGotIt',
 
-  clicked: function () {
-    alert("TBD: Run simulation with each key pressed to check output");
+  getInitialState: function () {
+    return {
+      showPopup: false,
+      allCorrect: false
+    };
+  },
+
+  componentWillMount: function () {
+    var self = this;
+
+    userController.onGroupRefCreation(function() {
+      self.submitRef = userController.getFirebaseGroupRef().child("submitted");
+      self.submitRef.on("value", function(dataSnapshot) {
+        var submitValue = dataSnapshot.val(),
+            skew = userController.getServerSkew(),
+            now = (new Date().getTime()) + skew;
+
+        // ignore submits over 10 seconds old
+        if (submitValue && (submitValue.at < now - (10 * 1000))) {
+          return;
+        }
+
+        self.props.checkIfCircuitIsCorrect(function (allCorrect) {
+          self.setState({showPopup: true, allCorrect: allCorrect});
+        });
+      });
+    });
+  },
+
+  componentWillUnmount: function() {
+    this.submitRef.off();
+  },
+
+  hidePopup: function () {
+    this.setState({showPopup: false});
+  },
+
+  clicked: function (e) {
+    var username = userController.getUsername();
+
+    e.preventDefault();
+
+    logController.logEvent("Submit clicked", username);
+
+    this.submitRef.set({
+      user: username,
+      at: Firebase.ServerValue.TIMESTAMP
+    });
   },
 
   render: function () {
     if (this.props.currentUser) {
       return div({id: "we-got-it"},
-        button({onClick: this.clicked}, "We got it!")
+        button({onClick: this.clicked}, "We got it!"),
+        this.state.showPopup ? WeGotItPopup({allCorrect: this.state.allCorrect, hidePopup: this.hidePopup}) : null
       );
     }
     else {
@@ -2451,6 +2533,69 @@ AppView = createComponent({
     // update the wires
     wires = (boardInfo ? boardInfo.wires : null) || [];
     board.updateWires(wires);
+  },
+
+  checkIfCircuitIsCorrect: function (callback) {
+    var self = this,
+        inputs = [
+          {value: '1', bitfield: 107},
+          {value: '2', bitfield: 258},
+          {value: '3', bitfield: 34},
+          {value: '4', bitfield: 104},
+          {value: '5', bitfield: 48},
+          {value: '6', bitfield: 24},
+          {value: '7', bitfield: 99},
+          {value: '8', bitfield: 0},
+          {value: '9', bitfield: 96},
+          {value: '0', bitfield: 1},
+          {value: '*', bitfield: 378},
+          {value: '#', bitfield: 379}
+        ],
+        keypad = this.state.boards[0].components.keypad,
+        led = this.state.boards[2].components.led,
+        allCorrect, startingKeypadValue, input, i, selectButton;
+
+    selectButton = function (value) {
+      var boards = self.state.boards,
+          numBoards = boards.length,
+          i, j;
+
+      // reset all the boards
+      for (i = 0; i < numBoards; i++) {
+        boards[i].reset();
+      }
+
+      // set the input without notifing
+      keypad.selectButtonValue(value, true);
+
+      // evaluate all the boards so the keypad input propogates to the led
+      for (i = 0; i < numBoards; i++) {
+        for (j = 0; j < numBoards; j++) {
+          boards[i].components.pic.evaluateRemainingPICInstructions();
+        }
+      }
+    };
+
+    // save the current keypad number
+    startingKeypadValue = keypad.getPushedButtonValue();
+
+    // check each keypad input for led output
+    for (i = 0; i < inputs.length; i++) {
+      input = inputs[i];
+
+      selectButton(input.value);
+
+      // check the output
+      allCorrect = led.getPinBitField() == input.bitfield;
+      if (!allCorrect) {
+        break;
+      }
+    }
+
+    // reset to the saved keypad number without notifing
+    selectButton(startingKeypadValue);
+
+    callback(allCorrect);
   },
 
   simulate: function (step) {
@@ -2574,7 +2719,7 @@ AppView = createComponent({
     return div({},
       h1({}, "Teaching Teamwork PIC Activity"),
       this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
-      WeGotIt({currentUser: this.state.currentUser}),
+      WeGotIt({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect}),
       div({id: 'picapp'},
         WorkspaceView({boards: this.state.boards, stepping: !this.state.running, showDebugPins: this.state.showDebugPins, users: this.state.users, userBoardNumber: this.state.userBoardNumber}),
         SimulatorControlView({running: this.state.running, run: this.run, step: this.step, reset: this.reset}),
