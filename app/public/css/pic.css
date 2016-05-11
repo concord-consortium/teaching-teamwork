@@ -24,6 +24,7 @@ button {
   border-radius: 5px;
   -webkit-border-radius: 5px;
   -moz-border-radius: 5px;
+  font-size: 12px;
 }
 
 #picapp {
