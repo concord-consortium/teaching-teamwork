@@ -11,10 +11,6 @@
   seperate models an efficent data structure for simulation can be maintained alongside the
   React component tree.
 
-  Todo for full collaborative environment:
-
-  1. Add a "All done!" button with check to verify circuit validity
-
 */
 
 var picCode = require('./data/pic-code'),
@@ -454,7 +450,7 @@ Connector = function (options) {
       x: 0,
       y: 0,
       radius: 0,
-      color: ['blue', '#0f0', 'purple', 'red'][i],
+      color: ['blue', '#0f0', 'purple', '#cccc00'][i],
       connector: self
     }));
   }
@@ -1322,8 +1318,7 @@ ButtonView = createComponent({
   },
 
   render: function () {
-    // TODO: allowing keypad clicks in global view for demo
-    var onClick = this.onClick; // this.props.selected ? this.onClick : null
+    var onClick = this.onClick;
     return g({onClick: onClick, style: {cursor: 'pointer'}},
       rect({x: this.props.button.x, y: this.props.button.y, width: this.props.button.width, height: this.props.button.height, fill: this.props.pushed ? SELECTED_FILL : UNSELECTED_FILL}),
       text({x: this.props.button.label.x, y: this.props.button.label.y, fontSize: this.props.button.labelSize, fill: '#fff', style: {textAnchor: this.props.button.label.anchor}}, this.props.button.label.text)
@@ -1721,8 +1716,6 @@ BoardView = createComponent({
     e.preventDefault();
     e.stopPropagation();
 
-    //e.pageX - self.props.svgOffset.left
-
     this.setState({
       drawConnection: {
         x1: source.cx,
@@ -1835,7 +1828,7 @@ BoardView = createComponent({
         y1: y1,
         path: getPath(x1, y1),
         strokeWidth: selectedConstants(this.props.selected).WIRE_WIDTH,
-        stroke: '#00f',
+        stroke: '#555',
         strokeDasharray: [10, 5]
       }
     });
@@ -1922,12 +1915,12 @@ BoardView = createComponent({
 
     for (i = 0; i < this.props.board.wires.length; i++) {
       wire = this.props.board.wires[i];
-      wires.push(WireView({key: i, wire: wire, board: this.props.board, editable: this.props.editable, width: constants.WIRE_WIDTH, wireSelected: this.wireSelected, selected: this.state.selectedWires.indexOf(wire) !== -1}));
+      wires.push(WireView({key: i, wire: wire, board: this.props.board, editable: this.props.editable && this.props.selected, width: constants.WIRE_WIDTH, wireSelected: this.wireSelected, selected: this.state.selectedWires.indexOf(wire) !== -1}));
     }
 
     return div({className: this.props.editable ? 'board editable-board' : 'board', style: style},
       span({className: this.props.editable ? 'board-user editable-board-user' : 'board-user'}, ('Circuit ' + (this.props.board.number + 1) + ': ') + (this.props.user ? this.props.user.name : '(unclaimed)')),
-      svg({className: 'board-area', onMouseDown: this.props.selected ? this.backgroundMouseDown : null, ref: 'svg'},
+      svg({className: 'board-area', onMouseDown: this.props.selected && this.props.editable ? this.backgroundMouseDown : null, ref: 'svg'},
         connectors,
         components,
         wires,
@@ -2378,7 +2371,7 @@ WeGotIt = createComponent({
             now = (new Date().getTime()) + skew;
 
         // ignore submits over 10 seconds old
-        if (submitValue && (submitValue.at < now - (10 * 1000))) {
+        if (!submitValue || (submitValue.at < now - (10 * 1000))) {
           return;
         }
 
