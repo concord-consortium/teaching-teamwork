@@ -1660,6 +1660,7 @@ BoardView = createComponent({
   componentDidMount: function () {
     boardWatcher.addListener(this.props.board, this.updateWatchedBoard);
     $(window).on('keyup', this.keyUp);
+    $(window).on('keydown', this.keyDown);
 
     // used to find wire click position
     this.svgOffset = $(this.refs.svg).offset();
@@ -1668,6 +1669,15 @@ BoardView = createComponent({
   componentWillUnmount: function () {
     boardWatcher.removeListener(this.props.board, this.updateWatchedBoard);
     $(window).off('keyup', this.keyUp);
+    $(window).off('keydown', this.keyDown);
+  },
+
+  keyDown: function (e) {
+    // 46 is the delete key
+    if (e.keyCode == 46) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
   },
 
   keyUp: function (e) {
