@@ -1659,6 +1659,7 @@ BoardView = createComponent({
   componentDidMount: function () {
     boardWatcher.addListener(this.props.board, this.updateWatchedBoard);
     $(window).on('keyup', this.keyUp);
+    $(window).on('keydown', this.keyDown);
 
     // used to find wire click position
     this.svgOffset = $(this.refs.svg).offset();
@@ -1667,12 +1668,27 @@ BoardView = createComponent({
   componentWillUnmount: function () {
     boardWatcher.removeListener(this.props.board, this.updateWatchedBoard);
     $(window).off('keyup', this.keyUp);
+    $(window).off('keydown', this.keyDown);
+  },
+
+  keyDown: function (e) {
+    // 46 is the delete key which maps to 8 on Macs
+    // this is needed so Chrome on Macs don't trigger a back navigation
+    if ((e.keyCode == 46) || (e.keyCode == 8)) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
   },
 
   keyUp: function (e) {
     var i, selectedWire;
 
-    if (this.props.selected && this.props.editable && (e.keyCode == 46) && (this.state.selectedWires.length > 0)) { // 46 is the delete key
+    // 46 is the delete key which maps to 8 on Macs
+    if (!((e.keyCode == 46) || (e.keyCode == 8))) {
+      return;
+    }
+
+    if (this.props.selected && this.props.editable) {
       for (i = 0; i < this.state.selectedWires.length; i++) {
         selectedWire = this.state.selectedWires[i];
         this.props.board.removeWire(selectedWire.source, selectedWire.dest);
@@ -1682,8 +1698,9 @@ BoardView = createComponent({
         wires: this.props.board.wires,
         selectedWires: []
       });
-      e.preventDefault();
     }
+    e.preventDefault();
+    e.stopPropagation();
   },
 
   updateWatchedBoard: function (board, boardInfo) {
