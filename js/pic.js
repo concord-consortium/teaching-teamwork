@@ -1673,7 +1673,12 @@ BoardView = createComponent({
   keyUp: function (e) {
     var i, selectedWire;
 
-    if (this.props.selected && this.props.editable && (e.keyCode == 46) && (this.state.selectedWires.length > 0)) { // 46 is the delete key
+    // 46 is the delete key
+    if (e.keyCode != 46) {
+      return;
+    }
+
+    if (this.props.selected && this.props.editable) {
       for (i = 0; i < this.state.selectedWires.length; i++) {
         selectedWire = this.state.selectedWires[i];
         this.props.board.removeWire(selectedWire.source, selectedWire.dest);
@@ -1683,8 +1688,9 @@ BoardView = createComponent({
         wires: this.props.board.wires,
         selectedWires: []
       });
-      e.preventDefault();
     }
+    e.preventDefault();
+    e.stopPropagation();
   },
 
   updateWatchedBoard: function (board, boardInfo) {
