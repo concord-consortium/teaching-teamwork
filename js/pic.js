@@ -1673,8 +1673,8 @@ BoardView = createComponent({
   },
 
   keyDown: function (e) {
-    // 46 is the delete key
-    if (e.keyCode == 46) {
+    // 46 is the delete key which maps to 8 on Macs
+    if ((e.keyCode == 46) || (e.keyCode == 8)) {
       e.preventDefault();
       e.stopPropagation();
     }
@@ -1683,8 +1683,8 @@ BoardView = createComponent({
   keyUp: function (e) {
     var i, selectedWire;
 
-    // 46 is the delete key
-    if (e.keyCode != 46) {
+    // 46 is the delete key which maps to 8 on Macs
+    if (!((e.keyCode == 46) || (e.keyCode == 8))) {
       return;
     }
 
