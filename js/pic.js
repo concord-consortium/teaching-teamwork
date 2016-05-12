@@ -1674,6 +1674,7 @@ BoardView = createComponent({
 
   keyDown: function (e) {
     // 46 is the delete key which maps to 8 on Macs
+    // this is needed so Chrome on Macs don't trigger a back navigation
     if ((e.keyCode == 46) || (e.keyCode == 8)) {
       e.preventDefault();
       e.stopPropagation();
