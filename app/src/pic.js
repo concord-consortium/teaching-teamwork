@@ -11,10 +11,6 @@
   seperate models an efficent data structure for simulation can be maintained alongside the
   React component tree.
 
-  Todo for full collaborative environment:
-
-  1. Add a "All done!" button with check to verify circuit validity
-
 */
 
 var picCode = require('./data/pic-code'),
@@ -53,10 +49,10 @@ var picCode = require('./data/pic-code'),
     STEP_EVENT = 'Step',
     RESET_EVENT = 'Reset',
 
-    AppView, WeGotIt, SidebarChatView, WorkspaceView, BoardView, Board, RibbonView, ConnectorView,
+    AppView, WeGotIt, WeGotItPopup, SidebarChatView, WorkspaceView, BoardView, Board, RibbonView, ConnectorView,
     Keypad, LED, PIC, Connector, KeypadView, LEDView, PICView,
     ConnectorHoleView, Hole, Pin, PinView,
-    BoardEditorView, SimulatorControlView, Wire, Button, ButtonView, Segment, Circuit, DemoControlView, ChatItem, ChatItems, ProbeView, BoardWatcher, boardWatcher;
+    BoardEditorView, SimulatorControlView, Wire, Button, ButtonView, Segment, Circuit, DemoControlView, ChatItem, ChatItems, ProbeView, BoardWatcher, boardWatcher, WireView;
 
 //
 // Helper functions
@@ -252,15 +248,36 @@ Wire = function (options) {
   this.source = options.source;
   this.dest = options.dest;
   this.color = options.color;
+  this.id = Wire.GenerateId(this.source, this.dest, this.color);
 };
-Wire.prototype.connectsTo = function (sourceOrDest) {
-  return (this.source === sourceOrDest) || (this.dest === sourceOrDest);
+Wire.prototype.connects = function (source, dest) {
+  return ((this.source === source) && (this.dest === dest)) || ((this.source === dest) && (this.dest === source));
 };
 Wire.prototype.getBezierReflection = function () {
   if (this.dest.connector) {
     return this.dest.getBezierReflection();
   }
   return this.source.getBezierReflection();
+};
+Wire.GenerateId = function (source, dest, color) {
+  var sourceId = Wire.EndpointId(source),
+      destId = Wire.EndpointId(dest),
+      firstId = sourceId < destId ? sourceId : destId,
+      secondId = firstId === sourceId ? destId : sourceId;
+  return [firstId, secondId, color].join(',');
+};
+Wire.EndpointId = function (endPoint) {
+  var id;
+  if (endPoint instanceof Hole) {
+    id = ['connector', endPoint.connector.type, endPoint.index].join(':');
+  }
+  else if (endPoint instanceof Pin) {
+    id = ['component', endPoint.component.name, endPoint.number].join(':');
+  }
+  else {
+    id = 'unknown';
+  }
+  return id;
 };
 
 Circuit = function (options) {
@@ -433,7 +450,7 @@ Connector = function (options) {
       x: 0,
       y: 0,
       radius: 0,
-      color: ['blue', '#0f0', 'purple', 'red'][i],
+      color: ['blue', '#0f0', 'purple', '#cccc00'][i],
       connector: self
     }));
   }
@@ -601,18 +618,23 @@ Keypad.prototype.notify = function () {
 };
 Keypad.prototype.reset = function () {
 };
-Keypad.prototype.pushButton = function (button) {
+Keypad.prototype.pushButton = function (button, skipNotify) {
   this.pushedButton = button;
-  this.notify();
+  if (!skipNotify) {
+    this.notify();
+  }
 };
-Keypad.prototype.selectButtonValue = function (value) {
+Keypad.prototype.selectButtonValue = function (value, skipNotify) {
   var self = this;
   $.each(this.buttons, function (index, button) {
     if (button.value == value) {
-      self.pushButton(button);
+      self.pushButton(button, skipNotify);
       return false;
     }
   });
+};
+Keypad.prototype.getPushedButtonValue = function () {
+  return this.pushedButton ? this.pushedButton.value : null;
 };
 Keypad.prototype.resolveOutputValues = function () {
   var colValue = 7,
@@ -768,6 +790,14 @@ LED.prototype.reset = function () {
 };
 LED.prototype.resolveOutputValues = function () {
   // nothing to do for LED
+};
+LED.prototype.getPinBitField = function () {
+  var bitfield = 0,
+      i;
+  for (i = 0; i < this.pins.length; i++) {
+    bitfield = bitfield | ((this.pins[i].value ? 1 : 0) << i);
+  }
+  return bitfield;
 };
 
 PIC = function (options) {
@@ -1000,7 +1030,7 @@ Board.prototype.updateWires = function (newSerializedWires) {
   for (i = 0; i < toRemove.length; i++) {
     endpoints = this.findSerializedWireEndpoints(toRemove[i]);
     if (endpoints.source && endpoints.dest) {
-      this.removeWire(endpoints.source);
+      this.removeWire(endpoints.source, endpoints.dest);
     }
   }
   for (i = 0; i < newSerializedWires.length; i++) {
@@ -1012,26 +1042,9 @@ Board.prototype.updateWires = function (newSerializedWires) {
 };
 Board.prototype.serializeWiresToArray = function () {
   var serialized = [],
-      i, source, dest;
+      i;
   for (i = 0; i < this.wires.length; i++) {
-    source = this.serializeEndpoint(this.wires[i].source, 'type');
-    dest = this.serializeEndpoint(this.wires[i].dest, 'type');
-    // not using JSON here so that we can to quick indexOf checks in updateWires() above
-    serialized.push([
-      source.component ? 'component' : 'connector',
-      ':',
-      source.component || source.connector,
-      ':',
-      source[source.type].index,
-      ',',
-      dest.component ? 'component' : 'connector',
-      ':',
-      dest.component || dest.connector,
-      ':',
-      dest[dest.type].index,
-      ',',
-      this.wires[i].color
-    ].join(''));
+    serialized.push(this.wires[i].id);
   }
   return serialized;
 };
@@ -1086,11 +1099,11 @@ Board.prototype.serializeEndpoint = function (endPoint, label) {
   serialized.board = this.number;
   return serialized;
 };
-Board.prototype.removeWire = function (sourceOrDest) {
+Board.prototype.removeWire = function (source, dest) {
   var i;
 
   for (i = 0; i < this.wires.length; i++) {
-    if (this.wires[i].connectsTo(sourceOrDest)) {
+    if (this.wires[i].connects(source, dest)) {
       if (this.wires[i].source.inputMode) {
         this.wires[i].source.reset();
       }
@@ -1107,8 +1120,10 @@ Board.prototype.removeWire = function (sourceOrDest) {
   return false;
 };
 Board.prototype.addWire = function (source, dest, color) {
+  var i, id, wire;
+
   if (!source || !dest) {
-    return false;
+    return null;
   }
   /*
   if ((source.connector && dest.connector) && (source.connector === dest.connector)) {
@@ -1122,23 +1137,30 @@ Board.prototype.addWire = function (source, dest, color) {
   */
   if (source.notConnectable || dest.notConnectable) {
     alert("Sorry, you can't add a wire to the " + (source.notConnectable ? source.label.text : dest.label.text) + ' pin.  It is already connected to a breadboard component.');
-    return false;
+    return null;
   }
 
-  this.removeWire(source);
-  this.removeWire(dest);
-  this.wires.push(new Wire({
+  // don't allow duplicate wires
+  id = Wire.GenerateId(source, dest, color);
+  for (i = 0; i < this.wires.length; i++) {
+    if (this.wires[i].id === id) {
+      return null;
+    }
+  }
+
+  wire = new Wire({
     source: source,
     dest: dest,
     color: color
-  }));
+  });
+  this.wires.push(wire);
   if (!this.resolveCircuits()) {
     this.wires.pop();
-    return false;
+    return null;
   }
   source.connected = true;
   dest.connected = true;
-  return true;
+  return wire;
 };
 Board.prototype.resolveCircuits = function() {
   var newCircuits;
@@ -1296,8 +1318,7 @@ ButtonView = createComponent({
   },
 
   render: function () {
-    // TODO: allowing keypad clicks in global view for demo
-    var onClick = this.onClick; // this.props.selected ? this.onClick : null
+    var onClick = this.onClick;
     return g({onClick: onClick, style: {cursor: 'pointer'}},
       rect({x: this.props.button.x, y: this.props.button.y, width: this.props.button.width, height: this.props.button.height, fill: this.props.pushed ? SELECTED_FILL : UNSELECTED_FILL}),
       text({x: this.props.button.label.x, y: this.props.button.label.y, fontSize: this.props.button.labelSize, fill: '#fff', style: {textAnchor: this.props.button.label.anchor}}, this.props.button.label.text)
@@ -1516,19 +1537,21 @@ ProbeView = createComponent({
     var constants = selectedConstants(this.props.selected),
         $window = $(window),
         self = this,
-        dx, dy, drag, stopDrag;
+        drag, stopDrag;
+
+    this.props.draggingProbe(true);
 
     e.preventDefault();
-
-    dx = e.pageX - e.nativeEvent.offsetX;
-    dy = e.pageY - e.nativeEvent.offsetY;
+    e.stopPropagation();
 
     drag = function (e) {
       e.preventDefault();
-      self.props.setProbe({source: null, pos: {x: (e.pageX - dx), y: (e.pageY - dy) - (constants.PROBE_HEIGHT / 2)}});
+      self.props.setProbe({source: null, pos: {x: (e.pageX - self.props.svgOffset.left), y: (e.pageY - self.props.svgOffset.top) - (constants.PROBE_HEIGHT / 2)}});
     };
 
     stopDrag = function (e) {
+      self.props.draggingProbe(false);
+
       e.preventDefault();
       $window.off('mousemove', drag);
       $window.off('mouseup', stopDrag);
@@ -1626,16 +1649,58 @@ BoardView = createComponent({
       hoverSource: null,
       wires: this.props.board.wires,
       probeSource: this.props.board.probe ? this.props.board.probe.source : null,
-      probePos: this.props.board.probe ? this.props.board.probe.pos : null
+      probePos: this.props.board.probe ? this.props.board.probe.pos : null,
+      selectedWires: [],
+      drawBox: null,
+      draggingProbe: false
     };
   },
 
   componentDidMount: function () {
     boardWatcher.addListener(this.props.board, this.updateWatchedBoard);
+    $(window).on('keyup', this.keyUp);
+    $(window).on('keydown', this.keyDown);
+
+    // used to find wire click position
+    this.svgOffset = $(this.refs.svg).offset();
   },
 
   componentWillUnmount: function () {
     boardWatcher.removeListener(this.props.board, this.updateWatchedBoard);
+    $(window).off('keyup', this.keyUp);
+    $(window).off('keydown', this.keyDown);
+  },
+
+  keyDown: function (e) {
+    // 46 is the delete key which maps to 8 on Macs
+    // this is needed so Chrome on Macs don't trigger a back navigation
+    if ((e.keyCode == 46) || (e.keyCode == 8)) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  },
+
+  keyUp: function (e) {
+    var i, selectedWire;
+
+    // 46 is the delete key which maps to 8 on Macs
+    if (!((e.keyCode == 46) || (e.keyCode == 8))) {
+      return;
+    }
+
+    if (this.props.selected && this.props.editable) {
+      for (i = 0; i < this.state.selectedWires.length; i++) {
+        selectedWire = this.state.selectedWires[i];
+        this.props.board.removeWire(selectedWire.source, selectedWire.dest);
+        logEvent(REMOVE_WIRE_EVENT, null, {board: this.props.board, source: selectedWire.source});
+      }
+      this.setState({
+        wires: this.props.board.wires,
+        selectedWires: []
+      });
+    }
+    e.preventDefault();
+    e.stopPropagation();
   },
 
   updateWatchedBoard: function (board, boardInfo) {
@@ -1664,15 +1729,14 @@ BoardView = createComponent({
     this.setState({probeSource: probe.source, probePos: probe.pos});
   },
 
-  drawConnection: function (source, e, color) {
+  drawConnection: function (source, e, color, callback) {
     var $window = $(window),
         self = this,
-        dx, dy, drag, stopDrag;
+        moved = false,
+        drag, stopDrag;
 
     e.preventDefault();
-
-    dx = e.pageX - e.nativeEvent.offsetX;
-    dy = e.pageY - e.nativeEvent.offsetY;
+    e.stopPropagation();
 
     this.setState({
       drawConnection: {
@@ -1681,40 +1745,164 @@ BoardView = createComponent({
         x2: source.cx,
         y2: source.cy,
         strokeWidth: selectedConstants(this.props.selected).WIRE_WIDTH,
-        stroke: '#ccff00', //color,
+        stroke: color,
         reflection: source.getBezierReflection() * this.props.board.bezierReflectionModifier
       }
     });
 
     drag = function (e) {
+      moved = true;
       e.preventDefault();
-      self.state.drawConnection.x2 = e.pageX - dx;
-      self.state.drawConnection.y2 = e.pageY - dy;
+      self.state.drawConnection.x2 = e.pageX - self.svgOffset.left;
+      self.state.drawConnection.y2 = e.pageY - self.svgOffset.top;
       self.setState({drawConnection: self.state.drawConnection});
     };
 
     stopDrag = function (e) {
-      var dest = self.state.hoverSource;
+      var dest = self.state.hoverSource,
+          addedWire = false,
+          wire;
 
+      e.stopPropagation();
       e.preventDefault();
+
       $window.off('mousemove', drag);
       $window.off('mouseup', stopDrag);
       self.setState({drawConnection: null});
 
-      if (dest && (dest !== source)) {
-        self.props.board.addWire(source, dest, (source.color || dest.color || color));
-        self.setState({wires: self.props.board.wires});
+      if (moved && dest && (dest !== source)) {
+        addedWire = true;
+        wire = self.props.board.addWire(source, dest, (source.color || dest.color || color));
+        self.setState({
+          wires: self.props.board.wires,
+          selectedWires: [wire]
+        });
         logEvent(ADD_WIRE_EVENT, null, {board: self.props.board, source: source, dest: dest});
       }
-      else if (!dest) {
-        self.props.board.removeWire(source);
-        self.setState({wires: self.props.board.wires});
-        logEvent(REMOVE_WIRE_EVENT, null, {board: self.props.board, source: source});
+
+      if (callback) {
+        callback(addedWire);
       }
     };
 
     $window.on('mousemove', drag);
     $window.on('mouseup', stopDrag);
+  },
+
+  distance: function (endpoint, x, y) {
+    var a = endpoint.cx - x,
+        b = endpoint.cy - y;
+    return Math.sqrt((a*a) + (b*b));
+  },
+
+  wireSelected: function (wire, e) {
+    // check if click is near an endpoint
+    var x = e.pageX - this.svgOffset.left,
+        y = e.pageY - this.svgOffset.top,
+        sourceDistance = this.distance(wire.source, x, y),
+        destDistance = this.distance(wire.dest, x, y),
+        shortestDistance = Math.min(sourceDistance, destDistance),
+        self = this;
+
+    if (shortestDistance <= 20) {
+      this.props.board.removeWire(wire.source, wire.dest);
+      this.setState({
+        wires: this.props.board.wires,
+        selectedWires: []
+      });
+      this.drawConnection(shortestDistance == sourceDistance ? wire.dest : wire.source, e, wire.color, function (addedWire) {
+        var newWire;
+        if (!addedWire) {
+          newWire = self.props.board.addWire(wire.source, wire.dest, wire.color);
+          self.setState({
+            wires: self.props.board.wires,
+            selectedWires: [newWire]
+          });
+        }
+      });
+    }
+    else {
+      this.setState({selectedWires: [wire]});
+    }
+  },
+
+  backgroundMouseDown: function (e) {
+    var $window = $(window),
+        self = this,
+        drag, stopDrag, getPath, x1, y1;
+
+    this.setState({selectedWires: []});
+
+    // allow for bounding box drawing around wires for mass selection
+    e.preventDefault();
+
+    x1 = e.pageX - this.svgOffset.left;
+    y1 = e.pageY - this.svgOffset.top;
+
+    // use path instead of rect as svg rect doesn't support negative widths or heights
+    getPath = function (x2, y2) {
+      return ["M", x1, ",", y1, " ", x2, ",", y1, " ", x2, ",", y2, " ", x1, ",", y2, " ", x1, ",", y1].join("");
+    };
+
+    this.setState({
+      drawBox: {
+        x1: x1,
+        y1: y1,
+        path: getPath(x1, y1),
+        strokeWidth: selectedConstants(this.props.selected).WIRE_WIDTH,
+        stroke: '#555',
+        strokeDasharray: [10, 5]
+      }
+    });
+
+    drag = function (e) {
+      var x2 = e.pageX - self.svgOffset.left,
+          y2 = e.pageY - self.svgOffset.top;
+      e.preventDefault();
+      self.state.drawBox.x2 = x2;
+      self.state.drawBox.y2 = y2;
+      self.state.drawBox.path = getPath(x2, y2);
+      self.setState({drawBox: self.state.drawBox});
+    };
+
+    stopDrag = function (e) {
+      var selectedWires = [],
+          r, enclosed, i, wire;
+
+      e.stopPropagation();
+      e.preventDefault();
+      $window.off('mousemove', drag);
+      $window.off('mouseup', stopDrag);
+
+      // check bounding box for wires
+      r = {
+        x1: Math.min(self.state.drawBox.x1, self.state.drawBox.x2),
+        y1: Math.min(self.state.drawBox.y1, self.state.drawBox.y2),
+        x2: Math.max(self.state.drawBox.x1, self.state.drawBox.x2),
+        y2: Math.max(self.state.drawBox.y1, self.state.drawBox.y2)
+      };
+      enclosed = function (x, y) {
+        return (r.x1 <= x) && (x <= r.x2) && (r.y1 <= y) && (y <= r.y2);
+      };
+      for (i = 0; i < self.props.board.wires.length; i++) {
+        wire = self.props.board.wires[i];
+        if (enclosed(wire.source.cx, wire.source.cy) || enclosed(wire.dest.cx, wire.dest.cy)) {
+          selectedWires.push(wire);
+        }
+      }
+
+      self.setState({
+        drawBox: null,
+        selectedWires: selectedWires
+      });
+    };
+
+    $window.on('mousemove', drag);
+    $window.on('mouseup', stopDrag);
+  },
+
+  draggingProbe: function (draggingProbe) {
+    this.setState({draggingProbe: draggingProbe});
   },
 
   render: function () {
@@ -1728,7 +1916,8 @@ BoardView = createComponent({
         components = [],
         wires = [],
         componentIndex = 0,
-        name, component, i, wire, stroke;
+        editableWires = !this.state.draggingProbe && !this.state.drawConnection && !this.state.drawBox && (this.props.editable && this.props.selected),
+        name, component, i, wire;
 
     // resolve input values
     this.props.board.resolveCircuitInputValues();
@@ -1753,21 +1942,60 @@ BoardView = createComponent({
 
     for (i = 0; i < this.props.board.wires.length; i++) {
       wire = this.props.board.wires[i];
-      stroke = this.state.hoverSource && ((this.state.hoverSource === wire.source) || (this.state.hoverSource === wire.dest)) ? '#ccff00' : wire.color;
-      wires.push(path({key: i, className: 'wire', d: getBezierPath({x1: wire.source.cx, y1: wire.source.cy, x2: wire.dest.cx, y2: wire.dest.cy, reflection: wire.getBezierReflection() * this.props.board.bezierReflectionModifier}), strokeWidth: constants.WIRE_WIDTH, stroke: stroke, fill: 'none', style: {pointerEvents: 'none'}}));
+      wires.push(WireView({key: i, wire: wire, board: this.props.board, editable: editableWires, width: constants.WIRE_WIDTH, wireSelected: this.wireSelected, selected: this.state.selectedWires.indexOf(wire) !== -1}));
     }
 
     return div({className: this.props.editable ? 'board editable-board' : 'board', style: style},
       span({className: this.props.editable ? 'board-user editable-board-user' : 'board-user'}, ('Circuit ' + (this.props.board.number + 1) + ': ') + (this.props.user ? this.props.user.name : '(unclaimed)')),
-      svg({className: 'board-area'},
+      svg({className: 'board-area', onMouseDown: this.props.selected && this.props.editable ? this.backgroundMouseDown : null, ref: 'svg'},
         connectors,
         components,
         wires,
         (this.state.drawConnection ? line({x1: this.state.drawConnection.x1, x2: this.state.drawConnection.x2, y1: this.state.drawConnection.y1, y2: this.state.drawConnection.y2, stroke: this.state.drawConnection.stroke, strokeWidth: this.state.drawConnection.strokeWidth, fill: 'none', style: {pointerEvents: 'none'}}) : null),
-        ProbeView({board: this.props.board, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, probeSource: this.state.probeSource, hoverSource: this.state.hoverSource, pos: this.state.probePos, setProbe: this.setProbe})
+        (this.state.drawBox ? path({d: this.state.drawBox.path, stroke: this.state.drawBox.stroke, strokeWidth: this.state.drawBox.strokeWidth, strokeDasharray: this.state.drawBox.strokeDasharray, fill: 'none', style: {pointerEvents: 'none'}}) : null),
+        ProbeView({board: this.props.board, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, probeSource: this.state.probeSource, hoverSource: this.state.hoverSource, pos: this.state.probePos, setProbe: this.setProbe, svgOffset: this.svgOffset, draggingProbe: this.draggingProbe})
       ),
       span({className: 'board-toggle'}, button({onClick: this.toggleBoard}, this.props.selected ? 'View All Circuits' : (this.props.editable ? 'Edit Circuit' : 'View Circuit')))
     );
+  }
+});
+
+WireView = createComponent({
+  displayName: 'WireView',
+
+  getInitialState: function () {
+    return {
+      hovering: false
+    };
+  },
+
+  mouseOver: function () {
+    this.setState({hovering: true});
+  },
+
+  mouseOut: function () {
+    this.setState({hovering: false});
+  },
+
+  mouseDown: function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    this.props.wireSelected(this.props.wire, e);
+  },
+
+  render: function () {
+    var wire = this.props.wire;
+    return path({
+      key: this.props.key,
+      className: 'wire',
+      d: getBezierPath({x1: wire.source.cx, y1: wire.source.cy, x2: wire.dest.cx, y2: wire.dest.cy, reflection: wire.getBezierReflection() * this.props.board.bezierReflectionModifier}),
+      strokeWidth: this.props.width,
+      stroke: this.props.selected ? '#f00' : (this.state.hovering ? '#ccff00' : wire.color),
+      fill: 'none',
+      onMouseOver: this.props.editable ? this.mouseOver : null,
+      onMouseOut: this.props.editable ? this.mouseOut : null,
+      onMouseDown: this.props.editable ? this.mouseDown : null
+    });
   }
 });
 
@@ -2127,17 +2355,86 @@ ChatItem = createComponent({
   }
 });
 
+WeGotItPopup = createComponent({
+  displayName: 'WeGotItPopup',
+
+  clicked: function () {
+    this.props.hidePopup();
+  },
+
+  render: function () {
+    var allCorrect = this.props.allCorrect;
+    return div({id: "we-got-it-popup"},
+      div({id: "we-got-it-popup-background"}),
+      div({id: "we-got-it-popup-dialog-wrapper"},
+        div({id: "we-got-it-popup-dialog"},
+          h2({}, allCorrect ? "All the wires are correct!" : "Sorry, the circuit is not correctly wired."),
+          div({}, allCorrect ? "Your circuit is correctly wired from the keypad to the LED." : "Your circuit is not correctly wired from the keypad to the LED."),
+          button({onClick: this.clicked}, allCorrect ? "All Done!" : "Keep Trying..." )
+        )
+      )
+    );
+  }
+});
+
 WeGotIt = createComponent({
   displayName: 'WeGotIt',
 
-  clicked: function () {
-    alert("TBD: Run simulation with each key pressed to check output");
+  getInitialState: function () {
+    return {
+      showPopup: false,
+      allCorrect: false
+    };
+  },
+
+  componentWillMount: function () {
+    var self = this;
+
+    userController.onGroupRefCreation(function() {
+      self.submitRef = userController.getFirebaseGroupRef().child("submitted");
+      self.submitRef.on("value", function(dataSnapshot) {
+        var submitValue = dataSnapshot.val(),
+            skew = userController.getServerSkew(),
+            now = (new Date().getTime()) + skew;
+
+        // ignore submits over 10 seconds old
+        if (!submitValue || (submitValue.at < now - (10 * 1000))) {
+          return;
+        }
+
+        self.props.checkIfCircuitIsCorrect(function (allCorrect) {
+          self.setState({showPopup: true, allCorrect: allCorrect});
+        });
+      });
+    });
+  },
+
+  componentWillUnmount: function() {
+    this.submitRef.off();
+  },
+
+  hidePopup: function () {
+    this.setState({showPopup: false});
+  },
+
+  clicked: function (e) {
+    var username = userController.getUsername();
+
+    e.preventDefault();
+
+    logController.logEvent("Submit clicked", username);
+
+    this.submitRef.set({
+      user: username,
+      at: Firebase.ServerValue.TIMESTAMP
+    });
   },
 
   render: function () {
     if (this.props.currentUser) {
       return div({id: "we-got-it"},
-        button({onClick: this.clicked}, "We got it!")
+        button({onClick: this.clicked}, "We got it!"),
+        this.state.showPopup ? WeGotItPopup({allCorrect: this.state.allCorrect, hidePopup: this.hidePopup}) : null
       );
     }
     else {
@@ -2251,6 +2548,69 @@ AppView = createComponent({
     // update the wires
     wires = (boardInfo ? boardInfo.wires : null) || [];
     board.updateWires(wires);
+  },
+
+  checkIfCircuitIsCorrect: function (callback) {
+    var self = this,
+        inputs = [
+          {value: '1', bitfield: 107},
+          {value: '2', bitfield: 258},
+          {value: '3', bitfield: 34},
+          {value: '4', bitfield: 104},
+          {value: '5', bitfield: 48},
+          {value: '6', bitfield: 24},
+          {value: '7', bitfield: 99},
+          {value: '8', bitfield: 0},
+          {value: '9', bitfield: 96},
+          {value: '0', bitfield: 1},
+          {value: '*', bitfield: 378},
+          {value: '#', bitfield: 379}
+        ],
+        keypad = this.state.boards[0].components.keypad,
+        led = this.state.boards[2].components.led,
+        allCorrect, startingKeypadValue, input, i, selectButton;
+
+    selectButton = function (value) {
+      var boards = self.state.boards,
+          numBoards = boards.length,
+          i, j;
+
+      // reset all the boards
+      for (i = 0; i < numBoards; i++) {
+        boards[i].reset();
+      }
+
+      // set the input without notifing
+      keypad.selectButtonValue(value, true);
+
+      // evaluate all the boards so the keypad input propogates to the led
+      for (i = 0; i < numBoards; i++) {
+        for (j = 0; j < numBoards; j++) {
+          boards[i].components.pic.evaluateRemainingPICInstructions();
+        }
+      }
+    };
+
+    // save the current keypad number
+    startingKeypadValue = keypad.getPushedButtonValue();
+
+    // check each keypad input for led output
+    for (i = 0; i < inputs.length; i++) {
+      input = inputs[i];
+
+      selectButton(input.value);
+
+      // check the output
+      allCorrect = led.getPinBitField() == input.bitfield;
+      if (!allCorrect) {
+        break;
+      }
+    }
+
+    // reset to the saved keypad number without notifing
+    selectButton(startingKeypadValue);
+
+    callback(allCorrect);
   },
 
   simulate: function (step) {
@@ -2374,7 +2734,7 @@ AppView = createComponent({
     return div({},
       h1({}, "Teaching Teamwork PIC Activity"),
       this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
-      WeGotIt({currentUser: this.state.currentUser}),
+      WeGotIt({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect}),
       div({id: 'picapp'},
         WorkspaceView({boards: this.state.boards, stepping: !this.state.running, showDebugPins: this.state.showDebugPins, users: this.state.users, userBoardNumber: this.state.userBoardNumber}),
         SimulatorControlView({running: this.state.running, run: this.run, step: this.step, reset: this.reset}),

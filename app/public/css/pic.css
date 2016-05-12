@@ -24,6 +24,7 @@ button {
   border-radius: 5px;
   -webkit-border-radius: 5px;
   -moz-border-radius: 5px;
+  font-size: 12px;
 }
 
 #picapp {
@@ -32,11 +33,6 @@ button {
   margin: 0 auto;
   background-color: #ddd;
   position: relative;
-}
-
-#we-got-it {
-  text-align: center;
-  margin: 10px;
 }
 
 #simulator-control {
@@ -211,4 +207,45 @@ button {
 .modalDialog button {
   padding: 3px 10px;
   margin: 10px 10px 0 0;
+}
+
+#we-got-it {
+  text-align: center;
+  margin: 10px;
+}
+
+#we-got-it-popup-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #000;
+  opacity: 0.25;
+  z-index: 10000;
+}
+
+#we-got-it-popup-dialog-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10001;
+}
+
+#we-got-it-popup-dialog {
+  width: 500px;
+  position: relative;
+  margin: 20% auto;
+  padding: 5px 20px 13px 20px;
+  border-radius: 5px;
+  background: #fff;
+  background: -moz-linear-gradient(#fff, #D0D0D0);
+  background: -webkit-linear-gradient(#fff, #D0D0D0);
+  background: -o-linear-gradient(#fff, #D0D0D0);
+  text-align: center;
+}
+#we-got-it-popup-dialog div {
+  margin: 10px 0;
 }
