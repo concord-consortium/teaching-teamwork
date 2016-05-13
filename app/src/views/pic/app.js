@@ -313,7 +313,7 @@ module.exports = React.createClass({
         WorkspaceView({boards: this.state.boards, stepping: !this.state.running, showDebugPins: this.state.showDebugPins, users: this.state.users, userBoardNumber: this.state.userBoardNumber}),
         SimulatorControlView({running: this.state.running, run: this.run, step: this.step, reset: this.reset}),
         this.state.demo ? DemoControlView({running: this.state.running, toggleAllWires: this.toggleAllWires, toggleDebugPins: this.toggleDebugPins, showDebugPins: this.state.showDebugPins, addedAllWires: this.state.addedAllWires}) : null,
-        SidebarChatView({top: this.state.demo ? 150 : 75})
+        SidebarChatView({numClients: 3, top: this.state.demo ? 150 : 75})
       )
     );
   }

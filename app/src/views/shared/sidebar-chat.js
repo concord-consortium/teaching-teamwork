@@ -27,7 +27,7 @@ module.exports = React.createClass({
   },
 
   getJoinedMessage: function (numExistingUsers) {
-    var slotsRemaining = 3 - numExistingUsers,
+    var slotsRemaining = this.props.numClients - numExistingUsers,
         nums = ["zero", "one", "two", "three"],
         cap = function (string) {
           return string.charAt(0).toUpperCase() + string.slice(1);
@@ -36,7 +36,7 @@ module.exports = React.createClass({
 
     if (slotsRemaining > 1) {
       // One of three users is here
-      message += cap(nums[numExistingUsers]) + " of 3 users is here.";
+      message += cap(nums[numExistingUsers]) + " of " + this.props.numClients + " users is here.";
     } else if (slotsRemaining == 1) {
       // Two of you are now here. One more to go before you can get started!
       message += cap(nums[numExistingUsers]) + " of you are now here. One more to go before you can get started!";
@@ -57,7 +57,7 @@ module.exports = React.createClass({
             numExistingUsers = self.state.numExistingUsers;
 
         if (item.type == "joined") {
-          numExistingUsers = Math.min(self.state.numExistingUsers + 1, 3);
+          numExistingUsers = Math.min(self.state.numExistingUsers + 1, this.props.numClients);
           item.message += self.getJoinedMessage(numExistingUsers);
         }
         else if (item.type == "left") {

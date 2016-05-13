@@ -76,7 +76,7 @@ module.exports = React.createClass({
       //WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect}),
       div({id: 'logicapp'},
         this.state.demo ? DemoControlView({toggleAllChipsAndWires: this.toggleAllChipsAndWires, addedAllChipsAndWires: this.state.addedAllChipsAndWires}) : null,
-        SidebarChatView({top: this.state.demo ? 75 : 0})
+        SidebarChatView({numClients: 2, top: this.state.demo ? 75 : 0})
       )
     );
   }
