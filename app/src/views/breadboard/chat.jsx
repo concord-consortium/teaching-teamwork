@@ -1,8 +1,8 @@
 var GoalTable = require('./goalTable.jsx'),
     GoalTableFactory = React.createFactory(GoalTable),
     ReactTransitionGroup = React.addons.TransitionGroup,
-    userController = require('../controllers/user'),
-    logController = require('../controllers/log');
+    userController = require('../../controllers/shared/user'),
+    logController = require('../../controllers/shared/log');
 
 module.exports = React.createClass({
   displayName: 'Chat',

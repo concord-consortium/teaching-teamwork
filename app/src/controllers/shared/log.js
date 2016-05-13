@@ -1,5 +1,5 @@
 var logManagerUrl  = '//teaching-teamwork-log-manager.herokuapp.com/api/logs',
-    xhrObserver    = require('../data/xhrObserver'),
+    xhrObserver    = require('../../data/shared/xhrObserver'),
     laraController = require('./lara'),
     laraLoggerReady,
     activityName,

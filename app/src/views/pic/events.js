@@ -1,5 +1,5 @@
-var boardWatcher = require('../../controllers/board-watcher'),
-    logController = require('../../controllers/log'),
+var boardWatcher = require('../../controllers/pic/board-watcher'),
+    logController = require('../../controllers/shared/log'),
     events;
 
 module.exports = events = {

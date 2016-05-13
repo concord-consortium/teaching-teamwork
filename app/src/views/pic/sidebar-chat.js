@@ -1,4 +1,4 @@
-var userController = require('../../controllers/user'),
+var userController = require('../../controllers/shared/user'),
     ChatItems = React.createFactory(require('./chat-items')),
     events = require('./events'),
     div = React.DOM.div,

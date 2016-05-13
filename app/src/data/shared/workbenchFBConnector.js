@@ -1,5 +1,5 @@
-var eventsController = require('../controllers/events'),
-    logController = require('../controllers/log'),
+var eventsController = require('../../controllers/shared/events'),
+    logController = require('../../controllers/shared/log'),
     clientListFirebaseRef,
     myCircuitFirebaseRef,
     myMeterFirebaseRef,

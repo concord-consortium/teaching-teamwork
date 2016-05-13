@@ -1,4 +1,4 @@
-var workbenchAdaptor = require('../../app/src/data/workbenchAdaptor');
+var workbenchAdaptor = require('../../app/src/data/shared/workbenchAdaptor');
 
 describe("the workbench adaptor", function() {
 

@@ -1,4 +1,4 @@
-var boardWatcher = require('../../controllers/board-watcher'),
+var boardWatcher = require('../../controllers/pic/board-watcher'),
     ConnectorView = React.createFactory(require('./connector')),
     WireView = React.createFactory(require('./wire')),
     ProbeView = React.createFactory(require('./probe')),

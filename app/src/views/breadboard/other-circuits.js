@@ -1,5 +1,5 @@
-var config = require('../config'),
-    logController = require('../controllers/log'),
+var config = require('../../config'),
+    logController = require('../../controllers/shared/log'),
     OtherCircuits, Popup, PopupIFrame, CircuitLink, CircuitImage, ScaledIFrame;
 
 module.exports = OtherCircuits = React.createClass({
