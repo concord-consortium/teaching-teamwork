@@ -16,7 +16,7 @@ module.exports = React.createClass({
       div({id: "we-got-it-popup-dialog-wrapper"},
         div({id: "we-got-it-popup-dialog"},
           h2({}, allCorrect ? "All the wires are correct!" : "Sorry, the circuit is not correctly wired."),
-          div({}, allCorrect ? "Your circuit is correctly wired from the keypad to the LED." : "Your circuit is not correctly wired from the keypad to the LED."),
+          div({}, allCorrect ? "Your circuit is correctly wired." : "Your circuit is not correctly wired."),
           button({onClick: this.clicked}, allCorrect ? "All Done!" : "Keep Trying..." )
         )
       )

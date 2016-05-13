@@ -2,6 +2,7 @@ var userController = require('../../controllers/shared/user'),
     logController = require('../../controllers/shared/log'),
     SidebarChatView = React.createFactory(require('../shared/sidebar-chat')),
     DemoControlView = React.createFactory(require('./demo-control')),
+    WeGotItView = React.createFactory(require('../shared/we-got-it')),
     div = React.DOM.div,
     h1 = React.DOM.h1,
     h2 = React.DOM.h2;
@@ -69,11 +70,15 @@ module.exports = React.createClass({
     this.setState({addedAllChipsAndWires: !this.state.addedAllChipsAndWires});
   },
 
+  checkIfCircuitIsCorrect: function () {
+    // TODO
+  },
+
   render: function () {
     return div({},
       h1({}, "Teaching Teamwork Logic Gates Activity"),
       this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
-      //WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect}),
+      WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect}),
       div({id: 'logicapp'},
         this.state.demo ? DemoControlView({toggleAllChipsAndWires: this.toggleAllChipsAndWires, addedAllChipsAndWires: this.state.addedAllChipsAndWires}) : null,
         SidebarChatView({numClients: 2, top: this.state.demo ? 75 : 0})
