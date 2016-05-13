@@ -11,7 +11,7 @@ var Connector = require('../../models/pic/connector'),
     WorkspaceView = React.createFactory(require('./workspace')),
     SimulatorControlView = React.createFactory(require('./simulator-control')),
     DemoControlView = React.createFactory(require('./demo-control')),
-    SidebarChatView = React.createFactory(require('./sidebar-chat')),
+    SidebarChatView = React.createFactory(require('../shared/sidebar-chat')),
     events = require('./events'),
     div = React.DOM.div,
     h1 = React.DOM.h1,
@@ -313,7 +313,7 @@ module.exports = React.createClass({
         WorkspaceView({boards: this.state.boards, stepping: !this.state.running, showDebugPins: this.state.showDebugPins, users: this.state.users, userBoardNumber: this.state.userBoardNumber}),
         SimulatorControlView({running: this.state.running, run: this.run, step: this.step, reset: this.reset}),
         this.state.demo ? DemoControlView({running: this.state.running, toggleAllWires: this.toggleAllWires, toggleDebugPins: this.toggleDebugPins, showDebugPins: this.state.showDebugPins, addedAllWires: this.state.addedAllWires}) : null,
-        SidebarChatView({demo: this.state.demo})
+        SidebarChatView({top: this.state.demo ? 150 : 75})
       )
     );
   }

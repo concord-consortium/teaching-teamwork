@@ -1,6 +1,6 @@
 var userController = require('../../controllers/shared/user'),
+    logController = require('../../controllers/shared/user'),
     ChatItems = React.createFactory(require('./chat-items')),
-    events = require('./events'),
     div = React.DOM.div,
     form = React.DOM.form,
     textarea = React.DOM.textarea,
@@ -95,7 +95,7 @@ module.exports = React.createClass({
       });
       input.value = '';
       input.focus();
-      events.logEvent("Sent message", message);
+      logController.logEvent("Sent message", message);
     }
   },
 
@@ -106,8 +106,7 @@ module.exports = React.createClass({
   },
 
   render: function () {
-    var style = this.props.demo ? {} : {top: 75};
-    return div({id: 'sidebar-chat', style: style},
+    return div({id: 'sidebar-chat', style: {top: this.props.top}},
       div({id: 'sidebar-chat-title'}, 'Chat'),
       ChatItems({items: this.state.items}),
       div({className: 'sidebar-chat-input'},
