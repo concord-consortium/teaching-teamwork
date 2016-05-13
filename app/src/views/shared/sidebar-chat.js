@@ -1,5 +1,5 @@
 var userController = require('../../controllers/shared/user'),
-    logController = require('../../controllers/shared/user'),
+    logController = require('../../controllers/shared/log'),
     ChatItems = React.createFactory(require('./chat-items')),
     div = React.DOM.div,
     form = React.DOM.form,
