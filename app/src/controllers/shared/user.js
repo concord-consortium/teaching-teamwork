@@ -1,5 +1,5 @@
-var UserRegistrationView = require('../views/userRegistration.jsx'),
-    groups = require('../data/group-names'),
+var UserRegistrationView = require('../../views/shared/userRegistration.jsx'),
+    groups = require('../../data/shared/group-names'),
     logController = require('./log'),
     laraController = require('./lara'),
     userController,

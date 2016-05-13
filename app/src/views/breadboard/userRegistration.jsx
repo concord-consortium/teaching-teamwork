@@ -1,5 +1,5 @@
 var userController, UserRegistrationView, UserRegistrationViewFactory,
-    groups = require('../data/group-names');
+    groups = require('../../data/shared/group-names');
 
 // add a global UserRegistrationView variable because its statics are called in other modules
 module.exports = window.UserRegistrationView = UserRegistrationView = React.createClass({

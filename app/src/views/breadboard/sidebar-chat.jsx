@@ -1,5 +1,5 @@
-var userController = require('../controllers/user'),
-    logController = require('../controllers/log'),
+var userController = require('../../controllers/shared/user'),
+    logController = require('../../controllers/shared/log'),
     ChatItems, ChatItem;
 
 module.exports = React.createClass({

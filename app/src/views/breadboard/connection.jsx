@@ -1,5 +1,5 @@
-var xhrObserver = require('../data/xhrObserver');
-var logController = require('../controllers/log');
+var xhrObserver = require('../../data/shared/xhrObserver');
+var logController = require('../../controllers/shared/log');
 
 module.exports = React.createClass({
   displayName: 'Connection',

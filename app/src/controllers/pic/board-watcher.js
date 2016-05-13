@@ -1,4 +1,4 @@
-var userController = require('./user');
+var userController = require('../shared/user');
 
 var BoardWatcher = function () {
   this.firebase = null;

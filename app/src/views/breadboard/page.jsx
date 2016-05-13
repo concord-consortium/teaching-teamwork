@@ -1,4 +1,4 @@
-var userController = require('../controllers/user'),
+var userController = require('../../controllers/shared/user'),
     SidebarChatView = require('./sidebar-chat.jsx'),
     SidebarChatViewFactory = React.createFactory(SidebarChatView),
     CalculatorView = require('./calculator.jsx'),
@@ -7,7 +7,7 @@ var userController = require('../controllers/user'),
     EditorView = require('./editor'),
     SubmitButtonView = require('./submitButton'),
     OtherCircuitsView = require('./other-circuits'),
-    config = require('../config');
+    config = require('../../config');
 
 module.exports = React.createClass({
 

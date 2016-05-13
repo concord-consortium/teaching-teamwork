@@ -9,7 +9,7 @@ module.exports = {
   },
   js: {
     src: {
-      app: app + '/src/app.js',
+      breadboard: app + '/src/breadboard.js',
       pic: app + '/src/pic.js'
     },
     allSrc: app + '/src/**/*',

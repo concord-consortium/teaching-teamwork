@@ -1,6 +1,6 @@
 var WeGotItPopupView = React.createFactory(require('./we-got-it-popup')),
-    userController = require('../../controllers/user'),
-    logController = require('../../controllers/log'),
+    userController = require('../../controllers/shared/user'),
+    logController = require('../../controllers/shared/log'),
     div = React.DOM.div,
     button = React.DOM.button;
 

@@ -4,12 +4,12 @@ var source      = require("vinyl-source-stream");
 var reactify    = require('reactify');
 var config      = require('../config').js;
 
-gulp.task('browserify-app', function(){
+gulp.task('browserify-breadboard', function(){
   var b = browserify();
   b.transform(reactify); // use the reactify transform
-  b.add(config.src.app);
+  b.add(config.src.breadboard);
   return b.bundle()
-    .pipe(source('app.js'))
+    .pipe(source('breadboard.js'))
     .pipe(gulp.dest(config.dest));
 });
 

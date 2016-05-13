@@ -1,7 +1,7 @@
 // adapted from http://thecodeplayer.com/walkthrough/javascript-css3-calculator
 /*jslint evil: true */
 
-var logController = require('../controllers/log');
+var logController = require('../../controllers/shared/log');
 
 module.exports = React.createClass({
 

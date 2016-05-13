@@ -1,6 +1,6 @@
-var userController       = require('../controllers/user'),
-    WorkbenchAdaptor     = require('../data/workbenchAdaptor'),
-    WorkbenchFBConnector = require('../data/workbenchFBConnector');
+var userController       = require('../../controllers/shared/user'),
+    WorkbenchAdaptor     = require('../../data/shared/workbenchAdaptor'),
+    WorkbenchFBConnector = require('../../data/shared/workbenchFBConnector');
 
 module.exports = React.createClass({
 

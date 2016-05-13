@@ -1,10 +1,10 @@
 var PageView              = React.createFactory(require('./page.jsx')),
-    WorkbenchAdaptor      = require('../data/workbenchAdaptor'),
-    WorkbenchFBConnector  = require('../data/workbenchFBConnector'),
-    logController         = require('../controllers/log'),
-    userController        = require('../controllers/user'),
-    eventsController      = require('../controllers/events'),
-    config                = require('../config'),
+    WorkbenchAdaptor      = require('../../data/shared/workbenchAdaptor'),
+    WorkbenchFBConnector  = require('../../data/shared/workbenchFBConnector'),
+    logController         = require('../../controllers/shared/log'),
+    userController        = require('../../controllers/shared/user'),
+    eventsController      = require('../../controllers/shared/events'),
+    config                = require('../../config'),
     OtherCircuitView      = React.createFactory(require('./view-other-circuit')),
     viewOtherCircuit      = !!window.location.search.match(/view-other-circuit!/);
 
