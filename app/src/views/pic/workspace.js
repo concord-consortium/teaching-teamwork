@@ -1,0 +1,76 @@
+var BoardView = React.createFactory(require('./board')),
+    BoardEditorView = React.createFactory(require('./board-editor')),
+    RibbonView = React.createFactory(require('./ribbon')),
+    events = require('./events'),
+    constants = require('./constants'),
+    div = React.DOM.div;
+
+module.exports = React.createClass({
+  displayName: 'WorkspaceView',
+
+  getInitialState: function () {
+    return {
+      selectedBoard: null
+    };
+  },
+
+  toggleBoard: function (board) {
+    var previousBoard = this.state.selectedBoard,
+        selectedBoard = board === this.state.selectedBoard ? null : board;
+    this.setState({selectedBoard: selectedBoard});
+    if (selectedBoard) {
+      events.logEvent(events.OPENED_BOARD_EVENT, selectedBoard.number);
+    }
+    else {
+      events.logEvent(events.CLOSED_BOARD_EVENT, previousBoard ? previousBoard.number : -1);
+    }
+  },
+
+  render: function () {
+    if (this.state.selectedBoard) {
+      return div({id: 'workspace'},
+        BoardView({
+          key: 'selectedBoard' + this.state.selectedBoard.number,
+          board: this.state.selectedBoard,
+          selected: true,
+          editable: this.props.userBoardNumber === this.state.selectedBoard.number,
+          user: this.props.users[this.state.selectedBoard.number],
+          stepping: this.props.stepping,
+          showDebugPins: this.props.showDebugPins,
+          toggleBoard: this.toggleBoard
+        }),
+        BoardEditorView({board: this.state.selectedBoard})
+      );
+    }
+    else {
+      return div({id: 'workspace', style: {width: constants.WORKSPACE_WIDTH}},
+        BoardView({
+          board: this.props.boards[0],
+          editable: this.props.userBoardNumber === 0,
+          user: this.props.users[0],
+          stepping: this.props.stepping,
+          showDebugPins: this.props.showDebugPins,
+          toggleBoard: this.toggleBoard
+        }),
+        RibbonView({connector: this.props.boards[0].connectors.output}),
+        BoardView({
+          board: this.props.boards[1],
+          editable: this.props.userBoardNumber === 1,
+          user: this.props.users[1],
+          stepping: this.props.stepping,
+          showDebugPins: this.props.showDebugPins,
+          toggleBoard: this.toggleBoard
+        }),
+        RibbonView({connector: this.props.boards[1].connectors.output}),
+        BoardView({
+          board: this.props.boards[2],
+          editable: this.props.userBoardNumber === 2,
+          user: this.props.users[2],
+          stepping: this.props.stepping,
+          showDebugPins: this.props.showDebugPins,
+          toggleBoard: this.toggleBoard
+        })
+      );
+    }
+  }
+});
