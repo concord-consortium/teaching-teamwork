@@ -1,6 +1,6 @@
-var PinView = React.createFactory(require('./pin')),
+var PinView = React.createFactory(require('../shared/pin')),
     ButtonView = React.createFactory(require('./button')),
-    events = require('./events'),
+    events = require('../shared/events'),
     text = React.DOM.text,
     g = React.DOM.g,
     rect = React.DOM.rect;
@@ -42,13 +42,13 @@ module.exports = React.createClass({
 
     for (i = 0; i < this.props.component.pins.length; i++) {
       pin = this.props.component.pins[i];
-      pins.push(PinView({key: 'pin' + i, pin: pin, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
+      pins.push(PinView({key: 'pin' + i, constants: this.props.constants, pin: pin, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
       pins.push(text({key: 'label' + i, x: pin.label.x, y: pin.label.y, fontSize: pin.labelSize, fill: '#333', style: {textAnchor: pin.label.anchor}}, pin.label.text));
     }
 
     for (i = 0; i < this.props.component.buttons.length; i++) {
       button = this.props.component.buttons[i];
-      buttons.push(ButtonView({key: i, button: button, selected: this.props.selected, editable: this.props.editable, pushed: button === this.state.pushedButton, pushButton: this.pushButton}));
+      buttons.push(ButtonView({key: i, constants: this.props.constants, button: button, selected: this.props.selected, editable: this.props.editable, pushed: button === this.state.pushedButton, pushButton: this.pushButton}));
     }
 
     return g({},

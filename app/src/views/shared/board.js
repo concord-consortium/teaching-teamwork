@@ -2,8 +2,7 @@ var boardWatcher = require('../../controllers/pic/board-watcher'),
     ConnectorView = React.createFactory(require('./connector')),
     WireView = React.createFactory(require('./wire')),
     ProbeView = React.createFactory(require('./probe')),
-    events = require('./events'),
-    constants = require('./constants'),
+    events = require('../shared/events'),
     div = React.DOM.div,
     span = React.DOM.span,
     div = React.DOM.div,
@@ -120,7 +119,7 @@ module.exports = React.createClass({
         y1: source.cy,
         x2: source.cx,
         y2: source.cy,
-        strokeWidth: constants.selectedConstants(this.props.selected).WIRE_WIDTH,
+        strokeWidth: this.props.constants.selectedConstants(this.props.selected).WIRE_WIDTH,
         stroke: color,
         reflection: source.getBezierReflection() * this.props.board.bezierReflectionModifier
       }
@@ -225,7 +224,7 @@ module.exports = React.createClass({
         x1: x1,
         y1: y1,
         path: getPath(x1, y1),
-        strokeWidth: constants.selectedConstants(this.props.selected).WIRE_WIDTH,
+        strokeWidth: this.props.constants.selectedConstants(this.props.selected).WIRE_WIDTH,
         stroke: '#555',
         strokeDasharray: [10, 5]
       }
@@ -282,9 +281,9 @@ module.exports = React.createClass({
   },
 
   render: function () {
-    var selectedConstants = constants.selectedConstants(this.props.selected),
+    var selectedConstants = this.props.constants.selectedConstants(this.props.selected),
         style = {
-          width: constants.WORKSPACE_WIDTH,
+          width: this.props.constants.WORKSPACE_WIDTH,
           height: selectedConstants.BOARD_HEIGHT,
           position: 'relative'
         },
@@ -300,25 +299,25 @@ module.exports = React.createClass({
 
     // calculate the position so the wires can be updated
     if (this.props.board.connectors.input) {
-      this.props.board.connectors.input.calculatePosition(this.props.selected);
-      connectors.push(ConnectorView({key: 'input', connector: this.props.board.connectors.input, selected: this.props.selected, editable: this.props.editable, drawConnection: this.drawConnection, reportHover: this.reportHover}));
+      this.props.board.connectors.input.calculatePosition(this.props.constants, this.props.selected);
+      connectors.push(ConnectorView({key: 'input', constants: this.props.constants, connector: this.props.board.connectors.input, selected: this.props.selected, editable: this.props.editable, drawConnection: this.drawConnection, reportHover: this.reportHover}));
     }
     if (this.props.board.connectors.output) {
-      this.props.board.connectors.output.calculatePosition(this.props.selected);
-      connectors.push(ConnectorView({key: 'output', connector: this.props.board.connectors.output, selected: this.props.selected, editable: this.props.editable, drawConnection: this.drawConnection, reportHover: this.reportHover}));
+      this.props.board.connectors.output.calculatePosition(this.props.constants, this.props.selected);
+      connectors.push(ConnectorView({key: 'output', constants: this.props.constants, connector: this.props.board.connectors.output, selected: this.props.selected, editable: this.props.editable, drawConnection: this.drawConnection, reportHover: this.reportHover}));
     }
 
     for (name in this.props.board.components) {
       if (this.props.board.components.hasOwnProperty(name)) {
         component = this.props.board.components[name];
-        component.calculatePosition(this.props.selected, componentIndex++, this.props.board.numComponents);
-        components.push(component.view({key: name, component: component, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.drawConnection, reportHover: this.reportHover}));
+        component.calculatePosition(this.props.constants, this.props.selected, componentIndex++, this.props.board.numComponents);
+        components.push(component.view({key: name, constants: this.props.constants, component: component, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.drawConnection, reportHover: this.reportHover}));
       }
     }
 
     for (i = 0; i < this.props.board.wires.length; i++) {
       wire = this.props.board.wires[i];
-      wires.push(WireView({key: i, wire: wire, board: this.props.board, editable: editableWires, width: selectedConstants.WIRE_WIDTH, wireSelected: this.wireSelected, selected: this.state.selectedWires.indexOf(wire) !== -1}));
+      wires.push(WireView({key: i, constants: this.props.constants, wire: wire, board: this.props.board, editable: editableWires, width: selectedConstants.WIRE_WIDTH, wireSelected: this.wireSelected, selected: this.state.selectedWires.indexOf(wire) !== -1}));
     }
 
     return div({className: this.props.editable ? 'board editable-board' : 'board', style: style},
@@ -329,7 +328,7 @@ module.exports = React.createClass({
         wires,
         (this.state.drawConnection ? line({x1: this.state.drawConnection.x1, x2: this.state.drawConnection.x2, y1: this.state.drawConnection.y1, y2: this.state.drawConnection.y2, stroke: this.state.drawConnection.stroke, strokeWidth: this.state.drawConnection.strokeWidth, fill: 'none', style: {pointerEvents: 'none'}}) : null),
         (this.state.drawBox ? path({d: this.state.drawBox.path, stroke: this.state.drawBox.stroke, strokeWidth: this.state.drawBox.strokeWidth, strokeDasharray: this.state.drawBox.strokeDasharray, fill: 'none', style: {pointerEvents: 'none'}}) : null),
-        ProbeView({board: this.props.board, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, probeSource: this.state.probeSource, hoverSource: this.state.hoverSource, pos: this.state.probePos, setProbe: this.setProbe, svgOffset: this.svgOffset, draggingProbe: this.draggingProbe})
+        this.props.showProbe ? ProbeView({constants: this.props.constants, board: this.props.board, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, probeSource: this.state.probeSource, hoverSource: this.state.hoverSource, pos: this.state.probePos, setProbe: this.setProbe, svgOffset: this.svgOffset, draggingProbe: this.draggingProbe}) : null
       ),
       span({className: 'board-toggle'}, button({onClick: this.toggleBoard}, this.props.selected ? 'View All Circuits' : (this.props.editable ? 'Edit Circuit' : 'View Circuit')))
     );

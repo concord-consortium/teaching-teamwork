@@ -1,13 +1,12 @@
-var div = React.DOM.div,
-    constants = require('../../views/pic/constants');
+var div = React.DOM.div;
 
 module.exports = React.createClass({
   displayName: 'BoardEditorView',
 
   render: function () {
-    var selectedConstants = constants.selectedConstants(true),
+    var selectedConstants = this.props.constants.selectedConstants(true),
         style = {
-          width: constants.WORKSPACE_WIDTH,
+          width: this.props.constants.WORKSPACE_WIDTH,
           top: selectedConstants.BOARD_HEIGHT + 28
         };
 

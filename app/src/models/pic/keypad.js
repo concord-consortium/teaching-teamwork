@@ -1,8 +1,7 @@
 var KeypadView = React.createFactory(require('../../views/pic/keypad')),
-    Pin = require('./pin'),
+    Pin = require('../shared/pin'),
     Button = require('./button'),
-    constants = require('../../views/pic/constants'),
-    layout = require('../../views/pic/layout');
+    layout = require('../../views/shared/layout');
 
 var Keypad = function () {
   var i, pin, button, values;
@@ -64,11 +63,11 @@ var Keypad = function () {
 
   this.listeners = [];
 };
-Keypad.prototype.calculatePosition = function (selected, index, count) {
+Keypad.prototype.calculatePosition = function (constants, selected, index, count) {
   var selectedConstants = constants.selectedConstants(selected),
       padWidth, padHeight, i, pin, j, button, buttonWidth, buttonHeight, buttonDX, buttonDY;
 
-  this.position = layout.calculateComponentRect(selected, index, count, selectedConstants.COMPONENT_WIDTH * 1.5, selectedConstants.COMPONENT_HEIGHT * 1.5);
+  this.position = layout.calculateComponentRect(constants, selected, index, count, selectedConstants.COMPONENT_WIDTH * 1.5, selectedConstants.COMPONENT_HEIGHT * 1.5);
 
   padWidth = this.position.width * 0.8;
   padHeight = this.position.height * 0.9;

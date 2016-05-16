@@ -1,5 +1,4 @@
-var Hole = require('./hole'),
-    constants = require('../../views/pic/constants');
+var Hole = require('./hole');
 
 var Connector = function (options) {
   var self = this,
@@ -21,7 +20,7 @@ var Connector = function (options) {
     }));
   }
 };
-Connector.prototype.calculatePosition = function (selected) {
+Connector.prototype.calculatePosition = function (constants, selected) {
   var selectedConstants = constants.selectedConstants(selected),
       i, cx, cy, radius, holeWidth, hole;
 

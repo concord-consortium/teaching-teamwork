@@ -37,7 +37,9 @@ var Board = function (options) {
   });
 
   // reset the pic so the pin output is set
-  this.components.pic.reset();
+  if (this.components.pic) {
+    this.components.pic.reset();
+  }
 };
 Board.prototype.clear = function () {
   var i;

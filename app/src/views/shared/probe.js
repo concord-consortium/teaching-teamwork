@@ -1,5 +1,4 @@
-var events = require('./events'),
-    constants = require('./constants'),
+var events = require('../shared/events'),
     g = React.DOM.g,
     path = React.DOM.path,
     circle = React.DOM.circle;
@@ -14,7 +13,7 @@ module.exports = React.createClass({
   },
 
   startDrag: function (e) {
-    var selectedConstants = constants.selectedConstants(this.props.selected),
+    var selectedConstants = this.props.constants.selectedConstants(this.props.selected),
         $window = $(window),
         self = this,
         drag, stopDrag;
@@ -47,11 +46,11 @@ module.exports = React.createClass({
   },
 
   render: function () {
-    var selectedConstants = constants.selectedConstants(this.props.selected),
+    var selectedConstants = this.props.constants.selectedConstants(this.props.selected),
         width = selectedConstants.PROBE_WIDTH,
         height = selectedConstants.PROBE_HEIGHT,
         halfNeedleHeight = selectedConstants.PROBE_NEEDLE_HEIGHT / 2,
-        x = this.props.probeSource ? this.props.probeSource.cx : (this.props.pos ? this.props.pos.x : constants.WORKSPACE_WIDTH - selectedConstants.PROBE_WIDTH - selectedConstants.PROBE_MARGIN),
+        x = this.props.probeSource ? this.props.probeSource.cx : (this.props.pos ? this.props.pos.x : this.props.constants.WORKSPACE_WIDTH - selectedConstants.PROBE_WIDTH - selectedConstants.PROBE_MARGIN),
         y = this.props.probeSource ? this.props.probeSource.cy - (height / 2) : (this.props.pos ? this.props.pos.y : selectedConstants.BOARD_HEIGHT - selectedConstants.PROBE_HEIGHT - selectedConstants.PROBE_MARGIN),
         middleY = y + (height / 2),
         defaultFill = 0.125,

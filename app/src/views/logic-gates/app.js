@@ -1,8 +1,12 @@
-var userController = require('../../controllers/shared/user'),
+var Connector = require('../../models/shared/connector'),
+    Board = require('../../models/shared/board'),
+    userController = require('../../controllers/shared/user'),
     logController = require('../../controllers/shared/log'),
     SidebarChatView = React.createFactory(require('../shared/sidebar-chat')),
     DemoControlView = React.createFactory(require('./demo-control')),
     WeGotItView = React.createFactory(require('../shared/we-got-it')),
+    WorkspaceView = React.createFactory(require('./workspace')),
+    constants = require('./constants'),
     div = React.DOM.div,
     h1 = React.DOM.h1,
     h2 = React.DOM.h2;
@@ -11,7 +15,28 @@ module.exports = React.createClass({
   displayName: 'AppView',
 
   getInitialState: function () {
+    var board0Input = new Connector({type: 'input', count: 4}),
+        board0Output = new Connector({type: 'output', count: 4}),
+        board1Input = new Connector({type: 'input', count: 4}),
+        board1Output = new Connector({type: 'output', count: 4}),
+        boards = [
+          new Board({number: 0, bezierReflectionModifier: 1, components: {}, connectors: {input: board0Input, output: board0Output}}),
+          new Board({number: 1, bezierReflectionModifier: -0.5, components: {}, connectors: {input: board1Input, output: board1Output}})
+        ];
+
+    board0Output.connectsTo = board1Input;
+    board1Input.connectsTo = board0Output;
+
+    board0Input.board = boards[0];
+    board0Output.board = boards[0];
+    board1Input.board = boards[1];
+    board1Output.board = boards[1];
+
+    boards[0].allBoards = boards;
+    boards[1].allBoards = boards;
+
     return {
+      boards: boards,
       demo: window.location.search.indexOf('demo') !== -1,
       addedAllWires: false,
       addedAllChips: false,
@@ -24,7 +49,7 @@ module.exports = React.createClass({
   },
 
   componentDidMount: function() {
-    var activityName = 'pic',
+    var activityName = 'logic-gates',
         self = this;
 
     logController.init(activityName);
@@ -80,6 +105,7 @@ module.exports = React.createClass({
       this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
       WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect}),
       div({id: 'logicapp'},
+        WorkspaceView({constants: constants, boards: this.state.boards, users: this.state.users, userBoardNumber: this.state.userBoardNumber}),
         this.state.demo ? DemoControlView({toggleAllChipsAndWires: this.toggleAllChipsAndWires, addedAllChipsAndWires: this.state.addedAllChipsAndWires}) : null,
         SidebarChatView({numClients: 2, top: this.state.demo ? 75 : 0})
       )

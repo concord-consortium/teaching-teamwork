@@ -1,26 +1,28 @@
-var BoardView = React.createFactory(require('./board')),
-    RibbonView = React.createFactory(require('./ribbon')),
-    constants = require('./constants'),
+var BoardView = React.createFactory(require('../shared/board')),
+    RibbonView = React.createFactory(require('../shared/ribbon')),
     div = React.DOM.div;
 
 module.exports = React.createClass({
   displayName: 'WorkspaceView',
 
-  getInitialState: function () {
-    return {};
-  },
-
   render: function () {
-    return div({id: 'workspace', style: {width: constants.WORKSPACE_WIDTH}},
+    return div({id: 'workspace', style: {width: this.props.constants.WORKSPACE_WIDTH}},
       BoardView({
+        constants: this.props.constants,
         board: this.props.boards[0],
         editable: this.props.userBoardNumber === 0,
+        selected: false,
         user: this.props.users[0]
       }),
-      RibbonView({connector: this.props.boards[0].connectors.output}),
+      RibbonView({
+        constants: this.props.constants,
+        connector: this.props.boards[0].connectors.output
+      }),
       BoardView({
+        constants: this.props.constants,
         board: this.props.boards[1],
         editable: this.props.userBoardNumber === 1,
+        selected: false,
         user: this.props.users[1]
       })
     );
