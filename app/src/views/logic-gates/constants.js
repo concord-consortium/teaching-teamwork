@@ -10,8 +10,8 @@ module.exports = constants = {
   selectedConstants: function (selected) {
     var boardHeight;
 
+    boardHeight = (constants.WORKSPACE_HEIGHT - constants.RIBBON_HEIGHT) / 2;
     if (selected) {
-      boardHeight = constants.WORKSPACE_HEIGHT * 0.5;
       return {
         WIRE_WIDTH: 3,
         FOO_WIRE_WIDTH: 1,
@@ -32,7 +32,6 @@ module.exports = constants = {
       };
     }
     else {
-      boardHeight = (constants.WORKSPACE_HEIGHT - constants.RIBBON_HEIGHT) / 2;
       return {
         WIRE_WIDTH: 2,
         FOO_WIRE_WIDTH: 1,

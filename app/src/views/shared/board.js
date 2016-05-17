@@ -294,6 +294,9 @@ module.exports = React.createClass({
         editableWires = !this.state.draggingProbe && !this.state.drawConnection && !this.state.drawBox && (this.props.editable && this.props.selected),
         name, component, i, wire;
 
+    // used to find wire click position
+    this.svgOffset = $(this.refs.svg).offset();
+
     // resolve input values
     this.props.board.resolveCircuitInputValues();
 
@@ -330,7 +333,7 @@ module.exports = React.createClass({
         (this.state.drawBox ? path({d: this.state.drawBox.path, stroke: this.state.drawBox.stroke, strokeWidth: this.state.drawBox.strokeWidth, strokeDasharray: this.state.drawBox.strokeDasharray, fill: 'none', style: {pointerEvents: 'none'}}) : null),
         this.props.showProbe ? ProbeView({constants: this.props.constants, board: this.props.board, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, probeSource: this.state.probeSource, hoverSource: this.state.hoverSource, pos: this.state.probePos, setProbe: this.setProbe, svgOffset: this.svgOffset, draggingProbe: this.draggingProbe}) : null
       ),
-      span({className: 'board-toggle'}, button({onClick: this.toggleBoard}, this.props.selected ? 'View All Circuits' : (this.props.editable ? 'Edit Circuit' : 'View Circuit')))
+      this.props.toggleBoard ? span({className: 'board-toggle'}, button({onClick: this.toggleBoard}, this.props.selected ? 'View All Circuits' : (this.props.editable ? 'Edit Circuit' : 'View Circuit'))) : null
     );
   }
 });

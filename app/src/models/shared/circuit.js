@@ -27,7 +27,7 @@ Circuit.FindTerminal = function (wire, pinOrHole) {
       foundWire = true,
       otherConnector, otherHole, otherWire, i;
 
-  while (terminal.connector && foundWire) {
+  while (terminal.connector && terminal.connector.connectsTo && foundWire) {
     otherConnector = terminal.connector.connectsTo;
     otherHole = otherConnector.holes[terminal.index];
 

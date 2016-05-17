@@ -11,7 +11,7 @@ module.exports = React.createClass({
         constants: this.props.constants,
         board: this.props.boards[0],
         editable: this.props.userBoardNumber === 0,
-        selected: false,
+        selected: true,
         user: this.props.users[0]
       }),
       RibbonView({
@@ -22,7 +22,7 @@ module.exports = React.createClass({
         constants: this.props.constants,
         board: this.props.boards[1],
         editable: this.props.userBoardNumber === 1,
-        selected: false,
+        selected: true,
         user: this.props.users[1]
       })
     );

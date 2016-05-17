@@ -8,11 +8,8 @@ module.exports = React.createClass({
   displayName: 'WorkspaceView',
 
   getInitialState: function () {
-    var selectedConstants = this.props.constants.selectedConstants(false);
     return {
-      selectedBoard: null,
-      height: this.props.constants.RIBBON_HEIGHT,
-      strokeWidth: selectedConstants.WIRE_WIDTH
+      selectedBoard: null
     };
   },
 
@@ -29,7 +26,6 @@ module.exports = React.createClass({
   },
 
   render: function () {
-    var selectedConstants = this.props.constants.selectedConstants(this.state.selectedBoard !== null);
     if (this.state.selectedBoard) {
       return div({id: 'workspace'},
         BoardView({
@@ -42,8 +38,7 @@ module.exports = React.createClass({
           stepping: this.props.stepping,
           showDebugPins: this.props.showDebugPins,
           toggleBoard: this.toggleBoard,
-          showProbe: true,
-          height: selectedConstants.BOARD_HEIGHT
+          showProbe: true
         }),
         BoardEditorView({constants: this.props.constants, board: this.state.selectedBoard})
       );
@@ -58,14 +53,11 @@ module.exports = React.createClass({
           stepping: this.props.stepping,
           showDebugPins: this.props.showDebugPins,
           toggleBoard: this.toggleBoard,
-          showProbe: true,
-          height: selectedConstants.BOARD_HEIGHT
+          showProbe: true
         }),
         RibbonView({
           constants: this.props.constants,
-          connector: this.props.boards[0].connectors.output,
-          height: this.state.height,
-          strokeWidth: this.state.strokeWidth
+          connector: this.props.boards[0].connectors.output
         }),
         BoardView({
           constants: this.props.constants,
@@ -75,14 +67,11 @@ module.exports = React.createClass({
           stepping: this.props.stepping,
           showDebugPins: this.props.showDebugPins,
           toggleBoard: this.toggleBoard,
-          showProbe: true,
-          height: selectedConstants.BOARD_HEIGHT
+          showProbe: true
         }),
         RibbonView({
           constants: this.props.constants,
-          connector: this.props.boards[1].connectors.output,
-          height: this.state.height,
-          strokeWidth: this.state.strokeWidth
+          connector: this.props.boards[1].connectors.output
         }),
         BoardView({
           constants: this.props.constants,
@@ -92,8 +81,7 @@ module.exports = React.createClass({
           stepping: this.props.stepping,
           showDebugPins: this.props.showDebugPins,
           toggleBoard: this.toggleBoard,
-          showProbe: true,
-          height: selectedConstants.BOARD_HEIGHT
+          showProbe: true
         })
       );
     }

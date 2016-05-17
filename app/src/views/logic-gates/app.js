@@ -1,5 +1,6 @@
 var Connector = require('../../models/shared/connector'),
     Board = require('../../models/shared/board'),
+    boardWatcher = require('../../controllers/pic/board-watcher'),
     userController = require('../../controllers/shared/user'),
     logController = require('../../controllers/shared/log'),
     SidebarChatView = React.createFactory(require('../shared/sidebar-chat')),
@@ -52,6 +53,9 @@ module.exports = React.createClass({
     var activityName = 'logic-gates',
         self = this;
 
+    boardWatcher.addListener(this.state.boards[0], this.updateWatchedBoard);
+    boardWatcher.addListener(this.state.boards[1], this.updateWatchedBoard);
+
     logController.init(activityName);
     userController.init(2, activityName, function(userBoardNumber) {
       var users = self.state.users,
@@ -71,7 +75,7 @@ module.exports = React.createClass({
       });
 
       userController.onGroupRefCreation(function() {
-        //boardWatcher.startListeners();
+        boardWatcher.startListeners();
         userController.getFirebaseGroupRef().child('users').on("value", function(snapshot) {
           var fbUsers = snapshot.val(),
               users = {};
@@ -91,8 +95,21 @@ module.exports = React.createClass({
     }
   },
 
+  componentWillUnmount: function () {
+    boardWatcher.removeListener(this.state.boards[0], this.updateWatchedBoard);
+    boardWatcher.removeListener(this.state.boards[1], this.updateWatchedBoard);
+  },
+
   toggleAllChipsAndWires: function () {
     this.setState({addedAllChipsAndWires: !this.state.addedAllChipsAndWires});
+  },
+
+  updateWatchedBoard: function (board, boardInfo) {
+    var wires;
+
+    // update the wires
+    wires = (boardInfo ? boardInfo.wires : null) || [];
+    board.updateWires(wires);
   },
 
   checkIfCircuitIsCorrect: function () {
