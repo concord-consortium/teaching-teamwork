@@ -1,5 +1,6 @@
 var Connector = require('../../models/shared/connector'),
     Board = require('../../models/shared/board'),
+    LogicChip =  require('../../models/logic-gates/logic-chip'),
     boardWatcher = require('../../controllers/pic/board-watcher'),
     userController = require('../../controllers/shared/user'),
     logController = require('../../controllers/shared/log'),
@@ -21,8 +22,8 @@ module.exports = React.createClass({
         board1Input = new Connector({type: 'input', count: 4}),
         board1Output = new Connector({type: 'output', count: 4}),
         boards = [
-          new Board({number: 0, bezierReflectionModifier: 1, components: {}, connectors: {input: board0Input, output: board0Output}}),
-          new Board({number: 1, bezierReflectionModifier: -0.5, components: {}, connectors: {input: board1Input, output: board1Output}})
+          new Board({number: 0, bezierReflectionModifier: -0.5, components: {l1: new LogicChip({type: '7408'})}, connectors: {input: board0Input, output: board0Output}}),
+          new Board({number: 1, bezierReflectionModifier: -0.5, components: {l1: new LogicChip({type: '7432'})}, connectors: {input: board1Input, output: board1Output}})
         ];
 
     board0Output.connectsTo = board1Input;
@@ -101,6 +102,47 @@ module.exports = React.createClass({
   },
 
   toggleAllChipsAndWires: function () {
+    var b0 = this.state.boards[0],
+        b0chip = b0.components.l1.pins,
+        b0i = b0.connectors.input.holes,
+        b0o = b0.connectors.output.holes,
+
+        b1 = this.state.boards[1],
+        b1chip = b1.components.l1.pins,
+        b1o = b1.connectors.output.holes,
+        b1i = b1.connectors.input.holes,
+
+        wire, boardWires, i, j;
+
+    boardWires = [
+      [
+        {source: b0i[0], dest: b0chip[12], color: b0i[0].color},
+        {source: b0i[1], dest: b0chip[1], color: b0i[1].color},
+        {source: b0i[2], dest: b0chip[0], color: b0i[2].color},
+        {source: b0i[3], dest: b0chip[11], color: b0i[3].color},
+
+        {source: b0chip[2], dest: b0o[0], color: b0o[0].color},
+        {source: b0chip[10], dest: b0o[3], color: b0o[3].color}
+      ],
+      [
+        {source: b1i[0], dest: b1chip[0], color: b1i[0].color},
+        {source: b1i[3], dest: b1chip[1], color: b1i[3].color},
+
+        {source: b1chip[2], dest: b1o[0], color: b1o[0].color}
+      ]
+    ];
+
+    for (i = 0; i < this.state.boards.length; i++) {
+      this.state.boards[i].clear();
+      if (!this.state.addedAllChipsAndWires) {
+        for (j = 0; j < boardWires[i].length; j++) {
+          wire = boardWires[i][j];
+          this.state.boards[i].addWire(wire.source, wire.dest, wire.color);
+        }
+      }
+      boardWatcher.circuitChanged(this.state.boards[i]);
+    }
+
     this.setState({addedAllChipsAndWires: !this.state.addedAllChipsAndWires});
   },
 

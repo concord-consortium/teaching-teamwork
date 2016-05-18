@@ -12,7 +12,7 @@ module.exports = React.createClass({
     return div({id: 'demo-control'},
       div({id: 'demo-control-title'}, 'Demo Control'),
       div({id: 'demo-control-area'},
-        button({onClick: this.toggleAllChipsAndWires}, (this.props.addedAllChipsAndWires ? '-' : '+') + ' Chips and Wires')
+        button({onClick: this.toggleAllChipsAndWires}, (this.props.addedAllChipsAndWires ? '-' : '+') + ' Wires')
       )
     );
   }
