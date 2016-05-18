@@ -8,6 +8,7 @@ var Hole = function (options) {
   this.connector = options.connector;
   this.connected = options.connected || false;
   this.value = options.value || 0;
+  this.startingValue = this.value;
 };
 Hole.prototype.getBezierReflection = function () {
   return this.connector.type === 'input' ? 1 : -1;

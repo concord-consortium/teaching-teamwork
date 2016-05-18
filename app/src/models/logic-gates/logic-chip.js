@@ -17,8 +17,8 @@ var LogicChip = function (options) {
 
     pin = {
       number: i,
-      value: [6, 13].indexOf(i) !== -1 ? 1 : 0,
-      inputMode: !notConnectable,
+      value: 0,
+      inputMode: [2, 5, 6, 7, 10, 13].indexOf(i) === -1,
       placement: i < 7 ? 'left' : 'right',
       x: 0,
       y: 0,
@@ -48,6 +48,10 @@ var LogicChip = function (options) {
   };
 };
 LogicChip.prototype.reset = function () {
+  var i;
+  for (i = 0; i < this.pins.length; i++) {
+    this.pins[i].reset();
+  }
 };
 LogicChip.prototype.calculatePosition = function (constants, selected, index, count) {
   var selectedConstants = constants.selectedConstants(selected),
@@ -89,34 +93,22 @@ LogicChip.prototype.calculatePosition = function (constants, selected, index, co
   this.label.labelSize = selectedConstants.CHIP_LABEL_SIZE;
 };
 LogicChip.prototype.resolveOutputValues = function () {
-  // nothing to do here for the pic
-};
-LogicChip.prototype.getPinListValue = function (list) {
-  var value = 0,
-      i;
+  switch (this.type) {
+    case '7408':
+      this.pins[2].setValue(this.pins[0].value && this.pins[1].value ? 1 : 0);
+      this.pins[5].setValue(this.pins[3].value && this.pins[4].value ? 1 : 0);
+      this.pins[10].setValue(this.pins[12].value && this.pins[11].value ? 1 : 0);
+      this.pins[7].setValue(this.pins[9].value && this.pins[8].value ? 1 : 0);
+      break;
 
-  // each get causes the board to resolve so that we have the most current value
-  this.board.resolveComponentOutputValues();
+    case '7432':
+      this.pins[2].setValue(this.pins[0].value || this.pins[1].value ? 1 : 0);
+      this.pins[5].setValue(this.pins[3].value || this.pins[4].value ? 1 : 0);
+      this.pins[10].setValue(this.pins[12].value || this.pins[11].value ? 1 : 0);
+      this.pins[7].setValue(this.pins[9].value || this.pins[8].value ? 1 : 0);
+      break;
+  }
+};
 
-  for (i = 0; i < list.length; i++) {
-    value = value | ((list[i].inputMode && list[i].value ? 1 : 0) << i);
-  }
-  return value;
-};
-LogicChip.prototype.setPinListValue = function (list, value) {
-  var i;
-  for (i = 0; i < list.length; i++) {
-    list[i].setValue(!list[i].inputMode && (value & (1 << i)) ? 1 : 0);
-  }
-  // each set causes the circuit to be resolved
-  this.board.resolveIOValues();
-};
-LogicChip.prototype.setPinListInputMode = function (list, mask) {
-  var i;
-  for (i = 0; i < list.length; i++) {
-    list[i].inputMode = !!(mask & (1 << i));
-  }
-  this.board.resolveIOValues();
-};
 
 module.exports = LogicChip;

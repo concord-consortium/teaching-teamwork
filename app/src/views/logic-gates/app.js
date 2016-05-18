@@ -154,8 +154,62 @@ module.exports = React.createClass({
     board.updateWires(wires);
   },
 
-  checkIfCircuitIsCorrect: function () {
-    // TODO
+  checkIfCircuitIsCorrect: function (callback) {
+    var self = this,
+        tests = [
+          {input: [0, 0, 1, 1], output: [0, 'x', 'x', 'x']},
+          {input: [0, 1, 1, 0], output: [1, 'x', 'x', 'x']},
+          {input: [1, 0, 0, 1], output: [1, 'x', 'x', 'x']},
+          {input: [1, 1, 0, 0], output: [0, 'x', 'x', 'x']}
+        ],
+        truthTable = [],
+        allCorrect = true,
+        runTest, i;
+
+    runTest = function (test, truthTable) {
+      var boards = self.state.boards,
+          numBoards = boards.length,
+          allCorrect = true,
+          i, j, output, outputValues, correct, dontCare;
+
+      for (i = 0; i < numBoards; i++) {
+        boards[i].reset();
+      }
+
+      // set the input connector pins
+      boards[0].connectors.input.setHoleValues(test.input);
+
+      // evaluate all the logic-chips in all the boards so the values propogate
+      for (i = 0; i < numBoards; i++) {
+        for (j = 0; j < boards[i].numComponents; j++) {
+          boards[i].resolveIOValues();
+        }
+      }
+
+      // test the output connector pins
+      outputValues = boards[1].connectors.output.getHoleValues();
+      output = [];
+      for (i = 0; i < test.output.length; i++) {
+        dontCare = test.output[i] == 'x';
+        correct = dontCare || (test.output[i] == outputValues[i]);
+        output.push(dontCare ? 'x' : outputValues[i]);
+        allCorrect = allCorrect && correct;
+      }
+
+      truthTable.push({
+        input: test.input,
+        output: output
+      });
+
+      return allCorrect;
+    };
+
+    // check each test
+    for (i = 0; i < tests.length; i++) {
+      allCorrect = runTest(tests[i], truthTable) && allCorrect;
+    }
+
+    callback(allCorrect, truthTable);
   },
 
   render: function () {

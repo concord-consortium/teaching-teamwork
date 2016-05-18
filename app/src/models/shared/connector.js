@@ -41,5 +41,27 @@ Connector.prototype.calculatePosition = function (constants, selected) {
     hole.radius =  radius;
   }
 };
+Connector.prototype.setHoleValue = function (index, value) {
+  if ((index < this.holes.length) && (value !== 'x')) {
+    this.holes[index].setValue(value);
+  }
+};
+Connector.prototype.setHoleValues = function (values) {
+  var i;
+  for (i = 0; i < values.length; i++) {
+    this.setHoleValue(i, values[i]);
+  }
+};
+Connector.prototype.getHoleValue = function (index) {
+  return index < this.holes.length ? this.holes[index].value : null;
+};
+Connector.prototype.getHoleValues = function () {
+  var values = [],
+      i;
+  for (i = 0; i < this.holes.length; i++) {
+    values.push(this.getHoleValue(i));
+  }
+  return values;
+};
 
 module.exports = Connector;
