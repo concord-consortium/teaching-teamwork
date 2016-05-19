@@ -230,7 +230,7 @@ module.exports = React.createClass({
   },
 
   toggleAllWires: function () {
-    var defaultColor = '#555',
+    var defaultColor = '#ddd',
 
         b0 = this.state.boards[0],
         b0Keypad = b0.components.keypad.pinMap,
