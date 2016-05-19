@@ -3,7 +3,7 @@ var LogicChipView = React.createFactory(require('../../views/logic-gates/logic-c
     layout = require('../../views/shared/layout');
 
 var LogicChip = function (options) {
-  var i, pin, notConnectable;
+  var i, pin, notConnectable, outputPins;
 
   this.name = 'logic-chip';
   this.view = LogicChipView;
@@ -15,10 +15,17 @@ var LogicChip = function (options) {
   for (i = 0; i < 14; i++) {
     notConnectable = [6, 13].indexOf(i) !== -1;
 
+    if (this.type == '7404') {
+      outputPins = [1, 3, 5, 6, 7, 9, 11, 13];
+    }
+    else {
+      outputPins = [2, 5, 6, 7, 10, 13];
+    }
+
     pin = {
       number: i,
       value: 0,
-      inputMode: [2, 5, 6, 7, 10, 13].indexOf(i) === -1,
+      inputMode: outputPins.indexOf(i) === -1,
       placement: i < 7 ? 'left' : 'right',
       x: 0,
       y: 0,
@@ -106,6 +113,15 @@ LogicChip.prototype.resolveOutputValues = function () {
       this.pins[5].setValue(this.pins[3].value || this.pins[4].value ? 1 : 0);
       this.pins[10].setValue(this.pins[12].value || this.pins[11].value ? 1 : 0);
       this.pins[7].setValue(this.pins[9].value || this.pins[8].value ? 1 : 0);
+      break;
+
+    case '7404':
+      this.pins[1].setValue(this.pins[0].value  ? 0 : 1);
+      this.pins[3].setValue(this.pins[2].value  ? 0 : 1);
+      this.pins[5].setValue(this.pins[4].value  ? 0 : 1);
+      this.pins[7].setValue(this.pins[6].value  ? 0 : 1);
+      this.pins[9].setValue(this.pins[8].value  ? 0 : 1);
+      this.pins[11].setValue(this.pins[10].value  ? 0 : 1);
       break;
   }
 };
