@@ -51,7 +51,8 @@ module.exports = React.createClass({
       running: true,
       showDebugPins: true,
       addedAllWires: false,
-      demo: window.location.search.indexOf('demo') !== -1,
+      showDemo: window.location.search.indexOf('demo') !== -1,
+      showSimulator: window.location.search.indexOf('simulator') !== -1,
       userBoardNumber: -1,
       users: {},
       currentBoard: 0,
@@ -306,15 +307,18 @@ module.exports = React.createClass({
   },
 
   render: function () {
+    var demoTop = this.state.showSimulator ? 75 : 0,
+        sidebarTop = demoTop + (this.state.showDemo ? 75 : 0);
+
     return div({},
       h1({}, "Teaching Teamwork PIC Activity"),
       this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
       WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect}),
       div({id: 'picapp'},
         WorkspaceView({constants: constants, boards: this.state.boards, stepping: !this.state.running, showDebugPins: this.state.showDebugPins, users: this.state.users, userBoardNumber: this.state.userBoardNumber}),
-        SimulatorControlView({running: this.state.running, run: this.run, step: this.step, reset: this.reset}),
-        this.state.demo ? DemoControlView({running: this.state.running, toggleAllWires: this.toggleAllWires, toggleDebugPins: this.toggleDebugPins, showDebugPins: this.state.showDebugPins, addedAllWires: this.state.addedAllWires}) : null,
-        SidebarChatView({numClients: 3, top: this.state.demo ? 150 : 75})
+        this.state.showSimulator ? SimulatorControlView({running: this.state.running, run: this.run, step: this.step, reset: this.reset}) : null,
+        this.state.showDemo ? DemoControlView({top: demoTop, running: this.state.running, toggleAllWires: this.toggleAllWires, toggleDebugPins: this.toggleDebugPins, showDebugPins: this.state.showDebugPins, addedAllWires: this.state.addedAllWires}) : null,
+        SidebarChatView({numClients: 3, top: sidebarTop})
       )
     );
   }

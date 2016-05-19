@@ -1,6 +1,6 @@
 var div = React.DOM.div,
     button = React.DOM.button;
-    
+
 module.exports = React.createClass({
   displayName: 'DemoControlView',
 
@@ -13,7 +13,7 @@ module.exports = React.createClass({
   },
 
   render: function () {
-    return div({id: 'demo-control'},
+    return div({id: 'demo-control', style: {top: this.props.top}},
       div({id: 'demo-control-title'}, 'Demo Control'),
       div({id: 'demo-control-area'},
         button({onClick: this.toggleAllWires}, (this.props.addedAllWires ? '-' : '+') + ' Wires'),

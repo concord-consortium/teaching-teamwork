@@ -39,7 +39,7 @@ module.exports = React.createClass({
 
     return {
       boards: boards,
-      demo: window.location.search.indexOf('demo') !== -1,
+      showDemo: window.location.search.indexOf('demo') !== -1,
       addedAllWires: false,
       addedAllChips: false,
       userBoardNumber: -1,
@@ -219,8 +219,8 @@ module.exports = React.createClass({
       WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect}),
       div({id: 'logicapp'},
         WorkspaceView({constants: constants, boards: this.state.boards, users: this.state.users, userBoardNumber: this.state.userBoardNumber}),
-        this.state.demo ? DemoControlView({toggleAllChipsAndWires: this.toggleAllChipsAndWires, addedAllChipsAndWires: this.state.addedAllChipsAndWires}) : null,
-        SidebarChatView({numClients: 2, top: this.state.demo ? 75 : 0})
+        this.state.showDemo ? DemoControlView({top: 0, toggleAllChipsAndWires: this.toggleAllChipsAndWires, addedAllChipsAndWires: this.state.addedAllChipsAndWires}) : null,
+        SidebarChatView({numClients: 2, top: this.state.showDemo ? 75 : 0})
       )
     );
   }
