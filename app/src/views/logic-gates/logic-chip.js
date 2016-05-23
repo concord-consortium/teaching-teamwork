@@ -1,4 +1,5 @@
 var PinView = React.createFactory(require('../shared/pin')),
+    constants = require('./constants'),
     line = React.DOM.line,
     g = React.DOM.g,
     rect = React.DOM.rect,
@@ -7,6 +8,19 @@ var PinView = React.createFactory(require('../shared/pin')),
 
 module.exports = React.createClass({
   displayName: 'LogicChipView',
+
+  getInitialState: function () {
+    return {
+      x: this.props.component.layout.x,
+      y: this.props.component.layout.y,
+      width: this.props.component.layout.width,
+      height: this.props.component.layout.height
+    };
+  },
+
+  componentWillMount: function () {
+    this.layout();
+  },
 
   pinWire: function (pin, dx) {
     var s;
@@ -27,7 +41,7 @@ module.exports = React.createClass({
   },
 
   renderGround: function (pin, p) {
-    var p2 = {x: p.x, y: p.y + pin.height},
+    var p2 = {x: p.x, y: p.y + (1.5 * pin.height)},
         segments = [this.wireSegment({key: pin.name + 'down', x1: p.x, y1: p.y, x2: p2.x, y2: p2.y}).line],
         s, width, height, i;
 
@@ -41,11 +55,46 @@ module.exports = React.createClass({
     return g({}, segments);
   },
 
+  layout: function () {
+    var label = this.props.component.label,
+        selectedConstants = constants.selectedConstants(true),
+        pinDX, pinDY, i, j, pin, pinNumber, xOffset, y;
+
+    pinDX = (this.state.width - (selectedConstants.PIN_WIDTH * 7)) / 8;
+
+    for (i = 0; i < 2; i++) {
+      y = i === 0 ? this.state.y + this.state.height : this.state.y - selectedConstants.PIN_HEIGHT;
+      pinDY = i === 0 ? -(selectedConstants.PIN_HEIGHT / 2) : 2 * selectedConstants.PIN_HEIGHT;
+
+      for (j = 0; j < 7; j++) {
+        pinNumber = (i * 7) + j;
+        pin = this.props.component.pins[pinNumber];
+        xOffset = i === 0 ? j : 6 - j;
+
+        pin.x = this.state.x + pinDX + (xOffset * (selectedConstants.PIN_WIDTH + pinDX));
+        pin.y = y;
+
+        pin.cx = pin.x + (selectedConstants.PIN_WIDTH / 2);
+        pin.cy = pin.y + (selectedConstants.PIN_HEIGHT / 2);
+        pin.width = selectedConstants.PIN_WIDTH;
+        pin.height = selectedConstants.PIN_HEIGHT;
+        pin.labelSize = selectedConstants.PIC_FONT_SIZE;
+        pin.label.x = pin.x + (selectedConstants.PIN_WIDTH / 2);
+        pin.label.y = pin.y + pinDY;
+        pin.label.anchor = 'middle';
+      }
+    }
+
+    label.x = this.state.x + (this.state.width / 2);
+    label.y = this.state.y + (this.state.height / 2) + (selectedConstants.CHIP_LABEL_SIZE / 4);
+    label.labelSize = selectedConstants.CHIP_LABEL_SIZE;
+  },
+
   render: function () {
-    var p = this.props.component.position,
-        pins = [],
+    var pins = [],
+        selectedConstants = constants.selectedConstants(true),
         pin,
-        i, groundComponents, vccComponents, s1, w1, label, labelText;
+        i, groundComponent, vccComponents, vccPos, label, labelText;
 
     for (i = 0; i < this.props.component.pins.length; i++) {
       pin = this.props.component.pins[i];
@@ -54,25 +103,22 @@ module.exports = React.createClass({
     }
 
     pin = this.props.component.pins[6];
-    s1 = {x1: pin.x, y1: pin.y + (pin.height / 2), x2: pin.x - (2 * pin.width), y2: pin.y + (pin.height / 2)};
-    groundComponents = g({},
-      this.wireSegment(s1).line,
-      this.renderGround(pin, {x: s1.x2, y: s1.y2})
-    );
+    groundComponent = this.renderGround(pin, {x: pin.cx, y: pin.cy});
 
-    w1 = this.pinWire(this.props.component.pins[13]);
+    pin = this.props.component.pins[13];
+    vccPos = {x1: pin.cx, y1: pin.cy, x2: pin.cx, y2: pin.cy - (1.25 * pin.width)};
     vccComponents = g({},
-      w1.line,
-      circle({cx: w1.x2 + (pin.width / 2), cy: w1.y2, r: pin.width / 2, fill: 'none', stroke: '#333'})
+      line({x1: vccPos.x1, y1: vccPos.y1, x2: vccPos.x2, y2: vccPos.y2, strokeWidth: selectedConstants.FOO_WIRE_WIDTH, stroke: '#333'}),
+      circle({cx: vccPos.x2, cy: vccPos.y2 - (pin.width / 2), r: pin.width / 2, fill: 'none', stroke: '#333'})
     );
 
     label = this.props.component.label;
     labelText = text({key: 'label', x: label.x, y: label.y, fontSize: label.labelSize, fill: '#fff', style: {textAnchor: label.anchor}}, label.text);
 
     return g({},
-      rect({x: p.chip.x, y: p.chip.y, width: p.chip.width, height: p.chip.height, fill: '#333'}),
+      rect({x: this.state.x, y: this.state.y, width: this.state.width, height: this.state.height, fill: '#333'}),
       pins,
-      groundComponents,
+      groundComponent,
       vccComponents,
       labelText
     );

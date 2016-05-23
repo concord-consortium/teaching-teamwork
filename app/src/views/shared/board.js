@@ -313,7 +313,9 @@ module.exports = React.createClass({
     for (name in this.props.board.components) {
       if (this.props.board.components.hasOwnProperty(name)) {
         component = this.props.board.components[name];
-        component.calculatePosition(this.props.constants, this.props.selected, componentIndex++, this.props.board.numComponents);
+        if (component.calculatePosition) {
+          component.calculatePosition(this.props.constants, this.props.selected, componentIndex++, this.props.board.numComponents);
+        }
         components.push(component.view({key: name, constants: this.props.constants, component: component, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.drawConnection, reportHover: this.reportHover}));
       }
     }

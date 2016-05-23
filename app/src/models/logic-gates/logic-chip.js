@@ -1,6 +1,5 @@
 var LogicChipView = React.createFactory(require('../../views/logic-gates/logic-chip')),
-    Pin = require('../shared/pin'),
-    layout = require('../../views/shared/layout');
+    Pin = require('../shared/pin');
 
 var LogicChip = function (options) {
   var i, pin, notConnectable, outputPins;
@@ -9,6 +8,8 @@ var LogicChip = function (options) {
   this.view = LogicChipView;
   this.board = options.board;
   this.type = options.type;
+
+  this.layout = options.layout;
 
   this.pins = [];
   this.pinMap = {};
@@ -60,45 +61,7 @@ LogicChip.prototype.reset = function () {
     this.pins[i].reset();
   }
 };
-LogicChip.prototype.calculatePosition = function (constants, selected, index, count) {
-  var selectedConstants = constants.selectedConstants(selected),
-      chipWidth, pinDY, i, j, pin, pinNumber, yOffset;
 
-  this.position = layout.calculateComponentRect(constants, selected, index, count);
-
-  chipWidth = this.position.width / 2;
-
-  this.position.chip = {
-    x: this.position.x + (chipWidth / 2),
-    y: this.position.y,
-    width: chipWidth,
-    height: this.position.height
-  };
-
-  pinDY = (this.position.chip.height - (selectedConstants.PIN_WIDTH * 7)) / 8;
-
-  for (i = 0; i < 2; i++) {
-    for (j = 0; j < 7; j++) {
-      pinNumber = (i * 7) + j;
-      pin = this.pins[pinNumber];
-      yOffset = i === 0 ? j : 6 - j;
-      pin.x = (this.position.chip.x - selectedConstants.PIN_WIDTH) + (i * (this.position.chip.width + selectedConstants.PIN_WIDTH));
-      pin.y = this.position.chip.y + pinDY + (yOffset * (selectedConstants.PIN_HEIGHT + pinDY));
-      pin.cx = pin.x + (selectedConstants.PIN_WIDTH / 2);
-      pin.cy = pin.y + (selectedConstants.PIN_HEIGHT / 2);
-      pin.width = selectedConstants.PIN_WIDTH;
-      pin.height = selectedConstants.PIN_HEIGHT;
-      pin.labelSize = selectedConstants.PIC_FONT_SIZE;
-      pin.label.x = pin.x + ((i ? -0.5 : 1.5) * selectedConstants.PIN_WIDTH);
-      pin.label.y = pin.y + ((selectedConstants.PIN_HEIGHT + pin.labelSize) / 2.25);
-      pin.label.anchor = i ? 'end' : 'start';
-    }
-  }
-
-  this.label.x = this.position.chip.x + (chipWidth / 2);
-  this.label.y = this.position.chip.y + (this.position.height / 2);
-  this.label.labelSize = selectedConstants.CHIP_LABEL_SIZE;
-};
 LogicChip.prototype.resolveOutputValues = function () {
   switch (this.type) {
     case '7408':
