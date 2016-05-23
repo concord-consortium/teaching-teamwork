@@ -10,9 +10,10 @@ module.exports = React.createClass({
   displayName: 'LogicChipView',
 
   getInitialState: function () {
+    var pos = this.props.snapToGrid(this.props.component.layout);
     return {
-      x: this.props.component.layout.x,
-      y: this.props.component.layout.y,
+      x: pos.x,
+      y: pos.y,
       width: this.props.component.layout.width,
       height: this.props.component.layout.height
     };
@@ -109,8 +110,14 @@ module.exports = React.createClass({
     };
 
     stopDrag = function (e) {
+      var pos = self.props.snapToGrid(self.state);
       e.stopPropagation();
       e.preventDefault();
+      self.setState({
+        x: pos.x,
+        y: pos.y
+      });
+      self.props.layoutChanged();
       $window.off('mousemove', drag);
       $window.off('mouseup', stopDrag);
     };

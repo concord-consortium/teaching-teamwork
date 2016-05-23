@@ -285,6 +285,15 @@ module.exports = React.createClass({
     this.setState({wires: this.state.wires});
   },
 
+  snapToGrid: function (pos) {
+    var selectedConstants = this.props.constants.selectedConstants(this.props.selected),
+        gridSize = selectedConstants.PIN_WIDTH;
+    return {
+      x: gridSize * Math.round(pos.x / gridSize),
+      y: gridSize * Math.round(pos.y / gridSize)
+    };
+  },
+
   render: function () {
     var selectedConstants = this.props.constants.selectedConstants(this.props.selected),
         style = {
@@ -321,7 +330,7 @@ module.exports = React.createClass({
         if (component.calculatePosition) {
           component.calculatePosition(this.props.constants, this.props.selected, componentIndex++, this.props.board.numComponents);
         }
-        components.push(component.view({key: name, constants: this.props.constants, component: component, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.drawConnection, reportHover: this.reportHover, layoutChanged: this.layoutChanged}));
+        components.push(component.view({key: name, constants: this.props.constants, component: component, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.drawConnection, reportHover: this.reportHover, layoutChanged: this.layoutChanged, snapToGrid: this.snapToGrid}));
       }
     }
 
