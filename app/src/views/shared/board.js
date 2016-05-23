@@ -8,7 +8,7 @@ var boardWatcher = require('../../controllers/pic/board-watcher'),
     span = React.DOM.span,
     div = React.DOM.div,
     svg = React.DOM.svg,
-    line = React.DOM.line,
+    //line = React.DOM.line,
     path = React.DOM.path,
     button = React.DOM.button;
 
@@ -281,6 +281,10 @@ module.exports = React.createClass({
     this.setState({draggingProbe: draggingProbe});
   },
 
+  layoutChanged: function () {
+    this.setState({wires: this.state.wires});
+  },
+
   render: function () {
     var selectedConstants = this.props.constants.selectedConstants(this.props.selected),
         style = {
@@ -317,7 +321,7 @@ module.exports = React.createClass({
         if (component.calculatePosition) {
           component.calculatePosition(this.props.constants, this.props.selected, componentIndex++, this.props.board.numComponents);
         }
-        components.push(component.view({key: name, constants: this.props.constants, component: component, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.drawConnection, reportHover: this.reportHover}));
+        components.push(component.view({key: name, constants: this.props.constants, component: component, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.drawConnection, reportHover: this.reportHover, layoutChanged: this.layoutChanged}));
       }
     }
 

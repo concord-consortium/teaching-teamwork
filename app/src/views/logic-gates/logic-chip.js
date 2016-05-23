@@ -18,10 +18,6 @@ module.exports = React.createClass({
     };
   },
 
-  componentWillMount: function () {
-    this.layout();
-  },
-
   pinWire: function (pin, dx) {
     var s;
     dx = dx || 1;
@@ -57,7 +53,7 @@ module.exports = React.createClass({
 
   layout: function () {
     var label = this.props.component.label,
-        selectedConstants = constants.selectedConstants(true),
+        selectedConstants = constants.selectedConstants(this.props.selected),
         pinDX, pinDY, i, j, pin, pinNumber, xOffset, y;
 
     pinDX = (this.state.width - (selectedConstants.PIN_WIDTH * 7)) / 8;
@@ -90,11 +86,46 @@ module.exports = React.createClass({
     label.labelSize = selectedConstants.CHIP_LABEL_SIZE;
   },
 
+  mouseDown: function (e) {
+    var $window = $(window),
+        startX = this.state.x,
+        startY = this.state.y,
+        startDragX = e.pageX,
+        startDragY = e.pageY,
+        self = this,
+        drag, stopDrag;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    drag = function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      self.setState({
+        x: startX + (e.pageX - startDragX),
+        y: startY + (e.pageY - startDragY)
+      });
+      self.props.layoutChanged();
+    };
+
+    stopDrag = function (e) {
+      e.stopPropagation();
+      e.preventDefault();
+      $window.off('mousemove', drag);
+      $window.off('mouseup', stopDrag);
+    };
+
+    $window.on('mousemove', drag);
+    $window.on('mouseup', stopDrag);
+  },
+
   render: function () {
     var pins = [],
-        selectedConstants = constants.selectedConstants(true),
+        selectedConstants = constants.selectedConstants(this.props.selected),
         pin,
         i, groundComponent, vccComponents, vccPos, label, labelText;
+
+    this.layout();
 
     for (i = 0; i < this.props.component.pins.length; i++) {
       pin = this.props.component.pins[i];
@@ -115,7 +146,7 @@ module.exports = React.createClass({
     label = this.props.component.label;
     labelText = text({key: 'label', x: label.x, y: label.y, fontSize: label.labelSize, fill: '#fff', style: {textAnchor: label.anchor}}, label.text);
 
-    return g({},
+    return g({onMouseDown: this.props.selected && this.props.editable ? this.mouseDown : null},
       rect({x: this.state.x, y: this.state.y, width: this.state.width, height: this.state.height, fill: '#333'}),
       pins,
       groundComponent,
