@@ -4,23 +4,30 @@ var Hole = require('./hole'),
     Circuit = require('./circuit');
 
 var Board = function (options) {
-  var self = this,
-      i;
-
   this.number = options.number;
   this.components = options.components;
   this.connectors = options.connectors;
   this.bezierReflectionModifier = options.bezierReflectionModifier;
+  this.logicDrawer = options.logicDrawer;
   this.wires = [];
   this.circuits = [];
+  this.allBoards = [];
+  this.updateComponentList();
+
+  // reset the pic so the pin output is set
+  if (this.components.pic) {
+    this.components.pic.reset();
+  }
+};
+Board.prototype.updateComponentList = function () {
+  var self = this,
+      i, name;
 
   this.pinsAndHoles = [];
   this.componentList = [];
-
-  this.allBoards = [];
-
   this.numComponents = 0;
-  for (var name in this.components) {
+
+  for (name in this.components) {
     if (this.components.hasOwnProperty(name)) {
       this.componentList.push(this.components[name]);
       this.numComponents++;
@@ -35,11 +42,6 @@ var Board = function (options) {
       self.pinsAndHoles.push(connector.holes[i]);
     }
   });
-
-  // reset the pic so the pin output is set
-  if (this.components.pic) {
-    this.components.pic.reset();
-  }
 };
 Board.prototype.clear = function () {
   var i;
@@ -263,6 +265,14 @@ Board.prototype.resolveIOValues = function () {
   this.resolveCircuitInputValues();
   this.resolveComponentOutputValues();
   this.resolveCircuitInputValues();
+};
+Board.prototype.addComponent = function (name, component) {
+  this.components[name] = component;
+  this.updateComponentList();
+};
+Board.prototype.removeComponent = function (name) {
+  delete this.components[name];
+  this.updateComponentList();
 };
 
 module.exports = Board;

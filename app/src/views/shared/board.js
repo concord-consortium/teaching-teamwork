@@ -2,8 +2,10 @@ var boardWatcher = require('../../controllers/pic/board-watcher'),
     ConnectorView = React.createFactory(require('./connector')),
     WireView = React.createFactory(require('./wire')),
     ProbeView = React.createFactory(require('./probe')),
+    LogicChipDrawerView = React.createFactory(require('./logic-chip-drawer')),
     events = require('../shared/events'),
     layout = require('./layout'),
+    LogicChip =  require('../../models/logic-gates/logic-chip'),
     div = React.DOM.div,
     span = React.DOM.span,
     div = React.DOM.div,
@@ -28,7 +30,9 @@ module.exports = React.createClass({
       probePos: this.props.board.probe ? this.props.board.probe.pos : null,
       selectedWires: [],
       drawBox: null,
-      draggingProbe: false
+      draggingProbe: false,
+      draggingChip: null,
+      logicChipDrawer: this.props.logicChipDrawer
     };
   },
 
@@ -294,6 +298,39 @@ module.exports = React.createClass({
     };
   },
 
+  startLogicChipDrawerDrag: function (chip, pageX, pageY) {
+    var chipX = pageX - this.svgOffset.left,
+        chipY = pageY - this.svgOffset.top,
+        draggingChip = new LogicChip({type: chip.type, layout: {x: chipX, y: chipY, width: 150, height: 75}});
+    this.setState({
+      draggingChip: {
+        type: chip.type,
+        view: draggingChip.view({
+          constants: this.props.constants,
+          component: draggingChip,
+          startDragPos: {x: pageX, y: pageY},
+          stopDrag: this.stopLogicChipDrawerDrag,
+          layoutChanged: this.layoutChanged,
+          snapToGrid: this.snapToGrid,
+          selected: true
+        })
+      }
+    });
+  },
+
+  stopLogicChipDrawerDrag: function (chip) {
+    this.addChip(new LogicChip({type: chip.type, layout: {x: chip.x, y: chip.y, width: 150, height: 75}}));
+    this.setState({draggingChip: null});
+  },
+
+  addChip: function (chip) {
+    this.props.board.addComponent("lc" + (this.props.board.numComponents + 1), chip);
+  },
+
+  removeChip: function (chip) {
+    this.props.board.removeComponent(chip);
+  },
+
   render: function () {
     var selectedConstants = this.props.constants.selectedConstants(this.props.selected),
         style = {
@@ -349,7 +386,9 @@ module.exports = React.createClass({
         (this.state.drawConnection ? path({d: layout.getBezierPath({x1: this.state.drawConnection.x1, x2: this.state.drawConnection.x2, y1: this.state.drawConnection.y1, y2: this.state.drawConnection.y2, reflection: this.state.drawConnection.reflection}), stroke: this.state.drawConnection.stroke, strokeWidth: this.state.drawConnection.strokeWidth, fill: 'none', style: {pointerEvents: 'none'}}) : null),
 
         (this.state.drawBox ? path({d: this.state.drawBox.path, stroke: this.state.drawBox.stroke, strokeWidth: this.state.drawBox.strokeWidth, strokeDasharray: this.state.drawBox.strokeDasharray, fill: 'none', style: {pointerEvents: 'none'}}) : null),
-        this.props.showProbe ? ProbeView({constants: this.props.constants, board: this.props.board, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, probeSource: this.state.probeSource, hoverSource: this.state.hoverSource, pos: this.state.probePos, setProbe: this.setProbe, svgOffset: this.svgOffset, draggingProbe: this.draggingProbe}) : null
+        this.props.showProbe ? ProbeView({constants: this.props.constants, board: this.props.board, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, probeSource: this.state.probeSource, hoverSource: this.state.hoverSource, pos: this.state.probePos, setProbe: this.setProbe, svgOffset: this.svgOffset, draggingProbe: this.draggingProbe}) : null,
+        this.props.logicChipDrawer ? LogicChipDrawerView({chips: this.state.logicChipDrawer.chips, selected: this.props.selected, editable: this.props.editable, startDrag: this.startLogicChipDrawerDrag, layout: selectedConstants.LOGIC_DRAWER_LAYOUT}) : null,
+        this.state.draggingChip ? this.state.draggingChip.view : null
       ),
       this.props.toggleBoard ? span({className: 'board-toggle'}, button({onClick: this.toggleBoard}, this.props.selected ? 'View All Circuits' : (this.props.editable ? 'Edit Circuit' : 'View Circuit'))) : null
     );

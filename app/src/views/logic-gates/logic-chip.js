@@ -19,6 +19,12 @@ module.exports = React.createClass({
     };
   },
 
+  componentWillMount: function () {
+    if (this.props.startDragPos) {
+      this.startDrag(this.props.startDragPos);
+    }
+  },
+
   pinWire: function (pin, dx) {
     var s;
     dx = dx || 1;
@@ -87,17 +93,14 @@ module.exports = React.createClass({
     label.labelSize = selectedConstants.CHIP_LABEL_SIZE;
   },
 
-  mouseDown: function (e) {
+  startDrag: function (startDragPos) {
     var $window = $(window),
         startX = this.state.x,
         startY = this.state.y,
-        startDragX = e.pageX,
-        startDragY = e.pageY,
+        startDragX = startDragPos.x,
+        startDragY = startDragPos.y,
         self = this,
         drag, stopDrag;
-
-    e.preventDefault();
-    e.stopPropagation();
 
     drag = function (e) {
       e.preventDefault();
@@ -117,6 +120,9 @@ module.exports = React.createClass({
         x: pos.x,
         y: pos.y
       });
+      if (self.props.stopDrag) {
+        self.props.stopDrag({type: self.props.component.type, x: self.state.x, y: self.state.y});
+      }
       self.props.layoutChanged();
       $window.off('mousemove', drag);
       $window.off('mouseup', stopDrag);
@@ -124,6 +130,12 @@ module.exports = React.createClass({
 
     $window.on('mousemove', drag);
     $window.on('mouseup', stopDrag);
+  },
+
+  mouseDown: function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    this.startDrag({x: e.pageX, y: e.pageY});
   },
 
   render: function () {

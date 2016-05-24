@@ -1,6 +1,6 @@
 var Connector = require('../../models/shared/connector'),
     Board = require('../../models/shared/board'),
-    LogicChip =  require('../../models/logic-gates/logic-chip'),
+    //LogicChip =  require('../../models/logic-gates/logic-chip'),
     boardWatcher = require('../../controllers/pic/board-watcher'),
     userController = require('../../controllers/shared/user'),
     logController = require('../../controllers/shared/log'),
@@ -22,8 +22,18 @@ module.exports = React.createClass({
         board1Input = new Connector({type: 'input', count: 4}),
         board1Output = new Connector({type: 'output', count: 4}),
         boards = [
-          new Board({number: 0, bezierReflectionModifier: -0.5, components: {l1: new LogicChip({type: '7408', layout: {x: 50, y: 100, width: 150, height: 75}})}, connectors: {input: board0Input, output: board0Output}}),
-          new Board({number: 1, bezierReflectionModifier: -0.5, components: {l1: new LogicChip({type: '7432', layout: {x: 50, y: 100, width: 150, height: 75}})}, connectors: {input: board1Input, output: board1Output}})
+          new Board({
+            number: 0,
+            bezierReflectionModifier: -0.5,
+            components: {}, //l1: new LogicChip({type: '7408', layout: {x: 50, y: 100, width: 150, height: 75}})},
+            connectors: {input: board0Input, output: board0Output}
+          }),
+          new Board({
+            number: 1,
+            bezierReflectionModifier: -0.5,
+            components: {}, //l1: new LogicChip({type: '7432', layout: {x: 50, y: 100, width: 150, height: 75}})},
+            connectors: {input: board1Input, output: board1Output}
+          })
         ];
 
     board0Output.connectsTo = board1Input;

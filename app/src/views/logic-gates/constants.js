@@ -1,16 +1,23 @@
-var constants;
+var workspaceWidth = 936 - 200,
+    logicDrawerWidth = 100,
+    constants;
 
 module.exports = constants = {
   WORKSPACE_HEIGHT: 768,
-  WORKSPACE_WIDTH: 936 - 200,
+  WORKSPACE_WIDTH: workspaceWidth,
   RIBBON_HEIGHT: 21,
   SELECTED_FILL: '#bbb',
   UNSELECTED_FILL: '#777',
 
   selectedConstants: function (selected) {
-    var boardHeight;
+    var boardHeight = (constants.WORKSPACE_HEIGHT - constants.RIBBON_HEIGHT) / 2,
+        logicDrawerLayout = {
+          x: workspaceWidth - logicDrawerWidth,
+          y: 0,
+          width: logicDrawerWidth,
+          height: boardHeight
+        };
 
-    boardHeight = (constants.WORKSPACE_HEIGHT - constants.RIBBON_HEIGHT) / 2;
     if (selected) {
       return {
         WIRE_WIDTH: 3,
@@ -29,7 +36,8 @@ module.exports = constants = {
         PROBE_WIDTH: 150,
         PROBE_NEEDLE_HEIGHT: 5,
         PROBE_HEIGHT: 20,
-        PROBE_MARGIN: 10
+        PROBE_MARGIN: 10,
+        LOGIC_DRAWER_LAYOUT: logicDrawerLayout
       };
     }
     else {
@@ -50,7 +58,8 @@ module.exports = constants = {
         PROBE_WIDTH: 95,
         PROBE_NEEDLE_HEIGHT: 3,
         PROBE_HEIGHT: 12,
-        PROBE_MARGIN: 10
+        PROBE_MARGIN: 10,
+        LOGIC_DRAWER_LAYOUT: logicDrawerLayout
       };
     }
   }
