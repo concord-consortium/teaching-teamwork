@@ -26,13 +26,26 @@ ChipView = React.createFactory(React.createClass({
     var labelX = this.props.x + (this.props.width / 2),
         labelY = this.props.y + (this.props.height / 2),
         available = (this.props.chip.count < this.props.chip.max),
-        enableHandlers = this.props.selected && this.props.editable && available;
+        enableHandlers = this.props.selected && this.props.editable && available,
+        pins = [],
+        pinWidth = this.props.width / 7,
+        pinDY = (this.props.height - (pinWidth * 7)) / 8,
+        pinX, pinY, i, j;
+
+    for (i = 0; i < 2; i++) {
+      pinX = i === 0 ? this.props.x - pinWidth : this.props.x + this.props.width;
+      for (j = 0; j < 7; j++) {
+        pinY = this.props.y + pinDY + (j * (pinWidth + pinDY));
+        pins.push(rect({x: pinX, y: pinY, width: pinWidth, height: pinWidth, fill: '#777'}));
+      }
+    }
 
     return g({onMouseDown: enableHandlers ? this.startDrag : null},
       rect({x: this.props.x, y: this.props.y, width: this.props.width, height: this.props.height, fill: available ? '#333' : '#777'},
         title({}, this.getTitle())
       ),
-      text({key: 'label', x: labelX, y: labelY, fontSize: 14, fill: '#fff', style: {textAnchor: 'middle', dominantBaseline: 'central'}, transform: 'rotate(-90, ' + labelX + ', ' + labelY + ')'}, this.props.type + " (" + this.props.chip.count + "/" + this.props.chip.max + ")")
+      pins,
+      text({key: 'label', x: labelX, y: labelY, fontSize: 14, fill: '#fff', style: {textAnchor: 'middle', dominantBaseline: 'central'}, transform: 'rotate(-90, ' + labelX + ', ' + labelY + ')'}, this.props.type) // + " (" + this.props.chip.count + "/" + this.props.chip.max + ")")
     );
   }
 }));
