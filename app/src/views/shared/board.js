@@ -61,7 +61,8 @@ module.exports = React.createClass({
   },
 
   keyUp: function (e) {
-    var i, selectedWire, selectedComponent;
+    var wiresToRemove = [],
+        i, j, selectedComponent, wire;
 
     // 46 is the delete key which maps to 8 on Macs
     if (!((e.keyCode == 46) || (e.keyCode == 8))) {
@@ -70,9 +71,26 @@ module.exports = React.createClass({
 
     if (this.props.selected && this.props.editable) {
 
+      // mark selected wires to remove
+      for (i = 0; i < this.state.selectedWires.length; i++) {
+        wire = this.state.selectedWires[i];
+        if (wiresToRemove.indexOf(wire) !== -1) {
+          wiresToRemove.push(wire);
+        }
+      }
+
       // remove components
       for (i = 0; i < this.state.selectedComponents.length; i++) {
         selectedComponent = this.state.selectedComponents[i];
+
+        // mark connected wires to removed component
+        for (j = 0; j < this.props.board.wires.length; j++) {
+          wire = this.props.board.wires[j];
+          if ((wiresToRemove.indexOf(wire) === -1) && ((wire.source.component == selectedComponent) || (wire.dest.component == selectedComponent))) {
+            wiresToRemove.push(wire);
+          }
+        }
+
         this.props.board.removeComponent(selectedComponent);
         if (selectedComponent instanceof LogicChip) {
           events.logEvent(events.REMOVE_LOGIC_CHIP_EVENT, null, {board: this.props.board, type: selectedComponent.type, name: selectedComponent.name});
@@ -82,12 +100,10 @@ module.exports = React.createClass({
         }
       }
 
-      // TODO: remove wires connected to removed components
-
-      for (i = 0; i < this.state.selectedWires.length; i++) {
-        selectedWire = this.state.selectedWires[i];
-        this.props.board.removeWire(selectedWire.source, selectedWire.dest);
-        events.logEvent(events.REMOVE_WIRE_EVENT, null, {board: this.props.board, source: selectedWire.source});
+      for (i = 0; i < wiresToRemove.length; i++) {
+        wire = wiresToRemove[i];
+        this.props.board.removeWire(wire.source, wire.dest);
+        events.logEvent(events.REMOVE_WIRE_EVENT, null, {board: this.props.board, source: wire.source});
       }
 
       this.setState({
