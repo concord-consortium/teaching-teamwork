@@ -112,10 +112,14 @@ module.exports = React.createClass({
         drag, stopDrag;
 
     drag = function (e) {
+      var r = self.props.logicChipDragRect,
+          newX = Math.min(r.right - self.state.width, Math.max(r.left, startX + (e.pageX - startDragX))),
+          newY = Math.min(r.bottom - self.state.height, Math.max(r.top, startY + (e.pageY - startDragY)));
+
       moved = true;
       e.preventDefault();
       e.stopPropagation();
-      self.setPosition(startX + (e.pageX - startDragX), startY + (e.pageY - startDragY));
+      self.setPosition(newX, newY);
       self.props.layoutChanged();
     };
 

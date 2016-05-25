@@ -362,9 +362,12 @@ module.exports = React.createClass({
   },
 
   startLogicChipDrawerDrag: function (chip, pageX, pageY) {
-    var chipX = pageX - this.svgOffset.left,
-        chipY = pageY - this.svgOffset.top,
+    var chipCX = 75,
+        chipCY = 37,
+        chipX = pageX - this.svgOffset.left - chipCX,
+        chipY = pageY - this.svgOffset.top - chipCY,
         draggingChip = new LogicChip({type: chip.type, layout: {x: chipX, y: chipY, width: 150, height: 75}});
+
     this.setState({
       selectedWires: [],
       selectedComponents: [],
@@ -378,17 +381,18 @@ module.exports = React.createClass({
           layoutChanged: this.layoutChanged,
           snapToGrid: this.snapToGrid,
           selected: true,
-          componentSelected: true
+          componentSelected: true,
+          logicChipDragRect: this.getLogicChipDragRect()
         })
       }
     });
   },
 
   stopLogicChipDrawerDrag: function (chip) {
-    var selectedConstants = this.props.constants.selectedConstants(this.props.selected);
+    var r = this.getLogicChipDragRect();
 
     // don't add if hidden by drawer
-    if (chip.x < selectedConstants.LOGIC_DRAWER_LAYOUT.x) {
+    if (chip.x < r.right - 100) {
       var component = new LogicChip({type: chip.type, layout: {x: chip.x, y: chip.y, width: 150, height: 75}, selectable: true});
       this.addLogicChip(component);
       this.setState({draggingChip: null, selectedWires: [], selectedComponents: [component]});
@@ -422,9 +426,18 @@ module.exports = React.createClass({
     this.setState({logicChipDrawer: logicChipDrawer});
   },
 
-
   componentSelected: function (component) {
     this.setState({selectedWires: [], selectedComponents: [component]});
+  },
+
+  getLogicChipDragRect: function () {
+    var selectedConstants = this.props.constants.selectedConstants(this.props.selected);
+    return {
+      top: 10,
+      left: 10,
+      right: this.props.constants.WORKSPACE_WIDTH - selectedConstants.LOGIC_DRAWER_LAYOUT.width - 10,
+      bottom: selectedConstants.BOARD_HEIGHT - 10
+    };
   },
 
   render: function () {
@@ -439,6 +452,7 @@ module.exports = React.createClass({
         wires = [],
         componentIndex = 0,
         editableWires = !this.state.draggingProbe && !this.state.drawConnection && !this.state.drawBox && (this.props.editable && this.props.selected),
+        logicChipDragRect = this.getLogicChipDragRect(),
         name, component, i, wire;
 
     // used to find wire click position
@@ -463,7 +477,7 @@ module.exports = React.createClass({
         if (component.calculatePosition) {
           component.calculatePosition(this.props.constants, this.props.selected, componentIndex++, this.props.board.numComponents);
         }
-        components.push(component.view({key: name, constants: this.props.constants, component: component, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.drawConnection, reportHover: this.reportHover, layoutChanged: this.layoutChanged, snapToGrid: this.snapToGrid, componentSelected: this.state.selectedComponents.indexOf(component) !== -1, componentClicked: this.componentSelected}));
+        components.push(component.view({key: name, constants: this.props.constants, component: component, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.drawConnection, reportHover: this.reportHover, layoutChanged: this.layoutChanged, snapToGrid: this.snapToGrid, componentSelected: this.state.selectedComponents.indexOf(component) !== -1, componentClicked: this.componentSelected, logicChipDragRect: logicChipDragRect}));
       }
     }
 
