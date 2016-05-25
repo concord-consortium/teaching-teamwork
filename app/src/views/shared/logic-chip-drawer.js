@@ -1,6 +1,7 @@
 var g = React.DOM.g,
     rect = React.DOM.rect,
     text = React.DOM.text,
+    title = React.DOM.title,
     ChipView;
 
 ChipView = React.createFactory(React.createClass({
@@ -12,12 +13,23 @@ ChipView = React.createFactory(React.createClass({
     this.props.startDrag({type: this.props.type}, e.pageX, e.pageY);
   },
 
+  getTitle: function () {
+    var titles = {
+      '7408': 'Quad 2-Input AND',
+      '7432': 'Quad 2-Input OR',
+      '7404': 'Hex Inverter',
+    };
+    return titles[this.props.type];
+  },
+
   render: function () {
     var labelX = this.props.x + (this.props.width / 2),
         labelY = this.props.y + (this.props.height / 2);
 
     return g({onMouseDown: this.props.selected && this.props.editable ? this.startDrag : null},
-      rect({x: this.props.x, y: this.props.y, width: this.props.width, height: this.props.height, fill: '#333'}),
+      rect({x: this.props.x, y: this.props.y, width: this.props.width, height: this.props.height, fill: '#333'},
+        title({}, this.getTitle())
+      ),
       text({key: 'label', x: labelX, y: labelY, fontSize: 14, fill: '#fff', style: {textAnchor: 'middle', dominantBaseline: 'central'}, transform: 'rotate(-90, ' + labelX + ', ' + labelY + ')'}, this.props.type)
     );
   }

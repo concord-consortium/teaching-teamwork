@@ -15,7 +15,7 @@ var Connector = function (options) {
       x: 0,
       y: 0,
       radius: 0,
-      color: ['blue', '#0f0', 'purple', '#cccc00'][i],
+      color: '#555', // ['blue', '#0f0', 'purple', '#cccc00'][i],
       connector: self,
       label: options.labels ? options.labels[i] : null
     }));

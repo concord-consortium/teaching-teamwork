@@ -4,6 +4,7 @@ var PinView = React.createFactory(require('../shared/pin')),
     g = React.DOM.g,
     rect = React.DOM.rect,
     text = React.DOM.text,
+    title = React.DOM.title,
     circle = React.DOM.circle;
 
 module.exports = React.createClass({
@@ -144,6 +145,15 @@ module.exports = React.createClass({
     this.startDrag({x: e.pageX, y: e.pageY});
   },
 
+  getTitle: function () {
+    var titles = {
+      '7408': 'Quad 2-Input AND',
+      '7432': 'Quad 2-Input OR',
+      '7404': 'Hex Inverter',
+    };
+    return titles[this.props.component.type];
+  },
+
   render: function () {
     var pins = [],
         selectedConstants = constants.selectedConstants(this.props.selected),
@@ -182,7 +192,8 @@ module.exports = React.createClass({
       pins,
       groundComponent,
       vccComponents,
-      labelText
+      labelText,
+      title({}, this.getTitle())
     );
   }
 });
