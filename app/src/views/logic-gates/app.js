@@ -283,6 +283,8 @@ module.exports = React.createClass({
         boards[i].reset();
       }
 
+      // TODO: save old hole values
+
       // set the input connector pins
       boards[0].connectors.input.setHoleValues(test.input);
 

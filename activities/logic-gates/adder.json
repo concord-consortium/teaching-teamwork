@@ -6,12 +6,17 @@
   "boards": [
     {
       "logicChipDrawer": {
-        "chips": [{"type": "7408", "max": 2}, {"type": "7404", "max": 3}]
+        "chips": {
+          "7408": {"max": 3},
+          "7404": {"max": 3}
+        }
       }
     },
     {
       "logicChipDrawer": {
-        "chips": [{"type": "7432", "max": 2}]
+        "chips": {
+          "7432": {"max": 5}
+        }
       }
     }
   ],

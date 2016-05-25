@@ -32,7 +32,9 @@ module.exports = React.createClass({
       selectedComponents: [],
       drawBox: null,
       draggingProbe: false,
-      draggingChip: null
+      draggingChip: null,
+      logicChipDrawer: this.initLogicChipDrawer(this.props.logicChipDrawer),
+      nextChipNumber: 0
     };
   },
 
@@ -45,10 +47,25 @@ module.exports = React.createClass({
     this.svgOffset = $(this.refs.svg).offset();
   },
 
+  componentWillReceiveProps: function (nextProps) {
+    if (!this.state.logicChipDrawer && nextProps.logicChipDrawer) {
+      this.setState({logicChipDrawer: this.initLogicChipDrawer(nextProps.logicChipDrawer)});
+    }
+  },
+
   componentWillUnmount: function () {
     boardWatcher.removeListener(this.props.board, this.updateWatchedBoard);
     $(window).off('keyup', this.keyUp);
     $(window).off('keydown', this.keyDown);
+  },
+
+  initLogicChipDrawer: function (rawData) {
+    if (rawData) {
+      $.each(rawData.chips, function (type, chip) {
+        chip.count = 0;
+      });
+    }
+    return rawData;
   },
 
   keyDown: function (e) {
@@ -74,7 +91,7 @@ module.exports = React.createClass({
       // mark selected wires to remove
       for (i = 0; i < this.state.selectedWires.length; i++) {
         wire = this.state.selectedWires[i];
-        if (wiresToRemove.indexOf(wire) !== -1) {
+        if (wiresToRemove.indexOf(wire) === -1) {
           wiresToRemove.push(wire);
         }
       }
@@ -91,11 +108,11 @@ module.exports = React.createClass({
           }
         }
 
-        this.props.board.removeComponent(selectedComponent);
         if (selectedComponent instanceof LogicChip) {
-          events.logEvent(events.REMOVE_LOGIC_CHIP_EVENT, null, {board: this.props.board, type: selectedComponent.type, name: selectedComponent.name});
+          this.removeLogicChip(selectedComponent);
         }
         else {
+          this.props.board.removeComponent(selectedComponent);
           events.logEvent(events.REMOVE_COMPONENT, null, {board: this.props.board, component: selectedComponent});
         }
       }
@@ -382,10 +399,29 @@ module.exports = React.createClass({
   },
 
   addLogicChip: function (chip, name) {
-    name = name || "lc" + (this.props.board.numComponents + 1);
+    var logicChipDrawer = this.state.logicChipDrawer;
+
+    name = name || "lc" + this.state.nextChipNumber;
     events.logEvent(events.ADD_LOGIC_CHIP_EVENT, null, {board: this.props.board, type: chip.type, name: name});
     this.props.board.addComponent(name, chip);
+
+    logicChipDrawer.chips[chip.type].count++;
+    this.setState({
+      logicChipDrawer: logicChipDrawer,
+      nextChipNumber: this.state.nextChipNumber + 1
+    });
   },
+
+  removeLogicChip: function (chip) {
+    var logicChipDrawer = this.state.logicChipDrawer;
+
+    events.logEvent(events.REMOVE_LOGIC_CHIP_EVENT, null, {board: this.props.board, type: chip.type, name: chip.name});
+    this.props.board.removeComponent(chip);
+
+    logicChipDrawer.chips[chip.type].count--;
+    this.setState({logicChipDrawer: logicChipDrawer});
+  },
+
 
   componentSelected: function (component) {
     this.setState({selectedWires: [], selectedComponents: [component]});
@@ -447,7 +483,7 @@ module.exports = React.createClass({
 
         (this.state.drawBox ? path({d: this.state.drawBox.path, stroke: this.state.drawBox.stroke, strokeWidth: this.state.drawBox.strokeWidth, strokeDasharray: this.state.drawBox.strokeDasharray, fill: 'none', style: {pointerEvents: 'none'}}) : null),
         this.props.showProbe ? ProbeView({constants: this.props.constants, board: this.props.board, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, probeSource: this.state.probeSource, hoverSource: this.state.hoverSource, pos: this.state.probePos, setProbe: this.setProbe, svgOffset: this.svgOffset, draggingProbe: this.draggingProbe}) : null,
-        this.props.logicChipDrawer ? LogicChipDrawerView({chips: this.props.logicChipDrawer.chips, selected: this.props.selected, editable: this.props.editable, startDrag: this.startLogicChipDrawerDrag, layout: selectedConstants.LOGIC_DRAWER_LAYOUT}) : null,
+        this.state.logicChipDrawer ? LogicChipDrawerView({chips: this.state.logicChipDrawer.chips, selected: this.props.selected, editable: this.props.editable, startDrag: this.startLogicChipDrawerDrag, layout: selectedConstants.LOGIC_DRAWER_LAYOUT}) : null,
         this.state.draggingChip ? this.state.draggingChip.view : null
       ),
       this.props.toggleBoard ? span({className: 'board-toggle'}, button({onClick: this.toggleBoard}, this.props.selected ? 'View All Circuits' : (this.props.editable ? 'Edit Circuit' : 'View Circuit'))) : null
