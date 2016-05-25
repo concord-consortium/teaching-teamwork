@@ -13,9 +13,7 @@ module.exports = React.createClass({
         editable: this.props.userBoardNumber === 0,
         selected: true,
         user: this.props.users[0],
-        logicChipDrawer: {
-          chips: [{type: '7408', max: 3}, {type: '7432', max: 2}]
-        }
+        logicChipDrawer: this.props.activity ? this.props.activity.boards[0].logicChipDrawer : null
       }),
       RibbonView({
         constants: this.props.constants,
@@ -27,9 +25,7 @@ module.exports = React.createClass({
         editable: this.props.userBoardNumber === 1,
         selected: true,
         user: this.props.users[1],
-        logicChipDrawer: {
-          chips: [{type: '7432', max: 2}]
-        }
+        logicChipDrawer: this.props.activity ? this.props.activity.boards[1].logicChipDrawer : null
       })
     );
   }

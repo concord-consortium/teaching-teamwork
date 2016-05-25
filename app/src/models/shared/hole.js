@@ -9,6 +9,7 @@ var Hole = function (options) {
   this.connected = options.connected || false;
   this.value = options.value || 0;
   this.startingValue = this.value;
+  this.label = options.label;
 };
 Hole.prototype.getBezierReflection = function () {
   return this.connector.type === 'input' ? 1 : -1;

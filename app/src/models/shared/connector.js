@@ -16,7 +16,8 @@ var Connector = function (options) {
       y: 0,
       radius: 0,
       color: ['blue', '#0f0', 'purple', '#cccc00'][i],
-      connector: self
+      connector: self,
+      label: options.labels ? options.labels[i] : null
     }));
   }
 };

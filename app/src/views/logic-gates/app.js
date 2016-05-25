@@ -17,32 +17,20 @@ module.exports = React.createClass({
   displayName: 'AppView',
 
   getInitialState: function () {
-    var board0Input = new Connector({type: 'input', count: 4}),
-        board0Output = new Connector({type: 'output', count: 4}),
-        board1Input = new Connector({type: 'input', count: 4}),
-        board1Output = new Connector({type: 'output', count: 4}),
-        boards = [
+    var boards = [
           new Board({
             number: 0,
             bezierReflectionModifier: -0.5,
-            components: {}, //l1: new LogicChip({type: '7408', layout: {x: 50, y: 100, width: 150, height: 75}})},
-            connectors: {input: board0Input, output: board0Output}
+            components: {},
+            connectors: {}
           }),
           new Board({
             number: 1,
             bezierReflectionModifier: -0.5,
-            components: {}, //l1: new LogicChip({type: '7432', layout: {x: 50, y: 100, width: 150, height: 75}})},
-            connectors: {input: board1Input, output: board1Output}
+            components: {},
+            connectors: {}
           })
         ];
-
-    board0Output.connectsTo = board1Input;
-    board1Input.connectsTo = board0Output;
-
-    board0Input.board = boards[0];
-    board0Output.board = boards[0];
-    board1Input.board = boards[1];
-    board1Output.board = boards[1];
 
     boards[0].allBoards = boards;
     boards[1].allBoards = boards;
@@ -150,6 +138,8 @@ module.exports = React.createClass({
 
     this.setState({activity: activity});
 
+    this.setupConnectors(activity);
+
     boardWatcher.addListener(this.state.boards[0], this.updateWatchedBoard);
     boardWatcher.addListener(this.state.boards[1], this.updateWatchedBoard);
 
@@ -190,6 +180,27 @@ module.exports = React.createClass({
     if (this.state.running) {
       this.run(true, true);
     }
+  },
+
+  setupConnectors: function (activity) {
+    var board0Input = new Connector({type: 'input', count: activity.input.length, labels: activity.input}),
+        board0Output = new Connector({type: 'output', count: activity.ribbon.length, labels: activity.ribbon}),
+        board1Input = new Connector({type: 'input', count: activity.ribbon.length, labels: activity.ribbon}),
+        board1Output = new Connector({type: 'output', count: activity.output.length, labels: activity.output}),
+        boards = this.state.boards;
+
+    boards[0].setConnectors({input: board0Input, output: board0Output});
+    boards[1].setConnectors({input: board1Input, output: board1Output});
+
+    board0Output.connectsTo = board1Input;
+    board1Input.connectsTo = board0Output;
+
+    board0Input.board = boards[0];
+    board0Output.board = boards[0];
+    board1Input.board = boards[1];
+    board1Output.board = boards[1];
+
+    this.setState({boards: boards});
   },
 
   componentWillUnmount: function () {
@@ -314,7 +325,7 @@ module.exports = React.createClass({
       this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
       WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect}),
       div({id: 'logicapp'},
-        WorkspaceView({constants: constants, boards: this.state.boards, users: this.state.users, userBoardNumber: this.state.userBoardNumber}),
+        WorkspaceView({constants: constants, boards: this.state.boards, users: this.state.users, userBoardNumber: this.state.userBoardNumber, activity: this.state.activity}),
         this.state.showDemo ? DemoControlView({top: 0, toggleAllChipsAndWires: this.toggleAllChipsAndWires, addedAllChipsAndWires: this.state.addedAllChipsAndWires}) : null,
         SidebarChatView({numClients: 2, top: this.state.showDemo ? 75 : 0})
       )

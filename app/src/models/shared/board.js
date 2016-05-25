@@ -275,5 +275,9 @@ Board.prototype.removeComponent = function (component) {
   delete this.components[component.name];
   this.updateComponentList();
 };
+Board.prototype.setConnectors = function (connectors) {
+  this.connectors = connectors;
+  this.updateComponentList();
+};
 
 module.exports = Board;

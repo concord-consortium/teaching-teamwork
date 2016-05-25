@@ -1,3 +1,25 @@
 {
-  "name": "Single XOR"
+  "name": "Single XOR",
+  "input": ["A", "B"],
+  "ribbon": ["A", "B"],
+  "output": ["XOR"],
+  "boards": [
+    {
+      "logicChipDrawer": {
+        "chips": [{"type": "7408", "max": 2}, {"type": "7404", "max": 3}]
+      }
+    },
+    {
+      "logicChipDrawer": {
+        "chips": [{"type": "7432", "max": 2}]
+      }
+    }
+  ],
+  "truthTable": [
+    ["input:A", "input:B", "output:XOR"],
+    [0, 0, 0],
+    [0, 1, 1],
+    [1, 0, 1],
+    [1, 1, 0]
+  ]
 }
