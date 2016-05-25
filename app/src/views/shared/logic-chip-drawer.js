@@ -26,6 +26,11 @@ ChipView = React.createFactory(React.createClass({
 module.exports = React.createClass({
   displayName: 'LogicChipDrawerView',
 
+  backgroundMouseDown: function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  },
+
   render: function () {
     var chips = [],
         chipWidth = this.props.layout.width * 0.6,
@@ -41,7 +46,7 @@ module.exports = React.createClass({
       chips.push(ChipView({type: chip.type, x: chipX, y: chipY + (i * (chipHeight + chipMargin)), width: chipWidth, height: chipHeight, selected: this.props.selected, editable: this.props.editable, startDrag: this.props.startDrag}));
     }
     return g({},
-      rect({x: this.props.layout.x, y: this.props.layout.y, width: this.props.layout.width, height: this.props.layout.height, fill: '#aaa'}),
+      rect({x: this.props.layout.x, y: this.props.layout.y, width: this.props.layout.width, height: this.props.layout.height, fill: '#aaa', onMouseDown: this.backgroundMouseDown}),
       chips
     );
   }
