@@ -1,5 +1,7 @@
 var BoardView = React.createFactory(require('../shared/board')),
     RibbonView = React.createFactory(require('../shared/ribbon')),
+    InputSwitchesView = React.createFactory(require('../shared/input-switches')),
+    OutputLEDsView = React.createFactory(require('../shared/output-leds')),
     div = React.DOM.div;
 
 module.exports = React.createClass({
@@ -7,6 +9,12 @@ module.exports = React.createClass({
 
   render: function () {
     return div({id: 'workspace', style: {width: this.props.constants.WORKSPACE_WIDTH}},
+      InputSwitchesView({
+        constants: this.props.constants,
+        connector: this.props.boards[0].connectors.input,
+        editable: this.props.userBoardNumber === 0,
+        selected: true,
+      }),
       BoardView({
         constants: this.props.constants,
         board: this.props.boards[0],
@@ -26,6 +34,12 @@ module.exports = React.createClass({
         selected: true,
         user: this.props.users[1],
         logicChipDrawer: this.props.activity ? this.props.activity.boards[1].logicChipDrawer : null
+      }),
+      OutputLEDsView({
+        constants: this.props.constants,
+        connector: this.props.boards[1].connectors.output,
+        editable: this.props.userBoardNumber === 0,
+        selected: true,
       })
     );
   }
