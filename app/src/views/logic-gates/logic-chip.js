@@ -1,5 +1,6 @@
 var PinView = React.createFactory(require('../shared/pin')),
     constants = require('./constants'),
+    events = require('../shared/events'),
     line = React.DOM.line,
     g = React.DOM.g,
     rect = React.DOM.rect,
@@ -128,8 +129,11 @@ module.exports = React.createClass({
       e.stopPropagation();
       e.preventDefault();
       self.setPosition(pos.x, pos.y);
-      if (self.props.stopDrag) {
-        self.props.stopDrag({type: self.props.component.type, x: self.state.x, y: self.state.y});
+      if (self.props.stopLogicChipDrawerDrag) {
+        self.props.stopLogicChipDrawerDrag({type: self.props.component.type, x: self.state.x, y: self.state.y});
+      }
+      else if (moved) {
+        events.logEvent(events.MOVE_LOGIC_CHIP_EVENT, null, {board: self.props.component.board, chip: self.props.component});
       }
       if (!moved && self.props.componentClicked) {
         self.props.componentClicked(self.props.component);

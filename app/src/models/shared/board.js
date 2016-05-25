@@ -1,7 +1,8 @@
 var Hole = require('./hole'),
     Pin = require('./pin'),
     Wire = require('./wire'),
-    Circuit = require('./circuit');
+    Circuit = require('./circuit'),
+    LogicChip =  require('../logic-gates/logic-chip');
 
 var Board = function (options) {
   this.number = options.number;
@@ -277,6 +278,55 @@ Board.prototype.removeComponent = function (component) {
 };
 Board.prototype.setConnectors = function (connectors) {
   this.connectors = connectors;
+  this.updateComponentList();
+};
+Board.prototype.serializeComponents = function () {
+  var serialized = {};
+  $.each(this.components, function (name, component) {
+    serialized[name] = component.serialize ? component.serialize() : {};
+  });
+  return serialized;
+};
+Board.prototype.updateComponents = function (newSerializedComponents) {
+  var self = this,
+      toRemove = [],
+      currentSerializedComponents, i, name;
+
+  // quick check to see if there are changes
+  currentSerializedComponents = this.serializeComponents();
+  if (JSON.stringify(newSerializedComponents) == JSON.stringify(currentSerializedComponents)) {
+    return;
+  }
+
+  // compare the current components with the new components
+  $.each(currentSerializedComponents, function (name) {
+    if (newSerializedComponents[name]) {
+      // TODO: make sure the position is correct
+      self.components[name].position.x = newSerializedComponents[name].x;
+      self.components[name].position.y = newSerializedComponents[name].y;
+
+      // in both so delete from new
+      delete newSerializedComponents[name];
+    }
+    else {
+      toRemove.push(name);
+    }
+  });
+
+  // now toRemove contains components to remove and newSerializedComponents contains components to add
+  for (i = 0; i < toRemove.length; i++) {
+    name = toRemove[i];
+    delete this.components[name];
+  }
+  $.each(newSerializedComponents, function (name, serializeComponent) {
+    var component;
+
+    if (serializeComponent.type == 'logic-chip') {
+      component = new LogicChip({type: serializeComponent.chipType, layout: {x: serializeComponent.x, y: serializeComponent.y, width: 150, height: 75}});
+      self.addComponent(name, component);
+    }
+  });
+
   this.updateComponentList();
 };
 

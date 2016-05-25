@@ -254,11 +254,17 @@ module.exports = React.createClass({
   },
 
   updateWatchedBoard: function (board, boardInfo) {
-    var wires;
+    var wires, components;
 
     // update the wires
     wires = (boardInfo ? boardInfo.wires : null) || [];
     board.updateWires(wires);
+
+    // update the components
+    components = (boardInfo ? boardInfo.components : null) || [];
+    board.updateComponents(components);
+
+    this.setState({boards: this.state.boards});
   },
 
   checkIfCircuitIsCorrect: function (callback) {

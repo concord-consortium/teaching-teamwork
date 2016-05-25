@@ -377,7 +377,7 @@ module.exports = React.createClass({
           constants: this.props.constants,
           component: draggingChip,
           startDragPos: {x: pageX, y: pageY},
-          stopDrag: this.stopLogicChipDrawerDrag,
+          stopLogicChipDrawerDrag: this.stopLogicChipDrawerDrag,
           layoutChanged: this.layoutChanged,
           snapToGrid: this.snapToGrid,
           selected: true,
@@ -406,8 +406,8 @@ module.exports = React.createClass({
     var logicChipDrawer = this.state.logicChipDrawer;
 
     name = name || "lc" + this.state.nextChipNumber;
-    events.logEvent(events.ADD_LOGIC_CHIP_EVENT, null, {board: this.props.board, type: chip.type, name: name});
     this.props.board.addComponent(name, chip);
+    events.logEvent(events.ADD_LOGIC_CHIP_EVENT, null, {board: this.props.board, chip: chip});
 
     logicChipDrawer.chips[chip.type].count++;
     this.setState({
@@ -419,7 +419,7 @@ module.exports = React.createClass({
   removeLogicChip: function (chip) {
     var logicChipDrawer = this.state.logicChipDrawer;
 
-    events.logEvent(events.REMOVE_LOGIC_CHIP_EVENT, null, {board: this.props.board, type: chip.type, name: chip.name});
+    events.logEvent(events.REMOVE_LOGIC_CHIP_EVENT, null, {board: this.props.board, chip: chip});
     this.props.board.removeComponent(chip);
 
     logicChipDrawer.chips[chip.type].count--;

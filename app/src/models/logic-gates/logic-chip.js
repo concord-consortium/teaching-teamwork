@@ -11,7 +11,10 @@ var LogicChip = function (options) {
   this.layout = options.layout;
   this.selectable = options.selectable;
 
-  this.position = {};
+  this.position = {
+    x: this.layout.x,
+    y: this.layout.y
+  };
 
   this.pins = [];
   this.pinMap = {};
@@ -63,7 +66,6 @@ LogicChip.prototype.reset = function () {
     this.pins[i].reset();
   }
 };
-
 LogicChip.prototype.resolveOutputValues = function () {
   switch (this.type) {
     case '7408':
@@ -89,6 +91,14 @@ LogicChip.prototype.resolveOutputValues = function () {
       this.pins[11].setValue(this.pins[10].value  ? 0 : 1);
       break;
   }
+};
+LogicChip.prototype.serialize = function () {
+  return {
+    type: 'logic-chip',
+    chipType: this.type,
+    x: this.position.x,
+    y: this.position.y
+  };
 };
 
 
