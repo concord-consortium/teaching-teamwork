@@ -56,13 +56,99 @@ module.exports = React.createClass({
       users: {},
       currentBoard: 0,
       currentUser: null,
-      currentGroup: null
+      currentGroup: null,
+      activity: null
     };
   },
 
   componentDidMount: function() {
-    var activityName = 'logic-gates',
-        self = this;
+    this.loadActivity(window.location.hash.substring(1) || 'single-xor');
+  },
+
+  loadActivity: function(activityName) {
+    var self = this,
+        matches = activityName.match(/^((local):(.+)|(remote):([^/]+)\/(.+))$/),
+        setStateAndParseAndStartActivity = function (jsonData) {
+          if (jsonData) {
+            editorState.text = jsonData;
+            self.setState({editorState: editorState});
+            var parsedData = self.parseActivity(activityName, jsonData);
+            if (parsedData) {
+              self.startActivity(activityName, parsedData);
+            }
+          }
+        },
+        editorState;
+
+    if (matches && (matches[2] == 'local')) {
+      editorState = {via: 'local', filename: matches[3]};
+
+      var rawData = localStorage.getItem(activityName);
+      if (rawData) {
+        setStateAndParseAndStartActivity(rawData);
+      }
+      else {
+        alert("Could not find LOCAL activity at " + activityName);
+      }
+    }
+    else if (matches && (matches[4] == 'remote')) {
+      editorState = {via: 'user ' + matches[5], filename: matches[6], username: matches[5]};
+
+      var url = editorState.username + '/' + editorState.filename,
+          firebase = new Firebase('https://teaching-teamwork.firebaseio.com/dev/activities/' + url);
+      firebase.once('value', function (snapshot) {
+        var jsonData = snapshot.val();
+        if (jsonData) {
+          setStateAndParseAndStartActivity(jsonData);
+        }
+        else {
+          alert("No data found for REMOTE activity at " + url);
+        }
+      }, function () {
+        alert("Could not find REMOTE activity at " + url);
+      });
+    }
+    else {
+      editorState = {via: 'server', filename: activityName};
+
+      var activityUrl = '../activities/logic-gates/' + activityName + ".json";
+
+      var request = new XMLHttpRequest();
+      request.open('GET', activityUrl, true);
+
+      request.onload = function() {
+        if (request.status >= 200 && request.status < 400) {
+          setStateAndParseAndStartActivity(request.responseText);
+        } else {
+          alert("Could not find activity at "+activityUrl);
+        }
+      };
+
+      request.send();
+    }
+  },
+
+  parseAndStartActivity: function (activityName, rawData) {
+    var parsedData = this.parseActivity(activityName, rawData);
+    if (parsedData) {
+      this.startActivity(activityName, parsedData);
+    }
+  },
+
+  parseActivity: function (activityName, rawData) {
+    try {
+      return JSON.parse(rawData);
+    }
+    catch (e) {
+      alert('Unable to parse JSON for ' + activityName);
+      return null;
+    }
+  },
+
+  startActivity: function (activityName, activity) {
+    var self = this;
+
+    this.setState({activity: activity});
 
     boardWatcher.addListener(this.state.boards[0], this.updateWatchedBoard);
     boardWatcher.addListener(this.state.boards[1], this.updateWatchedBoard);
@@ -224,7 +310,7 @@ module.exports = React.createClass({
 
   render: function () {
     return div({},
-      h1({}, "Teaching Teamwork Logic Gates Activity"),
+      h1({}, "Teaching Teamwork" + (this.state.activity ? ": " + this.state.activity.name : "")),
       this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
       WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect}),
       div({id: 'logicapp'},
