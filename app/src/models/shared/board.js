@@ -267,11 +267,12 @@ Board.prototype.resolveIOValues = function () {
   this.resolveCircuitInputValues();
 };
 Board.prototype.addComponent = function (name, component) {
+  component.name = name;
   this.components[name] = component;
   this.updateComponentList();
 };
-Board.prototype.removeComponent = function (name) {
-  delete this.components[name];
+Board.prototype.removeComponent = function (component) {
+  delete this.components[component.name];
   this.updateComponentList();
 };
 

@@ -8,8 +8,10 @@ var LogicChip = function (options) {
   this.view = LogicChipView;
   this.board = options.board;
   this.type = options.type;
-
   this.layout = options.layout;
+  this.selectable = options.selectable;
+
+  this.position = {};
 
   this.pins = [];
   this.pinMap = {};

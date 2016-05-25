@@ -11,18 +11,25 @@ module.exports = React.createClass({
 
   getInitialState: function () {
     var pos = this.props.snapToGrid(this.props.component.layout);
-    return {
+    this.props.component.position = {
       x: pos.x,
       y: pos.y,
       width: this.props.component.layout.width,
       height: this.props.component.layout.height
     };
+    return this.props.component.position;
   },
 
   componentWillMount: function () {
     if (this.props.startDragPos) {
       this.startDrag(this.props.startDragPos);
     }
+  },
+
+  setPosition: function (x, y) {
+    this.props.component.position.x = x;
+    this.props.component.position.y = y;
+    this.setState({x: x, y: y});
   },
 
   pinWire: function (pin, dx) {
@@ -100,15 +107,14 @@ module.exports = React.createClass({
         startDragX = startDragPos.x,
         startDragY = startDragPos.y,
         self = this,
+        moved = false,
         drag, stopDrag;
 
     drag = function (e) {
+      moved = true;
       e.preventDefault();
       e.stopPropagation();
-      self.setState({
-        x: startX + (e.pageX - startDragX),
-        y: startY + (e.pageY - startDragY)
-      });
+      self.setPosition(startX + (e.pageX - startDragX), startY + (e.pageY - startDragY));
       self.props.layoutChanged();
     };
 
@@ -116,12 +122,12 @@ module.exports = React.createClass({
       var pos = self.props.snapToGrid(self.state);
       e.stopPropagation();
       e.preventDefault();
-      self.setState({
-        x: pos.x,
-        y: pos.y
-      });
+      self.setPosition(pos.x, pos.y);
       if (self.props.stopDrag) {
         self.props.stopDrag({type: self.props.component.type, x: self.state.x, y: self.state.y});
+      }
+      if (!moved && self.props.componentClicked) {
+        self.props.componentClicked(self.props.component);
       }
       self.props.layoutChanged();
       $window.off('mousemove', drag);
@@ -142,7 +148,7 @@ module.exports = React.createClass({
     var pins = [],
         selectedConstants = constants.selectedConstants(this.props.selected),
         pin,
-        i, groundComponent, vccComponents, vccPos, label, labelText;
+        i, groundComponent, vccComponents, vccPos, label, labelText, rectParams;
 
     this.layout();
 
@@ -165,8 +171,14 @@ module.exports = React.createClass({
     label = this.props.component.label;
     labelText = text({key: 'label', x: label.x, y: label.y, fontSize: label.labelSize, fill: '#fff', style: {textAnchor: label.anchor}}, label.text);
 
+    rectParams = {x: this.state.x, y: this.state.y, width: this.state.width, height: this.state.height, fill: '#333'};
+    if (this.props.componentSelected) {
+      rectParams.stroke = '#f00';
+      rectParams.strokeWidth = 2;
+    }
+
     return g({onMouseDown: this.props.selected && this.props.editable ? this.mouseDown : null},
-      rect({x: this.state.x, y: this.state.y, width: this.state.width, height: this.state.height, fill: '#333'}),
+      rect(rectParams),
       pins,
       groundComponent,
       vccComponents,

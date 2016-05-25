@@ -13,6 +13,8 @@ module.exports = events = {
   STOP_EVENT: 'Stop',
   STEP_EVENT: 'Step',
   RESET_EVENT: 'Reset',
+  ADD_LOGIC_CHIP_EVENT: 'Add Logic Chip',
+  REMOVE_LOGIC_CHIP_EVENT: 'Remove Logic Chip',
 
   logEvent: function (eventName, value, parameters) {
     var loggedValue = null,

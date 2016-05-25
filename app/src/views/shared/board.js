@@ -29,6 +29,7 @@ module.exports = React.createClass({
       probeSource: this.props.board.probe ? this.props.board.probe.source : null,
       probePos: this.props.board.probe ? this.props.board.probe.pos : null,
       selectedWires: [],
+      selectedComponents: [],
       drawBox: null,
       draggingProbe: false,
       draggingChip: null,
@@ -61,7 +62,7 @@ module.exports = React.createClass({
   },
 
   keyUp: function (e) {
-    var i, selectedWire;
+    var i, selectedWire, selectedComponent;
 
     // 46 is the delete key which maps to 8 on Macs
     if (!((e.keyCode == 46) || (e.keyCode == 8))) {
@@ -69,14 +70,31 @@ module.exports = React.createClass({
     }
 
     if (this.props.selected && this.props.editable) {
+
+      // remove components
+      for (i = 0; i < this.state.selectedComponents.length; i++) {
+        selectedComponent = this.state.selectedComponents[i];
+        this.props.board.removeComponent(selectedComponent);
+        if (selectedComponent instanceof LogicChip) {
+          events.logEvent(events.REMOVE_LOGIC_CHIP_EVENT, null, {board: this.props.board, type: selectedComponent.type, name: selectedComponent.name});
+        }
+        else {
+          events.logEvent(events.REMOVE_COMPONENT, null, {board: this.props.board, component: selectedComponent});
+        }
+      }
+
+      // TODO: remove wires connected to removed components
+
       for (i = 0; i < this.state.selectedWires.length; i++) {
         selectedWire = this.state.selectedWires[i];
         this.props.board.removeWire(selectedWire.source, selectedWire.dest);
         events.logEvent(events.REMOVE_WIRE_EVENT, null, {board: this.props.board, source: selectedWire.source});
       }
+
       this.setState({
         wires: this.props.board.wires,
-        selectedWires: []
+        selectedWires: [],
+        selectedComponents: []
       });
     }
     e.preventDefault();
@@ -155,7 +173,8 @@ module.exports = React.createClass({
         wire = self.props.board.addWire(source, dest, (source.color || dest.color || color));
         self.setState({
           wires: self.props.board.wires,
-          selectedWires: [wire]
+          selectedWires: [wire],
+          selectedComponents: []
         });
         events.logEvent(events.ADD_WIRE_EVENT, null, {board: self.props.board, source: source, dest: dest});
       }
@@ -188,7 +207,8 @@ module.exports = React.createClass({
       this.props.board.removeWire(wire.source, wire.dest);
       this.setState({
         wires: this.props.board.wires,
-        selectedWires: []
+        selectedWires: [],
+        selectedComponents: []
       });
       this.drawConnection(shortestDistance == sourceDistance ? wire.dest : wire.source, e, wire.color, function (addedWire) {
         var newWire;
@@ -196,13 +216,14 @@ module.exports = React.createClass({
           newWire = self.props.board.addWire(wire.source, wire.dest, wire.color);
           self.setState({
             wires: self.props.board.wires,
-            selectedWires: [newWire]
+            selectedWires: [newWire],
+            selectedComponents: []
           });
         }
       });
     }
     else {
-      this.setState({selectedWires: [wire]});
+      this.setState({selectedWires: [wire], selectedComponents: []});
     }
   },
 
@@ -211,7 +232,7 @@ module.exports = React.createClass({
         self = this,
         drag, stopDrag, getPath, x1, y1;
 
-    this.setState({selectedWires: []});
+    this.setState({selectedWires: [], selectedComponents: []});
 
     // allow for bounding box drawing around wires for mass selection
     e.preventDefault();
@@ -247,7 +268,8 @@ module.exports = React.createClass({
 
     stopDrag = function (e) {
       var selectedWires = [],
-          r, enclosed, i, wire;
+          selectedComponents = [],
+          r, enclosed, i, wire, component;
 
       e.stopPropagation();
       e.preventDefault();
@@ -270,10 +292,17 @@ module.exports = React.createClass({
           selectedWires.push(wire);
         }
       }
+      for (i = 0; i < self.props.board.componentList.length; i++) {
+        component = self.props.board.componentList[i];
+        if (component.selectable && enclosed(component.position.x, component.position.y)) {
+          selectedComponents.push(component);
+        }
+      }
 
       self.setState({
         drawBox: null,
-        selectedWires: selectedWires
+        selectedWires: selectedWires,
+        selectedComponents: selectedComponents
       });
     };
 
@@ -303,6 +332,8 @@ module.exports = React.createClass({
         chipY = pageY - this.svgOffset.top,
         draggingChip = new LogicChip({type: chip.type, layout: {x: chipX, y: chipY, width: 150, height: 75}});
     this.setState({
+      selectedWires: [],
+      selectedComponents: [],
       draggingChip: {
         type: chip.type,
         view: draggingChip.view({
@@ -312,23 +343,27 @@ module.exports = React.createClass({
           stopDrag: this.stopLogicChipDrawerDrag,
           layoutChanged: this.layoutChanged,
           snapToGrid: this.snapToGrid,
-          selected: true
+          selected: true,
+          componentSelected: true
         })
       }
     });
   },
 
   stopLogicChipDrawerDrag: function (chip) {
-    this.addChip(new LogicChip({type: chip.type, layout: {x: chip.x, y: chip.y, width: 150, height: 75}}));
-    this.setState({draggingChip: null});
+    var component = new LogicChip({type: chip.type, layout: {x: chip.x, y: chip.y, width: 150, height: 75}, selectable: true});
+    this.addLogicChip(component);
+    this.setState({draggingChip: null, selectedWires: [], selectedComponents: [component]});
   },
 
-  addChip: function (chip) {
-    this.props.board.addComponent("lc" + (this.props.board.numComponents + 1), chip);
+  addLogicChip: function (chip, name) {
+    name = name || "lc" + (this.props.board.numComponents + 1);
+    events.logEvent(events.ADD_LOGIC_CHIP_EVENT, null, {board: this.props.board, type: chip.type, name: name});
+    this.props.board.addComponent(name, chip);
   },
 
-  removeChip: function (chip) {
-    this.props.board.removeComponent(chip);
+  componentSelected: function (component) {
+    this.setState({selectedWires: [], selectedComponents: [component]});
   },
 
   render: function () {
@@ -367,7 +402,7 @@ module.exports = React.createClass({
         if (component.calculatePosition) {
           component.calculatePosition(this.props.constants, this.props.selected, componentIndex++, this.props.board.numComponents);
         }
-        components.push(component.view({key: name, constants: this.props.constants, component: component, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.drawConnection, reportHover: this.reportHover, layoutChanged: this.layoutChanged, snapToGrid: this.snapToGrid}));
+        components.push(component.view({key: name, constants: this.props.constants, component: component, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.drawConnection, reportHover: this.reportHover, layoutChanged: this.layoutChanged, snapToGrid: this.snapToGrid, componentSelected: this.state.selectedComponents.indexOf(component) !== -1, componentClicked: this.componentSelected}));
       }
     }
 
