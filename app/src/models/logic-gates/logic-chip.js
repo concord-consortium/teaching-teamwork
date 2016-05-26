@@ -90,6 +90,12 @@ LogicChip.prototype.resolveOutputValues = function () {
       this.pins[9].setValue(this.pins[8].value  ? 0 : 1);
       this.pins[11].setValue(this.pins[10].value  ? 0 : 1);
       break;
+
+    case '7411':
+      this.pins[5].setValue(this.pins[2].value && this.pins[3].value && this.pins[4].value ? 1 : 0);
+      this.pins[7].setValue(this.pins[8].value && this.pins[9].value && this.pins[10].value ? 1 : 0);
+      this.pins[11].setValue(this.pins[0].value && this.pins[1].value && this.pins[12].value ? 1 : 0);
+      break;
   }
 };
 LogicChip.prototype.serialize = function () {
