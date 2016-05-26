@@ -419,8 +419,8 @@ module.exports = React.createClass({
   removeLogicChip: function (chip) {
     var logicChipDrawer = this.state.logicChipDrawer;
 
-    events.logEvent(events.REMOVE_LOGIC_CHIP_EVENT, null, {board: this.props.board, chip: chip});
     this.props.board.removeComponent(chip);
+    events.logEvent(events.REMOVE_LOGIC_CHIP_EVENT, null, {board: this.props.board, chip: chip});
 
     logicChipDrawer.chips[chip.type].count--;
     this.setState({logicChipDrawer: logicChipDrawer});
