@@ -208,6 +208,10 @@ module.exports = React.createClass({
             }
           }
 
+          // change the resistor editor to use a select instead of a slider and manually place it because of positioning issues with the svg viewbox change
+          sparks.workbenchController.breadboardView.useSelectInPropertyEditor = true;
+          sparks.workbenchController.breadboardView.setTooltipPosition({top: 145, left: 215});
+
           // reset the circuit in firebase so that any old info doesn't display in the submit popup
           workbenchFBConnector.setClientCircuit();
           workbenchFBConnector.resetMeters();
