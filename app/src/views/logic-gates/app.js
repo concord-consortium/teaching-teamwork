@@ -136,9 +136,9 @@ module.exports = React.createClass({
   startActivity: function (activityName, activity) {
     var self = this;
 
-    this.setState({activity: activity});
-
     this.setupConnectors(activity);
+
+    this.setState({activity: activity});
 
     boardWatcher.addListener(this.state.boards[0], this.updateWatchedBoard);
     boardWatcher.addListener(this.state.boards[1], this.updateWatchedBoard);

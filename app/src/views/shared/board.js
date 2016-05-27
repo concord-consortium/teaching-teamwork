@@ -168,21 +168,22 @@ module.exports = React.createClass({
     e.preventDefault();
     e.stopPropagation();
 
-    this.setState({
-      selectedWires: [],
-      selectedComponents: [],
-      drawConnection: {
-        x1: source.cx,
-        y1: source.cy,
-        x2: source.cx,
-        y2: source.cy,
-        strokeWidth: this.props.constants.selectedConstants(this.props.selected).WIRE_WIDTH,
-        stroke: '#f00',
-        reflection: source.getBezierReflection() * this.props.board.bezierReflectionModifier
-      }
-    });
-
     drag = function (e) {
+      if (!moved) {
+        self.setState({
+          selectedWires: [],
+          selectedComponents: [],
+          drawConnection: {
+            x1: source.cx,
+            y1: source.cy,
+            x2: source.cx,
+            y2: source.cy,
+            strokeWidth: self.props.constants.selectedConstants(self.props.selected).WIRE_WIDTH,
+            stroke: '#f00',
+            reflection: source.getBezierReflection() * self.props.board.bezierReflectionModifier
+          }
+        });
+      }
       moved = true;
       e.preventDefault();
       self.state.drawConnection.x2 = e.pageX - self.svgOffset.left;
@@ -214,7 +215,7 @@ module.exports = React.createClass({
       }
 
       if (callback) {
-        callback(addedWire);
+        callback(addedWire, moved);
       }
     };
 
