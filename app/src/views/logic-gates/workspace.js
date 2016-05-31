@@ -30,10 +30,6 @@ module.exports = React.createClass({
         selected: true,
         user: this.props.users[1],
         logicChipDrawer: this.props.activity ? this.props.activity.boards[1].logicChipDrawer : null
-      }),
-      RibbonView({
-        constants: this.props.constants,
-        connector: this.props.boards[1].connectors.output
       })
     );
   }

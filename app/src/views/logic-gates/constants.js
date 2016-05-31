@@ -12,7 +12,7 @@ module.exports = constants = {
   UNSELECTED_FILL: '#777',
 
   selectedConstants: function (selected) {
-    var boardHeight = (constants.WORKSPACE_HEIGHT - constants.INPUT_SWITCHES_HEIGHT - constants.RIBBON_HEIGHT - constants.OUTPUT_LEDS_HEIGHT) / 2,
+    var boardHeight = (constants.WORKSPACE_HEIGHT - (2 * constants.RIBBON_HEIGHT)) / 2,
         logicDrawerLayout = {
           x: workspaceWidth - logicDrawerWidth,
           y: 0,

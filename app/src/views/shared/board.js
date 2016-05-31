@@ -154,6 +154,11 @@ module.exports = React.createClass({
     this.setState({hoverSource: hoverSource});
   },
 
+  inputConnectorHoleClicked: function () {
+    // force a redraw when an input connector hole changes state
+    this.setState({wires: this.state.wires});
+  },
+
   setProbe: function (probe) {
     this.props.board.probe = probe;
     this.setState({probeSource: probe.source, probePos: probe.pos});
@@ -465,7 +470,7 @@ module.exports = React.createClass({
     // calculate the position so the wires can be updated
     if (this.props.board.connectors.input) {
       this.props.board.connectors.input.calculatePosition(this.props.constants, this.props.selected);
-      connectors.push(ConnectorView({key: 'input', constants: this.props.constants, connector: this.props.board.connectors.input, selected: this.props.selected, editable: this.props.editable, drawConnection: this.drawConnection, reportHover: this.reportHover}));
+      connectors.push(ConnectorView({key: 'input', constants: this.props.constants, connector: this.props.board.connectors.input, selected: this.props.selected, editable: this.props.editable, drawConnection: this.drawConnection, reportHover: this.reportHover, holeClicked: this.inputConnectorHoleClicked}));
     }
     if (this.props.board.connectors.output) {
       this.props.board.connectors.output.calculatePosition(this.props.constants, this.props.selected);
