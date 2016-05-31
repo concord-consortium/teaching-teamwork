@@ -48,7 +48,8 @@ module.exports = React.createClass({
           selected: true,
           user: this.props.users[this.state.selectedBoard.number],
           logicChipDrawer: this.props.activity ? this.props.activity.boards[this.props.userBoardNumber].logicChipDrawer : null,
-          toggleBoard: this.props.userBoardNumber === this.state.selectedBoard.number ? this.toggleBoard : null
+          toggleBoard: this.props.userBoardNumber === this.state.selectedBoard.number ? this.toggleBoard : null,
+          showProbe: true
         }),
         RibbonView({
           constants: this.props.constants,
