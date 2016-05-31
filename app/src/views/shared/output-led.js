@@ -6,7 +6,7 @@ module.exports = React.createClass({
 
   render: function () {
     return g({},
-      circle({cx: this.props.hole.cx, cy: this.props.constants.OUTPUT_LEDS_HEIGHT / 2, r: this.props.hole.radius, fill: this.props.hole.value ? '#0f0' : '#f00'})
+      circle({cx: this.props.hole.cx, cy: this.props.constants.OUTPUT_LEDS_HEIGHT / 2, r: this.props.hole.radius, fill: this.props.hole.getValue() ? '#0f0' : '#f00'})
     );
   }
 });

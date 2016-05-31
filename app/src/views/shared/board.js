@@ -438,12 +438,12 @@ module.exports = React.createClass({
 
   getLogicChipDragRect: function () {
     var selectedConstants = this.props.constants.selectedConstants(this.props.selected);
-    return {
+    return selectedConstants.LOGIC_DRAWER_LAYOUT ? {
       top: 10,
       left: 10,
       right: this.props.constants.WORKSPACE_WIDTH - selectedConstants.LOGIC_DRAWER_LAYOUT.width - 10,
       bottom: selectedConstants.BOARD_HEIGHT - 10
-    };
+    } : {};
   },
 
   render: function () {

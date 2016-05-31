@@ -20,6 +20,9 @@ Hole.prototype.setValue = function (newValue) {
   this.pulseProbeDuration = this.pulseProbeDuration || (newValue != this.value ? 1 : 0);
   this.value = newValue;
 };
+Hole.prototype.getValue = function () {
+  return this.value;
+};
 Hole.prototype.reset = function () {
   this.value = this.startingValue;
   this.pulseProbeDuration = 0;

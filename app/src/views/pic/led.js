@@ -27,7 +27,7 @@ module.exports = React.createClass({
 
     for (i = 0; i < this.props.component.segments.length; i++) {
       segment = this.props.component.segments[i];
-      segments.push(path({key: 'segment' + i, d: segment.pathCommands, fill: segment.pin.connected && !segment.pin.value ? '#ccff00' : this.props.constants.UNSELECTED_FILL, transform: segment.transform}));
+      segments.push(path({key: 'segment' + i, d: segment.pathCommands, fill: segment.pin.connected && !segment.pin.getValue() ? '#ccff00' : this.props.constants.UNSELECTED_FILL, transform: segment.transform}));
     }
 
     ccPin = this.props.component.pins[7];
