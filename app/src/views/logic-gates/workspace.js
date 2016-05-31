@@ -49,6 +49,7 @@ module.exports = React.createClass({
           user: this.props.users[this.state.selectedBoard.number],
           logicChipDrawer: this.props.activity ? this.props.activity.boards[this.props.userBoardNumber].logicChipDrawer : null,
           toggleBoard: this.props.userBoardNumber === this.state.selectedBoard.number ? this.toggleBoard : null,
+          toggleBoardButtonStyle: {marginTop: -35},
           showProbe: true
         }),
         RibbonView({
