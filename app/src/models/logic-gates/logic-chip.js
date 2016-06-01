@@ -69,32 +69,32 @@ LogicChip.prototype.reset = function () {
 LogicChip.prototype.resolveOutputValues = function () {
   switch (this.type) {
     case '7408':
-      this.pins[2].setValue(this.pins[0].value && this.pins[1].value ? 1 : 0);
-      this.pins[5].setValue(this.pins[3].value && this.pins[4].value ? 1 : 0);
-      this.pins[10].setValue(this.pins[12].value && this.pins[11].value ? 1 : 0);
-      this.pins[7].setValue(this.pins[9].value && this.pins[8].value ? 1 : 0);
+      this.pins[2].setValue(this.pins[0].getValue() && this.pins[1].getValue() ? 1 : 0);
+      this.pins[5].setValue(this.pins[3].getValue() && this.pins[4].getValue() ? 1 : 0);
+      this.pins[10].setValue(this.pins[12].getValue() && this.pins[11].getValue() ? 1 : 0);
+      this.pins[7].setValue(this.pins[9].getValue() && this.pins[8].getValue() ? 1 : 0);
       break;
 
     case '7432':
-      this.pins[2].setValue(this.pins[0].value || this.pins[1].value ? 1 : 0);
-      this.pins[5].setValue(this.pins[3].value || this.pins[4].value ? 1 : 0);
-      this.pins[10].setValue(this.pins[12].value || this.pins[11].value ? 1 : 0);
-      this.pins[7].setValue(this.pins[9].value || this.pins[8].value ? 1 : 0);
+      this.pins[2].setValue(this.pins[0].getValue() || this.pins[1].getValue() ? 1 : 0);
+      this.pins[5].setValue(this.pins[3].getValue() || this.pins[4].getValue() ? 1 : 0);
+      this.pins[10].setValue(this.pins[12].getValue() || this.pins[11].getValue() ? 1 : 0);
+      this.pins[7].setValue(this.pins[9].getValue() || this.pins[8].getValue() ? 1 : 0);
       break;
 
     case '7404':
-      this.pins[1].setValue(this.pins[0].value  ? 0 : 1);
-      this.pins[3].setValue(this.pins[2].value  ? 0 : 1);
-      this.pins[5].setValue(this.pins[4].value  ? 0 : 1);
-      this.pins[7].setValue(this.pins[6].value  ? 0 : 1);
-      this.pins[9].setValue(this.pins[8].value  ? 0 : 1);
-      this.pins[11].setValue(this.pins[10].value  ? 0 : 1);
+      this.pins[1].setValue(this.pins[0].getValue()  ? 0 : 1);
+      this.pins[3].setValue(this.pins[2].getValue()  ? 0 : 1);
+      this.pins[5].setValue(this.pins[4].getValue()  ? 0 : 1);
+      this.pins[7].setValue(this.pins[6].getValue()  ? 0 : 1);
+      this.pins[9].setValue(this.pins[8].getValue()  ? 0 : 1);
+      this.pins[11].setValue(this.pins[10].getValue()  ? 0 : 1);
       break;
 
     case '7411':
-      this.pins[5].setValue(this.pins[2].value && this.pins[3].value && this.pins[4].value ? 1 : 0);
-      this.pins[7].setValue(this.pins[8].value && this.pins[9].value && this.pins[10].value ? 1 : 0);
-      this.pins[11].setValue(this.pins[0].value && this.pins[1].value && this.pins[12].value ? 1 : 0);
+      this.pins[5].setValue(this.pins[2].getValue() && this.pins[3].getValue() && this.pins[4].getValue() ? 1 : 0);
+      this.pins[7].setValue(this.pins[8].getValue() && this.pins[9].getValue() && this.pins[10].getValue() ? 1 : 0);
+      this.pins[11].setValue(this.pins[0].getValue() && this.pins[1].getValue() && this.pins[12].getValue() ? 1 : 0);
       break;
   }
 };

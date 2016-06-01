@@ -72,7 +72,7 @@ Circuit.prototype.resolveInputValues = function () {
   }
 
   if (input && output) {
-    input.setValue(output.value);
+    input.setValue(output.getValue());
   }
 };
 

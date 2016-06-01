@@ -54,7 +54,7 @@ Connector.prototype.setHoleValues = function (values) {
   }
 };
 Connector.prototype.getHoleValue = function (index) {
-  return index < this.holes.length ? this.holes[index].value : null;
+  return index < this.holes.length ? this.holes[index].getValue() : null;
 };
 Connector.prototype.getHoleValues = function () {
   var values = [],
