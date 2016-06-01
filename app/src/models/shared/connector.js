@@ -53,6 +53,12 @@ Connector.prototype.setHoleValues = function (values) {
     this.setHoleValue(i, values[i]);
   }
 };
+Connector.prototype.clearHoleValues = function () {
+  var i;
+  for (i = 0; i < this.holes.length; i++) {
+    this.holes[i].setValue(0);
+  }
+};
 Connector.prototype.getHoleValue = function (index) {
   return index < this.holes.length ? this.holes[index].getValue() : null;
 };

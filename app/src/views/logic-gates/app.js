@@ -222,39 +222,83 @@ module.exports = React.createClass({
 
   checkIfCircuitIsCorrect: function (callback) {
     var self = this,
-        tests = [
-          {input: [0, 0, 1, 1], output: [0, 'x', 'x', 'x']},
-          {input: [0, 1, 1, 0], output: [1, 'x', 'x', 'x']},
-          {input: [1, 0, 0, 1], output: [1, 'x', 'x', 'x']},
-          {input: [1, 1, 0, 0], output: [0, 'x', 'x', 'x']}
-        ],
         truthTable = [],
         allCorrect = true,
-        runTest, i;
+        boards = this.state.boards,
+        numBoards = boards.length,
+        generateTests, runTest, resetBoards, resolveBoards, i, tests;
 
-    runTest = function (test, truthTable) {
-      var boards = self.state.boards,
-          numBoards = boards.length,
-          allCorrect = true,
-          i, j, output, outputValues, correct, dontCare;
+    generateTests = function () {
+      var truthTable = self.state.activity.truthTable,
+          header = truthTable[0],
+          input = self.state.activity.input,
+          output = self.state.activity.output,
+          defaultTestInput = [],
+          defaultTestOutput = [],
+          tests = [],
+          i, j, testInput, testOutput, headerPair, holeIndex;
 
+      for (i = 0; i < input.length; i++) {
+        defaultTestInput.push('x');
+      }
+      for (i = 0; i < output.length; i++) {
+        defaultTestOutput.push('x');
+      }
+
+      // skip the header and generate each test
+      for (i = 1; i < truthTable.length; i++) {
+        testInput = defaultTestInput.slice();
+        testOutput = defaultTestOutput.slice();
+
+        for (j = 0; j < header.length; j++) {
+          headerPair = header[j].split(':');
+          if (headerPair[0] == 'input') {
+            holeIndex = input.indexOf(headerPair[1]);
+            if (holeIndex !== -1) {
+              testInput[holeIndex] = truthTable[i][j];
+            }
+          } else if (headerPair[0] == 'output') {
+            holeIndex = output.indexOf(headerPair[1]);
+            if (holeIndex !== -1) {
+              testOutput[holeIndex] = truthTable[i][j];
+            }
+          }
+        }
+
+        tests.push({
+          input: testInput,
+          output: testOutput
+        });
+      }
+
+      return tests;
+    };
+
+    resetBoards = function () {
+      var i;
       for (i = 0; i < numBoards; i++) {
         boards[i].reset();
       }
+    };
 
-      // TODO: save old hole values
-
-      // set the input connector pins
-      boards[0].connectors.input.setHoleValues(test.input);
-
+    resolveBoards = function () {
+      var i, j;
       // evaluate all the logic-chips in all the boards so the values propogate
       for (i = 0; i < numBoards; i++) {
         for (j = 0; j < boards[i].numComponents; j++) {
           boards[i].resolveIOValues();
         }
       }
+    };
 
-      // test the output connector pins
+    runTest = function (test, truthTable) {
+      var allCorrect = true,
+          i, output, outputValues, correct, dontCare;
+
+      resetBoards();
+      boards[0].connectors.input.setHoleValues(test.input);
+      resolveBoards();
+
       outputValues = boards[1].connectors.output.getHoleValues();
       output = [];
       for (i = 0; i < test.output.length; i++) {
@@ -272,10 +316,16 @@ module.exports = React.createClass({
       return allCorrect;
     };
 
-    // check each test
+    // generate and check each test
+    tests = generateTests();
     for (i = 0; i < tests.length; i++) {
       allCorrect = runTest(tests[i], truthTable) && allCorrect;
     }
+
+    // reset to 0 inputs
+    resetBoards();
+    boards[0].connectors.input.clearHoleValues();
+    resolveBoards();
 
     callback(allCorrect, truthTable);
   },
