@@ -83,12 +83,12 @@ LogicChip.prototype.resolveOutputValues = function () {
       break;
 
     case '7404':
-      this.pins[1].setValue(this.pins[0].getValue()  ? 0 : 1);
-      this.pins[3].setValue(this.pins[2].getValue()  ? 0 : 1);
-      this.pins[5].setValue(this.pins[4].getValue()  ? 0 : 1);
-      this.pins[7].setValue(this.pins[6].getValue()  ? 0 : 1);
-      this.pins[9].setValue(this.pins[8].getValue()  ? 0 : 1);
-      this.pins[11].setValue(this.pins[10].getValue()  ? 0 : 1);
+      this.pins[1].setValue(this.pins[0].getValue() ? 0 : 1);
+      this.pins[3].setValue(this.pins[2].getValue() ? 0 : 1);
+      this.pins[5].setValue(this.pins[4].getValue() ? 0 : 1);
+      this.pins[7].setValue(this.pins[8].getValue() ? 0 : 1);
+      this.pins[9].setValue(this.pins[10].getValue() ? 0 : 1);
+      this.pins[11].setValue(this.pins[12].getValue() ? 0 : 1);
       break;
 
     case '7411':

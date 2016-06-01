@@ -215,6 +215,8 @@ module.exports = React.createClass({
     components = (boardInfo ? boardInfo.components : null) || [];
     board.updateComponents(components);
 
+    board.resolveIOValues();
+
     this.setState({boards: this.state.boards});
   },
 
