@@ -2,7 +2,7 @@ var LogicChipView = React.createFactory(require('../../views/logic-gates/logic-c
     Pin = require('../shared/pin');
 
 var LogicChip = function (options) {
-  var i, pin, notConnectable, outputPins;
+  var i, pin, outputPins;
 
   this.name = 'logic-chip';
   this.view = LogicChipView;
@@ -19,8 +19,6 @@ var LogicChip = function (options) {
   this.pins = [];
   this.pinMap = {};
   for (i = 0; i < 14; i++) {
-    notConnectable = [6, 13].indexOf(i) !== -1;
-
     if (this.type == '7404') {
       outputPins = [1, 3, 5, 6, 7, 9, 11, 13];
     }
@@ -30,7 +28,7 @@ var LogicChip = function (options) {
 
     pin = {
       number: i,
-      value: 0,
+      value: i == 13 ? 1 : 0,
       inputMode: outputPins.indexOf(i) === -1,
       placement: i < 7 ? 'left' : 'right',
       x: 0,
@@ -39,7 +37,9 @@ var LogicChip = function (options) {
       width: 0,
       labelSize: 0,
       component: this,
-      notConnectable: notConnectable
+      notConnectable: false,
+      isGround: i == 6,
+      isVcc: i == 13
     };
     pin.label = {
       x: 0,
