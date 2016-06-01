@@ -190,7 +190,7 @@ module.exports = React.createClass({
     labelText = text({key: 'label', x: label.x, y: label.y, fontSize: label.labelSize, fill: '#fff', style: {textAnchor: label.anchor}}, label.text);
 
     rectParams = {x: position.x, y: position.y, width: position.width, height: position.height, fill: '#333'};
-    if (this.props.componentSelected) {
+    if (this.props.editable && this.props.selected && this.props.componentSelected) {
       rectParams.stroke = '#f00';
       rectParams.strokeWidth = 2;
     }
