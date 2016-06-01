@@ -11,7 +11,7 @@ var PinView = React.createFactory(require('../shared/pin')),
 module.exports = React.createClass({
   displayName: 'LogicChipView',
 
-  getInitialState: function () {
+  componentWillMount: function () {
     var pos = this.props.snapToGrid(this.props.component.layout);
     this.props.component.position = {
       x: pos.x,
@@ -19,10 +19,6 @@ module.exports = React.createClass({
       width: this.props.component.layout.width,
       height: this.props.component.layout.height
     };
-    return this.props.component.position;
-  },
-
-  componentWillMount: function () {
     if (this.props.startDragPos) {
       this.startDrag(this.props.startDragPos);
     }
@@ -31,7 +27,6 @@ module.exports = React.createClass({
   setPosition: function (x, y) {
     this.props.component.position.x = x;
     this.props.component.position.y = y;
-    this.setState({x: x, y: y});
   },
 
   pinWire: function (pin, dx) {
@@ -70,12 +65,13 @@ module.exports = React.createClass({
   layout: function () {
     var label = this.props.component.label,
         selectedConstants = constants.selectedConstants(this.props.selected),
+        position = this.props.component.position,
         pinDX, pinDY, i, j, pin, pinNumber, xOffset, y;
 
-    pinDX = (this.state.width - (selectedConstants.PIN_WIDTH * 7)) / 8;
+    pinDX = (position.width - (selectedConstants.PIN_WIDTH * 7)) / 8;
 
     for (i = 0; i < 2; i++) {
-      y = i === 0 ? this.state.y + this.state.height : this.state.y - selectedConstants.PIN_HEIGHT;
+      y = i === 0 ? position.y + position.height : position.y - selectedConstants.PIN_HEIGHT;
       pinDY = i === 0 ? -(selectedConstants.PIN_HEIGHT / 2) : 2 * selectedConstants.PIN_HEIGHT;
 
       for (j = 0; j < 7; j++) {
@@ -83,7 +79,7 @@ module.exports = React.createClass({
         pin = this.props.component.pins[pinNumber];
         xOffset = i === 0 ? j : 6 - j;
 
-        pin.x = this.state.x + pinDX + (xOffset * (selectedConstants.PIN_WIDTH + pinDX));
+        pin.x = position.x + pinDX + (xOffset * (selectedConstants.PIN_WIDTH + pinDX));
         pin.y = y;
 
         pin.cx = pin.x + (selectedConstants.PIN_WIDTH / 2);
@@ -97,15 +93,16 @@ module.exports = React.createClass({
       }
     }
 
-    label.x = this.state.x + (this.state.width / 2);
-    label.y = this.state.y + (this.state.height / 2) + (selectedConstants.CHIP_LABEL_SIZE / 4);
+    label.x = position.x + (position.width / 2);
+    label.y = position.y + (position.height / 2) + (selectedConstants.CHIP_LABEL_SIZE / 4);
     label.labelSize = selectedConstants.CHIP_LABEL_SIZE;
   },
 
   startDrag: function (startDragPos) {
     var $window = $(window),
-        startX = this.state.x,
-        startY = this.state.y,
+        position = this.props.component.position,
+        startX = position.x,
+        startY = position.y,
         startDragX = startDragPos.x,
         startDragY = startDragPos.y,
         self = this,
@@ -114,23 +111,24 @@ module.exports = React.createClass({
 
     drag = function (e) {
       var r = self.props.logicChipDragRect,
-          newX = Math.min(r.right - self.state.width, Math.max(r.left, startX + (e.pageX - startDragX))),
-          newY = Math.min(r.bottom - self.state.height, Math.max(r.top, startY + (e.pageY - startDragY)));
+          newX = Math.min(r.right - position.width, Math.max(r.left, startX + (e.pageX - startDragX))),
+          newY = Math.min(r.bottom - position.height, Math.max(r.top, startY + (e.pageY - startDragY)));
 
       moved = true;
       e.preventDefault();
       e.stopPropagation();
       self.setPosition(newX, newY);
+      self.setState({dragging: true});
       self.props.layoutChanged();
     };
 
     stopDrag = function (e) {
-      var pos = self.props.snapToGrid(self.state);
+      var pos = self.props.snapToGrid(self.props.component.position);
       e.stopPropagation();
       e.preventDefault();
       self.setPosition(pos.x, pos.y);
       if (self.props.stopLogicChipDrawerDrag) {
-        self.props.stopLogicChipDrawerDrag({type: self.props.component.type, x: self.state.x, y: self.state.y});
+        self.props.stopLogicChipDrawerDrag({type: self.props.component.type, x: position.x, y: position.y});
       }
       else if (moved) {
         events.logEvent(events.MOVE_LOGIC_CHIP_EVENT, null, {board: self.props.component.board, chip: self.props.component});
@@ -138,6 +136,7 @@ module.exports = React.createClass({
       if (!moved && self.props.componentClicked) {
         self.props.componentClicked(self.props.component);
       }
+      self.setState({dragging: false});
       self.props.layoutChanged();
       $window.off('mousemove', drag);
       $window.off('mouseup', stopDrag);
@@ -165,6 +164,7 @@ module.exports = React.createClass({
   render: function () {
     var pins = [],
         selectedConstants = constants.selectedConstants(this.props.selected),
+        position = this.props.component.position,
         pin,
         i, groundComponent, vccComponents, vccPos, label, labelText, rectParams;
 
@@ -189,7 +189,7 @@ module.exports = React.createClass({
     label = this.props.component.label;
     labelText = text({key: 'label', x: label.x, y: label.y, fontSize: label.labelSize, fill: '#fff', style: {textAnchor: label.anchor}}, label.text);
 
-    rectParams = {x: this.state.x, y: this.state.y, width: this.state.width, height: this.state.height, fill: '#333'};
+    rectParams = {x: position.x, y: position.y, width: position.width, height: position.height, fill: '#333'};
     if (this.props.componentSelected) {
       rectParams.stroke = '#f00';
       rectParams.strokeWidth = 2;

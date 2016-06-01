@@ -301,7 +301,6 @@ Board.prototype.updateComponents = function (newSerializedComponents) {
   // compare the current components with the new components
   $.each(currentSerializedComponents, function (name) {
     if (newSerializedComponents[name]) {
-      // TODO: make sure the position is correct
       self.components[name].position.x = newSerializedComponents[name].x;
       self.components[name].position.y = newSerializedComponents[name].y;
 

@@ -5,7 +5,6 @@ var Connector = require('../../models/shared/connector'),
     userController = require('../../controllers/shared/user'),
     logController = require('../../controllers/shared/log'),
     SidebarChatView = React.createFactory(require('../shared/sidebar-chat')),
-    DemoControlView = React.createFactory(require('./demo-control')),
     WeGotItView = React.createFactory(require('../shared/we-got-it')),
     WorkspaceView = React.createFactory(require('./workspace')),
     constants = require('./constants'),
@@ -37,9 +36,6 @@ module.exports = React.createClass({
 
     return {
       boards: boards,
-      showDemo: window.location.search.indexOf('demo') !== -1,
-      addedAllWires: false,
-      addedAllChips: false,
       userBoardNumber: -1,
       users: {},
       currentBoard: 0,
@@ -208,51 +204,6 @@ module.exports = React.createClass({
     boardWatcher.removeListener(this.state.boards[1], this.updateWatchedBoard);
   },
 
-  toggleAllChipsAndWires: function () {
-    var b0 = this.state.boards[0],
-        b0chip = b0.components.l1.pins,
-        b0i = b0.connectors.input.holes,
-        b0o = b0.connectors.output.holes,
-
-        b1 = this.state.boards[1],
-        b1chip = b1.components.l1.pins,
-        b1o = b1.connectors.output.holes,
-        b1i = b1.connectors.input.holes,
-
-        wire, boardWires, i, j;
-
-    boardWires = [
-      [
-        {source: b0i[0], dest: b0chip[12], color: b0i[0].color},
-        {source: b0i[1], dest: b0chip[1], color: b0i[1].color},
-        {source: b0i[2], dest: b0chip[0], color: b0i[2].color},
-        {source: b0i[3], dest: b0chip[11], color: b0i[3].color},
-
-        {source: b0chip[2], dest: b0o[0], color: b0o[0].color},
-        {source: b0chip[10], dest: b0o[3], color: b0o[3].color}
-      ],
-      [
-        {source: b1i[0], dest: b1chip[0], color: b1i[0].color},
-        {source: b1i[3], dest: b1chip[1], color: b1i[3].color},
-
-        {source: b1chip[2], dest: b1o[0], color: b1o[0].color}
-      ]
-    ];
-
-    for (i = 0; i < this.state.boards.length; i++) {
-      this.state.boards[i].clear();
-      if (!this.state.addedAllChipsAndWires) {
-        for (j = 0; j < boardWires[i].length; j++) {
-          wire = boardWires[i][j];
-          this.state.boards[i].addWire(wire.source, wire.dest, wire.color);
-        }
-      }
-      boardWatcher.circuitChanged(this.state.boards[i]);
-    }
-
-    this.setState({addedAllChipsAndWires: !this.state.addedAllChipsAndWires});
-  },
-
   updateWatchedBoard: function (board, boardInfo) {
     var wires, components;
 
@@ -334,8 +285,7 @@ module.exports = React.createClass({
       WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect}),
       div({id: 'logicapp'},
         WorkspaceView({constants: constants, boards: this.state.boards, users: this.state.users, userBoardNumber: this.state.userBoardNumber, activity: this.state.activity}),
-        this.state.showDemo ? DemoControlView({top: 0, toggleAllChipsAndWires: this.toggleAllChipsAndWires, addedAllChipsAndWires: this.state.addedAllChipsAndWires}) : null,
-        SidebarChatView({numClients: 2, top: this.state.showDemo ? 75 : 0})
+        SidebarChatView({numClients: 2, top: 0})
       )
     );
   }

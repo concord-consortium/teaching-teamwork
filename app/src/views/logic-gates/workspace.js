@@ -8,7 +8,8 @@ module.exports = React.createClass({
 
   getInitialState: function () {
     return {
-      selectedBoard: null
+      selectedBoard: null,
+      userBoardNumber: -1
     };
   },
 
@@ -25,7 +26,13 @@ module.exports = React.createClass({
   },
 
   componentWillReceiveProps: function (nextProps) {
-    this.setState({selectedBoard: nextProps.boards[nextProps.userBoardNumber]});
+    // show only the board when the user selects a board at the start
+    if (this.state.userBoardNumber != nextProps.userBoardNumber) {
+      this.setState({
+        userBoardNumber: nextProps.userBoardNumber,
+        selectedBoard: nextProps.boards[nextProps.userBoardNumber]
+      });
+    }
   },
 
   render: function () {
