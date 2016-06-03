@@ -1990,12 +1990,17 @@ module.exports = React.createClass({
 
   componentWillMount: function () {
     var pos = this.props.snapToGrid(this.props.component.layout);
-    this.props.component.position = {
-      x: pos.x,
-      y: pos.y,
-      width: this.props.component.layout.width,
-      height: this.props.component.layout.height
-    };
+    if (!this.props.component.position) {
+      this.props.component.position = {
+        x: pos.x,
+        y: pos.y
+      };
+    }
+    // TODO: fix me - the width and height are not set when the chip is dragged to the board
+    if (!this.props.component.position.width) {
+      this.props.component.position.width = this.props.component.layout.width;
+      this.props.component.position.height = this.props.component.layout.height;
+    }
     if (this.props.startDragPos) {
       this.startDrag(this.props.startDragPos);
     }
@@ -2104,21 +2109,20 @@ module.exports = React.createClass({
       e.stopPropagation();
       e.preventDefault();
       self.setPosition(pos.x, pos.y);
+      self.setState({dragging: false});
       if (self.props.stopLogicChipDrawerDrag) {
         self.props.stopLogicChipDrawerDrag({type: self.props.component.type, x: position.x, y: position.y});
       }
       else if (moved) {
         events.logEvent(events.MOVE_LOGIC_CHIP_EVENT, null, {board: self.props.component.board, chip: self.props.component});
       }
-      if (!moved && self.props.componentClicked) {
-        self.props.componentClicked(self.props.component);
-      }
-      self.setState({dragging: false});
       self.props.layoutChanged();
       $window.off('mousemove', drag);
       $window.off('mouseup', stopDrag);
     };
-
+    if (self.props.componentClicked) {
+      this.props.componentClicked(this.props.component);
+    }
     $window.on('mousemove', drag);
     $window.on('mouseup', stopDrag);
   },
@@ -2134,6 +2138,7 @@ module.exports = React.createClass({
       '7408': 'Quad 2-Input AND',
       '7432': 'Quad 2-Input OR',
       '7404': 'Hex Inverter',
+      '7411': 'Tri 3-Input AND'
     };
     return titles[this.props.component.type];
   },
