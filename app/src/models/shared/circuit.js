@@ -27,7 +27,7 @@ Circuit.FindTerminal = function (wire, pinOrHole) {
       foundWire = true,
       otherConnector, otherHole, otherWire, i;
 
-  while (terminal.connector && foundWire) {
+  while (terminal.connector && terminal.connector.connectsTo && foundWire) {
     otherConnector = terminal.connector.connectsTo;
     otherHole = otherConnector.holes[terminal.index];
 
@@ -62,17 +62,17 @@ Circuit.prototype.resolveInputValues = function () {
       output = this.source;
     }
   }
-  else if (this.source.isPin && !this.source.inputMode) {
-    input = this.dest;
-    output = this.source;
+  else if (this.source.isPin) {
+    input = this.source.inputMode ? this.source : this.dest;
+    output = this.source.inputMode ? this.dest : this.source;
   }
-  else if (this.dest.isPin && !this.dest.inputMode) {
-    input = this.source;
-    output = this.dest;
+  else if (this.dest.isPin) {
+    input = this.dest.inputMode ? this.dest : this.source;
+    output = this.dest.inputMode ? this.source : this.dest;
   }
 
   if (input && output) {
-    input.setValue(output.value);
+    input.setValue(output.getValue());
   }
 };
 

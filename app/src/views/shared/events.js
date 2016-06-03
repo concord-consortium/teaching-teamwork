@@ -13,6 +13,9 @@ module.exports = events = {
   STOP_EVENT: 'Stop',
   STEP_EVENT: 'Step',
   RESET_EVENT: 'Reset',
+  ADD_LOGIC_CHIP_EVENT: 'Add Logic Chip',
+  REMOVE_LOGIC_CHIP_EVENT: 'Remove Logic Chip',
+  MOVE_LOGIC_CHIP_EVENT: 'Move Logic Chip',
 
   logEvent: function (eventName, value, parameters) {
     var loggedValue = null,
@@ -39,6 +42,24 @@ module.exports = events = {
     else if (eventName == events.REMOVE_WIRE_EVENT) {
       loggedParameters = {
         source: parameters.board.serializeEndpoint(parameters.source, 'type')
+      };
+      boardWatcher.circuitChanged(parameters.board);
+    }
+    else if (eventName == events.ADD_LOGIC_CHIP_EVENT) {
+      // TODO
+      loggedParameters = {
+      };
+      boardWatcher.circuitChanged(parameters.board);
+    }
+    else if (eventName == events.REMOVE_LOGIC_CHIP_EVENT) {
+      // TODO
+      loggedParameters = {
+      };
+      boardWatcher.circuitChanged(parameters.board);
+    }
+    else if (eventName == events.MOVE_LOGIC_CHIP_EVENT) {
+      // TODO
+      loggedParameters = {
       };
       boardWatcher.circuitChanged(parameters.board);
     }

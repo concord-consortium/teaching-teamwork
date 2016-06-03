@@ -1,0 +1,507 @@
+var boardWatcher = require('../../controllers/pic/board-watcher'),
+    ConnectorView = React.createFactory(require('./connector')),
+    WireView = React.createFactory(require('./wire')),
+    ProbeView = React.createFactory(require('./probe')),
+    LogicChipDrawerView = React.createFactory(require('./logic-chip-drawer')),
+    events = require('../shared/events'),
+    layout = require('./layout'),
+    LogicChip =  require('../../models/logic-gates/logic-chip'),
+    div = React.DOM.div,
+    span = React.DOM.span,
+    div = React.DOM.div,
+    svg = React.DOM.svg,
+    //line = React.DOM.line,
+    path = React.DOM.path,
+    button = React.DOM.button;
+
+module.exports = React.createClass({
+  displayName: 'BoardView',
+
+  toggleBoard: function () {
+    this.props.toggleBoard(this.props.board);
+  },
+
+  getInitialState: function () {
+    return {
+      drawConnection: null,
+      hoverSource: null,
+      wires: this.props.board.wires,
+      probeSource: this.props.board.probe ? this.props.board.probe.source : null,
+      probePos: this.props.board.probe ? this.props.board.probe.pos : null,
+      selectedWires: [],
+      selectedComponents: [],
+      drawBox: null,
+      draggingProbe: false,
+      draggingChip: null,
+      logicChipDrawer: this.initLogicChipDrawer(this.props.logicChipDrawer),
+      nextChipNumber: 0
+    };
+  },
+
+  componentDidMount: function () {
+    boardWatcher.addListener(this.props.board, this.updateWatchedBoard);
+    $(window).on('keyup', this.keyUp);
+    $(window).on('keydown', this.keyDown);
+
+    // used to find wire click position
+    this.svgOffset = $(this.refs.svg).offset();
+  },
+
+  componentWillReceiveProps: function (nextProps) {
+    if (!this.state.logicChipDrawer && nextProps.logicChipDrawer) {
+      this.setState({logicChipDrawer: this.initLogicChipDrawer(nextProps.logicChipDrawer)});
+    }
+  },
+
+  componentWillUnmount: function () {
+    boardWatcher.removeListener(this.props.board, this.updateWatchedBoard);
+    $(window).off('keyup', this.keyUp);
+    $(window).off('keydown', this.keyDown);
+  },
+
+  initLogicChipDrawer: function (rawData) {
+    if (rawData) {
+      $.each(rawData.chips, function (type, chip) {
+        chip.count = 0;
+      });
+    }
+    return rawData;
+  },
+
+  keyDown: function (e) {
+    // 46 is the delete key which maps to 8 on Macs
+    // this is needed so Chrome on Macs don't trigger a back navigation
+    if ((e.keyCode == 46) || (e.keyCode == 8)) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  },
+
+  keyUp: function (e) {
+    var wiresToRemove = [],
+        i, j, selectedComponent, wire;
+
+    // 46 is the delete key which maps to 8 on Macs
+    if (!((e.keyCode == 46) || (e.keyCode == 8))) {
+      return;
+    }
+
+    if (this.props.selected && this.props.editable) {
+
+      // mark selected wires to remove
+      for (i = 0; i < this.state.selectedWires.length; i++) {
+        wire = this.state.selectedWires[i];
+        if (wiresToRemove.indexOf(wire) === -1) {
+          wiresToRemove.push(wire);
+        }
+      }
+
+      // remove components
+      for (i = 0; i < this.state.selectedComponents.length; i++) {
+        selectedComponent = this.state.selectedComponents[i];
+
+        // mark connected wires to removed component
+        for (j = 0; j < this.props.board.wires.length; j++) {
+          wire = this.props.board.wires[j];
+          if ((wiresToRemove.indexOf(wire) === -1) && ((wire.source.component == selectedComponent) || (wire.dest.component == selectedComponent))) {
+            wiresToRemove.push(wire);
+          }
+        }
+
+        if (selectedComponent instanceof LogicChip) {
+          this.removeLogicChip(selectedComponent);
+        }
+        else {
+          this.props.board.removeComponent(selectedComponent);
+          events.logEvent(events.REMOVE_COMPONENT, null, {board: this.props.board, component: selectedComponent});
+        }
+      }
+
+      for (i = 0; i < wiresToRemove.length; i++) {
+        wire = wiresToRemove[i];
+        this.props.board.removeWire(wire.source, wire.dest);
+        events.logEvent(events.REMOVE_WIRE_EVENT, null, {board: this.props.board, source: wire.source});
+      }
+
+      this.setState({
+        wires: this.props.board.wires,
+        selectedWires: [],
+        selectedComponents: []
+      });
+    }
+    e.preventDefault();
+    e.stopPropagation();
+  },
+
+  updateWatchedBoard: function (board, boardInfo) {
+    var probe = {source: null, pos: null},
+        probeInfo;
+
+    // move the probe
+    if (boardInfo && boardInfo.probe) {
+      probeInfo = boardInfo.probe;
+      if (probeInfo.to === 'pin') {
+        probe.source = board.components[probeInfo.component].pins[probeInfo.pin.index];
+      }
+      else if (probeInfo.to === 'hole') {
+        probe.source = board.connectors[probeInfo.connector].holes[probeInfo.hole.index];
+      }
+    }
+    this.setProbe(probe);
+  },
+
+  reportHover: function (hoverSource) {
+    this.setState({hoverSource: hoverSource});
+  },
+
+  setProbe: function (probe) {
+    this.props.board.probe = probe;
+    this.setState({probeSource: probe.source, probePos: probe.pos});
+  },
+
+  drawConnection: function (source, e, color, callback) {
+    var $window = $(window),
+        self = this,
+        moved = false,
+        drag, stopDrag;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    drag = function (e) {
+      if (!moved) {
+        self.setState({
+          selectedWires: [],
+          selectedComponents: [],
+          drawConnection: {
+            x1: source.cx,
+            y1: source.cy,
+            x2: source.cx,
+            y2: source.cy,
+            strokeWidth: self.props.constants.selectedConstants(self.props.selected).WIRE_WIDTH,
+            stroke: '#f00',
+            reflection: source.getBezierReflection() * self.props.board.bezierReflectionModifier
+          }
+        });
+      }
+      moved = true;
+      e.preventDefault();
+      self.state.drawConnection.x2 = e.pageX - self.svgOffset.left;
+      self.state.drawConnection.y2 = e.pageY - self.svgOffset.top;
+      self.setState({drawConnection: self.state.drawConnection});
+    };
+
+    stopDrag = function (e) {
+      var dest = self.state.hoverSource,
+          addedWire = false,
+          wire;
+
+      e.stopPropagation();
+      e.preventDefault();
+
+      $window.off('mousemove', drag);
+      $window.off('mouseup', stopDrag);
+      self.setState({drawConnection: null});
+
+      if (moved && dest && (dest !== source)) {
+        addedWire = true;
+        wire = self.props.board.addWire(source, dest, (source.color || dest.color || color));
+        self.setState({
+          wires: self.props.board.wires,
+          selectedWires: [wire],
+          selectedComponents: []
+        });
+        events.logEvent(events.ADD_WIRE_EVENT, null, {board: self.props.board, source: source, dest: dest});
+      }
+
+      if (callback) {
+        callback(addedWire, moved);
+      }
+    };
+
+    $window.on('mousemove', drag);
+    $window.on('mouseup', stopDrag);
+  },
+
+  distance: function (endpoint, x, y) {
+    var a = endpoint.cx - x,
+        b = endpoint.cy - y;
+    return Math.sqrt((a*a) + (b*b));
+  },
+
+  wireSelected: function (wire, e) {
+    // check if click is near an endpoint
+    var x = e.pageX - this.svgOffset.left,
+        y = e.pageY - this.svgOffset.top,
+        sourceDistance = this.distance(wire.source, x, y),
+        destDistance = this.distance(wire.dest, x, y),
+        shortestDistance = Math.min(sourceDistance, destDistance),
+        self = this;
+
+    if (shortestDistance <= 20) {
+      this.props.board.removeWire(wire.source, wire.dest);
+      this.setState({
+        wires: this.props.board.wires,
+        selectedWires: [],
+        selectedComponents: []
+      });
+      this.drawConnection(shortestDistance == sourceDistance ? wire.dest : wire.source, e, wire.color, function (addedWire) {
+        var newWire;
+        if (!addedWire) {
+          newWire = self.props.board.addWire(wire.source, wire.dest, wire.color);
+          self.setState({
+            wires: self.props.board.wires,
+            selectedWires: [newWire],
+            selectedComponents: []
+          });
+        }
+      });
+    }
+    else {
+      this.setState({selectedWires: [wire], selectedComponents: []});
+    }
+  },
+
+  backgroundMouseDown: function (e) {
+    var $window = $(window),
+        self = this,
+        drag, stopDrag, getPath, x1, y1;
+
+    this.setState({selectedWires: [], selectedComponents: []});
+
+    // allow for bounding box drawing around wires for mass selection
+    e.preventDefault();
+
+    x1 = e.pageX - this.svgOffset.left;
+    y1 = e.pageY - this.svgOffset.top;
+
+    // use path instead of rect as svg rect doesn't support negative widths or heights
+    getPath = function (x2, y2) {
+      return ["M", x1, ",", y1, " ", x2, ",", y1, " ", x2, ",", y2, " ", x1, ",", y2, " ", x1, ",", y1].join("");
+    };
+
+    this.setState({
+      drawBox: {
+        x1: x1,
+        y1: y1,
+        path: getPath(x1, y1),
+        strokeWidth: this.props.constants.selectedConstants(this.props.selected).WIRE_WIDTH,
+        stroke: '#555',
+        strokeDasharray: [10, 5]
+      }
+    });
+
+    drag = function (e) {
+      var x2 = e.pageX - self.svgOffset.left,
+          y2 = e.pageY - self.svgOffset.top;
+      e.preventDefault();
+      self.state.drawBox.x2 = x2;
+      self.state.drawBox.y2 = y2;
+      self.state.drawBox.path = getPath(x2, y2);
+      self.setState({drawBox: self.state.drawBox});
+    };
+
+    stopDrag = function (e) {
+      var selectedWires = [],
+          selectedComponents = [],
+          r, enclosed, i, wire, component;
+
+      e.stopPropagation();
+      e.preventDefault();
+      $window.off('mousemove', drag);
+      $window.off('mouseup', stopDrag);
+
+      // check bounding box for wires
+      r = {
+        x1: Math.min(self.state.drawBox.x1, self.state.drawBox.x2),
+        y1: Math.min(self.state.drawBox.y1, self.state.drawBox.y2),
+        x2: Math.max(self.state.drawBox.x1, self.state.drawBox.x2),
+        y2: Math.max(self.state.drawBox.y1, self.state.drawBox.y2)
+      };
+      enclosed = function (x, y) {
+        return (r.x1 <= x) && (x <= r.x2) && (r.y1 <= y) && (y <= r.y2);
+      };
+      for (i = 0; i < self.props.board.wires.length; i++) {
+        wire = self.props.board.wires[i];
+        if (enclosed(wire.source.cx, wire.source.cy) || enclosed(wire.dest.cx, wire.dest.cy)) {
+          selectedWires.push(wire);
+        }
+      }
+      for (i = 0; i < self.props.board.componentList.length; i++) {
+        component = self.props.board.componentList[i];
+        if (component.selectable && enclosed(component.position.x, component.position.y)) {
+          selectedComponents.push(component);
+        }
+      }
+
+      self.setState({
+        drawBox: null,
+        selectedWires: selectedWires,
+        selectedComponents: selectedComponents
+      });
+    };
+
+    $window.on('mousemove', drag);
+    $window.on('mouseup', stopDrag);
+  },
+
+  draggingProbe: function (draggingProbe) {
+    this.setState({draggingProbe: draggingProbe});
+  },
+
+  layoutChanged: function () {
+    this.setState({wires: this.state.wires});
+  },
+
+  snapToGrid: function (pos) {
+    var selectedConstants = this.props.constants.selectedConstants(this.props.selected),
+        gridSize = selectedConstants.PIN_WIDTH;
+    return {
+      x: gridSize * Math.round(pos.x / gridSize),
+      y: gridSize * Math.round(pos.y / gridSize)
+    };
+  },
+
+  startLogicChipDrawerDrag: function (chip, pageX, pageY) {
+    var chipCX = 75,
+        chipCY = 37,
+        chipX = pageX - this.svgOffset.left - chipCX,
+        chipY = pageY - this.svgOffset.top - chipCY,
+        draggingChip = new LogicChip({type: chip.type, layout: {x: chipX, y: chipY, width: 150, height: 75}});
+
+    this.setState({
+      selectedWires: [],
+      selectedComponents: [],
+      draggingChip: {
+        type: chip.type,
+        view: draggingChip.view({
+          constants: this.props.constants,
+          component: draggingChip,
+          startDragPos: {x: pageX, y: pageY},
+          stopLogicChipDrawerDrag: this.stopLogicChipDrawerDrag,
+          layoutChanged: this.layoutChanged,
+          snapToGrid: this.snapToGrid,
+          selected: true,
+          componentSelected: true,
+          logicChipDragRect: this.getLogicChipDragRect()
+        })
+      }
+    });
+  },
+
+  stopLogicChipDrawerDrag: function (chip) {
+    var r = this.getLogicChipDragRect();
+
+    // don't add if hidden by drawer
+    if (chip.x < r.right - 100) {
+      var component = new LogicChip({type: chip.type, layout: {x: chip.x, y: chip.y, width: 150, height: 75}, selectable: true});
+      this.addLogicChip(component);
+      this.setState({draggingChip: null, selectedWires: [], selectedComponents: [component]});
+    }
+    else {
+      this.setState({draggingChip: null});
+    }
+  },
+
+  addLogicChip: function (chip, name) {
+    var logicChipDrawer = this.state.logicChipDrawer;
+
+    name = name || "lc" + this.state.nextChipNumber;
+    this.props.board.addComponent(name, chip);
+    events.logEvent(events.ADD_LOGIC_CHIP_EVENT, null, {board: this.props.board, chip: chip});
+
+    logicChipDrawer.chips[chip.type].count++;
+    this.setState({
+      logicChipDrawer: logicChipDrawer,
+      nextChipNumber: this.state.nextChipNumber + 1
+    });
+  },
+
+  removeLogicChip: function (chip) {
+    var logicChipDrawer = this.state.logicChipDrawer;
+
+    this.props.board.removeComponent(chip);
+    events.logEvent(events.REMOVE_LOGIC_CHIP_EVENT, null, {board: this.props.board, chip: chip});
+
+    logicChipDrawer.chips[chip.type].count--;
+    this.setState({logicChipDrawer: logicChipDrawer});
+  },
+
+  componentSelected: function (component) {
+    this.setState({selectedWires: [], selectedComponents: [component]});
+  },
+
+  getLogicChipDragRect: function () {
+    var selectedConstants = this.props.constants.selectedConstants(this.props.selected);
+    return selectedConstants.LOGIC_DRAWER_LAYOUT ? {
+      top: 10,
+      left: 10,
+      right: this.props.constants.WORKSPACE_WIDTH - selectedConstants.LOGIC_DRAWER_LAYOUT.width - 10,
+      bottom: selectedConstants.BOARD_HEIGHT - 10
+    } : {};
+  },
+
+  render: function () {
+    var selectedConstants = this.props.constants.selectedConstants(this.props.selected),
+        style = {
+          width: this.props.constants.WORKSPACE_WIDTH,
+          height: selectedConstants.BOARD_HEIGHT,
+          position: 'relative'
+        },
+        connectors = [],
+        components = [],
+        wires = [],
+        componentIndex = 0,
+        editableWires = !this.state.draggingProbe && !this.state.drawConnection && !this.state.drawBox && (this.props.editable && this.props.selected),
+        logicChipDragRect = this.getLogicChipDragRect(),
+        name, component, i, wire;
+
+    // used to find wire click position
+    this.svgOffset = $(this.refs.svg).offset();
+
+    // resolve input values
+    this.props.board.resolveCircuitInputValues();
+
+    // calculate the position so the wires can be updated
+    if (this.props.board.connectors.input) {
+      this.props.board.connectors.input.calculatePosition(this.props.constants, this.props.selected);
+      connectors.push(ConnectorView({key: 'input', constants: this.props.constants, connector: this.props.board.connectors.input, selected: this.props.selected, editable: this.props.editable, drawConnection: this.drawConnection, reportHover: this.reportHover}));
+    }
+    if (this.props.board.connectors.output) {
+      this.props.board.connectors.output.calculatePosition(this.props.constants, this.props.selected);
+      connectors.push(ConnectorView({key: 'output', constants: this.props.constants, connector: this.props.board.connectors.output, selected: this.props.selected, editable: this.props.editable, drawConnection: this.drawConnection, reportHover: this.reportHover}));
+    }
+
+    for (name in this.props.board.components) {
+      if (this.props.board.components.hasOwnProperty(name)) {
+        component = this.props.board.components[name];
+        if (component.calculatePosition) {
+          component.calculatePosition(this.props.constants, this.props.selected, componentIndex++, this.props.board.numComponents);
+        }
+        components.push(component.view({key: name, constants: this.props.constants, component: component, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.drawConnection, reportHover: this.reportHover, layoutChanged: this.layoutChanged, snapToGrid: this.snapToGrid, componentSelected: this.state.selectedComponents.indexOf(component) !== -1, componentClicked: this.componentSelected, logicChipDragRect: logicChipDragRect}));
+      }
+    }
+
+    for (i = 0; i < this.props.board.wires.length; i++) {
+      wire = this.props.board.wires[i];
+      wires.push(WireView({key: i, constants: this.props.constants, wire: wire, board: this.props.board, editable: editableWires, width: selectedConstants.WIRE_WIDTH, wireSelected: this.wireSelected, selected: this.state.selectedWires.indexOf(wire) !== -1}));
+    }
+
+    return div({className: this.props.editable ? 'board editable-board' : 'board', style: style},
+      span({className: this.props.editable ? 'board-user editable-board-user' : 'board-user'}, ('Circuit ' + (this.props.board.number + 1) + ': ') + (this.props.user ? this.props.user.name : '(unclaimed)')),
+      svg({className: 'board-area', onMouseDown: this.props.selected && this.props.editable ? this.backgroundMouseDown : null, ref: 'svg'},
+        connectors,
+        components,
+        wires,
+        //(this.state.drawConnection ? line({x1: this.state.drawConnection.x1, x2: this.state.drawConnection.x2, y1: this.state.drawConnection.y1, y2: this.state.drawConnection.y2, stroke: this.state.drawConnection.stroke, strokeWidth: this.state.drawConnection.strokeWidth, fill: 'none', style: {pointerEvents: 'none'}}) : null),
+        (this.state.drawConnection ? path({d: layout.getBezierPath({x1: this.state.drawConnection.x1, x2: this.state.drawConnection.x2, y1: this.state.drawConnection.y1, y2: this.state.drawConnection.y2, reflection: this.state.drawConnection.reflection}), stroke: this.state.drawConnection.stroke, strokeWidth: this.state.drawConnection.strokeWidth, fill: 'none', style: {pointerEvents: 'none'}}) : null),
+
+        (this.state.drawBox ? path({d: this.state.drawBox.path, stroke: this.state.drawBox.stroke, strokeWidth: this.state.drawBox.strokeWidth, strokeDasharray: this.state.drawBox.strokeDasharray, fill: 'none', style: {pointerEvents: 'none'}}) : null),
+        this.state.logicChipDrawer && this.props.editable && this.props.selected ? LogicChipDrawerView({chips: this.state.logicChipDrawer.chips, selected: this.props.selected, editable: this.props.editable, startDrag: this.startLogicChipDrawerDrag, layout: selectedConstants.LOGIC_DRAWER_LAYOUT}) : null,
+        this.props.showProbe ? ProbeView({constants: this.props.constants, board: this.props.board, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, probeSource: this.state.probeSource, hoverSource: this.state.hoverSource, pos: this.state.probePos, setProbe: this.setProbe, svgOffset: this.svgOffset, draggingProbe: this.draggingProbe}) : null,
+        this.state.draggingChip ? this.state.draggingChip.view : null
+      ),
+      this.props.toggleBoard ? span({className: 'board-toggle', style: this.props.toggleBoardButtonStyle}, button({onClick: this.toggleBoard}, this.props.selected ? 'View All Circuits' : (this.props.editable ? 'Edit Circuit' : 'View Circuit'))) : null
+    );
+  }
+});

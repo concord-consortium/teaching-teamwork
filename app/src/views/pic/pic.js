@@ -1,5 +1,4 @@
-var PinView = React.createFactory(require('./pin')),
-    constants = require('./constants'),
+var PinView = React.createFactory(require('../shared/pin')),
     line = React.DOM.line,
     g = React.DOM.g,
     rect = React.DOM.rect,
@@ -18,7 +17,7 @@ module.exports = React.createClass({
   },
 
   wireSegment: function (s, key) {
-    var selectedConstants = constants.selectedConstants(this.props.selected),
+    var selectedConstants = this.props.constants.selectedConstants(this.props.selected),
         segment = {x1: s.x1, y1: s.y1, x2: s.x2, y2: s.y2, strokeWidth: selectedConstants.FOO_WIRE_WIDTH, stroke: '#333'};
     if (key) {
       segment.key = key;
@@ -73,7 +72,7 @@ module.exports = React.createClass({
   },
 
   renderCrystal: function (p) {
-    var selectedConstants = constants.selectedConstants(this.props.selected),
+    var selectedConstants = this.props.constants.selectedConstants(this.props.selected),
         height = p.height / 5,
         width = p.width * 0.8,
         segments = [

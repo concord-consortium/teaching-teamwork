@@ -27,7 +27,7 @@ button {
   font-size: 12px;
 }
 
-#picapp {
+#logicapp {
   width: 936px;
   height: 768px;
   margin: 0 auto;
@@ -35,30 +35,9 @@ button {
   position: relative;
 }
 
-#simulator-control {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 200px;
-  height: 75px;
-  background-color: #777;
-}
-#simulator-control-title {
-  padding: 5px;
-  background-color: #ccc;
-}
-#simulator-control-area {
-  color: #fff;
-  font-size: 12px;
-  text-align: center;
-}
-#simulator-control-area button {
-  margin: 15px 5px;
-}
-
 #demo-control {
   position: absolute;
-  top: 75px;
+  top: 0px;
   right: 0;
   width: 200px;
   height: 75px;
@@ -80,7 +59,7 @@ button {
 
 #sidebar-chat {
   position: absolute;
-  top: 150px;
+  top: 75px;
   right: 0;
   bottom: 0;
   width: 200px;

@@ -1,3 +1,3 @@
 module.exports = {
-  modelsBase: "activities/"
+  modelsBase: "activities/breadboard/"
 };

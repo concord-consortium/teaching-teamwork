@@ -1,5 +1,4 @@
-var PinView = React.createFactory(require('./pin')),
-    constants = require('./constants'),
+var PinView = React.createFactory(require('../shared/pin')),
     text = React.DOM.text,
     path = React.DOM.path,
     g = React.DOM.g,
@@ -11,7 +10,7 @@ module.exports = React.createClass({
   displayName: 'LEDView',
 
   render: function () {
-    var selectedConstants = constants.selectedConstants(this.props.selected),
+    var selectedConstants = this.props.constants.selectedConstants(this.props.selected),
         p = this.props.component.position,
         decimalPoint = this.props.component.decimalPoint,
         pins = [],
@@ -28,7 +27,7 @@ module.exports = React.createClass({
 
     for (i = 0; i < this.props.component.segments.length; i++) {
       segment = this.props.component.segments[i];
-      segments.push(path({key: 'segment' + i, d: segment.pathCommands, fill: segment.pin.connected && !segment.pin.value ? '#ccff00' : constants.UNSELECTED_FILL, transform: segment.transform}));
+      segments.push(path({key: 'segment' + i, d: segment.pathCommands, fill: segment.pin.connected && !segment.pin.getValue() ? '#ccff00' : this.props.constants.UNSELECTED_FILL, transform: segment.transform}));
     }
 
     ccPin = this.props.component.pins[7];
@@ -42,7 +41,7 @@ module.exports = React.createClass({
       rect({x: p.display.x, y: p.display.y, width: p.display.width, height: p.display.height, fill: '#333'}),
       pins,
       segments,
-      circle({cx: decimalPoint.cx, cy: decimalPoint.cy, r: decimalPoint.radius, fill: this.props.component.pinMap.DP.connected && !this.props.component.pinMap.DP.value ? '#ccff00' : constants.UNSELECTED_FILL}),
+      circle({cx: decimalPoint.cx, cy: decimalPoint.cy, r: decimalPoint.radius, fill: this.props.component.pinMap.DP.connected && !this.props.component.pinMap.DP.value ? '#ccff00' : this.props.constants.UNSELECTED_FILL}),
       ccComponents
     );
   }

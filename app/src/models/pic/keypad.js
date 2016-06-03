@@ -1,8 +1,7 @@
 var KeypadView = React.createFactory(require('../../views/pic/keypad')),
-    Pin = require('./pin'),
+    Pin = require('../shared/pin'),
     Button = require('./button'),
-    constants = require('../../views/pic/constants'),
-    layout = require('../../views/pic/layout');
+    layout = require('../../views/shared/layout');
 
 var Keypad = function () {
   var i, pin, button, values;
@@ -64,11 +63,11 @@ var Keypad = function () {
 
   this.listeners = [];
 };
-Keypad.prototype.calculatePosition = function (selected, index, count) {
+Keypad.prototype.calculatePosition = function (constants, selected, index, count) {
   var selectedConstants = constants.selectedConstants(selected),
       padWidth, padHeight, i, pin, j, button, buttonWidth, buttonHeight, buttonDX, buttonDY;
 
-  this.position = layout.calculateComponentRect(selected, index, count, selectedConstants.COMPONENT_WIDTH * 1.5, selectedConstants.COMPONENT_HEIGHT * 1.5);
+  this.position = layout.calculateComponentRect(constants, selected, index, count, selectedConstants.COMPONENT_WIDTH * 1.5, selectedConstants.COMPONENT_HEIGHT * 1.5);
 
   padWidth = this.position.width * 0.8;
   padHeight = this.position.height * 0.9;
@@ -171,16 +170,16 @@ Keypad.prototype.resolveOutputValues = function () {
     intValue = this.pushedButton.intValue;
     bottomButtonIndex = this.bottomButtonValues.indexOf(this.pushedButton.value);
 
-    if (!this.pinMap.ROW0.value && ((intValue >= 1) && (intValue <= 3))) {
+    if (!this.pinMap.ROW0.getValue() && ((intValue >= 1) && (intValue <= 3))) {
       colValue = colValue & ~(1 << (intValue - 1));
     }
-    else if (!this.pinMap.ROW1.value && ((intValue >= 4) && (intValue <= 6))) {
+    else if (!this.pinMap.ROW1.getValue() && ((intValue >= 4) && (intValue <= 6))) {
       colValue = colValue & ~(1 << (intValue - 4));
     }
-    else if (!this.pinMap.ROW2.value && ((intValue >= 7) && (intValue <= 9))) {
+    else if (!this.pinMap.ROW2.getValue() && ((intValue >= 7) && (intValue <= 9))) {
       colValue = colValue & ~(1 << (intValue - 7));
     }
-    else if (!this.pinMap.ROW3.value && (bottomButtonIndex !== -1)) {
+    else if (!this.pinMap.ROW3.getValue() && (bottomButtonIndex !== -1)) {
       colValue = colValue & ~(1 << bottomButtonIndex);
     }
   }

@@ -1,8 +1,7 @@
-var BoardView = React.createFactory(require('./board')),
+var BoardView = React.createFactory(require('../shared/board')),
     BoardEditorView = React.createFactory(require('./board-editor')),
-    RibbonView = React.createFactory(require('./ribbon')),
-    events = require('./events'),
-    constants = require('./constants'),
+    RibbonView = React.createFactory(require('../shared/ribbon')),
+    events = require('../shared/events'),
     div = React.DOM.div;
 
 module.exports = React.createClass({
@@ -30,6 +29,7 @@ module.exports = React.createClass({
     if (this.state.selectedBoard) {
       return div({id: 'workspace'},
         BoardView({
+          constants: this.props.constants,
           key: 'selectedBoard' + this.state.selectedBoard.number,
           board: this.state.selectedBoard,
           selected: true,
@@ -37,38 +37,51 @@ module.exports = React.createClass({
           user: this.props.users[this.state.selectedBoard.number],
           stepping: this.props.stepping,
           showDebugPins: this.props.showDebugPins,
-          toggleBoard: this.toggleBoard
+          toggleBoard: this.toggleBoard,
+          showProbe: true
         }),
-        BoardEditorView({board: this.state.selectedBoard})
+        BoardEditorView({constants: this.props.constants, board: this.state.selectedBoard})
       );
     }
     else {
-      return div({id: 'workspace', style: {width: constants.WORKSPACE_WIDTH}},
+      return div({id: 'workspace', style: {width: this.props.constants.WORKSPACE_WIDTH}},
         BoardView({
+          constants: this.props.constants,
           board: this.props.boards[0],
           editable: this.props.userBoardNumber === 0,
           user: this.props.users[0],
           stepping: this.props.stepping,
           showDebugPins: this.props.showDebugPins,
-          toggleBoard: this.toggleBoard
+          toggleBoard: this.toggleBoard,
+          showProbe: true
         }),
-        RibbonView({connector: this.props.boards[0].connectors.output}),
+        RibbonView({
+          constants: this.props.constants,
+          connector: this.props.boards[0].connectors.output
+        }),
         BoardView({
+          constants: this.props.constants,
           board: this.props.boards[1],
           editable: this.props.userBoardNumber === 1,
           user: this.props.users[1],
           stepping: this.props.stepping,
           showDebugPins: this.props.showDebugPins,
-          toggleBoard: this.toggleBoard
+          toggleBoard: this.toggleBoard,
+          showProbe: true
         }),
-        RibbonView({connector: this.props.boards[1].connectors.output}),
+        RibbonView({
+          constants: this.props.constants,
+          connector: this.props.boards[1].connectors.output
+        }),
         BoardView({
+          constants: this.props.constants,
           board: this.props.boards[2],
           editable: this.props.userBoardNumber === 2,
           user: this.props.users[2],
           stepping: this.props.stepping,
           showDebugPins: this.props.showDebugPins,
-          toggleBoard: this.toggleBoard
+          toggleBoard: this.toggleBoard,
+          showProbe: true
         })
       );
     }

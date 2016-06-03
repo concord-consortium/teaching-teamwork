@@ -10,7 +10,8 @@ module.exports = {
   js: {
     src: {
       breadboard: app + '/src/breadboard.js',
-      pic: app + '/src/pic.js'
+      pic: app + '/src/pic.js',
+      logicGates: app + '/src/logic-gates.js'
     },
     allSrc: app + '/src/**/*',
     allJS: app + '/src/**/*.js',

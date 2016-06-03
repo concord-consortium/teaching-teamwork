@@ -1,0 +1,35 @@
+{
+  "name": "Adder",
+  "input": ["A", "B", "C"],
+  "ribbon": ["A", "B", "C", "D", "E", "F", "G"],
+  "output": ["Sum", "Carry"],
+  "boards": [
+    {
+      "logicChipDrawer": {
+        "chips": {
+          "7404": {"max": 3},
+          "7411": {"max": 3},
+          "7408": {"max": 3}
+        }
+      }
+    },
+    {
+      "logicChipDrawer": {
+        "chips": {
+          "7432": {"max": 5}
+        }
+      }
+    }
+  ],
+  "truthTable": [
+    ["input:A", "input:B", "input:C", "output:Sum", "output:Carry"],
+    [0, 0, 0, 0, 0],
+    [0, 0, 1, 1, 0],
+    [0, 1, 0, 1, 0],
+    [0, 1, 1, 0, 1],
+    [1, 0, 0, 1, 0],
+    [1, 0, 1, 0, 1],
+    [1, 1, 0, 0, 1],
+    [1, 1, 1, 1, 1]
+  ]
+}

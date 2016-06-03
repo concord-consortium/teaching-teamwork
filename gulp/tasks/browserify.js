@@ -21,3 +21,12 @@ gulp.task('browserify-pic', function(){
     .pipe(source('pic.js'))
     .pipe(gulp.dest(config.dest));
 });
+
+gulp.task('browserify-logic-gates', function(){
+  var b = browserify();
+  b.transform(reactify); // use the reactify transform
+  b.add(config.src.logicGates);
+  return b.bundle()
+    .pipe(source('logic-gates.js'))
+    .pipe(gulp.dest(config.dest));
+});

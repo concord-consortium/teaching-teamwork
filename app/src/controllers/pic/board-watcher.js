@@ -30,6 +30,7 @@ BoardWatcher.prototype.pushedButton = function (board, buttonValue) {
 };
 BoardWatcher.prototype.circuitChanged = function (board) {
   this.firebase.child(board.number).child('wires').set(board.serializeWiresToArray());
+  this.firebase.child(board.number).child('components').set(board.serializeComponents());
 };
 BoardWatcher.prototype.addListener = function (board, listener) {
   this.listeners[board.number] = this.listeners[board.number] || [];

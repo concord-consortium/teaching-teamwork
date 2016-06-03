@@ -1,5 +1,5 @@
-var Connector = require('../../models/pic/connector'),
-    Board = require('../../models/pic/board'),
+var Connector = require('../../models/shared/connector'),
+    Board = require('../../models/shared/board'),
     Keypad = require('../../models/pic/keypad'),
     PIC = require('../../models/pic/pic'),
     LED = require('../../models/pic/led'),
@@ -7,12 +7,13 @@ var Connector = require('../../models/pic/connector'),
     boardWatcher = require('../../controllers/pic/board-watcher'),
     userController = require('../../controllers/shared/user'),
     logController = require('../../controllers/shared/log'),
-    WeGotItView = React.createFactory(require('./we-got-it')),
+    WeGotItView = React.createFactory(require('../shared/we-got-it')),
     WorkspaceView = React.createFactory(require('./workspace')),
     SimulatorControlView = React.createFactory(require('./simulator-control')),
     DemoControlView = React.createFactory(require('./demo-control')),
-    SidebarChatView = React.createFactory(require('./sidebar-chat')),
-    events = require('./events'),
+    SidebarChatView = React.createFactory(require('../shared/sidebar-chat')),
+    events = require('../shared/events'),
+    constants = require('./constants'),
     div = React.DOM.div,
     h1 = React.DOM.h1,
     h2 = React.DOM.h2;
@@ -50,7 +51,8 @@ module.exports = React.createClass({
       running: true,
       showDebugPins: true,
       addedAllWires: false,
-      demo: window.location.search.indexOf('demo') !== -1,
+      showDemo: window.location.search.indexOf('demo') !== -1,
+      showSimulator: window.location.search.indexOf('simulator') !== -1,
       userBoardNumber: -1,
       users: {},
       currentBoard: 0,
@@ -229,7 +231,7 @@ module.exports = React.createClass({
   },
 
   toggleAllWires: function () {
-    var defaultColor = '#555',
+    var defaultColor = '#ddd',
 
         b0 = this.state.boards[0],
         b0Keypad = b0.components.keypad.pinMap,
@@ -305,15 +307,18 @@ module.exports = React.createClass({
   },
 
   render: function () {
+    var demoTop = this.state.showSimulator ? 75 : 0,
+        sidebarTop = demoTop + (this.state.showDemo ? 75 : 0);
+
     return div({},
       h1({}, "Teaching Teamwork PIC Activity"),
       this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
       WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect}),
       div({id: 'picapp'},
-        WorkspaceView({boards: this.state.boards, stepping: !this.state.running, showDebugPins: this.state.showDebugPins, users: this.state.users, userBoardNumber: this.state.userBoardNumber}),
-        SimulatorControlView({running: this.state.running, run: this.run, step: this.step, reset: this.reset}),
-        this.state.demo ? DemoControlView({running: this.state.running, toggleAllWires: this.toggleAllWires, toggleDebugPins: this.toggleDebugPins, showDebugPins: this.state.showDebugPins, addedAllWires: this.state.addedAllWires}) : null,
-        SidebarChatView({demo: this.state.demo})
+        WorkspaceView({constants: constants, boards: this.state.boards, stepping: !this.state.running, showDebugPins: this.state.showDebugPins, users: this.state.users, userBoardNumber: this.state.userBoardNumber}),
+        this.state.showSimulator ? SimulatorControlView({running: this.state.running, run: this.run, step: this.step, reset: this.reset}) : null,
+        this.state.showDemo ? DemoControlView({top: demoTop, running: this.state.running, toggleAllWires: this.toggleAllWires, toggleDebugPins: this.toggleDebugPins, showDebugPins: this.state.showDebugPins, addedAllWires: this.state.addedAllWires}) : null,
+        SidebarChatView({numClients: 3, top: sidebarTop})
       )
     );
   }

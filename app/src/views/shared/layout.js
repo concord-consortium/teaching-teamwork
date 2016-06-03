@@ -1,5 +1,3 @@
-var constants = require('./constants');
-
 module.exports = {
   getBezierPath: function (options) {
     var firstPointIsLowest, lowest, highest, midX, midY, perpSlope, x3, y3, reflection;
@@ -22,7 +20,7 @@ module.exports = {
     return ['M', options.x1, ',', options.y1, ' Q', x3, ',', y3, ' ', options.x2, ',', options.y2].join('');
   },
 
-  calculateComponentRect: function (selected, index, count, componentWidth, componentHeight) {
+  calculateComponentRect: function (constants, selected, index, count, componentWidth, componentHeight) {
     var selectedConstants = constants.selectedConstants(selected),
         startX, position;
 

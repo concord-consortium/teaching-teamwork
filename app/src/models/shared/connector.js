@@ -1,5 +1,4 @@
-var Hole = require('./hole'),
-    constants = require('../../views/pic/constants');
+var Hole = require('./hole');
 
 var Connector = function (options) {
   var self = this,
@@ -16,12 +15,13 @@ var Connector = function (options) {
       x: 0,
       y: 0,
       radius: 0,
-      color: ['blue', '#0f0', 'purple', '#cccc00'][i],
-      connector: self
+      color: '#555', // ['blue', '#0f0', 'purple', '#cccc00'][i],
+      connector: self,
+      label: options.labels ? options.labels[i] : null
     }));
   }
 };
-Connector.prototype.calculatePosition = function (selected) {
+Connector.prototype.calculatePosition = function (constants, selected) {
   var selectedConstants = constants.selectedConstants(selected),
       i, cx, cy, radius, holeWidth, hole;
 
@@ -41,6 +41,34 @@ Connector.prototype.calculatePosition = function (selected) {
     hole.cy = cy;
     hole.radius =  radius;
   }
+};
+Connector.prototype.setHoleValue = function (index, value) {
+  if ((index < this.holes.length) && (value !== 'x')) {
+    this.holes[index].setValue(value);
+  }
+};
+Connector.prototype.setHoleValues = function (values) {
+  var i;
+  for (i = 0; i < values.length; i++) {
+    this.setHoleValue(i, values[i]);
+  }
+};
+Connector.prototype.clearHoleValues = function () {
+  var i;
+  for (i = 0; i < this.holes.length; i++) {
+    this.holes[i].setValue(0);
+  }
+};
+Connector.prototype.getHoleValue = function (index) {
+  return index < this.holes.length ? this.holes[index].getValue() : null;
+};
+Connector.prototype.getHoleValues = function () {
+  var values = [],
+      i;
+  for (i = 0; i < this.holes.length; i++) {
+    values.push(this.getHoleValue(i));
+  }
+  return values;
 };
 
 module.exports = Connector;

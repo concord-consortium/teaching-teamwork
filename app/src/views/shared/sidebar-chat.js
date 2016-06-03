@@ -1,6 +1,6 @@
 var userController = require('../../controllers/shared/user'),
+    logController = require('../../controllers/shared/log'),
     ChatItems = React.createFactory(require('./chat-items')),
-    events = require('./events'),
     div = React.DOM.div,
     form = React.DOM.form,
     textarea = React.DOM.textarea,
@@ -27,7 +27,7 @@ module.exports = React.createClass({
   },
 
   getJoinedMessage: function (numExistingUsers) {
-    var slotsRemaining = 3 - numExistingUsers,
+    var slotsRemaining = this.props.numClients - numExistingUsers,
         nums = ["zero", "one", "two", "three"],
         cap = function (string) {
           return string.charAt(0).toUpperCase() + string.slice(1);
@@ -36,7 +36,7 @@ module.exports = React.createClass({
 
     if (slotsRemaining > 1) {
       // One of three users is here
-      message += cap(nums[numExistingUsers]) + " of 3 users is here.";
+      message += cap(nums[numExistingUsers]) + " of " + this.props.numClients + " users is here.";
     } else if (slotsRemaining == 1) {
       // Two of you are now here. One more to go before you can get started!
       message += cap(nums[numExistingUsers]) + " of you are now here. One more to go before you can get started!";
@@ -57,7 +57,7 @@ module.exports = React.createClass({
             numExistingUsers = self.state.numExistingUsers;
 
         if (item.type == "joined") {
-          numExistingUsers = Math.min(self.state.numExistingUsers + 1, 3);
+          numExistingUsers = Math.min(self.state.numExistingUsers + 1, this.props.numClients);
           item.message += self.getJoinedMessage(numExistingUsers);
         }
         else if (item.type == "left") {
@@ -95,7 +95,7 @@ module.exports = React.createClass({
       });
       input.value = '';
       input.focus();
-      events.logEvent("Sent message", message);
+      logController.logEvent("Sent message", message);
     }
   },
 
@@ -106,8 +106,7 @@ module.exports = React.createClass({
   },
 
   render: function () {
-    var style = this.props.demo ? {} : {top: 75};
-    return div({id: 'sidebar-chat', style: style},
+    return div({id: 'sidebar-chat', style: {top: this.props.top}},
       div({id: 'sidebar-chat-title'}, 'Chat'),
       ChatItems({items: this.state.items}),
       div({className: 'sidebar-chat-input'},

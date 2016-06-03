@@ -1,4 +1,4 @@
-var layout = require('../../views/pic/layout'),
+var layout = require('../../views/shared/layout'),
     path = React.DOM.path;
 
 module.exports = React.createClass({

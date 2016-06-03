@@ -1,7 +1,6 @@
 var PICView = React.createFactory(require('../../views/pic/pic')),
-    Pin = require('./pin'),
-    constants = require('../../views/pic/constants'),
-    layout = require('../../views/pic/layout');
+    Pin = require('../shared/pin'),
+    layout = require('../../views/shared/layout');
 
 var PIC = function (options) {
   var i, pin, notConnectable;
@@ -53,11 +52,11 @@ PIC.prototype.reset = function () {
   this.trisPortB(0xff);
   this.emulator.start();
 };
-PIC.prototype.calculatePosition = function (selected, index, count) {
+PIC.prototype.calculatePosition = function (constants, selected, index, count) {
   var selectedConstants = constants.selectedConstants(selected),
       chipWidth, pinDY, i, j, pin, pinNumber;
 
-  this.position = layout.calculateComponentRect(selected, index, count);
+  this.position = layout.calculateComponentRect(constants, selected, index, count);
 
   chipWidth = this.position.width / 2;
 
@@ -132,7 +131,7 @@ PIC.prototype.getPinListValue = function (list) {
   this.board.resolveComponentOutputValues();
 
   for (i = 0; i < list.length; i++) {
-    value = value | ((list[i].inputMode && list[i].value ? 1 : 0) << i);
+    value = value | ((list[i].inputMode && list[i].getValue() ? 1 : 0) << i);
   }
   return value;
 };

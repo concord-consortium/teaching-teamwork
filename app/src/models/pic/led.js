@@ -1,8 +1,7 @@
 var LEDView = React.createFactory(require('../../views/pic/led')),
-    Pin = require('./pin'),
+    Pin = require('../shared/pin'),
     Segment = require('./segment'),
-    constants = require('../../views/pic/constants'),
-    layout = require('../../views/pic/layout');
+    layout = require('../../views/shared/layout');
 
 var LED = function () {
   var i, pin, segmentLayoutMap, segment;
@@ -60,11 +59,11 @@ var LED = function () {
     layout: {x: 1, y: 2}
   };
 };
-LED.prototype.calculatePosition = function (selected, index, count) {
+LED.prototype.calculatePosition = function (constants, selected, index, count) {
   var selectedConstants = constants.selectedConstants(selected),
       displayWidth, displayHeight, i, pin, pinDX, segmentWidth, segmentHeight, segment, pathCommands, endCapSize, p;
 
-  this.position = layout.calculateComponentRect(selected, index, count);
+  this.position = layout.calculateComponentRect(constants, selected, index, count);
 
   displayWidth = this.position.width * 0.8;
   displayHeight = this.position.height * 0.9;
