@@ -79,6 +79,8 @@ module.exports = React.createClass({
         name: currentUser
       };
 
+      logController.setClientNumber(userBoardNumber);
+
       self.setState({
         userBoardNumber: userBoardNumber,
         users: users,
