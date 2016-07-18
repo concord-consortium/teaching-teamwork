@@ -68,7 +68,24 @@ module.exports = React.createClass({
     return rawData;
   },
 
+  chatHasFocus: function () {
+    // adapted from http://stackoverflow.com/a/7821694
+    var focused = document.activeElement;
+    if (!focused || focused == document.body) {
+      focused = null;
+    }
+    else if (document.querySelector) {
+      focused = document.querySelector(":focus");
+    }
+    return focused && (focused.nodeName === "TEXTAREA");
+  },
+
   keyDown: function (e) {
+    // ignore when chat has focus
+    if (this.chatHasFocus()) {
+      return;
+    }
+
     // 46 is the delete key which maps to 8 on Macs
     // this is needed so Chrome on Macs don't trigger a back navigation
     if ((e.keyCode == 46) || (e.keyCode == 8)) {
@@ -80,6 +97,11 @@ module.exports = React.createClass({
   keyUp: function (e) {
     var wiresToRemove = [],
         i, j, selectedComponent, wire;
+
+    // ignore when chat has focus
+    if (this.chatHasFocus()) {
+      return;
+    }
 
     // 46 is the delete key which maps to 8 on Macs
     if (!((e.keyCode == 46) || (e.keyCode == 8))) {
@@ -157,6 +179,7 @@ module.exports = React.createClass({
   setProbe: function (probe) {
     this.props.board.probe = probe;
     this.setState({probeSource: probe.source, probePos: probe.pos});
+    this.blurChatFocus();
   },
 
   drawConnection: function (source, e, color, callback) {
@@ -167,6 +190,8 @@ module.exports = React.createClass({
 
     e.preventDefault();
     e.stopPropagation();
+
+    this.blurChatFocus();
 
     drag = function (e) {
       if (!moved) {
@@ -229,6 +254,14 @@ module.exports = React.createClass({
     return Math.sqrt((a*a) + (b*b));
   },
 
+  blurChatFocus: function () {
+    // remove focus from chat textbox
+    var focused = document.activeElement || (document.querySelector ? document.querySelector(":focus") : null);
+    if (focused) {
+      focused.blur();
+    }
+  },
+
   wireSelected: function (wire, e) {
     // check if click is near an endpoint
     var x = e.pageX - this.svgOffset.left,
@@ -260,12 +293,15 @@ module.exports = React.createClass({
     else {
       this.setState({selectedWires: [wire], selectedComponents: []});
     }
+    this.blurChatFocus();
   },
 
   backgroundMouseDown: function (e) {
     var $window = $(window),
         self = this,
         drag, stopDrag, getPath, x1, y1;
+
+    this.blurChatFocus();
 
     this.setState({selectedWires: [], selectedComponents: []});
 
