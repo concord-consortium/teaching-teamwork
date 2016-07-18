@@ -450,7 +450,7 @@ code.push({
       "Start        movlw   0x80        ;all bits as outputs but bit7",
       "     tris    PORTB",
       "     ",
-      "     movlw   0xff        ;setup PORTB all inputs",
+      "     movlw   0xff        ;setup PORTA all inputs",
       "     tris    PORTA",
       ";=========================================================================",
       "",
