@@ -38,7 +38,8 @@ module.exports = React.createClass({
           stepping: this.props.stepping,
           showDebugPins: this.props.showDebugPins,
           toggleBoard: this.toggleBoard,
-          showProbe: true
+          showProbe: true,
+          wireSettings: this.props.wireSettings
         }),
         BoardEditorView({constants: this.props.constants, board: this.state.selectedBoard})
       );
@@ -53,7 +54,8 @@ module.exports = React.createClass({
           stepping: this.props.stepping,
           showDebugPins: this.props.showDebugPins,
           toggleBoard: this.toggleBoard,
-          showProbe: true
+          showProbe: true,
+          wireSettings: this.props.wireSettings
         }),
         RibbonView({
           constants: this.props.constants,
@@ -67,7 +69,8 @@ module.exports = React.createClass({
           stepping: this.props.stepping,
           showDebugPins: this.props.showDebugPins,
           toggleBoard: this.toggleBoard,
-          showProbe: true
+          showProbe: true,
+          wireSettings: this.props.wireSettings
         }),
         RibbonView({
           constants: this.props.constants,
@@ -81,7 +84,8 @@ module.exports = React.createClass({
           stepping: this.props.stepping,
           showDebugPins: this.props.showDebugPins,
           toggleBoard: this.toggleBoard,
-          showProbe: true
+          showProbe: true,
+          wireSettings: this.props.wireSettings
         })
       );
     }
