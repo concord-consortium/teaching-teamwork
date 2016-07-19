@@ -154,7 +154,7 @@ controller.init();
 module.exports = controller;
 
 
-},{"iframe-phone":39}],4:[function(require,module,exports){
+},{"iframe-phone":40}],4:[function(require,module,exports){
 var logManagerUrl  = '//teaching-teamwork-log-manager.herokuapp.com/api/logs',
     xhrObserver    = require('../../data/shared/xhrObserver'),
     laraController = require('./lara'),
@@ -631,7 +631,7 @@ module.exports = userController = {
 };
 
 
-},{"../../data/shared/group-names":6,"../../views/shared/userRegistration.jsx":31,"./lara":3,"./log":4}],6:[function(require,module,exports){
+},{"../../data/shared/group-names":6,"../../views/shared/userRegistration.jsx":32,"./lara":3,"./log":4}],6:[function(require,module,exports){
 var sortByName = function (a, b) {
   if (a.name < b.name) {
     return -1;
@@ -901,7 +901,8 @@ var LogicChip = function (options) {
       x: 0,
       y: 0,
       anchor: 'end',
-      text: String(i + 1)
+      text: String(i + 1),
+      color: '#fff'
     };
     pin = new Pin(pin);
     this.pins.push(pin);
@@ -922,35 +923,62 @@ LogicChip.prototype.reset = function () {
     this.pins[i].reset();
   }
 };
+LogicChip.prototype.mapAndSetPins = function (fn, pinConnections) {
+  var inputValues, i, j, inputPinNumbers, outputPinNumber;
+
+  for (i = 0; i < pinConnections.length; i++) {
+    inputPinNumbers = pinConnections[i][0];
+    outputPinNumber = pinConnections[i][1];
+    inputValues = [];
+    for (j = 0; j < inputPinNumbers.length; j++) {
+      inputValues.push(this.pins[inputPinNumbers[j] - 1].getValue());
+    }
+    this.pins[outputPinNumber - 1].setValue(fn.apply(this, inputValues) ? 1 : 0);
+  }
+};
+LogicChip.prototype.standardPinConnections = [
+  [[1, 2], 3],
+  [[4, 5], 6],
+  [[10, 9], 8],
+  [[13, 12], 11]
+];
 LogicChip.prototype.resolveOutputValues = function () {
+  // NOTE: all pin indexes are 1 based below to make it easier to verify against 1-based pinout diagrams
   switch (this.type) {
+    // Quad 2-input AND
     case '7408':
-      this.pins[2].setValue(this.pins[0].getValue() && this.pins[1].getValue() ? 1 : 0);
-      this.pins[5].setValue(this.pins[3].getValue() && this.pins[4].getValue() ? 1 : 0);
-      this.pins[10].setValue(this.pins[12].getValue() && this.pins[11].getValue() ? 1 : 0);
-      this.pins[7].setValue(this.pins[9].getValue() && this.pins[8].getValue() ? 1 : 0);
+      this.mapAndSetPins(function (a, b) { return a && b; }, this.standardPinConnections);
       break;
 
+    // Quad 2-input OR
     case '7432':
-      this.pins[2].setValue(this.pins[0].getValue() || this.pins[1].getValue() ? 1 : 0);
-      this.pins[5].setValue(this.pins[3].getValue() || this.pins[4].getValue() ? 1 : 0);
-      this.pins[10].setValue(this.pins[12].getValue() || this.pins[11].getValue() ? 1 : 0);
-      this.pins[7].setValue(this.pins[9].getValue() || this.pins[8].getValue() ? 1 : 0);
+      this.mapAndSetPins(function (a, b) { return a || b; }, this.standardPinConnections);
       break;
 
+    // Quad 2-Input XOR
+    case '7486':
+      this.mapAndSetPins(function (a, b) { return (a || b) && !(a && b); }, this.standardPinConnections);
+      break;
+
+    // Hex Inverter
     case '7404':
-      this.pins[1].setValue(this.pins[0].getValue() ? 0 : 1);
-      this.pins[3].setValue(this.pins[2].getValue() ? 0 : 1);
-      this.pins[5].setValue(this.pins[4].getValue() ? 0 : 1);
-      this.pins[7].setValue(this.pins[8].getValue() ? 0 : 1);
-      this.pins[9].setValue(this.pins[10].getValue() ? 0 : 1);
-      this.pins[11].setValue(this.pins[12].getValue() ? 0 : 1);
+      this.mapAndSetPins(function (a) { return !a; }, [
+        [[1], 2],
+        [[3], 4],
+        [[5], 6],
+        [[9], 8],
+        [[11], 10],
+        [[13], 12],
+      ]);
       break;
 
+    // Tri 3-Input AND
     case '7411':
-      this.pins[5].setValue(this.pins[2].getValue() && this.pins[3].getValue() && this.pins[4].getValue() ? 1 : 0);
-      this.pins[7].setValue(this.pins[8].getValue() && this.pins[9].getValue() && this.pins[10].getValue() ? 1 : 0);
-      this.pins[11].setValue(this.pins[0].getValue() && this.pins[1].getValue() && this.pins[12].getValue() ? 1 : 0);
+      this.mapAndSetPins(function (a, b, c) { return a && b && c; }, [
+        [[1, 2, 13], 12],
+        [[3, 4, 5], 6],
+        [[9, 10, 11], 8]
+      ]);
       break;
   }
 };
@@ -1926,7 +1954,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/pic/board-watcher":2,"../../controllers/shared/log":4,"../../controllers/shared/user":5,"../../models/shared/board":9,"../../models/shared/connector":11,"../shared/sidebar-chat":30,"../shared/we-got-it":33,"./constants":16,"./workspace":18}],16:[function(require,module,exports){
+},{"../../controllers/pic/board-watcher":2,"../../controllers/shared/log":4,"../../controllers/shared/user":5,"../../models/shared/board":9,"../../models/shared/connector":11,"../shared/sidebar-chat":31,"../shared/we-got-it":34,"./constants":16,"./workspace":18}],16:[function(require,module,exports){
 var workspaceWidth = 936 - 200,
     logicDrawerWidth = 100,
     constants;
@@ -1976,6 +2004,7 @@ module.exports = constants = {
 
 },{}],17:[function(require,module,exports){
 var PinView = React.createFactory(require('../shared/pin')),
+    PinLabelView = React.createFactory(require('../shared/pin-label')),
     constants = require('./constants'),
     events = require('../shared/events'),
     line = React.DOM.line,
@@ -2137,6 +2166,7 @@ module.exports = React.createClass({
     var titles = {
       '7408': 'Quad 2-Input AND',
       '7432': 'Quad 2-Input OR',
+      '7486': 'Quad 2-Input XOR',
       '7404': 'Hex Inverter',
       '7411': 'Tri 3-Input AND'
     };
@@ -2155,7 +2185,7 @@ module.exports = React.createClass({
     for (i = 0; i < this.props.component.pins.length; i++) {
       pin = this.props.component.pins[i];
       pins.push(PinView({key: 'pin' + i, pin: pin, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
-      pins.push(text({key: 'label' + i, x: pin.label.x, y: pin.label.y, fontSize: pin.labelSize, fill: '#fff', style: {textAnchor: pin.label.anchor}}, pin.label.text));
+      pins.push(PinLabelView({key: 'label' + i, pin: pin, selected: this.props.selected, editable: this.props.editable, reportHover: this.props.reportHover}));
     }
 
     pin = this.props.component.pins[6];
@@ -2189,7 +2219,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../shared/events":24,"../shared/pin":27,"./constants":16}],18:[function(require,module,exports){
+},{"../shared/events":24,"../shared/pin":28,"../shared/pin-label":27,"./constants":16}],18:[function(require,module,exports){
 var BoardView = React.createFactory(require('../shared/board')),
     RibbonView = React.createFactory(require('../shared/ribbon')),
     events = require('../shared/events'),
@@ -2289,7 +2319,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../shared/board":19,"../shared/events":24,"../shared/ribbon":29}],19:[function(require,module,exports){
+},{"../shared/board":19,"../shared/events":24,"../shared/ribbon":30}],19:[function(require,module,exports){
 var boardWatcher = require('../../controllers/pic/board-watcher'),
     ConnectorView = React.createFactory(require('./connector')),
     WireView = React.createFactory(require('./wire')),
@@ -2360,7 +2390,24 @@ module.exports = React.createClass({
     return rawData;
   },
 
+  chatHasFocus: function () {
+    // adapted from http://stackoverflow.com/a/7821694
+    var focused = document.activeElement;
+    if (!focused || focused == document.body) {
+      focused = null;
+    }
+    else if (document.querySelector) {
+      focused = document.querySelector(":focus");
+    }
+    return focused && ((focused.nodeName === "TEXTAREA") || (focused.nodeName === "INPUT"));
+  },
+
   keyDown: function (e) {
+    // ignore when chat has focus
+    if (this.chatHasFocus()) {
+      return;
+    }
+
     // 46 is the delete key which maps to 8 on Macs
     // this is needed so Chrome on Macs don't trigger a back navigation
     if ((e.keyCode == 46) || (e.keyCode == 8)) {
@@ -2372,6 +2419,11 @@ module.exports = React.createClass({
   keyUp: function (e) {
     var wiresToRemove = [],
         i, j, selectedComponent, wire;
+
+    // ignore when chat has focus
+    if (this.chatHasFocus()) {
+      return;
+    }
 
     // 46 is the delete key which maps to 8 on Macs
     if (!((e.keyCode == 46) || (e.keyCode == 8))) {
@@ -2449,6 +2501,7 @@ module.exports = React.createClass({
   setProbe: function (probe) {
     this.props.board.probe = probe;
     this.setState({probeSource: probe.source, probePos: probe.pos});
+    this.blurChatFocus();
   },
 
   drawConnection: function (source, e, color, callback) {
@@ -2459,6 +2512,8 @@ module.exports = React.createClass({
 
     e.preventDefault();
     e.stopPropagation();
+
+    this.blurChatFocus();
 
     drag = function (e) {
       if (!moved) {
@@ -2521,6 +2576,14 @@ module.exports = React.createClass({
     return Math.sqrt((a*a) + (b*b));
   },
 
+  blurChatFocus: function () {
+    // remove focus from chat textbox
+    var focused = document.activeElement || (document.querySelector ? document.querySelector(":focus") : null);
+    if (focused) {
+      focused.blur();
+    }
+  },
+
   wireSelected: function (wire, e) {
     // check if click is near an endpoint
     var x = e.pageX - this.svgOffset.left,
@@ -2552,12 +2615,15 @@ module.exports = React.createClass({
     else {
       this.setState({selectedWires: [wire], selectedComponents: []});
     }
+    this.blurChatFocus();
   },
 
   backgroundMouseDown: function (e) {
     var $window = $(window),
         self = this,
         drag, stopDrag, getPath, x1, y1;
+
+    this.blurChatFocus();
 
     this.setState({selectedWires: [], selectedComponents: []});
 
@@ -2744,7 +2810,7 @@ module.exports = React.createClass({
         components = [],
         wires = [],
         componentIndex = 0,
-        editableWires = !this.state.draggingProbe && !this.state.drawConnection && !this.state.drawBox && (this.props.editable && this.props.selected),
+        enableWirePointerEvents = !this.state.draggingProbe && !this.state.drawConnection && !this.state.drawBox && (this.props.editable && this.props.selected),
         logicChipDragRect = this.getLogicChipDragRect(),
         name, component, i, wire;
 
@@ -2776,7 +2842,7 @@ module.exports = React.createClass({
 
     for (i = 0; i < this.props.board.wires.length; i++) {
       wire = this.props.board.wires[i];
-      wires.push(WireView({key: i, constants: this.props.constants, wire: wire, board: this.props.board, editable: editableWires, width: selectedConstants.WIRE_WIDTH, wireSelected: this.wireSelected, selected: this.state.selectedWires.indexOf(wire) !== -1}));
+      wires.push(WireView({key: i, constants: this.props.constants, wire: wire, board: this.props.board, editable: this.props.editable, enablePointerEvents: enableWirePointerEvents, width: selectedConstants.WIRE_WIDTH, wireSelected: this.wireSelected, selected: this.state.selectedWires.indexOf(wire) !== -1, wireSettings: this.props.wireSettings}));
     }
 
     return div({className: this.props.editable ? 'board editable-board' : 'board', style: style},
@@ -2786,7 +2852,7 @@ module.exports = React.createClass({
         components,
         wires,
         //(this.state.drawConnection ? line({x1: this.state.drawConnection.x1, x2: this.state.drawConnection.x2, y1: this.state.drawConnection.y1, y2: this.state.drawConnection.y2, stroke: this.state.drawConnection.stroke, strokeWidth: this.state.drawConnection.strokeWidth, fill: 'none', style: {pointerEvents: 'none'}}) : null),
-        (this.state.drawConnection ? path({d: layout.getBezierPath({x1: this.state.drawConnection.x1, x2: this.state.drawConnection.x2, y1: this.state.drawConnection.y1, y2: this.state.drawConnection.y2, reflection: this.state.drawConnection.reflection}), stroke: this.state.drawConnection.stroke, strokeWidth: this.state.drawConnection.strokeWidth, fill: 'none', style: {pointerEvents: 'none'}}) : null),
+        (this.state.drawConnection ? path({d: layout.getBezierPath({x1: this.state.drawConnection.x1, x2: this.state.drawConnection.x2, y1: this.state.drawConnection.y1, y2: this.state.drawConnection.y2, reflection: this.state.drawConnection.reflection, wireSettings: this.props.wireSettings}), stroke: this.state.drawConnection.stroke, strokeWidth: this.state.drawConnection.strokeWidth, fill: 'none', style: {pointerEvents: 'none'}}) : null),
 
         (this.state.drawBox ? path({d: this.state.drawBox.path, stroke: this.state.drawBox.stroke, strokeWidth: this.state.drawBox.strokeWidth, strokeDasharray: this.state.drawBox.strokeDasharray, fill: 'none', style: {pointerEvents: 'none'}}) : null),
         this.state.logicChipDrawer && this.props.editable && this.props.selected ? LogicChipDrawerView({chips: this.state.logicChipDrawer.chips, selected: this.props.selected, editable: this.props.editable, startDrag: this.startLogicChipDrawerDrag, layout: selectedConstants.LOGIC_DRAWER_LAYOUT}) : null,
@@ -2799,7 +2865,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/pic/board-watcher":2,"../../models/logic-gates/logic-chip":8,"../shared/events":24,"./connector":23,"./layout":25,"./logic-chip-drawer":26,"./probe":28,"./wire":34}],20:[function(require,module,exports){
+},{"../../controllers/pic/board-watcher":2,"../../models/logic-gates/logic-chip":8,"../shared/events":24,"./connector":23,"./layout":25,"./logic-chip-drawer":26,"./probe":29,"./wire":35}],20:[function(require,module,exports){
 var div = React.DOM.div,
     b = React.DOM.b;
     
@@ -2978,24 +3044,30 @@ module.exports = events = {
 },{"../../controllers/pic/board-watcher":2,"../../controllers/shared/log":4}],25:[function(require,module,exports){
 module.exports = {
   getBezierPath: function (options) {
-    var firstPointIsLowest, lowest, highest, midX, midY, perpSlope, x3, y3, reflection;
+    var normalize, dy, dx, dist, x3, y3, x4, y4, height, curvyness;
 
-    firstPointIsLowest = options.y1 > options.y2;
-    lowest = {x: firstPointIsLowest ? options.x1 : options.x2, y: firstPointIsLowest ? options.y1: options.y2};
-    highest = {x: firstPointIsLowest ? options.x2 : options.x1, y: firstPointIsLowest ? options.y2 : options.y1};
+    normalize = function (v, d) {
+      var n = v / d;
+      if (!isFinite(n)) {
+        n = 0;
+      }
+      return n;
+    };
 
-    midX = (lowest.x + highest.x) / 2;
-    midY = (lowest.y + highest.y) / 2;
-    perpSlope = (lowest.x - highest.x) / (highest.y - lowest.y);
-    if (!isFinite(perpSlope)) {
-      perpSlope = 1;
-    }
-    reflection = highest.x >= lowest.x ? options.reflection : -options.reflection;
+    curvyness = (options.wireSettings ? options.wireSettings.curvyness : 0) || 0.25;
 
-    x3 = midX + (Math.cos(perpSlope) * 100 * reflection);
-    y3 = midY + (Math.sin(perpSlope) * 100 * reflection);
+    dx = options.x1 - options.x2;
+    dy = options.y1 - options.y2;
+    dist = Math.sqrt(dx*dx + dy*dy);
+    height = dist * curvyness;
+    dx = normalize(dx, dist);
+    dy = normalize(dy, dist);
+    x3 = (options.x1 + options.x2) / 2;
+    y3 = (options.y1 + options.y2) / 2;
+    x4 = x3 - height*dy*options.reflection;
+    y4 = y3 + height*dx*options.reflection;
 
-    return ['M', options.x1, ',', options.y1, ' Q', x3, ',', y3, ' ', options.x2, ',', options.y2].join('');
+    return ['M', options.x1, ',', options.y1, ' Q', x4, ',', y4, ' ', options.x2, ',', options.y2].join('');
   },
 
   calculateComponentRect: function (constants, selected, index, count, componentWidth, componentHeight) {
@@ -3039,7 +3111,9 @@ ChipView = React.createFactory(React.createClass({
     var titles = {
       '7408': 'Quad 2-Input AND',
       '7432': 'Quad 2-Input OR',
+      '7486': 'Quad 2-Input XOR',
       '7404': 'Hex Inverter',
+      '7411': 'Tri 3-Input AND'
     };
     return titles[this.props.type];
   },
@@ -3105,6 +3179,29 @@ module.exports = React.createClass({
 
 
 },{}],27:[function(require,module,exports){
+var text = React.DOM.text;
+
+module.exports = React.createClass({
+  displayName: 'PinLabelView',
+
+  mouseOver: function () {
+    this.props.reportHover(this.props.pin);
+  },
+
+  mouseOut: function () {
+    this.props.reportHover(null);
+  },
+
+  render: function () {
+    var pin = this.props.pin,
+      enableHandlers = this.props.selected && this.props.editable;
+
+    return text({key: this.props.key, x: pin.label.x, y: pin.label.y, fontSize: pin.labelSize, fill: pin.label.color, style: {textAnchor: pin.label.anchor}, onMouseOver: enableHandlers ? this.mouseOver : null, onMouseOut: enableHandlers ? this.mouseOut : null}, pin.label.text);
+  }
+});
+
+
+},{}],28:[function(require,module,exports){
 var g = React.DOM.g,
     rect = React.DOM.rect;
 
@@ -3170,7 +3267,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],28:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 var events = require('../shared/events'),
     g = React.DOM.g,
     path = React.DOM.path,
@@ -3230,7 +3327,7 @@ module.exports = React.createClass({
         redFill = defaultFill,
         greenFill = defaultFill,
         amberFill = defaultFill,
-        needlePath, handlePath;
+        needlePath, handlePath, rotation;
 
     if (this.props.probeSource && (!this.props.probeSource.inputMode || this.props.probeSource.connected)) {
       if (this.props.probeSource.value) {
@@ -3278,7 +3375,10 @@ module.exports = React.createClass({
       'L', x + height, ',', middleY + halfNeedleHeight, ' '
     ].join('');
 
-    return g({transform: ['rotate(-15 ', x, ' ', y + (height / 2), ')'].join(''), onMouseDown: this.props.selected && this.props.editable ? this.startDrag : null},
+    // vary the rotation lineraly from +15 at the top of the board to -15 at the bottom so the lights can be seen
+    rotation = 15 - ((y / selectedConstants.BOARD_HEIGHT) * 30);
+
+    return g({transform: ['rotate(', rotation, ' ',  x, ' ', y + (height / 2), ')'].join(''), onMouseDown: this.props.selected && this.props.editable ? this.startDrag : null},
       path({d: needlePath, fill: '#c0c0c0', stroke: '#777', style: {pointerEvents: 'none'}}),
       path({d: handlePath, fill: '#eee', stroke: '#777'}), // '#FDCA6E'
       circle({cx: x + (4 * height), cy: middleY, r: height / 4, fill: 'red', fillOpacity: redFill}),
@@ -3289,7 +3389,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../shared/events":24}],29:[function(require,module,exports){
+},{"../shared/events":24}],30:[function(require,module,exports){
 var line = React.DOM.line,
     div = React.DOM.div,
     svg = React.DOM.svg;
@@ -3318,7 +3418,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],30:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 var userController = require('../../controllers/shared/user'),
     logController = require('../../controllers/shared/log'),
     ChatItems = React.createFactory(require('./chat-items')),
@@ -3442,7 +3542,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/shared/log":4,"../../controllers/shared/user":5,"./chat-items":21}],31:[function(require,module,exports){
+},{"../../controllers/shared/log":4,"../../controllers/shared/user":5,"./chat-items":21}],32:[function(require,module,exports){
 var userController, UserRegistrationView, UserRegistrationViewFactory,
     groups = require('../../data/shared/group-names');
 
@@ -3668,7 +3768,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
 UserRegistrationViewFactory = React.createFactory(UserRegistrationView);
 
 
-},{"../../data/shared/group-names":6}],32:[function(require,module,exports){
+},{"../../data/shared/group-names":6}],33:[function(require,module,exports){
 var div = React.DOM.div,
     h2 = React.DOM.h2,
     button = React.DOM.button;
@@ -3696,7 +3796,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],33:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 var WeGotItPopupView = React.createFactory(require('./we-got-it-popup')),
     userController = require('../../controllers/shared/user'),
     logController = require('../../controllers/shared/log'),
@@ -3770,7 +3870,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/shared/log":4,"../../controllers/shared/user":5,"./we-got-it-popup":32}],34:[function(require,module,exports){
+},{"../../controllers/shared/log":4,"../../controllers/shared/user":5,"./we-got-it-popup":33}],35:[function(require,module,exports){
 var layout = require('../../views/shared/layout'),
     path = React.DOM.path;
 
@@ -3798,23 +3898,26 @@ module.exports = React.createClass({
   },
 
   render: function () {
-    var wire = this.props.wire;
+    var wire = this.props.wire,
+        color = this.props.wireSettings ? this.props.wireSettings.color: wire.color;
+
     return path({
       key: this.props.key,
       className: 'wire',
-      d: layout.getBezierPath({x1: wire.source.cx, y1: wire.source.cy, x2: wire.dest.cx, y2: wire.dest.cy, reflection: wire.getBezierReflection() * this.props.board.bezierReflectionModifier}),
+      d: layout.getBezierPath({x1: wire.source.cx, y1: wire.source.cy, x2: wire.dest.cx, y2: wire.dest.cy, reflection: wire.getBezierReflection() * this.props.board.bezierReflectionModifier, wireSettings: this.props.wireSettings}),
       strokeWidth: this.props.width,
-      stroke: this.props.selected ? '#f00' : (this.state.hovering ? '#ccff00' : wire.color),
+      stroke: this.props.selected && this.props.editable ? '#f00' : (this.state.hovering ? '#ccff00' : color),
       fill: 'none',
-      onMouseOver: this.props.editable ? this.mouseOver : null,
-      onMouseOut: this.props.editable ? this.mouseOut : null,
-      onMouseDown: this.props.editable ? this.mouseDown : null
+      onMouseOver: this.props.enablePointerEvents ? this.mouseOver : null,
+      onMouseOut: this.props.enablePointerEvents ? this.mouseOut : null,
+      onMouseDown: this.props.enablePointerEvents ? this.mouseDown : null,
+      pointerEvents: this.props.enablePointerEvents ? 'all' : 'none'
     });
   }
 });
 
 
-},{"../../views/shared/layout":25}],35:[function(require,module,exports){
+},{"../../views/shared/layout":25}],36:[function(require,module,exports){
 var structuredClone = require('./structured-clone');
 var HELLO_INTERVAL_LENGTH = 200;
 var HELLO_TIMEOUT_LENGTH = 60000;
@@ -3963,7 +4066,7 @@ module.exports = function getIFrameEndpoint() {
   }
   return instance;
 };
-},{"./structured-clone":38}],36:[function(require,module,exports){
+},{"./structured-clone":39}],37:[function(require,module,exports){
 "use strict";
 
 var ParentEndpoint = require('./parent-endpoint');
@@ -4055,7 +4158,7 @@ module.exports = function IframePhoneRpcEndpoint(handler, namespace, targetWindo
     this.disconnect = disconnect.bind(this);
 };
 
-},{"./iframe-endpoint":35,"./parent-endpoint":37}],37:[function(require,module,exports){
+},{"./iframe-endpoint":36,"./parent-endpoint":38}],38:[function(require,module,exports){
 var structuredClone = require('./structured-clone');
 
 /**
@@ -4228,7 +4331,7 @@ module.exports = function ParentEndpoint(targetWindowOrIframeEl, targetOrigin, a
   };
 };
 
-},{"./structured-clone":38}],38:[function(require,module,exports){
+},{"./structured-clone":39}],39:[function(require,module,exports){
 var featureSupported = false;
 
 (function () {
@@ -4266,7 +4369,7 @@ exports.supported = function supported() {
   return featureSupported && featureSupported.structuredClones > 0;
 };
 
-},{}],39:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 module.exports = {
   /**
    * Allows to communicate with an iframe.
@@ -4284,4 +4387,4 @@ module.exports = {
 
 };
 
-},{"./lib/iframe-endpoint":35,"./lib/iframe-phone-rpc-endpoint":36,"./lib/parent-endpoint":37,"./lib/structured-clone":38}]},{},[1]);
+},{"./lib/iframe-endpoint":36,"./lib/iframe-phone-rpc-endpoint":37,"./lib/parent-endpoint":38,"./lib/structured-clone":39}]},{},[1]);

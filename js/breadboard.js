@@ -3055,8 +3055,8 @@ module.exports = React.createClass({
         ), 
         React.createElement("div", {id: "notes-wrapper", className:  wrapperClass }, React.createElement(NotesView, {text:  notes, className: "tt-notes", breadboard:  this.props.breadboard})), 
         React.createElement("div", {id: "breadboard-and-chat-wrapper", className:  wrapperClass }, 
-           hasMultipleClients ? (React.DOM.div({id: "sidebar-chat-wrapper", className: wrapperClass}, SidebarChatViewFactory(chatProps))) : null, 
-          React.createElement("div", {id: "breadboard-wrapper", className:  wrapperClass })
+          React.createElement("div", {id: "breadboard-wrapper", className:  wrapperClass }), 
+           hasMultipleClients ? (React.DOM.div({id: "sidebar-chat-wrapper", className: wrapperClass}, SidebarChatViewFactory(chatProps))) : null
         ), 
          image, 
          calculator, 
