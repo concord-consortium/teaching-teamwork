@@ -1,23 +1,29 @@
 module.exports = {
   getBezierPath: function (options) {
-    var firstPointIsLowest, lowest, highest, midX, midY, perpSlope, x3, y3, reflection;
+    var normalize, dy, dx, dist, x3, y3, x4, y4, height, curvyness;
 
-    firstPointIsLowest = options.y1 > options.y2;
-    lowest = {x: firstPointIsLowest ? options.x1 : options.x2, y: firstPointIsLowest ? options.y1: options.y2};
-    highest = {x: firstPointIsLowest ? options.x2 : options.x1, y: firstPointIsLowest ? options.y2 : options.y1};
+    normalize = function (v, d) {
+      var n = v / d;
+      if (!isFinite(n)) {
+        n = 0;
+      }
+      return n;
+    };
 
-    midX = (lowest.x + highest.x) / 2;
-    midY = (lowest.y + highest.y) / 2;
-    perpSlope = (lowest.x - highest.x) / (highest.y - lowest.y);
-    if (!isFinite(perpSlope)) {
-      perpSlope = 1;
-    }
-    reflection = highest.x >= lowest.x ? options.reflection : -options.reflection;
+    curvyness = (options.wireSettings ? options.wireSettings.curvyness : 0) || 0.25;
 
-    x3 = midX + (Math.cos(perpSlope) * 100 * reflection);
-    y3 = midY + (Math.sin(perpSlope) * 100 * reflection);
+    dx = options.x1 - options.x2;
+    dy = options.y1 - options.y2;
+    dist = Math.sqrt(dx*dx + dy*dy);
+    height = dist * curvyness;
+    dx = normalize(dx, dist);
+    dy = normalize(dy, dist);
+    x3 = (options.x1 + options.x2) / 2;
+    y3 = (options.y1 + options.y2) / 2;
+    x4 = x3 - height*dy*options.reflection;
+    y4 = y3 + height*dx*options.reflection;
 
-    return ['M', options.x1, ',', options.y1, ' Q', x3, ',', y3, ' ', options.x2, ',', options.y2].join('');
+    return ['M', options.x1, ',', options.y1, ' Q', x4, ',', y4, ' ', options.x2, ',', options.y2].join('');
   },
 
   calculateComponentRect: function (constants, selected, index, count, componentWidth, componentHeight) {

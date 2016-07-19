@@ -12,6 +12,7 @@ var Connector = require('../../models/shared/connector'),
     SimulatorControlView = React.createFactory(require('./simulator-control')),
     DemoControlView = React.createFactory(require('./demo-control')),
     SidebarChatView = React.createFactory(require('../shared/sidebar-chat')),
+    WireControlsView = React.createFactory(require('../shared/wire-controls')),
     events = require('../shared/events'),
     constants = require('./constants'),
     div = React.DOM.div,
@@ -53,11 +54,13 @@ module.exports = React.createClass({
       addedAllWires: false,
       showDemo: window.location.search.indexOf('demo') !== -1,
       showSimulator: window.location.search.indexOf('simulator') !== -1,
+      showWireControls: window.location.search.indexOf('wireSettings') !== -1,
       userBoardNumber: -1,
       users: {},
       currentBoard: 0,
       currentUser: null,
-      currentGroup: null
+      currentGroup: null,
+      wireSettings: {color: '#ddd', curvyness: 0.25}
     };
   },
 
@@ -308,16 +311,21 @@ module.exports = React.createClass({
     this.setState({showDebugPins: !this.state.showDebugPins});
   },
 
+  updateWireSettings: function (newSettings) {
+    this.setState({wireSettings: newSettings});
+  },
+
   render: function () {
     var demoTop = this.state.showSimulator ? 75 : 0,
         sidebarTop = demoTop + (this.state.showDemo ? 75 : 0);
 
     return div({},
+      this.state.showWireControls ? WireControlsView({wireSettings: this.state.wireSettings, updateWireSettings: this.updateWireSettings}) : null,
       h1({}, "Teaching Teamwork PIC Activity"),
       this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
       WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect}),
       div({id: 'picapp'},
-        WorkspaceView({constants: constants, boards: this.state.boards, stepping: !this.state.running, showDebugPins: this.state.showDebugPins, users: this.state.users, userBoardNumber: this.state.userBoardNumber}),
+        WorkspaceView({constants: constants, boards: this.state.boards, stepping: !this.state.running, showDebugPins: this.state.showDebugPins, users: this.state.users, userBoardNumber: this.state.userBoardNumber, wireSettings: this.state.wireSettings}),
         this.state.showSimulator ? SimulatorControlView({running: this.state.running, run: this.run, step: this.step, reset: this.reset}) : null,
         this.state.showDemo ? DemoControlView({top: demoTop, running: this.state.running, toggleAllWires: this.toggleAllWires, toggleDebugPins: this.toggleDebugPins, showDebugPins: this.state.showDebugPins, addedAllWires: this.state.addedAllWires}) : null,
         SidebarChatView({numClients: 3, top: sidebarTop})
