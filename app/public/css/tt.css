@@ -491,6 +491,7 @@ form button:disabled {
 }
 .sidebar-chat .sidebar-chat-input {
   padding: 10px;
+  background-color: #fff;
 }
 .sidebar-chat .sidebar-chat-input textarea {
   width: 170px;
