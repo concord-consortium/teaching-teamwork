@@ -66,35 +66,62 @@ LogicChip.prototype.reset = function () {
     this.pins[i].reset();
   }
 };
+LogicChip.prototype.mapAndSetPins = function (fn, pinConnections) {
+  var inputValues, i, j, inputPinNumbers, outputPinNumber;
+
+  for (i = 0; i < pinConnections.length; i++) {
+    inputPinNumbers = pinConnections[i][0];
+    outputPinNumber = pinConnections[i][1];
+    inputValues = [];
+    for (j = 0; j < inputPinNumbers.length; j++) {
+      inputValues.push(this.pins[inputPinNumbers[j] - 1].getValue());
+    }
+    this.pins[outputPinNumber - 1].setValue(fn.apply(this, inputValues) ? 1 : 0);
+  }
+};
+LogicChip.prototype.standardPinConnections = [
+  [[1, 2], 3],
+  [[4, 5], 6],
+  [[10, 9], 8],
+  [[13, 12], 11]
+];
 LogicChip.prototype.resolveOutputValues = function () {
+  // NOTE: all pin indexes are 1 based below to make it easier to verify against 1-based pinout diagrams
   switch (this.type) {
+    // Quad 2-input AND
     case '7408':
-      this.pins[2].setValue(this.pins[0].getValue() && this.pins[1].getValue() ? 1 : 0);
-      this.pins[5].setValue(this.pins[3].getValue() && this.pins[4].getValue() ? 1 : 0);
-      this.pins[10].setValue(this.pins[12].getValue() && this.pins[11].getValue() ? 1 : 0);
-      this.pins[7].setValue(this.pins[9].getValue() && this.pins[8].getValue() ? 1 : 0);
+      this.mapAndSetPins(function (a, b) { return a && b; }, this.standardPinConnections);
       break;
 
+    // Quad 2-input OR
     case '7432':
-      this.pins[2].setValue(this.pins[0].getValue() || this.pins[1].getValue() ? 1 : 0);
-      this.pins[5].setValue(this.pins[3].getValue() || this.pins[4].getValue() ? 1 : 0);
-      this.pins[10].setValue(this.pins[12].getValue() || this.pins[11].getValue() ? 1 : 0);
-      this.pins[7].setValue(this.pins[9].getValue() || this.pins[8].getValue() ? 1 : 0);
+      this.mapAndSetPins(function (a, b) { return a || b; }, this.standardPinConnections);
       break;
 
+    // Quad 2-Input XOR
+    case '7486':
+      this.mapAndSetPins(function (a, b) { return (a || b) && !(a && b); }, this.standardPinConnections);
+      break;
+
+    // Hex Inverter
     case '7404':
-      this.pins[1].setValue(this.pins[0].getValue() ? 0 : 1);
-      this.pins[3].setValue(this.pins[2].getValue() ? 0 : 1);
-      this.pins[5].setValue(this.pins[4].getValue() ? 0 : 1);
-      this.pins[7].setValue(this.pins[8].getValue() ? 0 : 1);
-      this.pins[9].setValue(this.pins[10].getValue() ? 0 : 1);
-      this.pins[11].setValue(this.pins[12].getValue() ? 0 : 1);
+      this.mapAndSetPins(function (a) { return !a; }, [
+        [[1], 2],
+        [[3], 4],
+        [[5], 6],
+        [[9], 8],
+        [[11], 10],
+        [[13], 12],
+      ]);
       break;
 
+    // Tri 3-Input AND
     case '7411':
-      this.pins[5].setValue(this.pins[2].getValue() && this.pins[3].getValue() && this.pins[4].getValue() ? 1 : 0);
-      this.pins[7].setValue(this.pins[8].getValue() && this.pins[9].getValue() && this.pins[10].getValue() ? 1 : 0);
-      this.pins[11].setValue(this.pins[0].getValue() && this.pins[1].getValue() && this.pins[12].getValue() ? 1 : 0);
+      this.mapAndSetPins(function (a, b, c) { return a && b && c; }, [
+        [[1, 2, 13], 12],
+        [[3, 4, 5], 6],
+        [[9, 10, 11], 8]
+      ]);
       break;
   }
 };
