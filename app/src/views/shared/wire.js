@@ -33,11 +33,12 @@ module.exports = React.createClass({
       className: 'wire',
       d: layout.getBezierPath({x1: wire.source.cx, y1: wire.source.cy, x2: wire.dest.cx, y2: wire.dest.cy, reflection: wire.getBezierReflection() * this.props.board.bezierReflectionModifier, wireSettings: this.props.wireSettings}),
       strokeWidth: this.props.width,
-      stroke: this.props.selected ? '#f00' : (this.state.hovering ? '#ccff00' : color),
+      stroke: this.props.selected && this.props.editable ? '#f00' : (this.state.hovering ? '#ccff00' : color),
       fill: 'none',
-      onMouseOver: this.props.editable ? this.mouseOver : null,
-      onMouseOut: this.props.editable ? this.mouseOut : null,
-      onMouseDown: this.props.editable ? this.mouseDown : null
+      onMouseOver: this.props.enablePointerEvents ? this.mouseOver : null,
+      onMouseOut: this.props.enablePointerEvents ? this.mouseOut : null,
+      onMouseDown: this.props.enablePointerEvents ? this.mouseDown : null,
+      pointerEvents: this.props.enablePointerEvents ? 'all' : 'none'
     });
   }
 });
