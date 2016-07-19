@@ -1,4 +1,5 @@
 var PinView = React.createFactory(require('../shared/pin')),
+    PinLabelView = React.createFactory(require('../shared/pin-label')),
     constants = require('./constants'),
     events = require('../shared/events'),
     line = React.DOM.line,
@@ -179,7 +180,7 @@ module.exports = React.createClass({
     for (i = 0; i < this.props.component.pins.length; i++) {
       pin = this.props.component.pins[i];
       pins.push(PinView({key: 'pin' + i, pin: pin, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
-      pins.push(text({key: 'label' + i, x: pin.label.x, y: pin.label.y, fontSize: pin.labelSize, fill: '#fff', style: {textAnchor: pin.label.anchor}}, pin.label.text));
+      pins.push(PinLabelView({key: 'label' + i, pin: pin, selected: this.props.selected, editable: this.props.editable, reportHover: this.props.reportHover}));
     }
 
     pin = this.props.component.pins[6];

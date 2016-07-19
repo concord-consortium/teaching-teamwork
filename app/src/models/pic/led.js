@@ -28,7 +28,8 @@ var LED = function () {
       x: 0,
       y: 0,
       anchor: 'end',
-      text: ['g', 'f', 'ca', 'a', 'b', 'e', 'd', 'ca', 'c', 'DP'][i]
+      text: ['g', 'f', 'ca', 'a', 'b', 'e', 'd', 'ca', 'c', 'DP'][i],
+      color: '#fff'
     };
     pin = new Pin(pin);
     this.pins.push(pin);

@@ -45,7 +45,8 @@ var LogicChip = function (options) {
       x: 0,
       y: 0,
       anchor: 'end',
-      text: String(i + 1)
+      text: String(i + 1),
+      color: '#fff'
     };
     pin = new Pin(pin);
     this.pins.push(pin);

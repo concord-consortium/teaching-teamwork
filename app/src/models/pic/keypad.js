@@ -31,7 +31,8 @@ var Keypad = function () {
       y: 0,
       anchor: 'end',
       //text: ['RB0', 'RB1', 'RB2', 'RB3', 'RB4', 'RB5', 'RB6'][i]
-      text: ['COL0', 'COL1', 'COL2', 'ROW0', 'ROW1', 'ROW2', 'ROW3'][i]
+      text: ['COL0', 'COL1', 'COL2', 'ROW0', 'ROW1', 'ROW2', 'ROW3'][i],
+      color: '#000'
     };
     pin = new Pin(pin);
     this.pins.push(pin);
