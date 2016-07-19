@@ -57,7 +57,7 @@ module.exports = React.createClass({
         redFill = defaultFill,
         greenFill = defaultFill,
         amberFill = defaultFill,
-        needlePath, handlePath;
+        needlePath, handlePath, rotation;
 
     if (this.props.probeSource && (!this.props.probeSource.inputMode || this.props.probeSource.connected)) {
       if (this.props.probeSource.value) {
@@ -105,7 +105,10 @@ module.exports = React.createClass({
       'L', x + height, ',', middleY + halfNeedleHeight, ' '
     ].join('');
 
-    return g({transform: ['rotate(-15 ', x, ' ', y + (height / 2), ')'].join(''), onMouseDown: this.props.selected && this.props.editable ? this.startDrag : null},
+    // vary the rotation lineraly from +15 at the top of the board to -15 at the bottom so the lights can be seen
+    rotation = 15 - ((y / selectedConstants.BOARD_HEIGHT) * 30);
+
+    return g({transform: ['rotate(', rotation, ' ',  x, ' ', y + (height / 2), ')'].join(''), onMouseDown: this.props.selected && this.props.editable ? this.startDrag : null},
       path({d: needlePath, fill: '#c0c0c0', stroke: '#777', style: {pointerEvents: 'none'}}),
       path({d: handlePath, fill: '#eee', stroke: '#777'}), // '#FDCA6E'
       circle({cx: x + (4 * height), cy: middleY, r: height / 4, fill: 'red', fillOpacity: redFill}),
