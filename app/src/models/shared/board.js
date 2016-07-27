@@ -246,26 +246,36 @@ Board.prototype.resolveCircuitsAcrossAllBoards = function() {
   }
   // and then resolve all the io values
   for (i = 0; i < this.allBoards.length; i++) {
-    this.allBoards[i].resolveIOValues();
+    this.allBoards[i].resolveIOVoltages();
   }
 };
-Board.prototype.resolveCircuitInputValues = function () {
+Board.prototype.resolveCircuitInputVoltages = function () {
   var i;
+  if (this.connectors.input) {
+    this.connectors.input.updateFromConnectedBoard();
+  }
   for (i = 0; i < this.circuits.length; i++) {
-    this.circuits[i].resolveInputValues();
+    this.circuits[i].resolveInputVoltages();
   }
 };
-Board.prototype.resolveComponentOutputValues = function () {
+Board.prototype.resolveComponentOutputVoltages = function () {
   var i;
   for (i = 0; i < this.componentList.length; i++) {
-    this.componentList[i].resolveOutputValues();
+    this.componentList[i].resolveOutputVoltages();
   }
 };
-Board.prototype.resolveIOValues = function () {
-  // first resolve the input into the components, then the component values and finally the output of the components
-  this.resolveCircuitInputValues();
-  this.resolveComponentOutputValues();
-  this.resolveCircuitInputValues();
+Board.prototype.resolveCircuitOutputVoltages = function () {
+  var i;
+  for (i = 0; i < this.circuits.length; i++) {
+    this.circuits[i].resolveOutputVoltages();
+  }
+};
+Board.prototype.resolveIOVoltages = function () {
+  this.resolveCircuitInputVoltages();
+  this.resolveComponentOutputVoltages();
+  this.resolveCircuitOutputVoltages();
+  // this final call is to set the output connector values
+  this.resolveCircuitInputVoltages();
 };
 Board.prototype.addComponent = function (name, component) {
   component.name = name;

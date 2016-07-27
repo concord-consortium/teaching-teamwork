@@ -1,5 +1,6 @@
 var Connector = require('../../models/shared/connector'),
     Board = require('../../models/shared/board'),
+    TTL = require('../../models/shared/ttl'),
     //LogicChip =  require('../../models/logic-gates/logic-chip'),
     boardWatcher = require('../../controllers/pic/board-watcher'),
     userController = require('../../controllers/shared/user'),
@@ -188,8 +189,8 @@ module.exports = React.createClass({
     boards[0].setConnectors({input: board0Input, output: board0Output});
     boards[1].setConnectors({input: board1Input, output: board1Output});
 
-    board0Output.connectsTo = board1Input;
-    board1Input.connectsTo = board0Output;
+    board0Output.setConnectsTo(board1Input);
+    board1Input.setConnectsTo(board0Output);
 
     board0Input.board = boards[0];
     board0Output.board = boards[0];
@@ -215,7 +216,7 @@ module.exports = React.createClass({
     components = (boardInfo ? boardInfo.components : null) || [];
     board.updateComponents(components);
 
-    board.resolveIOValues();
+    board.resolveIOVoltages();
 
     this.setState({boards: this.state.boards});
   },
@@ -236,7 +237,7 @@ module.exports = React.createClass({
           defaultTestInput = [],
           defaultTestOutput = [],
           tests = [],
-          i, j, testInput, testOutput, headerPair, holeIndex;
+          i, j, testInputVoltages, testOutputLevels, headerPair, holeIndex;
 
       for (i = 0; i < input.length; i++) {
         defaultTestInput.push('x');
@@ -247,27 +248,27 @@ module.exports = React.createClass({
 
       // skip the header and generate each test
       for (i = 1; i < truthTable.length; i++) {
-        testInput = defaultTestInput.slice();
-        testOutput = defaultTestOutput.slice();
+        testInputVoltages = defaultTestInput.slice();
+        testOutputLevels = defaultTestOutput.slice();
 
         for (j = 0; j < header.length; j++) {
           headerPair = header[j].split(':');
           if (headerPair[0] == 'input') {
             holeIndex = input.indexOf(headerPair[1]);
             if (holeIndex !== -1) {
-              testInput[holeIndex] = truthTable[i][j];
+              testInputVoltages[holeIndex] = TTL.getBooleanVoltage(truthTable[i][j]);
             }
           } else if (headerPair[0] == 'output') {
             holeIndex = output.indexOf(headerPair[1]);
             if (holeIndex !== -1) {
-              testOutput[holeIndex] = truthTable[i][j];
+              testOutputLevels[holeIndex] = TTL.getBooleanLogicLevel(truthTable[i][j]);
             }
           }
         }
 
         tests.push({
-          input: testInput,
-          output: testOutput
+          inputVoltages: testInputVoltages,
+          outputLevels: testOutputLevels
         });
       }
 
@@ -286,30 +287,30 @@ module.exports = React.createClass({
       // evaluate all the logic-chips in all the boards so the values propogate
       for (i = 0; i < numBoards; i++) {
         for (j = 0; j < boards[i].numComponents; j++) {
-          boards[i].resolveIOValues();
+          boards[i].resolveIOVoltages();
         }
       }
     };
 
     runTest = function (test, truthTable) {
       var allCorrect = true,
-          i, output, outputValues, correct, dontCare;
+          i, output, outputVoltages, correct, dontCare;
 
       resetBoards();
-      boards[0].connectors.input.setHoleValues(test.input);
+      boards[0].connectors.input.setHoleVoltages(test.inputVoltages);
       resolveBoards();
 
-      outputValues = boards[1].connectors.output.getHoleValues();
+      outputVoltages = boards[1].connectors.output.getHoleVoltages();
       output = [];
-      for (i = 0; i < test.output.length; i++) {
-        dontCare = test.output[i] == 'x';
-        correct = dontCare || (test.output[i] == outputValues[i]);
-        output.push(dontCare ? 'x' : outputValues[i]);
+      for (i = 0; i < test.outputLevels.length; i++) {
+        dontCare = test.outputLevels[i] == 'x';
+        correct = dontCare || (test.outputLevels[i] == TTL.getVoltageLogicLevel(outputVoltages[i]));
+        output.push(dontCare ? 'x' : outputVoltages[i]);
         allCorrect = allCorrect && correct;
       }
 
       truthTable.push({
-        input: test.input,
+        input: test.inputVoltages,
         output: output
       });
 
@@ -324,7 +325,7 @@ module.exports = React.createClass({
 
     // reset to 0 inputs
     resetBoards();
-    boards[0].connectors.input.clearHoleValues();
+    boards[0].connectors.input.clearHoleVoltages();
     resolveBoards();
 
     callback(allCorrect, truthTable);

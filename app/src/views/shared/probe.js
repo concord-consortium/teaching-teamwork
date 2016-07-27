@@ -60,10 +60,11 @@ module.exports = React.createClass({
         needlePath, handlePath, rotation;
 
     if (this.props.probeSource && (!this.props.probeSource.inputMode || this.props.probeSource.connected)) {
-      if (this.props.probeSource.value) {
+
+      if (this.props.probeSource.isHigh()) {
         redFill = 1;
       }
-      else {
+      else if (this.props.probeSource.isLow()) {
         greenFill = 1;
       }
 

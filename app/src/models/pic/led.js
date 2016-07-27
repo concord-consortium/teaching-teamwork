@@ -129,7 +129,7 @@ LED.prototype.calculatePosition = function (constants, selected, index, count) {
 LED.prototype.reset = function () {
   // nothing to do for LED
 };
-LED.prototype.resolveOutputValues = function () {
+LED.prototype.resolveOutputVoltages = function () {
   // nothing to do for LED
 };
 LED.prototype.getPinBitField = function () {
