@@ -1318,7 +1318,8 @@ Board.prototype.serializeComponents = function () {
 Board.prototype.updateComponents = function (newSerializedComponents) {
   var self = this,
       toRemove = [],
-      currentSerializedComponents, i, name;
+      wiresToRemove = [],
+      currentSerializedComponents, i, j, name, component, wire;
 
   // quick check to see if there are changes
   currentSerializedComponents = this.serializeComponents();
@@ -1342,7 +1343,22 @@ Board.prototype.updateComponents = function (newSerializedComponents) {
 
   // now toRemove contains components to remove and newSerializedComponents contains components to add
   for (i = 0; i < toRemove.length; i++) {
+
     name = toRemove[i];
+    component = this.components[name];
+
+    for (j = 0; j < this.wires.length; j++) {
+      wire = this.wires[j];
+      if ((wire.source.component == component) || (wire.dest.component == component)) {
+        // this is pushed instead of directly removed because this.removeWire() alters this.wires and we are looping over it here
+        wiresToRemove.push(wire);
+      }
+    }
+    for (j = 0; j < wiresToRemove.length; j++) {
+      wire = wiresToRemove[j];
+      this.removeWire(wire.source, wire.dest);
+    }
+
     delete this.components[name];
   }
   $.each(newSerializedComponents, function (name, serializeComponent) {
