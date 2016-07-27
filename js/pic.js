@@ -3,7 +3,7 @@ var AppView = React.createFactory(require('./views/pic/app'));
 ReactDOM.render(AppView({}), document.getElementById('content'));
 
 
-},{"./views/pic/app":23}],2:[function(require,module,exports){
+},{"./views/pic/app":24}],2:[function(require,module,exports){
 var userController = require('../shared/user');
 
 var BoardWatcher = function () {
@@ -154,7 +154,7 @@ controller.init();
 module.exports = controller;
 
 
-},{"iframe-phone":55}],4:[function(require,module,exports){
+},{"iframe-phone":56}],4:[function(require,module,exports){
 var logManagerUrl  = '//teaching-teamwork-log-manager.herokuapp.com/api/logs',
     xhrObserver    = require('../../data/shared/xhrObserver'),
     laraController = require('./lara'),
@@ -631,7 +631,7 @@ module.exports = userController = {
 };
 
 
-},{"../../data/shared/group-names":7,"../../views/shared/userRegistration.jsx":46,"./lara":3,"./log":4}],6:[function(require,module,exports){
+},{"../../data/shared/group-names":7,"../../views/shared/userRegistration.jsx":47,"./lara":3,"./log":4}],6:[function(require,module,exports){
 var code = [];
 code.push({
   asm: [
@@ -1379,7 +1379,8 @@ module.exports = xhrObserver = new XHRObserver();
 
 },{}],9:[function(require,module,exports){
 var LogicChipView = React.createFactory(require('../../views/logic-gates/logic-chip')),
-    Pin = require('../shared/pin');
+    Pin = require('../shared/pin'),
+    TTL = require('../shared/ttl');
 
 var LogicChip = function (options) {
   var i, pin, outputPins;
@@ -1408,7 +1409,7 @@ var LogicChip = function (options) {
 
     pin = {
       number: i,
-      value: i == 13 ? 1 : 0,
+      voltage: i == 13 ? TTL.HIGH_VOLTAGE : TTL.LOW_VOLTAGE,
       inputMode: outputPins.indexOf(i) === -1,
       placement: i < 7 ? 'left' : 'right',
       x: 0,
@@ -1447,17 +1448,17 @@ LogicChip.prototype.reset = function () {
     this.pins[i].reset();
   }
 };
-LogicChip.prototype.mapAndSetPins = function (fn, pinConnections) {
-  var inputValues, i, j, inputPinNumbers, outputPinNumber;
+LogicChip.prototype.mapAndSetPins = function (pinConnections, fn) {
+  var logicLevels, i, j, inputPinNumbers, outputPinNumber;
 
   for (i = 0; i < pinConnections.length; i++) {
     inputPinNumbers = pinConnections[i][0];
     outputPinNumber = pinConnections[i][1];
-    inputValues = [];
+    logicLevels = [];
     for (j = 0; j < inputPinNumbers.length; j++) {
-      inputValues.push(this.pins[inputPinNumbers[j] - 1].getValue());
+      logicLevels.push(TTL.getVoltageLogicLevel(this.pins[inputPinNumbers[j] - 1].getVoltage()));
     }
-    this.pins[outputPinNumber - 1].setValue(fn.apply(this, inputValues) ? 1 : 0);
+    this.pins[outputPinNumber - 1].setVoltage(TTL.getVoltage(fn.apply(this, logicLevels)));
   }
 };
 LogicChip.prototype.standardPinConnections = [
@@ -1466,43 +1467,62 @@ LogicChip.prototype.standardPinConnections = [
   [[10, 9], 8],
   [[13, 12], 11]
 ];
-LogicChip.prototype.resolveOutputValues = function () {
+LogicChip.prototype.resolveOutputVoltages = function () {
   // NOTE: all pin indexes are 1 based below to make it easier to verify against 1-based pinout diagrams
   switch (this.type) {
     // Quad 2-input AND
     case '7408':
-      this.mapAndSetPins(function (a, b) { return a && b; }, this.standardPinConnections);
+      this.mapAndSetPins(this.standardPinConnections, function (a, b) {
+        if (TTL.isInvalid(a) || TTL.isInvalid(b)) {
+          return TTL.INVALID;
+        }
+        return TTL.getBooleanLogicLevel(TTL.isHigh(a) && TTL.isHigh(b));
+      });
       break;
 
     // Quad 2-input OR
     case '7432':
-      this.mapAndSetPins(function (a, b) { return a || b; }, this.standardPinConnections);
+      this.mapAndSetPins(this.standardPinConnections, function (a, b) {
+        return TTL.getBooleanLogicLevel(TTL.isHigh(a) || TTL.isHigh(b));
+      });
       break;
 
     // Quad 2-Input XOR
     case '7486':
-      this.mapAndSetPins(function (a, b) { return (a || b) && !(a && b); }, this.standardPinConnections);
+      this.mapAndSetPins(this.standardPinConnections, function (a, b) {
+        return TTL.getBooleanLogicLevel((TTL.isHigh(a) || TTL.isHigh(b)) && !(TTL.isHigh(a) && TTL.isHigh(b)));
+      });
       break;
 
     // Hex Inverter
     case '7404':
-      this.mapAndSetPins(function (a) { return !a; }, [
+      this.mapAndSetPins([
         [[1], 2],
         [[3], 4],
         [[5], 6],
         [[9], 8],
         [[11], 10],
         [[13], 12],
-      ]);
+      ], function (a) {
+        if (TTL.isInvalid(a)) {
+          return TTL.INVALID;
+        }
+        return TTL.getBooleanLogicLevel(!TTL.isHigh(a));
+      });
       break;
 
     // Tri 3-Input AND
     case '7411':
-      this.mapAndSetPins(function (a, b, c) { return a && b && c; }, [
+      this.mapAndSetPins([
         [[1, 2, 13], 12],
         [[3, 4, 5], 6],
         [[9, 10, 11], 8]
-      ]);
+      ], function (a, b, c) {
+        if (TTL.isInvalid(a) || TTL.isInvalid(b) || TTL.isInvalid(c)) {
+          return TTL.INVALID;
+        }
+        return TTL.getBooleanLogicLevel(TTL.isHigh(a) && TTL.isHigh(b) && TTL.isHigh(c));
+      });
       break;
   }
 };
@@ -1519,7 +1539,7 @@ LogicChip.prototype.serialize = function () {
 module.exports = LogicChip;
 
 
-},{"../../views/logic-gates/logic-chip":22,"../shared/pin":19}],10:[function(require,module,exports){
+},{"../../views/logic-gates/logic-chip":23,"../shared/pin":19,"../shared/ttl":20}],10:[function(require,module,exports){
 var Button = function (options) {
   this.value = options.value;
   this.intValue = options.intValue;
@@ -1540,6 +1560,7 @@ module.exports = Button;
 },{}],11:[function(require,module,exports){
 var KeypadView = React.createFactory(require('../../views/pic/keypad')),
     Pin = require('../shared/pin'),
+    TTL = require('../shared/ttl'),
     Button = require('./button'),
     layout = require('../../views/shared/layout');
 
@@ -1703,7 +1724,7 @@ Keypad.prototype.selectButtonValue = function (value, skipNotify) {
 Keypad.prototype.getPushedButtonValue = function () {
   return this.pushedButton ? this.pushedButton.value : null;
 };
-Keypad.prototype.resolveOutputValues = function () {
+Keypad.prototype.resolveOutputVoltages = function () {
   var colValue = 7,
       intValue, bottomButtonIndex;
 
@@ -1711,29 +1732,29 @@ Keypad.prototype.resolveOutputValues = function () {
     intValue = this.pushedButton.intValue;
     bottomButtonIndex = this.bottomButtonValues.indexOf(this.pushedButton.value);
 
-    if (!this.pinMap.ROW0.getValue() && ((intValue >= 1) && (intValue <= 3))) {
+    if (this.pinMap.ROW0.isLow() && ((intValue >= 1) && (intValue <= 3))) {
       colValue = colValue & ~(1 << (intValue - 1));
     }
-    else if (!this.pinMap.ROW1.getValue() && ((intValue >= 4) && (intValue <= 6))) {
+    else if (this.pinMap.ROW1.isLow() && ((intValue >= 4) && (intValue <= 6))) {
       colValue = colValue & ~(1 << (intValue - 4));
     }
-    else if (!this.pinMap.ROW2.getValue() && ((intValue >= 7) && (intValue <= 9))) {
+    else if (this.pinMap.ROW2.isLow() && ((intValue >= 7) && (intValue <= 9))) {
       colValue = colValue & ~(1 << (intValue - 7));
     }
-    else if (!this.pinMap.ROW3.getValue() && (bottomButtonIndex !== -1)) {
+    else if (this.pinMap.ROW3.isLow() && (bottomButtonIndex !== -1)) {
       colValue = colValue & ~(1 << bottomButtonIndex);
     }
   }
 
-  this.pinMap.COL0.setValue(colValue & 1 ? 1 : 0);
-  this.pinMap.COL1.setValue(colValue & 2 ? 1 : 0);
-  this.pinMap.COL2.setValue(colValue & 4 ? 1 : 0);
+  this.pinMap.COL0.setVoltage(TTL.getBooleanVoltage(colValue & 1));
+  this.pinMap.COL1.setVoltage(TTL.getBooleanVoltage(colValue & 2));
+  this.pinMap.COL2.setVoltage(TTL.getBooleanVoltage(colValue & 4));
 };
 
 module.exports = Keypad;
 
 
-},{"../../views/pic/keypad":28,"../../views/shared/layout":39,"../shared/pin":19,"./button":10}],12:[function(require,module,exports){
+},{"../../views/pic/keypad":29,"../../views/shared/layout":40,"../shared/pin":19,"../shared/ttl":20,"./button":10}],12:[function(require,module,exports){
 var LEDView = React.createFactory(require('../../views/pic/led')),
     Pin = require('../shared/pin'),
     Segment = require('./segment'),
@@ -1865,7 +1886,7 @@ LED.prototype.calculatePosition = function (constants, selected, index, count) {
 LED.prototype.reset = function () {
   // nothing to do for LED
 };
-LED.prototype.resolveOutputValues = function () {
+LED.prototype.resolveOutputVoltages = function () {
   // nothing to do for LED
 };
 LED.prototype.getPinBitField = function () {
@@ -1880,9 +1901,10 @@ LED.prototype.getPinBitField = function () {
 module.exports = LED;
 
 
-},{"../../views/pic/led":29,"../../views/shared/layout":39,"../shared/pin":19,"./segment":14}],13:[function(require,module,exports){
+},{"../../views/pic/led":30,"../../views/shared/layout":40,"../shared/pin":19,"./segment":14}],13:[function(require,module,exports){
 var PICView = React.createFactory(require('../../views/pic/pic')),
     Pin = require('../shared/pin'),
+    TTL = require('../shared/ttl'),
     layout = require('../../views/shared/layout');
 
 var PIC = function (options) {
@@ -1899,7 +1921,7 @@ var PIC = function (options) {
 
     pin = {
       number: i,
-      value: [3, 11, 12, 13].indexOf(i) !== -1 ? 1 : 0,
+      voltage: [3, 11, 12, 13].indexOf(i) !== -1 ? TTL.HIGH_VOLTAGE : TTL.LOW_VOLTAGE,
       inputMode: !notConnectable,
       placement: i < 9 ? 'left' : 'right',
       x: 0,
@@ -1970,7 +1992,7 @@ PIC.prototype.calculatePosition = function (constants, selected, index, count) {
     }
   }
 };
-PIC.prototype.resolveOutputValues = function () {
+PIC.prototype.resolveOutputVoltages = function () {
   // nothing to do here for the pic
 };
 PIC.prototype.evaluateCurrentPICInstruction = function () {
@@ -2012,33 +2034,34 @@ PIC.prototype.getPinListValue = function (list) {
       i;
 
   // each get causes the board to resolve so that we have the most current value
-  this.board.resolveComponentOutputValues();
+  this.board.resolveComponentOutputVoltages();
 
   for (i = 0; i < list.length; i++) {
-    value = value | ((list[i].inputMode && list[i].getValue() ? 1 : 0) << i);
+    value = value | ((list[i].inputMode && list[i].isHigh() ? 1 : 0) << i);
   }
   return value;
 };
 PIC.prototype.setPinListValue = function (list, value) {
-  var i;
+  var i, outputMode;
   for (i = 0; i < list.length; i++) {
-    list[i].setValue(!list[i].inputMode && (value & (1 << i)) ? 1 : 0);
+    outputMode = !list[i].inputMode;
+    list[i].setVoltage(TTL.getBooleanVoltage(outputMode && (value & (1 << i))));
   }
   // each set causes the circuit to be resolved
-  this.board.resolveIOValues();
+  this.board.resolveIOVoltages();
 };
 PIC.prototype.setPinListInputMode = function (list, mask) {
   var i;
   for (i = 0; i < list.length; i++) {
     list[i].inputMode = !!(mask & (1 << i));
   }
-  this.board.resolveIOValues();
+  this.board.resolveIOVoltages();
 };
 
 module.exports = PIC;
 
 
-},{"../../views/pic/pic":30,"../../views/shared/layout":39,"../shared/pin":19}],14:[function(require,module,exports){
+},{"../../views/pic/pic":31,"../../views/shared/layout":40,"../shared/pin":19,"../shared/ttl":20}],14:[function(require,module,exports){
 var Segment = function (options) {
   this.index = options.index;
   this.layout = options.layout;
@@ -2298,26 +2321,36 @@ Board.prototype.resolveCircuitsAcrossAllBoards = function() {
   }
   // and then resolve all the io values
   for (i = 0; i < this.allBoards.length; i++) {
-    this.allBoards[i].resolveIOValues();
+    this.allBoards[i].resolveIOVoltages();
   }
 };
-Board.prototype.resolveCircuitInputValues = function () {
+Board.prototype.resolveCircuitInputVoltages = function () {
   var i;
+  if (this.connectors.input) {
+    this.connectors.input.updateFromConnectedBoard();
+  }
   for (i = 0; i < this.circuits.length; i++) {
-    this.circuits[i].resolveInputValues();
+    this.circuits[i].resolveInputVoltages();
   }
 };
-Board.prototype.resolveComponentOutputValues = function () {
+Board.prototype.resolveComponentOutputVoltages = function () {
   var i;
   for (i = 0; i < this.componentList.length; i++) {
-    this.componentList[i].resolveOutputValues();
+    this.componentList[i].resolveOutputVoltages();
   }
 };
-Board.prototype.resolveIOValues = function () {
-  // first resolve the input into the components, then the component values and finally the output of the components
-  this.resolveCircuitInputValues();
-  this.resolveComponentOutputValues();
-  this.resolveCircuitInputValues();
+Board.prototype.resolveCircuitOutputVoltages = function () {
+  var i;
+  for (i = 0; i < this.circuits.length; i++) {
+    this.circuits[i].resolveOutputVoltages();
+  }
+};
+Board.prototype.resolveIOVoltages = function () {
+  this.resolveCircuitInputVoltages();
+  this.resolveComponentOutputVoltages();
+  this.resolveCircuitOutputVoltages();
+  // this final call is to set the output connector values
+  this.resolveCircuitInputVoltages();
 };
 Board.prototype.addComponent = function (name, component) {
   component.name = name;
@@ -2384,82 +2417,67 @@ Board.prototype.updateComponents = function (newSerializedComponents) {
 module.exports = Board;
 
 
-},{"../logic-gates/logic-chip":9,"./circuit":16,"./hole":18,"./pin":19,"./wire":20}],16:[function(require,module,exports){
+},{"../logic-gates/logic-chip":9,"./circuit":16,"./hole":18,"./pin":19,"./wire":21}],16:[function(require,module,exports){
 var Circuit = function (options) {
-  this.source = options.source;
-  this.dest = options.dest;
+  this.inputs = options.inputs;
+  this.outputs = options.outputs;
 };
-Circuit.ResolveWires = function (wires) {
+Circuit.ResolveWires = function (allWires) {
   var circuits = [],
-      wire, i, source, dest;
+      addToCircuit, wire, testWire, i, j, numWires, inputs, outputs;
 
-  for (i = 0; i < wires.length; i++) {
-    wire = wires[i];
+  addToCircuit = function (wire) {
+    (wire.source.inputMode ? inputs : outputs).push(wire.source);
+    (wire.dest.inputMode ? inputs : outputs).push(wire.dest);
+  };
 
-    source = Circuit.FindTerminal(wire, wire.source);
-    dest = Circuit.FindTerminal(wire, wire.dest);
-    if ((source === 'circular') || (dest === 'circular')) {
-      alert('A circular wire graph was found.  Aborting!');
-      return false;
+  numWires = allWires.length;
+  for (i = 0; i < numWires; i++) {
+    wire = allWires[i];
+    inputs = [];
+    outputs = [];
+    addToCircuit(wire);
+
+    for (j = i + 1; j < numWires; j++) {
+      testWire = allWires[j];
+      if ((wire.source == testWire.source) || (wire.source == testWire.dest) || (wire.dest == testWire.source) || (wire.dest == testWire.dest)) {
+        addToCircuit(testWire);
+      }
     }
-    circuits.push(new Circuit({
-      source: source,
-      dest: dest
-    }));
+
+    if (inputs.length + outputs.length > 0) {
+      circuits.push(new Circuit({
+        inputs: inputs,
+        outputs: outputs
+      }));
+    }
   }
+
   return circuits;
 };
-Circuit.FindTerminal = function (wire, pinOrHole) {
-  var terminal = pinOrHole,
-      foundWire = true,
-      otherConnector, otherHole, otherWire, i;
 
-  while (terminal.connector && terminal.connector.connectsTo && foundWire) {
-    otherConnector = terminal.connector.connectsTo;
-    otherHole = otherConnector.holes[terminal.index];
-
-    foundWire = false;
-    for (i = 0; i < otherConnector.board.wires.length; i++) {
-      otherWire = otherConnector.board.wires[i];
-      if (otherWire === wire) {
-        return 'circular';
-      }
-      if ((otherWire.source === otherHole) || (otherWire.dest === otherHole)) {
-        terminal = otherWire.source === otherHole ? otherWire.dest : otherWire.source;
-        foundWire = true;
-        break;
-      }
-    }
-  }
-
-  return terminal;
+Circuit.prototype.resolveInputVoltages = function () {
+  this.setAverageOutputVoltage(this.inputs);
 };
 
-Circuit.prototype.resolveInputValues = function () {
-  var input = null,
-      output = null;
+Circuit.prototype.resolveOutputVoltages = function () {
+  this.setAverageOutputVoltage(this.outputs);
+};
 
-  if (this.source.isPin && this.dest.isPin) {
-    if (this.source.inputMode && !this.dest.inputMode) {
-      input = this.source;
-      output = this.dest;
+Circuit.prototype.setAverageOutputVoltage = function (list) {
+  var totalOutputVoltage = 0,
+      averageVoltage = 0,
+      i;
+
+  if (this.outputs.length > 0) {
+    for (i = 0; i < this.outputs.length; i++) {
+      totalOutputVoltage += this.outputs[i].getVoltage();
     }
-    else if (!this.source.inputMode && this.dest.inputMode) {
-      input = this.dest;
-      output = this.source;
-    }
-  }
-  else if (this.source.isPin) {
-    input = this.source.inputMode ? this.source : this.dest;
-    output = this.source.inputMode ? this.dest : this.source;
-  }
-  else if (this.dest.isPin) {
-    input = this.dest.inputMode ? this.dest : this.source;
-    output = this.dest.inputMode ? this.source : this.dest;
+    averageVoltage = totalOutputVoltage / this.outputs.length;
   }
 
-  if (input && output) {
-    input.setValue(output.getValue());
+  for (i = 0; i < list.length; i++) {
+    list[i].setVoltage(averageVoltage);
   }
 };
 
@@ -2486,7 +2504,8 @@ var Connector = function (options) {
       radius: 0,
       color: '#555', // ['blue', '#0f0', 'purple', '#cccc00'][i],
       connector: self,
-      label: options.labels ? options.labels[i] : null
+      label: options.labels ? options.labels[i] : null,
+      inputMode: this.type === 'output' // seems weird but output connector holes have values set so their holes are in "inputMode" like the pins
     }));
   }
 };
@@ -2511,39 +2530,56 @@ Connector.prototype.calculatePosition = function (constants, selected) {
     hole.radius =  radius;
   }
 };
-Connector.prototype.setHoleValue = function (index, value) {
-  if ((index < this.holes.length) && (value !== 'x')) {
-    this.holes[index].setValue(value);
+Connector.prototype.setHoleVoltage = function (index, voltage) {
+  if ((index < this.holes.length) && (voltage !== 'x')) {
+    this.holes[index].setVoltage(voltage);
   }
 };
-Connector.prototype.setHoleValues = function (values) {
+Connector.prototype.setHoleVoltages = function (voltages) {
   var i;
-  for (i = 0; i < values.length; i++) {
-    this.setHoleValue(i, values[i]);
+  for (i = 0; i < voltages.length; i++) {
+    this.setHoleVoltage(i, voltages[i]);
   }
 };
-Connector.prototype.clearHoleValues = function () {
+Connector.prototype.clearHoleVoltages = function () {
   var i;
   for (i = 0; i < this.holes.length; i++) {
-    this.holes[i].setValue(0);
+    this.holes[i].setVoltage(0);
   }
 };
-Connector.prototype.getHoleValue = function (index) {
-  return index < this.holes.length ? this.holes[index].getValue() : null;
+Connector.prototype.getHoleVoltage = function (index) {
+  return index < this.holes.length ? this.holes[index].getVoltage() : null;
 };
-Connector.prototype.getHoleValues = function () {
-  var values = [],
+Connector.prototype.getHoleVoltages = function () {
+  var voltages = [],
       i;
   for (i = 0; i < this.holes.length; i++) {
-    values.push(this.getHoleValue(i));
+    voltages.push(this.getHoleVoltage(i));
   }
-  return values;
+  return voltages;
+};
+Connector.prototype.setConnectsTo = function (toConnector) {
+  var i;
+  this.connectsTo = toConnector;
+  for (i = 0; i < this.holes.length; i++) {
+    this.holes[i].connectedHole = toConnector.holes[i];
+  }
+};
+Connector.prototype.updateFromConnectedBoard = function () {
+  var i;
+  for (i = 0; i < this.holes.length; i++) {
+    if (this.holes[i].connectedHole) {
+      this.holes[i].setVoltage(this.holes[i].connectedHole.getVoltage());
+    }
+  }
 };
 
 module.exports = Connector;
 
 
 },{"./hole":18}],18:[function(require,module,exports){
+var TTL = require('./ttl');
+
 var Hole = function (options) {
   this.isPin = false; // to allow for easy checks against pins in circuits
   this.index = options.index;
@@ -2553,22 +2589,36 @@ var Hole = function (options) {
   this.color = options.color;
   this.connector = options.connector;
   this.connected = options.connected || false;
-  this.value = options.value || 0;
-  this.startingValue = this.value;
+  this.voltage = options.voltage || 0;
+  this.startingVoltage = this.voltage;
   this.label = options.label;
+  this.inputMode = options.inputMode;
+  this.connectedHole = null; // set via Connector.prototype.setConnectsTo
 };
 Hole.prototype.getBezierReflection = function () {
   return this.connector.type === 'input' ? 1 : -1;
 };
-Hole.prototype.setValue = function (newValue) {
-  this.pulseProbeDuration = this.pulseProbeDuration || (newValue != this.value ? 1 : 0);
-  this.value = newValue;
+Hole.prototype.setVoltage = function (newVoltage) {
+  this.pulseProbeDuration = this.pulseProbeDuration || (newVoltage != this.voltage ? 1 : 0);
+  this.voltage = newVoltage;
 };
-Hole.prototype.getValue = function () {
-  return this.value;
+Hole.prototype.getVoltage = function () {
+  return this.voltage;
+};
+Hole.prototype.getLogicLevel = function () {
+  return TTL.getVoltageLogicLevel(this.voltage);
+};
+Hole.prototype.isLow = function () {
+  return TTL.isLow(this.getLogicLevel());
+};
+Hole.prototype.isInvalid = function () {
+  return TTL.isInvalid(this.getLogicLevel());
+};
+Hole.prototype.isHigh = function () {
+  return TTL.isHigh(this.getLogicLevel());
 };
 Hole.prototype.reset = function () {
-  this.value = this.startingValue;
+  this.voltage = this.startingVoltage;
   this.pulseProbeDuration = 0;
 };
 Hole.prototype.getColor = function () {
@@ -2578,7 +2628,9 @@ Hole.prototype.getColor = function () {
 module.exports = Hole;
 
 
-},{}],19:[function(require,module,exports){
+},{"./ttl":20}],19:[function(require,module,exports){
+var TTL = require('./ttl');
+
 var Pin = function (options) {
   this.board = options.component.board;
   this.isPin = true; // to allow for easy checks against holes in circuits
@@ -2597,28 +2649,101 @@ var Pin = function (options) {
   this.bezierReflection = options.bezierReflection || 1;
   this.notConnectable = options.notConnectable || false;
   this.connected = options.connected || false;
-  this.value = options.value || 0;
-  this.startingValue = this.value;
+  this.voltage = options.voltage || 0;
+  this.startingVoltage = this.voltage;
 };
 Pin.prototype.getBezierReflection = function () {
   return this.bezierReflection;
 };
-Pin.prototype.setValue = function (newValue) {
-  this.pulseProbeDuration = this.pulseProbeDuration || (newValue != this.value ? 1 : 0);
-  this.value = newValue;
+Pin.prototype.setVoltage = function (newVoltage) {
+  this.pulseProbeDuration = this.pulseProbeDuration || (newVoltage != this.voltage ? 1 : 0);
+  this.voltage = newVoltage;
 };
-Pin.prototype.getValue = function () {
-  return this.value;
+Pin.prototype.getVoltage = function () {
+  return this.voltage;
+};
+Pin.prototype.getLogicLevel = function () {
+  return TTL.getVoltageLogicLevel(this.voltage);
+};
+Pin.prototype.isLow = function () {
+  return TTL.isLow(this.getLogicLevel());
+};
+Pin.prototype.isInvalid = function () {
+  return TTL.isInvalid(this.getLogicLevel());
+};
+Pin.prototype.isHigh = function () {
+  return TTL.isHigh(this.getLogicLevel());
+};
+Pin.prototype.getColor = function () {
+  return TTL.getColor(this.voltage);
 };
 Pin.prototype.reset = function () {
-  this.value = this.startingValue;
+  this.voltage = this.startingVoltage;
   this.pulseProbeDuration = 0;
 };
 
 module.exports = Pin;
 
 
-},{}],20:[function(require,module,exports){
+},{"./ttl":20}],20:[function(require,module,exports){
+var TTL = module.exports = {
+  LOW: 'LOW',
+  INVALID: 'INVALID',
+  HIGH: 'HIGH',
+
+  LOW_VOLTAGE: 0,
+  INVALID_VOLTAGE: 1.5,
+  HIGH_VOLTAGE: 5,
+
+  getVoltageLogicLevel: function (voltage) {
+    return voltage <= 0.8 ? TTL.LOW : (voltage < 2 ? TTL.INVALID : TTL.HIGH);
+  },
+
+  getBooleanLogicLevel: function (boolean) {
+    return boolean ? TTL.HIGH : TTL.LOW;
+  },
+
+  getBooleanVoltage: function (boolean) {
+    return boolean ? TTL.HIGH_VOLTAGE : TTL.LOW_VOLTAGE;
+  },
+
+  getVoltage: function (logicLevel) {
+    if (!TTL.VOLTAGE_MAP) {
+      TTL.VOLTAGE_MAP = {
+        'LOW': TTL.LOW_VOLTAGE,
+        'INVALID': TTL.INVALID_VOLTAGE,
+        'HIGH': TTL.HIGH_VOLTAGE
+      };
+    }
+    return TTL.VOLTAGE_MAP[logicLevel];
+  },
+
+  isInvalid: function (logicLevel) {
+    return logicLevel === TTL.INVALID;
+  },
+
+  isLow: function (logicLevel) {
+    return logicLevel === TTL.LOW;
+  },
+
+  isHigh: function (logicLevel) {
+    return logicLevel === TTL.HIGH;
+  },
+
+  getColor: function (voltage) {
+    if (!TTL.COLOR_MAP) {
+      TTL.COLOR_MAP = {
+        'LOW': 'green',
+        'INVALID': '#ffbf00',
+        'HIGH': 'red'
+      };
+    }
+    return TTL.COLOR_MAP[TTL.getVoltageLogicLevel(voltage)];
+  }
+};
+
+
+},{}],21:[function(require,module,exports){
 var Hole = require('./hole'),
     Pin = require('./pin');
 
@@ -2661,7 +2786,7 @@ Wire.EndpointId = function (endPoint) {
 module.exports = Wire;
 
 
-},{"./hole":18,"./pin":19}],21:[function(require,module,exports){
+},{"./hole":18,"./pin":19}],22:[function(require,module,exports){
 var workspaceWidth = 936 - 200,
     logicDrawerWidth = 100,
     constants;
@@ -2709,7 +2834,7 @@ module.exports = constants = {
 };
 
 
-},{}],22:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 var PinView = React.createFactory(require('../shared/pin')),
     PinLabelView = React.createFactory(require('../shared/pin-label')),
     constants = require('./constants'),
@@ -2926,7 +3051,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../shared/events":38,"../shared/pin":42,"../shared/pin-label":41,"./constants":21}],23:[function(require,module,exports){
+},{"../shared/events":39,"../shared/pin":43,"../shared/pin-label":42,"./constants":22}],24:[function(require,module,exports){
 var Connector = require('../../models/shared/connector'),
     Board = require('../../models/shared/board'),
     Keypad = require('../../models/pic/keypad'),
@@ -2962,10 +3087,10 @@ module.exports = React.createClass({
           new Board({number: 2, bezierReflectionModifier: 0.75, components: {pic: new PIC({code: picCode[2]}), led: new LED()}, connectors: {input: board2Input}})
         ];
 
-    board0Output.connectsTo = board1Input;
-    board1Input.connectsTo = board0Output;
-    board1Output.connectsTo = board2Input;
-    board2Input.connectsTo = board1Output;
+    board0Output.setConnectsTo(board1Input);
+    board1Input.setConnectsTo(board0Output);
+    board1Output.setConnectsTo(board2Input);
+    board2Input.setConnectsTo(board1Output);
 
     board0Output.board = boards[0];
     board1Input.board = boards[1];
@@ -3264,7 +3389,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/pic/board-watcher":2,"../../controllers/shared/log":4,"../../controllers/shared/user":5,"../../data/pic/pic-code":6,"../../models/pic/keypad":11,"../../models/pic/led":12,"../../models/pic/pic":13,"../../models/shared/board":15,"../../models/shared/connector":17,"../shared/events":38,"../shared/sidebar-chat":45,"../shared/we-got-it":48,"../shared/wire-controls":49,"./constants":26,"./demo-control":27,"./simulator-control":31,"./workspace":32}],24:[function(require,module,exports){
+},{"../../controllers/pic/board-watcher":2,"../../controllers/shared/log":4,"../../controllers/shared/user":5,"../../data/pic/pic-code":6,"../../models/pic/keypad":11,"../../models/pic/led":12,"../../models/pic/pic":13,"../../models/shared/board":15,"../../models/shared/connector":17,"../shared/events":39,"../shared/sidebar-chat":46,"../shared/we-got-it":49,"../shared/wire-controls":50,"./constants":27,"./demo-control":28,"./simulator-control":32,"./workspace":33}],25:[function(require,module,exports){
 var div = React.DOM.div;
 
 module.exports = React.createClass({
@@ -3287,7 +3412,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],25:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 var g = React.DOM.g,
     rect = React.DOM.rect,
     text = React.DOM.text;
@@ -3311,7 +3436,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],26:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 var constants;
 
 module.exports = constants = {
@@ -3370,7 +3495,7 @@ module.exports = constants = {
 };
 
 
-},{}],27:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 var div = React.DOM.div,
     button = React.DOM.button;
 
@@ -3397,7 +3522,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],28:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 var PinView = React.createFactory(require('../shared/pin')),
     PinLabelView = React.createFactory(require('../shared/pin-label')),
     ButtonView = React.createFactory(require('./button')),
@@ -3460,7 +3585,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../shared/events":38,"../shared/pin":42,"../shared/pin-label":41,"./button":25}],29:[function(require,module,exports){
+},{"../shared/events":39,"../shared/pin":43,"../shared/pin-label":42,"./button":26}],30:[function(require,module,exports){
 var PinView = React.createFactory(require('../shared/pin')),
     PinLabelView = React.createFactory(require('../shared/pin-label')),
     path = React.DOM.path,
@@ -3490,7 +3615,7 @@ module.exports = React.createClass({
 
     for (i = 0; i < this.props.component.segments.length; i++) {
       segment = this.props.component.segments[i];
-      segments.push(path({key: 'segment' + i, d: segment.pathCommands, fill: segment.pin.connected && !segment.pin.getValue() ? '#ccff00' : this.props.constants.UNSELECTED_FILL, transform: segment.transform}));
+      segments.push(path({key: 'segment' + i, d: segment.pathCommands, fill: segment.pin.connected && segment.pin.isLow() ? '#ccff00' : this.props.constants.UNSELECTED_FILL, transform: segment.transform}));
     }
 
     ccPin = this.props.component.pins[7];
@@ -3511,7 +3636,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../shared/pin":42,"../shared/pin-label":41}],30:[function(require,module,exports){
+},{"../shared/pin":43,"../shared/pin-label":42}],31:[function(require,module,exports){
 var PinView = React.createFactory(require('../shared/pin')),
     PinLabelView = React.createFactory(require('../shared/pin-label')),
     line = React.DOM.line,
@@ -3668,7 +3793,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../shared/pin":42,"../shared/pin-label":41}],31:[function(require,module,exports){
+},{"../shared/pin":43,"../shared/pin-label":42}],32:[function(require,module,exports){
 var button = React.DOM.button,
     div = React.DOM.div;
   
@@ -3710,7 +3835,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],32:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 var BoardView = React.createFactory(require('../shared/board')),
     BoardEditorView = React.createFactory(require('./board-editor')),
     RibbonView = React.createFactory(require('../shared/ribbon')),
@@ -3806,7 +3931,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../shared/board":33,"../shared/events":38,"../shared/ribbon":44,"./board-editor":24}],33:[function(require,module,exports){
+},{"../shared/board":34,"../shared/events":39,"../shared/ribbon":45,"./board-editor":25}],34:[function(require,module,exports){
 var boardWatcher = require('../../controllers/pic/board-watcher'),
     ConnectorView = React.createFactory(require('./connector')),
     WireView = React.createFactory(require('./wire')),
@@ -4304,8 +4429,7 @@ module.exports = React.createClass({
     // used to find wire click position
     this.svgOffset = $(this.refs.svg).offset();
 
-    // resolve input values
-    this.props.board.resolveCircuitInputValues();
+    this.props.board.resolveCircuitInputVoltages();
 
     // calculate the position so the wires can be updated
     if (this.props.board.connectors.input) {
@@ -4352,7 +4476,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/pic/board-watcher":2,"../../models/logic-gates/logic-chip":9,"../shared/events":38,"./connector":37,"./layout":39,"./logic-chip-drawer":40,"./probe":43,"./wire":50}],34:[function(require,module,exports){
+},{"../../controllers/pic/board-watcher":2,"../../models/logic-gates/logic-chip":9,"../shared/events":39,"./connector":38,"./layout":40,"./logic-chip-drawer":41,"./probe":44,"./wire":51}],35:[function(require,module,exports){
 var div = React.DOM.div,
     b = React.DOM.b;
     
@@ -4369,7 +4493,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],35:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 var userController = require('../../controllers/shared/user'),
     ChatItemView = React.createFactory(require('./chat-item')),
     div = React.DOM.div;
@@ -4396,7 +4520,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/shared/user":5,"./chat-item":34}],36:[function(require,module,exports){
+},{"../../controllers/shared/user":5,"./chat-item":35}],37:[function(require,module,exports){
 var g = React.DOM.g,
     circle = React.DOM.circle,
     title = React.DOM.title;
@@ -4425,7 +4549,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],37:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
 var ConnectorHoleView = React.createFactory(require('./connector-hole')),
     svg = React.DOM.svg,
     rect = React.DOM.rect;
@@ -4451,7 +4575,7 @@ module.exports = React.createClass({
 });
 
 
-},{"./connector-hole":36}],38:[function(require,module,exports){
+},{"./connector-hole":37}],39:[function(require,module,exports){
 var boardWatcher = require('../../controllers/pic/board-watcher'),
     logController = require('../../controllers/shared/log'),
     events;
@@ -4528,7 +4652,7 @@ module.exports = events = {
 };
 
 
-},{"../../controllers/pic/board-watcher":2,"../../controllers/shared/log":4}],39:[function(require,module,exports){
+},{"../../controllers/pic/board-watcher":2,"../../controllers/shared/log":4}],40:[function(require,module,exports){
 module.exports = {
   getBezierPath: function (options) {
     var normalize, dy, dx, dist, x3, y3, x4, y4, height, curvyness;
@@ -4578,7 +4702,7 @@ module.exports = {
 };
 
 
-},{}],40:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 var g = React.DOM.g,
     rect = React.DOM.rect,
     text = React.DOM.text,
@@ -4665,7 +4789,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],41:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 var text = React.DOM.text;
 
 module.exports = React.createClass({
@@ -4688,7 +4812,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],42:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 var g = React.DOM.g,
     rect = React.DOM.rect;
 
@@ -4735,8 +4859,8 @@ module.exports = React.createClass({
         break;
     }
 
-    inputRect.fill = pin.inputMode && pin.connected ? (pin.getValue() ? 'red' : 'green') : '#777';
-    outputRect.fill = !pin.inputMode ? (pin.getValue() ? 'red' : 'green') : '#777';
+    inputRect.fill = pin.inputMode && pin.connected ? pin.getColor() : '#777';
+    outputRect.fill = !pin.inputMode ? pin.getColor() : '#777';
 
     return g({onMouseDown: enableHandlers ? this.startDrag : null, onMouseOver: enableHandlers ? this.mouseOver : null, onMouseOut: enableHandlers ? this.mouseOut : null},
       rect(inputRect),
@@ -4754,7 +4878,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],43:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 var events = require('../shared/events'),
     g = React.DOM.g,
     path = React.DOM.path,
@@ -4817,10 +4941,11 @@ module.exports = React.createClass({
         needlePath, handlePath, rotation;
 
     if (this.props.probeSource && (!this.props.probeSource.inputMode || this.props.probeSource.connected)) {
-      if (this.props.probeSource.value) {
+
+      if (this.props.probeSource.isHigh()) {
         redFill = 1;
       }
-      else {
+      else if (this.props.probeSource.isLow()) {
         greenFill = 1;
       }
 
@@ -4876,7 +5001,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../shared/events":38}],44:[function(require,module,exports){
+},{"../shared/events":39}],45:[function(require,module,exports){
 var line = React.DOM.line,
     div = React.DOM.div,
     svg = React.DOM.svg;
@@ -4905,7 +5030,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],45:[function(require,module,exports){
+},{}],46:[function(require,module,exports){
 var userController = require('../../controllers/shared/user'),
     logController = require('../../controllers/shared/log'),
     ChatItems = React.createFactory(require('./chat-items')),
@@ -5029,7 +5154,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/shared/log":4,"../../controllers/shared/user":5,"./chat-items":35}],46:[function(require,module,exports){
+},{"../../controllers/shared/log":4,"../../controllers/shared/user":5,"./chat-items":36}],47:[function(require,module,exports){
 var userController, UserRegistrationView, UserRegistrationViewFactory,
     groups = require('../../data/shared/group-names');
 
@@ -5255,7 +5380,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
 UserRegistrationViewFactory = React.createFactory(UserRegistrationView);
 
 
-},{"../../data/shared/group-names":7}],47:[function(require,module,exports){
+},{"../../data/shared/group-names":7}],48:[function(require,module,exports){
 var div = React.DOM.div,
     h2 = React.DOM.h2,
     button = React.DOM.button;
@@ -5283,7 +5408,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],48:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 var WeGotItPopupView = React.createFactory(require('./we-got-it-popup')),
     userController = require('../../controllers/shared/user'),
     logController = require('../../controllers/shared/log'),
@@ -5357,7 +5482,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/shared/log":4,"../../controllers/shared/user":5,"./we-got-it-popup":47}],49:[function(require,module,exports){
+},{"../../controllers/shared/log":4,"../../controllers/shared/user":5,"./we-got-it-popup":48}],50:[function(require,module,exports){
 var div = React.DOM.div,
     b = React.DOM.b,
     input = React.DOM.input,
@@ -5388,7 +5513,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],50:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 var layout = require('../../views/shared/layout'),
     path = React.DOM.path;
 
@@ -5435,7 +5560,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../views/shared/layout":39}],51:[function(require,module,exports){
+},{"../../views/shared/layout":40}],52:[function(require,module,exports){
 var structuredClone = require('./structured-clone');
 var HELLO_INTERVAL_LENGTH = 200;
 var HELLO_TIMEOUT_LENGTH = 60000;
@@ -5584,7 +5709,7 @@ module.exports = function getIFrameEndpoint() {
   }
   return instance;
 };
-},{"./structured-clone":54}],52:[function(require,module,exports){
+},{"./structured-clone":55}],53:[function(require,module,exports){
 "use strict";
 
 var ParentEndpoint = require('./parent-endpoint');
@@ -5676,7 +5801,7 @@ module.exports = function IframePhoneRpcEndpoint(handler, namespace, targetWindo
     this.disconnect = disconnect.bind(this);
 };
 
-},{"./iframe-endpoint":51,"./parent-endpoint":53}],53:[function(require,module,exports){
+},{"./iframe-endpoint":52,"./parent-endpoint":54}],54:[function(require,module,exports){
 var structuredClone = require('./structured-clone');
 
 /**
@@ -5849,7 +5974,7 @@ module.exports = function ParentEndpoint(targetWindowOrIframeEl, targetOrigin, a
   };
 };
 
-},{"./structured-clone":54}],54:[function(require,module,exports){
+},{"./structured-clone":55}],55:[function(require,module,exports){
 var featureSupported = false;
 
 (function () {
@@ -5887,7 +6012,7 @@ exports.supported = function supported() {
   return featureSupported && featureSupported.structuredClones > 0;
 };
 
-},{}],55:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 module.exports = {
   /**
    * Allows to communicate with an iframe.
@@ -5905,4 +6030,4 @@ module.exports = {
 
 };
 
-},{"./lib/iframe-endpoint":51,"./lib/iframe-phone-rpc-endpoint":52,"./lib/parent-endpoint":53,"./lib/structured-clone":54}]},{},[1]);
+},{"./lib/iframe-endpoint":52,"./lib/iframe-phone-rpc-endpoint":53,"./lib/parent-endpoint":54,"./lib/structured-clone":55}]},{},[1]);
