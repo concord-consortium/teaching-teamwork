@@ -1,5 +1,6 @@
 var KeypadView = React.createFactory(require('../../views/pic/keypad')),
     Pin = require('../shared/pin'),
+    TTL = require('../shared/ttl'),
     Button = require('./button'),
     layout = require('../../views/shared/layout');
 
@@ -163,7 +164,7 @@ Keypad.prototype.selectButtonValue = function (value, skipNotify) {
 Keypad.prototype.getPushedButtonValue = function () {
   return this.pushedButton ? this.pushedButton.value : null;
 };
-Keypad.prototype.resolveOutputValues = function () {
+Keypad.prototype.resolveOutputVoltages = function () {
   var colValue = 7,
       intValue, bottomButtonIndex;
 
@@ -171,23 +172,23 @@ Keypad.prototype.resolveOutputValues = function () {
     intValue = this.pushedButton.intValue;
     bottomButtonIndex = this.bottomButtonValues.indexOf(this.pushedButton.value);
 
-    if (!this.pinMap.ROW0.getValue() && ((intValue >= 1) && (intValue <= 3))) {
+    if (this.pinMap.ROW0.isLow() && ((intValue >= 1) && (intValue <= 3))) {
       colValue = colValue & ~(1 << (intValue - 1));
     }
-    else if (!this.pinMap.ROW1.getValue() && ((intValue >= 4) && (intValue <= 6))) {
+    else if (this.pinMap.ROW1.isLow() && ((intValue >= 4) && (intValue <= 6))) {
       colValue = colValue & ~(1 << (intValue - 4));
     }
-    else if (!this.pinMap.ROW2.getValue() && ((intValue >= 7) && (intValue <= 9))) {
+    else if (this.pinMap.ROW2.isLow() && ((intValue >= 7) && (intValue <= 9))) {
       colValue = colValue & ~(1 << (intValue - 7));
     }
-    else if (!this.pinMap.ROW3.getValue() && (bottomButtonIndex !== -1)) {
+    else if (this.pinMap.ROW3.isLow() && (bottomButtonIndex !== -1)) {
       colValue = colValue & ~(1 << bottomButtonIndex);
     }
   }
 
-  this.pinMap.COL0.setValue(colValue & 1 ? 1 : 0);
-  this.pinMap.COL1.setValue(colValue & 2 ? 1 : 0);
-  this.pinMap.COL2.setValue(colValue & 4 ? 1 : 0);
+  this.pinMap.COL0.setVoltage(TTL.getBooleanVoltage(colValue & 1));
+  this.pinMap.COL1.setVoltage(TTL.getBooleanVoltage(colValue & 2));
+  this.pinMap.COL2.setVoltage(TTL.getBooleanVoltage(colValue & 4));
 };
 
 module.exports = Keypad;

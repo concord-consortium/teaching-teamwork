@@ -17,7 +17,8 @@ var Connector = function (options) {
       radius: 0,
       color: '#555', // ['blue', '#0f0', 'purple', '#cccc00'][i],
       connector: self,
-      label: options.labels ? options.labels[i] : null
+      label: options.labels ? options.labels[i] : null,
+      inputMode: this.type === 'output' // seems weird but output connector holes have values set so their holes are in "inputMode" like the pins
     }));
   }
 };
@@ -42,33 +43,48 @@ Connector.prototype.calculatePosition = function (constants, selected) {
     hole.radius =  radius;
   }
 };
-Connector.prototype.setHoleValue = function (index, value) {
-  if ((index < this.holes.length) && (value !== 'x')) {
-    this.holes[index].setValue(value);
+Connector.prototype.setHoleVoltage = function (index, voltage) {
+  if ((index < this.holes.length) && (voltage !== 'x')) {
+    this.holes[index].setVoltage(voltage);
   }
 };
-Connector.prototype.setHoleValues = function (values) {
+Connector.prototype.setHoleVoltages = function (voltages) {
   var i;
-  for (i = 0; i < values.length; i++) {
-    this.setHoleValue(i, values[i]);
+  for (i = 0; i < voltages.length; i++) {
+    this.setHoleVoltage(i, voltages[i]);
   }
 };
-Connector.prototype.clearHoleValues = function () {
+Connector.prototype.clearHoleVoltages = function () {
   var i;
   for (i = 0; i < this.holes.length; i++) {
-    this.holes[i].setValue(0);
+    this.holes[i].setVoltage(0);
   }
 };
-Connector.prototype.getHoleValue = function (index) {
-  return index < this.holes.length ? this.holes[index].getValue() : null;
+Connector.prototype.getHoleVoltage = function (index) {
+  return index < this.holes.length ? this.holes[index].getVoltage() : null;
 };
-Connector.prototype.getHoleValues = function () {
-  var values = [],
+Connector.prototype.getHoleVoltages = function () {
+  var voltages = [],
       i;
   for (i = 0; i < this.holes.length; i++) {
-    values.push(this.getHoleValue(i));
+    voltages.push(this.getHoleVoltage(i));
   }
-  return values;
+  return voltages;
+};
+Connector.prototype.setConnectsTo = function (toConnector) {
+  var i;
+  this.connectsTo = toConnector;
+  for (i = 0; i < this.holes.length; i++) {
+    this.holes[i].connectedHole = toConnector.holes[i];
+  }
+};
+Connector.prototype.updateFromConnectedBoard = function () {
+  var i;
+  for (i = 0; i < this.holes.length; i++) {
+    if (this.holes[i].connectedHole) {
+      this.holes[i].setVoltage(this.holes[i].connectedHole.getVoltage());
+    }
+  }
 };
 
 module.exports = Connector;

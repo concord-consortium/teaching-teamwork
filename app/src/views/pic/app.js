@@ -33,10 +33,10 @@ module.exports = React.createClass({
           new Board({number: 2, bezierReflectionModifier: 0.75, components: {pic: new PIC({code: picCode[2]}), led: new LED()}, connectors: {input: board2Input}})
         ];
 
-    board0Output.connectsTo = board1Input;
-    board1Input.connectsTo = board0Output;
-    board1Output.connectsTo = board2Input;
-    board2Input.connectsTo = board1Output;
+    board0Output.setConnectsTo(board1Input);
+    board1Input.setConnectsTo(board0Output);
+    board1Output.setConnectsTo(board2Input);
+    board2Input.setConnectsTo(board1Output);
 
     board0Output.board = boards[0];
     board1Input.board = boards[1];

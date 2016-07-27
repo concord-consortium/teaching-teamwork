@@ -1,5 +1,6 @@
 var PICView = React.createFactory(require('../../views/pic/pic')),
     Pin = require('../shared/pin'),
+    TTL = require('../shared/ttl'),
     layout = require('../../views/shared/layout');
 
 var PIC = function (options) {
@@ -16,7 +17,7 @@ var PIC = function (options) {
 
     pin = {
       number: i,
-      value: [3, 11, 12, 13].indexOf(i) !== -1 ? 1 : 0,
+      voltage: [3, 11, 12, 13].indexOf(i) !== -1 ? TTL.HIGH_VOLTAGE : TTL.LOW_VOLTAGE,
       inputMode: !notConnectable,
       placement: i < 9 ? 'left' : 'right',
       x: 0,
@@ -87,7 +88,7 @@ PIC.prototype.calculatePosition = function (constants, selected, index, count) {
     }
   }
 };
-PIC.prototype.resolveOutputValues = function () {
+PIC.prototype.resolveOutputVoltages = function () {
   // nothing to do here for the pic
 };
 PIC.prototype.evaluateCurrentPICInstruction = function () {
@@ -129,27 +130,28 @@ PIC.prototype.getPinListValue = function (list) {
       i;
 
   // each get causes the board to resolve so that we have the most current value
-  this.board.resolveComponentOutputValues();
+  this.board.resolveComponentOutputVoltages();
 
   for (i = 0; i < list.length; i++) {
-    value = value | ((list[i].inputMode && list[i].getValue() ? 1 : 0) << i);
+    value = value | ((list[i].inputMode && list[i].isHigh() ? 1 : 0) << i);
   }
   return value;
 };
 PIC.prototype.setPinListValue = function (list, value) {
-  var i;
+  var i, outputMode;
   for (i = 0; i < list.length; i++) {
-    list[i].setValue(!list[i].inputMode && (value & (1 << i)) ? 1 : 0);
+    outputMode = !list[i].inputMode;
+    list[i].setVoltage(TTL.getBooleanVoltage(outputMode && (value & (1 << i))));
   }
   // each set causes the circuit to be resolved
-  this.board.resolveIOValues();
+  this.board.resolveIOVoltages();
 };
 PIC.prototype.setPinListInputMode = function (list, mask) {
   var i;
   for (i = 0; i < list.length; i++) {
     list[i].inputMode = !!(mask & (1 << i));
   }
-  this.board.resolveIOValues();
+  this.board.resolveIOVoltages();
 };
 
 module.exports = PIC;

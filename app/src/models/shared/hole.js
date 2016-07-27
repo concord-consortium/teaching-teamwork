@@ -1,3 +1,5 @@
+var TTL = require('./ttl');
+
 var Hole = function (options) {
   this.isPin = false; // to allow for easy checks against pins in circuits
   this.index = options.index;
@@ -7,22 +9,36 @@ var Hole = function (options) {
   this.color = options.color;
   this.connector = options.connector;
   this.connected = options.connected || false;
-  this.value = options.value || 0;
-  this.startingValue = this.value;
+  this.voltage = options.voltage || 0;
+  this.startingVoltage = this.voltage;
   this.label = options.label;
+  this.inputMode = options.inputMode;
+  this.connectedHole = null; // set via Connector.prototype.setConnectsTo
 };
 Hole.prototype.getBezierReflection = function () {
   return this.connector.type === 'input' ? 1 : -1;
 };
-Hole.prototype.setValue = function (newValue) {
-  this.pulseProbeDuration = this.pulseProbeDuration || (newValue != this.value ? 1 : 0);
-  this.value = newValue;
+Hole.prototype.setVoltage = function (newVoltage) {
+  this.pulseProbeDuration = this.pulseProbeDuration || (newVoltage != this.voltage ? 1 : 0);
+  this.voltage = newVoltage;
 };
-Hole.prototype.getValue = function () {
-  return this.value;
+Hole.prototype.getVoltage = function () {
+  return this.voltage;
+};
+Hole.prototype.getLogicLevel = function () {
+  return TTL.getVoltageLogicLevel(this.voltage);
+};
+Hole.prototype.isLow = function () {
+  return TTL.isLow(this.getLogicLevel());
+};
+Hole.prototype.isInvalid = function () {
+  return TTL.isInvalid(this.getLogicLevel());
+};
+Hole.prototype.isHigh = function () {
+  return TTL.isHigh(this.getLogicLevel());
 };
 Hole.prototype.reset = function () {
-  this.value = this.startingValue;
+  this.voltage = this.startingVoltage;
   this.pulseProbeDuration = 0;
 };
 Hole.prototype.getColor = function () {
