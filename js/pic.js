@@ -5026,7 +5026,7 @@ module.exports = React.createClass({
       path({d: needlePath, fill: '#c0c0c0', stroke: '#777', style: {pointerEvents: 'none'}}),
       path({d: handlePath, fill: '#eee', stroke: '#777'}), // '#FDCA6E'
       rect({x: x + (2 * height), y: y + (0.15 * height), width: (2 * height), height: (0.7 * height), stroke: '#555', fill: '#ddd'}),
-      text({x: x + (3 * height), y: middleY + 1, fontSize: 12, fill: '#000', style: {textAnchor: 'middle'}, dominantBaseline: 'middle'}, voltage),
+      text({x: x + (3 * height), y: middleY + 1, fontSize: selectedConstants.PROBE_HEIGHT * 0.6, fill: '#000', style: {textAnchor: 'middle'}, dominantBaseline: 'middle'}, voltage),
       circle({cx: x + (4.75 * height), cy: middleY, r: height / 4, fill: 'red', stroke: '#ccc', fillOpacity: redFill}),
       circle({cx: x + (5.75 * height), cy: middleY, r: height / 4, fill: 'green', stroke: '#ccc', fillOpacity: greenFill}),
       circle({cx: x + (6.75 * height), cy: middleY, r: height / 4, fill: '#ffbf00', stroke: '#ccc', fillOpacity: amberFill})
