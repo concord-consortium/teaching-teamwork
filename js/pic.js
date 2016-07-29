@@ -4898,7 +4898,9 @@ module.exports = React.createClass({
 var events = require('../shared/events'),
     g = React.DOM.g,
     path = React.DOM.path,
-    circle = React.DOM.circle;
+    circle = React.DOM.circle,
+    rect = React.DOM.rect,
+    text = React.DOM.text;
 
 module.exports = React.createClass({
   displayName: 'ProbeView',
@@ -4942,6 +4944,17 @@ module.exports = React.createClass({
     $window.on('mouseup', stopDrag);
   },
 
+  // copied from http://stackoverflow.com/a/9232092
+  truncateDecimals: function (num, digits) {
+    var numS = num.toString(),
+        decPos = numS.indexOf('.'),
+        substrLength = decPos == -1 ? numS.length : 1 + decPos + digits,
+        trimmedResult = numS.substr(0, substrLength),
+        finalResult = isNaN(trimmedResult) ? 0 : trimmedResult;
+
+    return parseFloat(finalResult);
+  },
+
   render: function () {
     var selectedConstants = this.props.constants.selectedConstants(this.props.selected),
         width = selectedConstants.PROBE_WIDTH,
@@ -4954,9 +4967,12 @@ module.exports = React.createClass({
         redFill = defaultFill,
         greenFill = defaultFill,
         amberFill = defaultFill,
+        voltage = "--",
         needlePath, handlePath, rotation;
 
     if (this.props.probeSource && (!this.props.probeSource.inputMode || this.props.probeSource.connected)) {
+
+      voltage = this.truncateDecimals(this.props.probeSource.voltage, 2);
 
       if (this.props.probeSource.isHigh()) {
         redFill = 1;
@@ -5009,9 +5025,11 @@ module.exports = React.createClass({
     return g({transform: ['rotate(', rotation, ' ',  x, ' ', y + (height / 2), ')'].join(''), onMouseDown: this.props.selected && this.props.editable ? this.startDrag : null},
       path({d: needlePath, fill: '#c0c0c0', stroke: '#777', style: {pointerEvents: 'none'}}),
       path({d: handlePath, fill: '#eee', stroke: '#777'}), // '#FDCA6E'
-      circle({cx: x + (4 * height), cy: middleY, r: height / 4, fill: 'red', fillOpacity: redFill}),
-      circle({cx: x + (5 * height), cy: middleY, r: height / 4, fill: 'green', fillOpacity: greenFill}),
-      circle({cx: x + (6 * height), cy: middleY, r: height / 4, fill: '#ffbf00', fillOpacity: amberFill})
+      rect({x: x + (2 * height), y: y + (0.15 * height), width: (2 * height), height: (0.7 * height), stroke: '#555', fill: '#ddd'}),
+      text({x: x + (3 * height), y: middleY + 1, fontSize: 12, fill: '#000', style: {textAnchor: 'middle'}, dominantBaseline: 'middle'}, voltage),
+      circle({cx: x + (4.75 * height), cy: middleY, r: height / 4, fill: 'red', stroke: '#ccc', fillOpacity: redFill}),
+      circle({cx: x + (5.75 * height), cy: middleY, r: height / 4, fill: 'green', stroke: '#ccc', fillOpacity: greenFill}),
+      circle({cx: x + (6.75 * height), cy: middleY, r: height / 4, fill: '#ffbf00', stroke: '#ccc', fillOpacity: amberFill})
     );
   }
 });

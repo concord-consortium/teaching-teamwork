@@ -154,7 +154,7 @@ controller.init();
 module.exports = controller;
 
 
-},{"iframe-phone":41}],4:[function(require,module,exports){
+},{"iframe-phone":42}],4:[function(require,module,exports){
 var logManagerUrl  = '//teaching-teamwork-log-manager.herokuapp.com/api/logs',
     xhrObserver    = require('../../data/shared/xhrObserver'),
     laraController = require('./lara'),
@@ -631,7 +631,7 @@ module.exports = userController = {
 };
 
 
-},{"../../data/shared/group-names":6,"../../views/shared/userRegistration.jsx":33,"./lara":3,"./log":4}],6:[function(require,module,exports){
+},{"../../data/shared/group-names":6,"../../views/shared/userRegistration.jsx":34,"./lara":3,"./log":4}],6:[function(require,module,exports){
 var sortByName = function (a, b) {
   if (a.name < b.name) {
     return -1;
@@ -1015,7 +1015,7 @@ LogicChip.prototype.serialize = function () {
 module.exports = LogicChip;
 
 
-},{"../../views/logic-gates/logic-chip":18,"../shared/pin":13,"../shared/ttl":14}],9:[function(require,module,exports){
+},{"../../views/logic-gates/logic-chip":19,"../shared/pin":13,"../shared/ttl":14}],9:[function(require,module,exports){
 var Hole = require('./hole'),
     Pin = require('./pin'),
     Wire = require('./wire'),
@@ -1749,6 +1749,7 @@ module.exports = Wire;
 var Connector = require('../../models/shared/connector'),
     Board = require('../../models/shared/board'),
     TTL = require('../../models/shared/ttl'),
+    LogicChip =  require('../../models/logic-gates/logic-chip'),
     //LogicChip =  require('../../models/logic-gates/logic-chip'),
     boardWatcher = require('../../controllers/pic/board-watcher'),
     userController = require('../../controllers/shared/user'),
@@ -1756,6 +1757,7 @@ var Connector = require('../../models/shared/connector'),
     SidebarChatView = React.createFactory(require('../shared/sidebar-chat')),
     WeGotItView = React.createFactory(require('../shared/we-got-it')),
     WorkspaceView = React.createFactory(require('./workspace')),
+    DemoControlView = React.createFactory(require('./demo-control')),
     constants = require('./constants'),
     div = React.DOM.div,
     h1 = React.DOM.h1,
@@ -1790,7 +1792,11 @@ module.exports = React.createClass({
       currentBoard: 0,
       currentUser: null,
       currentGroup: null,
-      activity: null
+      activity: null,
+      showDemo: window.location.search.indexOf('demo') !== -1,
+      showDebugPins: false,
+      toggledAllChipsAndWires: false,
+      hasDemoData: false
     };
   },
 
@@ -1879,11 +1885,23 @@ module.exports = React.createClass({
   },
 
   startActivity: function (activityName, activity) {
-    var self = this;
+    var self = this,
+        hasDemoData = false,
+        i;
 
     this.setupConnectors(activity);
 
-    this.setState({activity: activity});
+    for (i = 0; i < activity.boards.length; i++) {
+      if (activity.boards[i].demo) {
+        hasDemoData = true;
+        break;
+      }
+    }
+
+    this.setState({
+      activity: activity,
+      hasDemoData: hasDemoData
+    });
 
     boardWatcher.addListener(this.state.boards[0], this.updateWatchedBoard);
     boardWatcher.addListener(this.state.boards[1], this.updateWatchedBoard);
@@ -2079,21 +2097,86 @@ module.exports = React.createClass({
     callback(allCorrect, truthTable);
   },
 
+  toggleAllChipsAndWires: function () {
+    var chipMap = {}, i, j, board, demo, addChip, getEndpoint, wire, wireParts, sourceParts, destParts, source, dest;
+
+    addChip = function (name, chip) {
+      chipMap[name] = new LogicChip({type: chip.type, layout: {x: chip.x, y: chip.y, width: 150, height: 75}, selectable: true});
+      board.addComponent(name, chipMap[name]);
+    };
+
+    getEndpoint = function (name, index) {
+      var item = chipMap[name] || (name == "in" ? board.connectors.input : (name == "out" ? board.connectors.output : null)),
+          endPoint = null;
+
+      if (item) {
+        if (item instanceof Connector) {
+          endPoint = item.holes[index - 1];
+        }
+        else {
+          endPoint = item.pins[index - 1];
+        }
+      }
+
+      return endPoint;
+    };
+
+    for (i = 0; i < this.state.boards.length; i++) {
+      board = this.state.boards[i];
+      board.clear();
+      if (!this.state.toggledAllChipsAndWires && this.state.activity.boards[i].demo) {
+        demo = this.state.activity.boards[i].demo;
+        if (demo.chips) {
+          $.each(demo.chips, addChip);
+        }
+        if (demo.wires) {
+          for (j = 0; j < demo.wires.length; j++) {
+            wire = $.trim(demo.wires[j]);
+            if (wire.substr(0, 2) === "//") {
+              continue;
+            }
+            wireParts = wire.split(",");
+            sourceParts = $.trim(wireParts[0]).split(":");
+            destParts = $.trim(wireParts[1] || "").split(":");
+
+            source = getEndpoint(sourceParts[0], parseInt(sourceParts[1], 10));
+            dest = getEndpoint(destParts[0], parseInt(destParts[1], 10));
+
+            //if (source && dest) {
+              // board.addWire(source, dest);
+            //}
+          }
+        }
+      }
+      boardWatcher.circuitChanged(board);
+    }
+
+    this.setState({boards: this.state.boards, toggledAllChipsAndWires: !this.state.toggledAllChipsAndWires});
+  },
+
+  toggleDebugPins: function () {
+    this.setState({showDebugPins: !this.state.showDebugPins});
+  },
+
   render: function () {
+    var demoTop = this.state.showSimulator ? 75 : 0,
+        sidebarTop = demoTop + (this.state.showDemo ? 75 : 0);
+
     return div({},
       h1({}, "Teaching Teamwork" + (this.state.activity ? ": " + this.state.activity.name : "")),
       this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
       WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect}),
       div({id: 'logicapp'},
-        WorkspaceView({constants: constants, boards: this.state.boards, users: this.state.users, userBoardNumber: this.state.userBoardNumber, activity: this.state.activity}),
-        SidebarChatView({numClients: 2, top: 0})
+        WorkspaceView({constants: constants, boards: this.state.boards, showDebugPins: this.state.showDebugPins, users: this.state.users, userBoardNumber: this.state.userBoardNumber, activity: this.state.activity}),
+        this.state.showDemo ? DemoControlView({top: demoTop, toggleAllChipsAndWires: this.toggleAllChipsAndWires, toggleDebugPins: this.toggleDebugPins, showDebugPins: this.state.showDebugPins, toggledAllChipsAndWires: this.state.toggledAllChipsAndWires, hasDemoData: this.state.hasDemoData}) : null,
+        SidebarChatView({numClients: 2, top: sidebarTop})
       )
     );
   }
 });
 
 
-},{"../../controllers/pic/board-watcher":2,"../../controllers/shared/log":4,"../../controllers/shared/user":5,"../../models/shared/board":9,"../../models/shared/connector":11,"../../models/shared/ttl":14,"../shared/sidebar-chat":32,"../shared/we-got-it":35,"./constants":17,"./workspace":19}],17:[function(require,module,exports){
+},{"../../controllers/pic/board-watcher":2,"../../controllers/shared/log":4,"../../controllers/shared/user":5,"../../models/logic-gates/logic-chip":8,"../../models/shared/board":9,"../../models/shared/connector":11,"../../models/shared/ttl":14,"../shared/sidebar-chat":33,"../shared/we-got-it":36,"./constants":17,"./demo-control":18,"./workspace":20}],17:[function(require,module,exports){
 var workspaceWidth = 936 - 200,
     logicDrawerWidth = 100,
     constants;
@@ -2142,6 +2225,33 @@ module.exports = constants = {
 
 
 },{}],18:[function(require,module,exports){
+var div = React.DOM.div,
+    button = React.DOM.button;
+
+module.exports = React.createClass({
+  displayName: 'DemoControlView',
+
+  toggleAllChipsAndWires: function () {
+    this.props.toggleAllChipsAndWires();
+  },
+
+  toggleDebugPins: function () {
+    this.props.toggleDebugPins();
+  },
+
+  render: function () {
+    return div({id: 'demo-control'},
+      div({id: 'demo-control-title'}, 'Demo Control'),
+      div({id: 'demo-control-area'},
+        //this.props.hasDemoData ? button({onClick: this.toggleAllChipsAndWires}, (this.props.toggledAllChipsAndWires ? '-' : '+') + ' Chips/Wires') : null,
+        button({onClick: this.toggleDebugPins}, (this.props.showDebugPins ? '-' : '+') + ' Pin Colors')
+      )
+    );
+  }
+});
+
+
+},{}],19:[function(require,module,exports){
 var PinView = React.createFactory(require('../shared/pin')),
     PinLabelView = React.createFactory(require('../shared/pin-label')),
     constants = require('./constants'),
@@ -2358,7 +2468,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../shared/events":25,"../shared/pin":29,"../shared/pin-label":28,"./constants":17}],19:[function(require,module,exports){
+},{"../shared/events":26,"../shared/pin":30,"../shared/pin-label":29,"./constants":17}],20:[function(require,module,exports){
 var BoardView = React.createFactory(require('../shared/board')),
     RibbonView = React.createFactory(require('../shared/ribbon')),
     events = require('../shared/events'),
@@ -2418,7 +2528,9 @@ module.exports = React.createClass({
           logicChipDrawer: this.props.activity ? this.props.activity.boards[this.props.userBoardNumber].logicChipDrawer : null,
           toggleBoard: this.props.userBoardNumber === this.state.selectedBoard.number ? this.toggleBoard : null,
           toggleBoardButtonStyle: {marginTop: -35},
-          showProbe: true
+          showProbe: true,
+          showDebugPins: this.props.showDebugPins,
+          stepping: true
         }),
         RibbonView({
           constants: this.props.constants,
@@ -2438,7 +2550,9 @@ module.exports = React.createClass({
           editable: this.props.userBoardNumber === 0,
           user: this.props.users[0],
           logicChipDrawer: this.props.activity ? this.props.activity.boards[0].logicChipDrawer : null,
-          toggleBoard: this.props.userBoardNumber === 0 ? this.toggleBoard : null
+          toggleBoard: this.props.userBoardNumber === 0 ? this.toggleBoard : null,
+          showDebugPins: this.props.showDebugPins,
+          stepping: true
         }),
         RibbonView({
           constants: this.props.constants,
@@ -2450,7 +2564,9 @@ module.exports = React.createClass({
           editable: this.props.userBoardNumber === 1,
           user: this.props.users[1],
           logicChipDrawer: this.props.activity ? this.props.activity.boards[1].logicChipDrawer : null,
-          toggleBoard: this.props.userBoardNumber === 1 ? this.toggleBoard : null
+          toggleBoard: this.props.userBoardNumber === 1 ? this.toggleBoard : null,
+          showDebugPins: this.props.showDebugPins,
+          stepping: true
         })
       );
     }
@@ -2458,7 +2574,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../shared/board":20,"../shared/events":25,"../shared/ribbon":31}],20:[function(require,module,exports){
+},{"../shared/board":21,"../shared/events":26,"../shared/ribbon":32}],21:[function(require,module,exports){
 var boardWatcher = require('../../controllers/pic/board-watcher'),
     ConnectorView = React.createFactory(require('./connector')),
     WireView = React.createFactory(require('./wire')),
@@ -3003,7 +3119,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/pic/board-watcher":2,"../../models/logic-gates/logic-chip":8,"../shared/events":25,"./connector":24,"./layout":26,"./logic-chip-drawer":27,"./probe":30,"./wire":36}],21:[function(require,module,exports){
+},{"../../controllers/pic/board-watcher":2,"../../models/logic-gates/logic-chip":8,"../shared/events":26,"./connector":25,"./layout":27,"./logic-chip-drawer":28,"./probe":31,"./wire":37}],22:[function(require,module,exports){
 var div = React.DOM.div,
     b = React.DOM.b;
     
@@ -3020,7 +3136,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],22:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 var userController = require('../../controllers/shared/user'),
     ChatItemView = React.createFactory(require('./chat-item')),
     div = React.DOM.div;
@@ -3047,7 +3163,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/shared/user":5,"./chat-item":21}],23:[function(require,module,exports){
+},{"../../controllers/shared/user":5,"./chat-item":22}],24:[function(require,module,exports){
 var g = React.DOM.g,
     circle = React.DOM.circle,
     title = React.DOM.title;
@@ -3076,7 +3192,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],24:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 var ConnectorHoleView = React.createFactory(require('./connector-hole')),
     svg = React.DOM.svg,
     rect = React.DOM.rect;
@@ -3102,7 +3218,7 @@ module.exports = React.createClass({
 });
 
 
-},{"./connector-hole":23}],25:[function(require,module,exports){
+},{"./connector-hole":24}],26:[function(require,module,exports){
 var boardWatcher = require('../../controllers/pic/board-watcher'),
     logController = require('../../controllers/shared/log'),
     events;
@@ -3179,7 +3295,7 @@ module.exports = events = {
 };
 
 
-},{"../../controllers/pic/board-watcher":2,"../../controllers/shared/log":4}],26:[function(require,module,exports){
+},{"../../controllers/pic/board-watcher":2,"../../controllers/shared/log":4}],27:[function(require,module,exports){
 module.exports = {
   getBezierPath: function (options) {
     var normalize, dy, dx, dist, x3, y3, x4, y4, height, curvyness;
@@ -3229,7 +3345,7 @@ module.exports = {
 };
 
 
-},{}],27:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 var g = React.DOM.g,
     rect = React.DOM.rect,
     text = React.DOM.text,
@@ -3316,7 +3432,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],28:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 var text = React.DOM.text;
 
 module.exports = React.createClass({
@@ -3339,7 +3455,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],29:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 var g = React.DOM.g,
     rect = React.DOM.rect;
 
@@ -3405,11 +3521,13 @@ module.exports = React.createClass({
 });
 
 
-},{}],30:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 var events = require('../shared/events'),
     g = React.DOM.g,
     path = React.DOM.path,
-    circle = React.DOM.circle;
+    circle = React.DOM.circle,
+    rect = React.DOM.rect,
+    text = React.DOM.text;
 
 module.exports = React.createClass({
   displayName: 'ProbeView',
@@ -3453,6 +3571,17 @@ module.exports = React.createClass({
     $window.on('mouseup', stopDrag);
   },
 
+  // copied from http://stackoverflow.com/a/9232092
+  truncateDecimals: function (num, digits) {
+    var numS = num.toString(),
+        decPos = numS.indexOf('.'),
+        substrLength = decPos == -1 ? numS.length : 1 + decPos + digits,
+        trimmedResult = numS.substr(0, substrLength),
+        finalResult = isNaN(trimmedResult) ? 0 : trimmedResult;
+
+    return parseFloat(finalResult);
+  },
+
   render: function () {
     var selectedConstants = this.props.constants.selectedConstants(this.props.selected),
         width = selectedConstants.PROBE_WIDTH,
@@ -3465,9 +3594,12 @@ module.exports = React.createClass({
         redFill = defaultFill,
         greenFill = defaultFill,
         amberFill = defaultFill,
+        voltage = "--",
         needlePath, handlePath, rotation;
 
     if (this.props.probeSource && (!this.props.probeSource.inputMode || this.props.probeSource.connected)) {
+
+      voltage = this.truncateDecimals(this.props.probeSource.voltage, 2);
 
       if (this.props.probeSource.isHigh()) {
         redFill = 1;
@@ -3520,15 +3652,17 @@ module.exports = React.createClass({
     return g({transform: ['rotate(', rotation, ' ',  x, ' ', y + (height / 2), ')'].join(''), onMouseDown: this.props.selected && this.props.editable ? this.startDrag : null},
       path({d: needlePath, fill: '#c0c0c0', stroke: '#777', style: {pointerEvents: 'none'}}),
       path({d: handlePath, fill: '#eee', stroke: '#777'}), // '#FDCA6E'
-      circle({cx: x + (4 * height), cy: middleY, r: height / 4, fill: 'red', fillOpacity: redFill}),
-      circle({cx: x + (5 * height), cy: middleY, r: height / 4, fill: 'green', fillOpacity: greenFill}),
-      circle({cx: x + (6 * height), cy: middleY, r: height / 4, fill: '#ffbf00', fillOpacity: amberFill})
+      rect({x: x + (2 * height), y: y + (0.15 * height), width: (2 * height), height: (0.7 * height), stroke: '#555', fill: '#ddd'}),
+      text({x: x + (3 * height), y: middleY + 1, fontSize: 12, fill: '#000', style: {textAnchor: 'middle'}, dominantBaseline: 'middle'}, voltage),
+      circle({cx: x + (4.75 * height), cy: middleY, r: height / 4, fill: 'red', stroke: '#ccc', fillOpacity: redFill}),
+      circle({cx: x + (5.75 * height), cy: middleY, r: height / 4, fill: 'green', stroke: '#ccc', fillOpacity: greenFill}),
+      circle({cx: x + (6.75 * height), cy: middleY, r: height / 4, fill: '#ffbf00', stroke: '#ccc', fillOpacity: amberFill})
     );
   }
 });
 
 
-},{"../shared/events":25}],31:[function(require,module,exports){
+},{"../shared/events":26}],32:[function(require,module,exports){
 var line = React.DOM.line,
     div = React.DOM.div,
     svg = React.DOM.svg;
@@ -3557,7 +3691,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],32:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 var userController = require('../../controllers/shared/user'),
     logController = require('../../controllers/shared/log'),
     ChatItems = React.createFactory(require('./chat-items')),
@@ -3681,7 +3815,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/shared/log":4,"../../controllers/shared/user":5,"./chat-items":22}],33:[function(require,module,exports){
+},{"../../controllers/shared/log":4,"../../controllers/shared/user":5,"./chat-items":23}],34:[function(require,module,exports){
 var userController, UserRegistrationView, UserRegistrationViewFactory,
     groups = require('../../data/shared/group-names');
 
@@ -3907,7 +4041,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
 UserRegistrationViewFactory = React.createFactory(UserRegistrationView);
 
 
-},{"../../data/shared/group-names":6}],34:[function(require,module,exports){
+},{"../../data/shared/group-names":6}],35:[function(require,module,exports){
 var div = React.DOM.div,
     h2 = React.DOM.h2,
     button = React.DOM.button;
@@ -3935,7 +4069,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],35:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 var WeGotItPopupView = React.createFactory(require('./we-got-it-popup')),
     userController = require('../../controllers/shared/user'),
     logController = require('../../controllers/shared/log'),
@@ -4009,7 +4143,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/shared/log":4,"../../controllers/shared/user":5,"./we-got-it-popup":34}],36:[function(require,module,exports){
+},{"../../controllers/shared/log":4,"../../controllers/shared/user":5,"./we-got-it-popup":35}],37:[function(require,module,exports){
 var layout = require('../../views/shared/layout'),
     path = React.DOM.path;
 
@@ -4056,7 +4190,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../views/shared/layout":26}],37:[function(require,module,exports){
+},{"../../views/shared/layout":27}],38:[function(require,module,exports){
 var structuredClone = require('./structured-clone');
 var HELLO_INTERVAL_LENGTH = 200;
 var HELLO_TIMEOUT_LENGTH = 60000;
@@ -4205,7 +4339,7 @@ module.exports = function getIFrameEndpoint() {
   }
   return instance;
 };
-},{"./structured-clone":40}],38:[function(require,module,exports){
+},{"./structured-clone":41}],39:[function(require,module,exports){
 "use strict";
 
 var ParentEndpoint = require('./parent-endpoint');
@@ -4297,7 +4431,7 @@ module.exports = function IframePhoneRpcEndpoint(handler, namespace, targetWindo
     this.disconnect = disconnect.bind(this);
 };
 
-},{"./iframe-endpoint":37,"./parent-endpoint":39}],39:[function(require,module,exports){
+},{"./iframe-endpoint":38,"./parent-endpoint":40}],40:[function(require,module,exports){
 var structuredClone = require('./structured-clone');
 
 /**
@@ -4470,7 +4604,7 @@ module.exports = function ParentEndpoint(targetWindowOrIframeEl, targetOrigin, a
   };
 };
 
-},{"./structured-clone":40}],40:[function(require,module,exports){
+},{"./structured-clone":41}],41:[function(require,module,exports){
 var featureSupported = false;
 
 (function () {
@@ -4508,7 +4642,7 @@ exports.supported = function supported() {
   return featureSupported && featureSupported.structuredClones > 0;
 };
 
-},{}],41:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 module.exports = {
   /**
    * Allows to communicate with an iframe.
@@ -4526,4 +4660,4 @@ module.exports = {
 
 };
 
-},{"./lib/iframe-endpoint":37,"./lib/iframe-phone-rpc-endpoint":38,"./lib/parent-endpoint":39,"./lib/structured-clone":40}]},{},[1]);
+},{"./lib/iframe-endpoint":38,"./lib/iframe-phone-rpc-endpoint":39,"./lib/parent-endpoint":40,"./lib/structured-clone":41}]},{},[1]);
