@@ -140,6 +140,7 @@ button {
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
+  cursor: default;
 }
 .board-user {
   padding: 5px;
