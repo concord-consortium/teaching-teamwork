@@ -35,8 +35,10 @@ BoardWatcher.prototype.pushedButton = function (board, buttonValue) {
   this.firebase.child(board.number).child('button').set(buttonValue);
 };
 BoardWatcher.prototype.circuitChanged = function (board) {
-  this.firebase.child(board.number).child('wires').set(board.serializeWiresToArray());
-  this.firebase.child(board.number).child('components').set(board.serializeComponents());
+  this.firebase.child(board.number).child('layout').set({
+    wires: board.serializeWiresToArray(),
+    components: board.serializeComponents()
+  });
 };
 BoardWatcher.prototype.addListener = function (board, listener) {
   this.listeners[board.number] = this.listeners[board.number] || [];
@@ -154,7 +156,7 @@ controller.init();
 module.exports = controller;
 
 
-},{"iframe-phone":42}],4:[function(require,module,exports){
+},{"iframe-phone":43}],4:[function(require,module,exports){
 var logManagerUrl  = '//teaching-teamwork-log-manager.herokuapp.com/api/logs',
     xhrObserver    = require('../../data/shared/xhrObserver'),
     laraController = require('./lara'),
@@ -631,7 +633,7 @@ module.exports = userController = {
 };
 
 
-},{"../../data/shared/group-names":6,"../../views/shared/userRegistration.jsx":34,"./lara":3,"./log":4}],6:[function(require,module,exports){
+},{"../../data/shared/group-names":6,"../../views/shared/userRegistration.jsx":35,"./lara":3,"./log":4}],6:[function(require,module,exports){
 var sortByName = function (a, b) {
   if (a.name < b.name) {
     return -1;
@@ -870,24 +872,31 @@ var LogicChip = function (options) {
 
   this.position = {
     x: this.layout.x,
-    y: this.layout.y
+    y: this.layout.y,
+    width: 150,
+    height: 75
   };
+
+  switch (this.type) {
+    case '7404':
+      outputPins = [1, 3, 5, 6, 7, 9, 11, 13];
+      break;
+    case '7411':
+      outputPins = [5, 6, 7, 11, 13];
+      break;
+    default:
+      outputPins = [2, 5, 6, 7, 10, 13];
+      break;
+  }
 
   this.pins = [];
   this.pinMap = {};
   for (i = 0; i < 14; i++) {
-    if (this.type == '7404') {
-      outputPins = [1, 3, 5, 6, 7, 9, 11, 13];
-    }
-    else {
-      outputPins = [2, 5, 6, 7, 10, 13];
-    }
-
     pin = {
       number: i,
       voltage: i == 13 ? TTL.HIGH_VOLTAGE : TTL.LOW_VOLTAGE,
       inputMode: outputPins.indexOf(i) === -1,
-      placement: i < 7 ? 'left' : 'right',
+      placement: i < 7 ? 'bottom' : 'top',
       x: 0,
       y: 0,
       height: 0,
@@ -922,6 +931,36 @@ LogicChip.prototype.reset = function () {
   var i;
   for (i = 0; i < this.pins.length; i++) {
     this.pins[i].reset();
+  }
+};
+LogicChip.prototype.calculatePosition = function (constants, selected) {
+  var selectedConstants = constants.selectedConstants(selected),
+      position = this.position,
+      pinDX, pinDY, i, j, pin, pinNumber, xOffset, y;
+
+  pinDX = (position.width - (selectedConstants.PIN_WIDTH * 7)) / 8;
+
+  for (i = 0; i < 2; i++) {
+    y = i === 0 ? position.y + position.height : position.y - selectedConstants.PIN_HEIGHT;
+    pinDY = i === 0 ? -(selectedConstants.PIN_HEIGHT / 2) : 2 * selectedConstants.PIN_HEIGHT;
+
+    for (j = 0; j < 7; j++) {
+      pinNumber = (i * 7) + j;
+      pin = this.pins[pinNumber];
+      xOffset = i === 0 ? j : 6 - j;
+
+      pin.x = position.x + pinDX + (xOffset * (selectedConstants.PIN_WIDTH + pinDX));
+      pin.y = y;
+
+      pin.cx = pin.x + (selectedConstants.PIN_WIDTH / 2);
+      pin.cy = pin.y + (selectedConstants.PIN_HEIGHT / 2);
+      pin.width = selectedConstants.PIN_WIDTH;
+      pin.height = selectedConstants.PIN_HEIGHT;
+      pin.labelSize = selectedConstants.PIC_FONT_SIZE;
+      pin.label.x = pin.x + (selectedConstants.PIN_WIDTH / 2);
+      pin.label.y = pin.y + pinDY;
+      pin.label.anchor = 'middle';
+    }
   }
 };
 LogicChip.prototype.mapAndSetPins = function (pinConnections, fn) {
@@ -1066,6 +1105,8 @@ Board.prototype.clear = function () {
   var i;
   this.wires = [];
   this.circuits = [];
+  this.components = {};
+  this.updateComponentList();
   this.reset();
   for (i = 0; i < this.pinsAndHoles.length; i++) {
     this.pinsAndHoles[i].connected = false;
@@ -1365,7 +1406,7 @@ Board.prototype.updateComponents = function (newSerializedComponents) {
     var component;
 
     if (serializeComponent.type == 'logic-chip') {
-      component = new LogicChip({type: serializeComponent.chipType, layout: {x: serializeComponent.x, y: serializeComponent.y, width: 150, height: 75}});
+      component = new LogicChip({type: serializeComponent.chipType, layout: {x: serializeComponent.x, y: serializeComponent.y}});
       self.addComponent(name, component);
     }
   });
@@ -1580,8 +1621,8 @@ Hole.prototype.reset = function () {
   this.voltage = this.startingVoltage;
   this.pulseProbeDuration = 0;
 };
-Hole.prototype.getColor = function () {
-  return this.color;
+Hole.prototype.getColor = function (editableInput) {
+  return editableInput ? TTL.getColor(this.voltage) : this.color;
 };
 
 module.exports = Hole;
@@ -1757,6 +1798,7 @@ var Connector = require('../../models/shared/connector'),
     SidebarChatView = React.createFactory(require('../shared/sidebar-chat')),
     WeGotItView = React.createFactory(require('../shared/we-got-it')),
     WorkspaceView = React.createFactory(require('./workspace')),
+    OfflineCheckView = React.createFactory(require('../shared/offline-check')),
     DemoControlView = React.createFactory(require('./demo-control')),
     constants = require('./constants'),
     div = React.DOM.div,
@@ -1974,13 +2016,13 @@ module.exports = React.createClass({
   updateWatchedBoard: function (board, boardInfo) {
     var wires, components;
 
-    // update the wires
-    wires = (boardInfo ? boardInfo.wires : null) || [];
-    board.updateWires(wires);
-
     // update the components
-    components = (boardInfo ? boardInfo.components : null) || [];
+    components = (boardInfo && boardInfo.layout ? boardInfo.layout.components : null) || [];
     board.updateComponents(components);
+
+    // update the wires
+    wires = (boardInfo && boardInfo.layout ? boardInfo.layout.wires : null) || [];
+    board.updateWires(wires);
 
     board.resolveIOVoltages();
 
@@ -2101,7 +2143,7 @@ module.exports = React.createClass({
     var chipMap = {}, i, j, board, demo, addChip, getEndpoint, wire, wireParts, sourceParts, destParts, source, dest;
 
     addChip = function (name, chip) {
-      chipMap[name] = new LogicChip({type: chip.type, layout: {x: chip.x, y: chip.y, width: 150, height: 75}, selectable: true});
+      chipMap[name] = new LogicChip({type: chip.type, layout: {x: chip.x, y: chip.y}, selectable: true});
       board.addComponent(name, chipMap[name]);
     };
 
@@ -2142,12 +2184,13 @@ module.exports = React.createClass({
             source = getEndpoint(sourceParts[0], parseInt(sourceParts[1], 10));
             dest = getEndpoint(destParts[0], parseInt(destParts[1], 10));
 
-            //if (source && dest) {
-              // board.addWire(source, dest);
-            //}
+            if (source && dest) {
+              board.addWire(source, dest, source.color || dest.color || '#555');
+            }
           }
         }
       }
+      board.updateComponentList();
       boardWatcher.circuitChanged(board);
     }
 
@@ -2170,13 +2213,14 @@ module.exports = React.createClass({
         WorkspaceView({constants: constants, boards: this.state.boards, showDebugPins: this.state.showDebugPins, users: this.state.users, userBoardNumber: this.state.userBoardNumber, activity: this.state.activity}),
         this.state.showDemo ? DemoControlView({top: demoTop, toggleAllChipsAndWires: this.toggleAllChipsAndWires, toggleDebugPins: this.toggleDebugPins, showDebugPins: this.state.showDebugPins, toggledAllChipsAndWires: this.state.toggledAllChipsAndWires, hasDemoData: this.state.hasDemoData}) : null,
         SidebarChatView({numClients: 2, top: sidebarTop})
-      )
+      ),
+      OfflineCheckView({})
     );
   }
 });
 
 
-},{"../../controllers/pic/board-watcher":2,"../../controllers/shared/log":4,"../../controllers/shared/user":5,"../../models/logic-gates/logic-chip":8,"../../models/shared/board":9,"../../models/shared/connector":11,"../../models/shared/ttl":14,"../shared/sidebar-chat":33,"../shared/we-got-it":36,"./constants":17,"./demo-control":18,"./workspace":20}],17:[function(require,module,exports){
+},{"../../controllers/pic/board-watcher":2,"../../controllers/shared/log":4,"../../controllers/shared/user":5,"../../models/logic-gates/logic-chip":8,"../../models/shared/board":9,"../../models/shared/connector":11,"../../models/shared/ttl":14,"../shared/offline-check":29,"../shared/sidebar-chat":34,"../shared/we-got-it":37,"./constants":17,"./demo-control":18,"./workspace":20}],17:[function(require,module,exports){
 var workspaceWidth = 936 - 200,
     logicDrawerWidth = 100,
     constants;
@@ -2243,7 +2287,7 @@ module.exports = React.createClass({
     return div({id: 'demo-control'},
       div({id: 'demo-control-title'}, 'Demo Control'),
       div({id: 'demo-control-area'},
-        //this.props.hasDemoData ? button({onClick: this.toggleAllChipsAndWires}, (this.props.toggledAllChipsAndWires ? '-' : '+') + ' Chips/Wires') : null,
+        this.props.hasDemoData ? button({onClick: this.toggleAllChipsAndWires}, (this.props.toggledAllChipsAndWires ? '-' : '+') + ' Chips/Wires') : null,
         button({onClick: this.toggleDebugPins}, (this.props.showDebugPins ? '-' : '+') + ' Pin Colors')
       )
     );
@@ -2273,11 +2317,6 @@ module.exports = React.createClass({
         x: pos.x,
         y: pos.y
       };
-    }
-    // TODO: fix me - the width and height are not set when the chip is dragged to the board
-    if (!this.props.component.position.width) {
-      this.props.component.position.width = this.props.component.layout.width;
-      this.props.component.position.height = this.props.component.layout.height;
     }
     if (this.props.startDragPos) {
       this.startDrag(this.props.startDragPos);
@@ -2325,33 +2364,7 @@ module.exports = React.createClass({
   layout: function () {
     var label = this.props.component.label,
         selectedConstants = constants.selectedConstants(this.props.selected),
-        position = this.props.component.position,
-        pinDX, pinDY, i, j, pin, pinNumber, xOffset, y;
-
-    pinDX = (position.width - (selectedConstants.PIN_WIDTH * 7)) / 8;
-
-    for (i = 0; i < 2; i++) {
-      y = i === 0 ? position.y + position.height : position.y - selectedConstants.PIN_HEIGHT;
-      pinDY = i === 0 ? -(selectedConstants.PIN_HEIGHT / 2) : 2 * selectedConstants.PIN_HEIGHT;
-
-      for (j = 0; j < 7; j++) {
-        pinNumber = (i * 7) + j;
-        pin = this.props.component.pins[pinNumber];
-        xOffset = i === 0 ? j : 6 - j;
-
-        pin.x = position.x + pinDX + (xOffset * (selectedConstants.PIN_WIDTH + pinDX));
-        pin.y = y;
-
-        pin.cx = pin.x + (selectedConstants.PIN_WIDTH / 2);
-        pin.cy = pin.y + (selectedConstants.PIN_HEIGHT / 2);
-        pin.width = selectedConstants.PIN_WIDTH;
-        pin.height = selectedConstants.PIN_HEIGHT;
-        pin.labelSize = selectedConstants.PIC_FONT_SIZE;
-        pin.label.x = pin.x + (selectedConstants.PIN_WIDTH / 2);
-        pin.label.y = pin.y + pinDY;
-        pin.label.anchor = 'middle';
-      }
-    }
+        position = this.props.component.position;
 
     label.x = position.x + (position.width / 2);
     label.y = position.y + (position.height / 2) + (selectedConstants.CHIP_LABEL_SIZE / 4);
@@ -2468,7 +2481,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../shared/events":26,"../shared/pin":30,"../shared/pin-label":29,"./constants":17}],20:[function(require,module,exports){
+},{"../shared/events":26,"../shared/pin":31,"../shared/pin-label":30,"./constants":17}],20:[function(require,module,exports){
 var BoardView = React.createFactory(require('../shared/board')),
     RibbonView = React.createFactory(require('../shared/ribbon')),
     events = require('../shared/events'),
@@ -2517,7 +2530,8 @@ module.exports = React.createClass({
       return div({id: 'workspace', style: {width: this.props.constants.WORKSPACE_WIDTH, top: (this.props.constants.WORKSPACE_HEIGHT - selectedConstants.BOARD_HEIGHT) / 2}},
         RibbonView({
           constants: this.props.constants,
-          connector: this.state.selectedBoard.connectors.input
+          connector: this.state.selectedBoard.connectors.input,
+          selected: true
         }),
         BoardView({
           constants: this.props.constants,
@@ -2534,7 +2548,8 @@ module.exports = React.createClass({
         }),
         RibbonView({
           constants: this.props.constants,
-          connector: this.state.selectedBoard.connectors.output
+          connector: this.state.selectedBoard.connectors.output,
+          selected: true
         })
       );
     }
@@ -2574,7 +2589,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../shared/board":21,"../shared/events":26,"../shared/ribbon":32}],21:[function(require,module,exports){
+},{"../shared/board":21,"../shared/events":26,"../shared/ribbon":33}],21:[function(require,module,exports){
 var boardWatcher = require('../../controllers/pic/board-watcher'),
     ConnectorView = React.createFactory(require('./connector')),
     WireView = React.createFactory(require('./wire')),
@@ -2817,7 +2832,10 @@ module.exports = React.createClass({
       }
 
       if (callback) {
-        callback(addedWire, moved);
+        if (callback(addedWire, moved)) {
+          // callback can return true to signal a re-render
+          self.setState({wires: self.props.board.wires});
+        }
       }
     };
 
@@ -2980,7 +2998,7 @@ module.exports = React.createClass({
         chipCY = 37,
         chipX = pageX - this.svgOffset.left - chipCX,
         chipY = pageY - this.svgOffset.top - chipCY,
-        draggingChip = new LogicChip({type: chip.type, layout: {x: chipX, y: chipY, width: 150, height: 75}});
+        draggingChip = new LogicChip({type: chip.type, layout: {x: chipX, y: chipY}});
 
     this.setState({
       selectedWires: [],
@@ -3007,7 +3025,7 @@ module.exports = React.createClass({
 
     // don't add if hidden by drawer
     if (chip.x < r.right - 100) {
-      var component = new LogicChip({type: chip.type, layout: {x: chip.x, y: chip.y, width: 150, height: 75}, selectable: true});
+      var component = new LogicChip({type: chip.type, layout: {x: chip.x, y: chip.y}, selectable: true});
       this.addLogicChip(component);
       this.setState({draggingChip: null, selectedWires: [], selectedComponents: [component]});
     }
@@ -3119,7 +3137,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/pic/board-watcher":2,"../../models/logic-gates/logic-chip":8,"../shared/events":26,"./connector":25,"./layout":27,"./logic-chip-drawer":28,"./probe":31,"./wire":37}],22:[function(require,module,exports){
+},{"../../controllers/pic/board-watcher":2,"../../models/logic-gates/logic-chip":8,"../shared/events":26,"./connector":25,"./layout":27,"./logic-chip-drawer":28,"./probe":32,"./wire":38}],22:[function(require,module,exports){
 var div = React.DOM.div,
     b = React.DOM.b;
     
@@ -3179,13 +3197,23 @@ module.exports = React.createClass({
     this.props.reportHover(null);
   },
 
+  componentWillMount: function () {
+    this.setState({editableInput: (window.location.search.indexOf('editableInput') !== -1) && !this.props.hole.inputMode && this.props.editable});
+  },
+
   startDrag: function (e) {
-    this.props.drawConnection(this.props.hole, e, this.props.hole.color);
+    var self = this;
+    this.props.drawConnection(this.props.hole, e, this.props.hole.color, function (addedWire, moved) {
+      if (self.state.editableInput && !addedWire && !moved) {
+        self.props.hole.setVoltage(self.props.hole.getVoltage() ? 0 : 5);
+        return true; // signal a render
+      }
+    });
   },
 
   render: function () {
     var enableHandlers = this.props.selected && this.props.editable;
-    return g({}, circle({cx: this.props.hole.cx, cy: this.props.hole.cy, r: this.props.hole.radius, fill: this.props.hole.getColor(), onMouseDown: enableHandlers ? this.startDrag : null, onMouseOver: enableHandlers ? this.mouseOver : null, onMouseOut: enableHandlers ? this.mouseOut : null},
+    return g({}, circle({cx: this.props.hole.cx, cy: this.props.hole.cy, r: this.props.hole.radius, fill: this.props.hole.getColor(this.state.editableInput), onMouseDown: enableHandlers ? this.startDrag : null, onMouseOver: enableHandlers ? this.mouseOver : null, onMouseOut: enableHandlers ? this.mouseOut : null},
       title({}, this.props.hole.label)
     ));
   }
@@ -3433,6 +3461,71 @@ module.exports = React.createClass({
 
 
 },{}],29:[function(require,module,exports){
+var logController = require('../../controllers/shared/log'),
+    div = React.DOM.div,
+    h2 = React.DOM.h2,
+    p = React.DOM.p;
+
+module.exports = React.createClass({
+  displayName: 'OfflineCheck',
+
+  getInitialState: function() {
+    return {
+      connected: true,
+      startTime: Date.now()
+    };
+  },
+
+  componentWillMount: function() {
+    var self = this,
+        fb = new Firebase('https://teaching-teamwork.firebaseio.com');
+
+    fb.child('.info/connected').on('value', function(connectedSnap) {
+      self.statusChange(connectedSnap.val(), true);
+    });
+  },
+
+  statusChange: function (connected, checkStartTime) {
+    var now = Date.now();
+    if (!checkStartTime || (now - this.state.startTime > 5000)) {
+      if (connected && !this.state.connected) {
+        logController.logEvent("Reconnected", null, {disconnectTime: this.state.disconnectTime, disconnectDuration: now - this.state.disconnectTime});
+      }
+      this.setState(connected ? {connected: true} : {connected: false, disconnectTime: now});
+    }
+
+  },
+
+  clicked: function () {
+    if (window.location.search.indexOf('testOffline') !== -1) {
+      this.statusChange(!this.state.connected, false);
+    }
+  },
+
+  render: function() {
+    var alert = null;
+
+    if (!this.state.connected) {
+      alert = div({id: "connection-alert"},
+        h2({}, "Connection Lost"),
+        p({}, "This computer appears to have lost connection to the web."),
+        p({}, "Please try and resolve connection issues before trying to refresh the page."),
+        p({}, "This message will disappear when connection is reestablished.")
+      );
+    }
+    return div({onClick: this.clicked},
+      div({id: "connection-status"},
+        div({className: this.state.connected ? "online" : "offline"}),
+        this.state.connected ? "Online" : "Offline"
+      ),
+      alert ? div({id: "connection-alert-background"}) : null,
+      alert ? alert : null
+    );
+  }
+});
+
+
+},{"../../controllers/shared/log":4}],30:[function(require,module,exports){
 var text = React.DOM.text;
 
 module.exports = React.createClass({
@@ -3455,7 +3548,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],30:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 var g = React.DOM.g,
     rect = React.DOM.rect;
 
@@ -3497,8 +3590,8 @@ module.exports = React.createClass({
         outputRect = {x: pin.x + (pin.width / 2), y: pin.y, width: pin.width / 2, height: pin.height};
         break;
       default:
-        outputRect = {x: pin.x, y: pin.y, width: pin.width / 2, height: pin.height};
         inputRect = {x: pin.x + (pin.width / 2), y: pin.y, width: pin.width / 2, height: pin.height};
+        outputRect = {x: pin.x, y: pin.y, width: pin.width / 2, height: pin.height};
         break;
     }
 
@@ -3521,7 +3614,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],31:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
 var events = require('../shared/events'),
     g = React.DOM.g,
     path = React.DOM.path,
@@ -3539,8 +3632,7 @@ module.exports = React.createClass({
   },
 
   startDrag: function (e) {
-    var selectedConstants = this.props.constants.selectedConstants(this.props.selected),
-        $window = $(window),
+    var $window = $(window),
         self = this,
         drag, stopDrag;
 
@@ -3549,13 +3641,18 @@ module.exports = React.createClass({
     e.preventDefault();
     e.stopPropagation();
 
+    this.setState({animationStart: this.getCurrentPos(), animationStep: 0});
+    this.props.setProbe({source: null, pos: this.getNewPos(e)});
+    this.setAnimationTimer();
+
     drag = function (e) {
       e.preventDefault();
-      self.props.setProbe({source: null, pos: {x: (e.pageX - self.props.svgOffset.left), y: (e.pageY - self.props.svgOffset.top) - (selectedConstants.PROBE_HEIGHT / 2)}});
+      self.props.setProbe({source: null, pos: self.getNewPos(e)});
     };
 
     stopDrag = function (e) {
       self.props.draggingProbe(false);
+      self.setState({animationStart: null});
 
       e.preventDefault();
       $window.off('mousemove', drag);
@@ -3571,6 +3668,49 @@ module.exports = React.createClass({
     $window.on('mouseup', stopDrag);
   },
 
+  getNewPos: function (e) {
+    var selectedConstants = this.props.constants.selectedConstants(this.props.selected);
+    return {x: (e.pageX - this.props.svgOffset.left), y: (e.pageY - this.props.svgOffset.top) - (selectedConstants.PROBE_HEIGHT / 2)};
+  },
+
+  getCurrentPos: function () {
+    var selectedConstants = this.props.constants.selectedConstants(this.props.selected);
+    return {
+      x: this.props.probeSource ? this.props.probeSource.cx : (this.props.pos ? this.props.pos.x : this.props.constants.WORKSPACE_WIDTH - selectedConstants.PROBE_WIDTH - selectedConstants.PROBE_MARGIN),
+      y: this.props.probeSource ? this.props.probeSource.cy - (selectedConstants.PROBE_HEIGHT / 2) : (this.props.pos ? this.props.pos.y : selectedConstants.BOARD_HEIGHT - selectedConstants.PROBE_HEIGHT - selectedConstants.PROBE_MARGIN)
+    };
+  },
+
+  setAnimationTimer: function () {
+    clearTimeout(this.animationTimer);
+    this.animationTimer = setTimeout(this.animate, 15);
+  },
+
+  animate: function () {
+    if (this.state.animationStep < 9) {
+      this.setState({animationStep: this.state.animationStep + 1});
+      this.setAnimationTimer();
+    }
+    else {
+      this.setState({animationStart: null});
+    }
+  },
+
+  getAnimatedPos: function (currentPos) {
+    var dx, dy, percentage, pos;
+    if (!this.state.animationStart) {
+      return currentPos;
+    }
+    percentage = this.state.animationStep / 10;
+    dx = currentPos.x - this.state.animationStart.x;
+    dy = currentPos.y - this.state.animationStart.y;
+    pos = {
+      x: this.state.animationStart.x + (dx * percentage),
+      y: this.state.animationStart.y + (dy * percentage)
+    };
+    return pos;
+  },
+  
   // copied from http://stackoverflow.com/a/9232092
   truncateDecimals: function (num, digits) {
     var numS = num.toString(),
@@ -3587,8 +3727,9 @@ module.exports = React.createClass({
         width = selectedConstants.PROBE_WIDTH,
         height = selectedConstants.PROBE_HEIGHT,
         halfNeedleHeight = selectedConstants.PROBE_NEEDLE_HEIGHT / 2,
-        x = this.props.probeSource ? this.props.probeSource.cx : (this.props.pos ? this.props.pos.x : this.props.constants.WORKSPACE_WIDTH - selectedConstants.PROBE_WIDTH - selectedConstants.PROBE_MARGIN),
-        y = this.props.probeSource ? this.props.probeSource.cy - (height / 2) : (this.props.pos ? this.props.pos.y : selectedConstants.BOARD_HEIGHT - selectedConstants.PROBE_HEIGHT - selectedConstants.PROBE_MARGIN),
+        pos = this.getAnimatedPos(this.getCurrentPos()),
+        x = pos.x,
+        y = pos.y,
         middleY = y + (height / 2),
         defaultFill = 0.125,
         redFill = defaultFill,
@@ -3662,7 +3803,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../shared/events":26}],32:[function(require,module,exports){
+},{"../shared/events":26}],33:[function(require,module,exports){
 var line = React.DOM.line,
     div = React.DOM.div,
     svg = React.DOM.svg;
@@ -3677,6 +3818,7 @@ module.exports = React.createClass({
         hole, i;
 
     if (this.props.connector) {
+      this.props.connector.calculatePosition(this.props.constants, this.props.selected);
       for (i = 0; i < this.props.connector.holes.length; i++) {
         hole = this.props.connector.holes[i];
         if (!hole.forcedValue) {
@@ -3691,7 +3833,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],33:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 var userController = require('../../controllers/shared/user'),
     logController = require('../../controllers/shared/log'),
     ChatItems = React.createFactory(require('./chat-items')),
@@ -3815,7 +3957,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/shared/log":4,"../../controllers/shared/user":5,"./chat-items":23}],34:[function(require,module,exports){
+},{"../../controllers/shared/log":4,"../../controllers/shared/user":5,"./chat-items":23}],35:[function(require,module,exports){
 var userController, UserRegistrationView, UserRegistrationViewFactory,
     groups = require('../../data/shared/group-names');
 
@@ -4041,7 +4183,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
 UserRegistrationViewFactory = React.createFactory(UserRegistrationView);
 
 
-},{"../../data/shared/group-names":6}],35:[function(require,module,exports){
+},{"../../data/shared/group-names":6}],36:[function(require,module,exports){
 var div = React.DOM.div,
     h2 = React.DOM.h2,
     button = React.DOM.button;
@@ -4069,7 +4211,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],36:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 var WeGotItPopupView = React.createFactory(require('./we-got-it-popup')),
     userController = require('../../controllers/shared/user'),
     logController = require('../../controllers/shared/log'),
@@ -4143,7 +4285,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/shared/log":4,"../../controllers/shared/user":5,"./we-got-it-popup":35}],37:[function(require,module,exports){
+},{"../../controllers/shared/log":4,"../../controllers/shared/user":5,"./we-got-it-popup":36}],38:[function(require,module,exports){
 var layout = require('../../views/shared/layout'),
     path = React.DOM.path;
 
@@ -4190,7 +4332,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../views/shared/layout":27}],38:[function(require,module,exports){
+},{"../../views/shared/layout":27}],39:[function(require,module,exports){
 var structuredClone = require('./structured-clone');
 var HELLO_INTERVAL_LENGTH = 200;
 var HELLO_TIMEOUT_LENGTH = 60000;
@@ -4339,7 +4481,7 @@ module.exports = function getIFrameEndpoint() {
   }
   return instance;
 };
-},{"./structured-clone":41}],39:[function(require,module,exports){
+},{"./structured-clone":42}],40:[function(require,module,exports){
 "use strict";
 
 var ParentEndpoint = require('./parent-endpoint');
@@ -4431,7 +4573,7 @@ module.exports = function IframePhoneRpcEndpoint(handler, namespace, targetWindo
     this.disconnect = disconnect.bind(this);
 };
 
-},{"./iframe-endpoint":38,"./parent-endpoint":40}],40:[function(require,module,exports){
+},{"./iframe-endpoint":39,"./parent-endpoint":41}],41:[function(require,module,exports){
 var structuredClone = require('./structured-clone');
 
 /**
@@ -4604,7 +4746,7 @@ module.exports = function ParentEndpoint(targetWindowOrIframeEl, targetOrigin, a
   };
 };
 
-},{"./structured-clone":41}],41:[function(require,module,exports){
+},{"./structured-clone":42}],42:[function(require,module,exports){
 var featureSupported = false;
 
 (function () {
@@ -4642,7 +4784,7 @@ exports.supported = function supported() {
   return featureSupported && featureSupported.structuredClones > 0;
 };
 
-},{}],42:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 module.exports = {
   /**
    * Allows to communicate with an iframe.
@@ -4660,4 +4802,4 @@ module.exports = {
 
 };
 
-},{"./lib/iframe-endpoint":38,"./lib/iframe-phone-rpc-endpoint":39,"./lib/parent-endpoint":40,"./lib/structured-clone":41}]},{},[1]);
+},{"./lib/iframe-endpoint":39,"./lib/iframe-phone-rpc-endpoint":40,"./lib/parent-endpoint":41,"./lib/structured-clone":42}]},{},[1]);

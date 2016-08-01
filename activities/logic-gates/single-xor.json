@@ -10,6 +10,30 @@
           "7408": {"max": 2},
           "7404": {"max": 3}
         }
+      },
+      "demo": {
+        "chips": {
+          "not": {
+            "type": "7404",
+            "x": 150,
+            "y": 150
+          },
+          "and": {
+            "type": "7408",
+            "x": 425,
+            "y": 150
+          }
+        },
+        "wires": [
+          "in:1,not:13",   "// create NOT A on not pin 12",
+          "in:2,not:9",    "// create NOT B on not pin 8",
+          "not:12,and:13", "// NOT A to and pin 13",
+          "in:2,and:12",   "// B to and pin 12",
+          "and:11,out:1",  "// (NOT A AND B) to output hole 1",
+          "not:8,and:10",  "// NOT B to and pin 10",
+          "in:1,and:9",    "// A to and pin 9",
+          "and:8,out:2",   "// (NOT B AND A) to output hole 2"
+        ]
       }
     },
     {
@@ -17,6 +41,20 @@
         "chips": {
           "7432": {"max": 2}
         }
+      },
+      "demo": {
+        "chips": {
+          "or": {
+            "type": "7432",
+            "x": 300,
+            "y": 150
+          }
+        },
+        "wires": [
+          "in:1,or:13",  "// C = (NOT A AND B) from input hole 1",
+          "in:2,or:12",  "// D = (NOT B AND A) from input hole 2",
+          "or:11,out:1", "// (C OR D) to output hole 1"
+        ]
       }
     }
   ],
