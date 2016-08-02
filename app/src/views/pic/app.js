@@ -13,6 +13,7 @@ var Connector = require('../../models/shared/connector'),
     DemoControlView = React.createFactory(require('./demo-control')),
     SidebarChatView = React.createFactory(require('../shared/sidebar-chat')),
     WireControlsView = React.createFactory(require('../shared/wire-controls')),
+    OfflineCheckView = React.createFactory(require('../shared/offline-check')),
     events = require('../shared/events'),
     constants = require('./constants'),
     div = React.DOM.div,
@@ -329,7 +330,8 @@ module.exports = React.createClass({
         this.state.showSimulator ? SimulatorControlView({running: this.state.running, run: this.run, step: this.step, reset: this.reset}) : null,
         this.state.showDemo ? DemoControlView({top: demoTop, running: this.state.running, toggleAllWires: this.toggleAllWires, toggleDebugPins: this.toggleDebugPins, showDebugPins: this.state.showDebugPins, addedAllWires: this.state.addedAllWires}) : null,
         SidebarChatView({numClients: 3, top: sidebarTop})
-      )
+      ),
+      OfflineCheckView({})
     );
   }
 });

@@ -532,10 +532,22 @@ form button:disabled {
   box-shadow: 0 0 50px #fff;
   top: -650px;
   padding: 1.5em;
+  z-index: 10001;
 }
 
 #connection-alert>p {
   padding: 0.3em;
+}
+
+#connection-alert-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #000;
+  opacity: 0.25;
+  z-index: 10000;
 }
 
 .other-circuits-button-popup {

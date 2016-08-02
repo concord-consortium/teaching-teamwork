@@ -8,6 +8,7 @@ var Connector = require('../../models/shared/connector'),
     SidebarChatView = React.createFactory(require('../shared/sidebar-chat')),
     WeGotItView = React.createFactory(require('../shared/we-got-it')),
     WorkspaceView = React.createFactory(require('./workspace')),
+    OfflineCheckView = React.createFactory(require('../shared/offline-check')),
     constants = require('./constants'),
     div = React.DOM.div,
     h1 = React.DOM.h1,
@@ -339,7 +340,8 @@ module.exports = React.createClass({
       div({id: 'logicapp'},
         WorkspaceView({constants: constants, boards: this.state.boards, users: this.state.users, userBoardNumber: this.state.userBoardNumber, activity: this.state.activity}),
         SidebarChatView({numClients: 2, top: 0})
-      )
+      ),
+      OfflineCheckView({})
     );
   }
 });
