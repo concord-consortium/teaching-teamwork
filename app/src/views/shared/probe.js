@@ -13,8 +13,7 @@ module.exports = React.createClass({
   },
 
   startDrag: function (e) {
-    var selectedConstants = this.props.constants.selectedConstants(this.props.selected),
-        $window = $(window),
+    var $window = $(window),
         self = this,
         drag, stopDrag;
 
@@ -23,13 +22,18 @@ module.exports = React.createClass({
     e.preventDefault();
     e.stopPropagation();
 
+    this.setState({animationStart: this.getCurrentPos(), animationStep: 0});
+    this.props.setProbe({source: null, pos: this.getNewPos(e)});
+    this.setAnimationTimer();
+
     drag = function (e) {
       e.preventDefault();
-      self.props.setProbe({source: null, pos: {x: (e.pageX - self.props.svgOffset.left), y: (e.pageY - self.props.svgOffset.top) - (selectedConstants.PROBE_HEIGHT / 2)}});
+      self.props.setProbe({source: null, pos: self.getNewPos(e)});
     };
 
     stopDrag = function (e) {
       self.props.draggingProbe(false);
+      self.setState({animationStart: null});
 
       e.preventDefault();
       $window.off('mousemove', drag);
@@ -45,13 +49,57 @@ module.exports = React.createClass({
     $window.on('mouseup', stopDrag);
   },
 
+  getNewPos: function (e) {
+    var selectedConstants = this.props.constants.selectedConstants(this.props.selected);
+    return {x: (e.pageX - this.props.svgOffset.left), y: (e.pageY - this.props.svgOffset.top) - (selectedConstants.PROBE_HEIGHT / 2)};
+  },
+
+  getCurrentPos: function () {
+    var selectedConstants = this.props.constants.selectedConstants(this.props.selected);
+    return {
+      x: this.props.probeSource ? this.props.probeSource.cx : (this.props.pos ? this.props.pos.x : this.props.constants.WORKSPACE_WIDTH - selectedConstants.PROBE_WIDTH - selectedConstants.PROBE_MARGIN),
+      y: this.props.probeSource ? this.props.probeSource.cy - (selectedConstants.PROBE_HEIGHT / 2) : (this.props.pos ? this.props.pos.y : selectedConstants.BOARD_HEIGHT - selectedConstants.PROBE_HEIGHT - selectedConstants.PROBE_MARGIN)
+    };
+  },
+
+  setAnimationTimer: function () {
+    clearTimeout(this.animationTimer);
+    this.animationTimer = setTimeout(this.animate, 15);
+  },
+
+  animate: function () {
+    if (this.state.animationStep < 9) {
+      this.setState({animationStep: this.state.animationStep + 1});
+      this.setAnimationTimer();
+    }
+    else {
+      this.setState({animationStart: null});
+    }
+  },
+
+  getAnimatedPos: function (currentPos) {
+    var dx, dy, percentage, pos;
+    if (!this.state.animationStart) {
+      return currentPos;
+    }
+    percentage = this.state.animationStep / 10;
+    dx = currentPos.x - this.state.animationStart.x;
+    dy = currentPos.y - this.state.animationStart.y;
+    pos = {
+      x: this.state.animationStart.x + (dx * percentage),
+      y: this.state.animationStart.y + (dy * percentage)
+    };
+    return pos;
+  },
+
   render: function () {
     var selectedConstants = this.props.constants.selectedConstants(this.props.selected),
         width = selectedConstants.PROBE_WIDTH,
         height = selectedConstants.PROBE_HEIGHT,
         halfNeedleHeight = selectedConstants.PROBE_NEEDLE_HEIGHT / 2,
-        x = this.props.probeSource ? this.props.probeSource.cx : (this.props.pos ? this.props.pos.x : this.props.constants.WORKSPACE_WIDTH - selectedConstants.PROBE_WIDTH - selectedConstants.PROBE_MARGIN),
-        y = this.props.probeSource ? this.props.probeSource.cy - (height / 2) : (this.props.pos ? this.props.pos.y : selectedConstants.BOARD_HEIGHT - selectedConstants.PROBE_HEIGHT - selectedConstants.PROBE_MARGIN),
+        pos = this.getAnimatedPos(this.getCurrentPos()),
+        x = pos.x,
+        y = pos.y,
         middleY = y + (height / 2),
         defaultFill = 0.125,
         redFill = defaultFill,
