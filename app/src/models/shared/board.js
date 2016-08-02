@@ -48,6 +48,8 @@ Board.prototype.clear = function () {
   var i;
   this.wires = [];
   this.circuits = [];
+  this.components = {};
+  this.updateComponentList();
   this.reset();
   for (i = 0; i < this.pinsAndHoles.length; i++) {
     this.pinsAndHoles[i].connected = false;
@@ -347,7 +349,7 @@ Board.prototype.updateComponents = function (newSerializedComponents) {
     var component;
 
     if (serializeComponent.type == 'logic-chip') {
-      component = new LogicChip({type: serializeComponent.chipType, layout: {x: serializeComponent.x, y: serializeComponent.y, width: 150, height: 75}});
+      component = new LogicChip({type: serializeComponent.chipType, layout: {x: serializeComponent.x, y: serializeComponent.y}});
       self.addComponent(name, component);
     }
   });

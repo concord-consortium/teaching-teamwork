@@ -128,7 +128,7 @@ module.exports = React.createClass({
     }
 
     // update the wires
-    wires = (boardInfo ? boardInfo.wires : null) || [];
+    wires = (boardInfo && boardInfo.layout ? boardInfo.layout.wires : null) || [];
     board.updateWires(wires);
   },
 

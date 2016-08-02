@@ -46,7 +46,8 @@ module.exports = React.createClass({
       return div({id: 'workspace', style: {width: this.props.constants.WORKSPACE_WIDTH, top: (this.props.constants.WORKSPACE_HEIGHT - selectedConstants.BOARD_HEIGHT) / 2}},
         RibbonView({
           constants: this.props.constants,
-          connector: this.state.selectedBoard.connectors.input
+          connector: this.state.selectedBoard.connectors.input,
+          selected: true
         }),
         BoardView({
           constants: this.props.constants,
@@ -57,11 +58,14 @@ module.exports = React.createClass({
           logicChipDrawer: this.props.activity ? this.props.activity.boards[this.props.userBoardNumber].logicChipDrawer : null,
           toggleBoard: this.props.userBoardNumber === this.state.selectedBoard.number ? this.toggleBoard : null,
           toggleBoardButtonStyle: {marginTop: -35},
-          showProbe: true
+          showProbe: true,
+          showDebugPins: this.props.showDebugPins,
+          stepping: true
         }),
         RibbonView({
           constants: this.props.constants,
-          connector: this.state.selectedBoard.connectors.output
+          connector: this.state.selectedBoard.connectors.output,
+          selected: true
         })
       );
     }
@@ -77,7 +81,9 @@ module.exports = React.createClass({
           editable: this.props.userBoardNumber === 0,
           user: this.props.users[0],
           logicChipDrawer: this.props.activity ? this.props.activity.boards[0].logicChipDrawer : null,
-          toggleBoard: this.props.userBoardNumber === 0 ? this.toggleBoard : null
+          toggleBoard: this.props.userBoardNumber === 0 ? this.toggleBoard : null,
+          showDebugPins: this.props.showDebugPins,
+          stepping: true
         }),
         RibbonView({
           constants: this.props.constants,
@@ -89,7 +95,9 @@ module.exports = React.createClass({
           editable: this.props.userBoardNumber === 1,
           user: this.props.users[1],
           logicChipDrawer: this.props.activity ? this.props.activity.boards[1].logicChipDrawer : null,
-          toggleBoard: this.props.userBoardNumber === 1 ? this.toggleBoard : null
+          toggleBoard: this.props.userBoardNumber === 1 ? this.toggleBoard : null,
+          showDebugPins: this.props.showDebugPins,
+          stepping: true
         })
       );
     }

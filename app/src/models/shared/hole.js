@@ -41,8 +41,8 @@ Hole.prototype.reset = function () {
   this.voltage = this.startingVoltage;
   this.pulseProbeDuration = 0;
 };
-Hole.prototype.getColor = function () {
-  return this.color;
+Hole.prototype.getColor = function (editableInput) {
+  return editableInput ? TTL.getColor(this.voltage) : this.color;
 };
 
 module.exports = Hole;

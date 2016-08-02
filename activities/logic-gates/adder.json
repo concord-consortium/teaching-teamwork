@@ -11,14 +11,107 @@
           "7411": {"max": 3},
           "7408": {"max": 3}
         }
+      },
+      "demo": {
+        "chips": {
+          "not": {
+            "type": "7404",
+            "x": 150,
+            "y": 70
+          },
+          "3and1": {
+            "type": "7411",
+            "x": 415,
+            "y": 70
+          },
+          "3and2": {
+            "type": "7411",
+            "x": 150,
+            "y": 220
+          },
+          "2and": {
+            "type": "7408",
+            "x": 415,
+            "y": 220
+          }
+        },
+        "wires": [
+          "in:1,not:13",   "// create NOT A on not pin 12",
+          "in:2,not:11",   "// create NOT A on not pin 12",
+          "in:3,not:9",   "// create NOT A on not pin 12",
+
+          "in:1,3and1:13",  "// A to 3 and input",
+          "not:10,3and1:1", "// NOT B to 3 and input",
+          "not:8,3and1:2",  "// NOT C to 3 and input",
+          "3and1:12,out:1",  "// (A AND NOT B AND NOT C) to output",
+
+          "not:12,3and1:11",  "// NOT A to 3 and input",
+          "in:2,3and1:10", "// B to 3 and input",
+          "not:8,3and1:9",  "// NOT C to 3 and input",
+          "3and1:8,out:2",  "// (NOT A AND B AND NOT C) to output",
+
+          "not:12,3and1:3",  "// NOT A to 3 and input",
+          "not:10,3and1:4", "// NOT B to 3 and input",
+          "in:3,3and1:5",  "// C to 3 and input",
+          "3and1:6,out:3",  "// (NOT A AND B AND C) to output",
+
+          "in:1,3and2:11",  "// A to 3 and input",
+          "in:2,3and2:10", "// B to 3 and input",
+          "in:3,3and2:9",  "// C to 3 and input",
+          "3and2:8,out:4",  "// (A AND B AND C) to output",
+
+          "in:1,2and:13",  "// A to 2 and input",
+          "in:2,2and:12", "// B to 2 and input",
+          "2and:11,out:5", "// (A AND B) to output",
+
+          "in:2,2and:10",  "// B to 2 and input",
+          "in:3,2and:9", "// C to 2 and input",
+          "2and:8,out:6", "// (B AND C) to output",
+
+          "in:1,2and:1",  "// A to 2 and input",
+          "in:3,2and:2", "// C to 2 and input",
+          "2and:3,out:7", "// (A AND C) to output"
+        ]
       }
     },
     {
       "logicChipDrawer": {
         "chips": {
-          "7432": {"max": 5},
-          "7486": {"max": 5}
+          "7432": {"max": 5}
         }
+      },
+      "demo": {
+        "chips": {
+          "or1": {
+            "type": "7432",
+            "x": 150,
+            "y": 135
+          },
+          "or2": {
+            "type": "7432",
+            "x": 415,
+            "y": 135
+          }
+        },
+        "wires": [
+          "in:1,or1:13",   "// (A AND NOT B AND NOT C) to or input",
+          "in:2,or1:12",   "// (NOT A AND B AND NOT C) to or input",
+          "or1:11,or2:13",   "// ((A AND NOT B AND NOT C) OR (NOT A AND B AND NOT C)) to sum or input",
+
+          "in:3,or1:10",   "// (NOT A AND B AND C) to or input",
+          "in:4,or1:9",   "// (A AND B AND C) to or input",
+          "or1:8,or2:12",   "// ((NOT A AND B AND C) OR (A AND B AND C)) to sum or input",
+
+          "in:5,or1:1",   "// (A AND B) to or input",
+          "in:6,or1:2",   "// (B AND C) to or input",
+          "or1:3,or2:1",   "// ((A AND B) OR (B AND C)) to carry or input",
+
+          "in:7,or2:2",   "// (A AND C) to carry or input",
+
+          "or2:11,out:1",   "// (((A AND NOT B AND NOT C) OR (NOT A AND B AND NOT C)) OR ((NOT A AND B AND C) OR (A AND B AND C))) to sum output",
+
+          "or2:3,out:2",   "// (((A AND B) OR (B AND C)) OR (A AND C)) to carry output"
+        ]
       }
     }
   ],

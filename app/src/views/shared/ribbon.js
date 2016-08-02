@@ -12,6 +12,7 @@ module.exports = React.createClass({
         hole, i;
 
     if (this.props.connector) {
+      this.props.connector.calculatePosition(this.props.constants, this.props.selected);
       for (i = 0; i < this.props.connector.holes.length; i++) {
         hole = this.props.connector.holes[i];
         if (!hole.forcedValue) {
