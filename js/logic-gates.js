@@ -1070,6 +1070,7 @@ var Board = function (options) {
   this.wires = [];
   this.circuits = [];
   this.allBoards = [];
+  this.fixedComponents = options.fixedComponents || false;
   this.updateComponentList();
 
   // reset the pic so the pin output is set
@@ -1105,8 +1106,10 @@ Board.prototype.clear = function () {
   var i;
   this.wires = [];
   this.circuits = [];
-  this.components = {};
-  this.updateComponentList();
+  if (!this.fixedComponents) {
+    this.components = {};
+    this.updateComponentList();
+  }
   this.reset();
   for (i = 0; i < this.pinsAndHoles.length; i++) {
     this.pinsAndHoles[i].connected = false;
@@ -2185,7 +2188,7 @@ module.exports = React.createClass({
             dest = getEndpoint(destParts[0], parseInt(destParts[1], 10));
 
             if (source && dest) {
-              board.addWire(source, dest, source.color || dest.color || '#555');
+              board.addWire(source, dest, source.color || dest.color || '#ddd');
             }
           }
         }
@@ -3326,7 +3329,8 @@ module.exports = events = {
 },{"../../controllers/pic/board-watcher":2,"../../controllers/shared/log":4}],27:[function(require,module,exports){
 module.exports = {
   getBezierPath: function (options) {
-    var normalize, dy, dx, dist, x3, y3, x4, y4, height, curvyness;
+    var closeCutoff = 500,
+        normalize, dy, dx, dist, x3, y3, x4, y4, height, curvyness, closeModifier;
 
     normalize = function (v, d) {
       var n = v / d;
@@ -3341,7 +3345,8 @@ module.exports = {
     dx = options.x1 - options.x2;
     dy = options.y1 - options.y2;
     dist = Math.sqrt(dx*dx + dy*dy);
-    height = dist * curvyness;
+    closeModifier = 5 * curvyness * (1 - (Math.min(dist, closeCutoff) / closeCutoff));
+    height = dist * (curvyness + closeModifier);
     dx = normalize(dx, dist);
     dy = normalize(dy, dist);
     x3 = (options.x1 + options.x2) / 2;
@@ -4326,7 +4331,7 @@ module.exports = React.createClass({
       onMouseOver: this.props.enablePointerEvents ? this.mouseOver : null,
       onMouseOut: this.props.enablePointerEvents ? this.mouseOut : null,
       onMouseDown: this.props.enablePointerEvents ? this.mouseDown : null,
-      pointerEvents: this.props.enablePointerEvents ? 'fill' : 'none'
+      pointerEvents: this.props.enablePointerEvents ? 'stroke' : 'none'
     });
   }
 });
