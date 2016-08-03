@@ -396,7 +396,7 @@ module.exports = React.createClass({
             dest = getEndpoint(destParts[0], parseInt(destParts[1], 10));
 
             if (source && dest) {
-              board.addWire(source, dest, source.color || dest.color || '#555');
+              board.addWire(source, dest, source.color || dest.color || '#ddd');
             }
           }
         }

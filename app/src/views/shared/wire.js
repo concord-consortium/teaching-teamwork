@@ -38,7 +38,7 @@ module.exports = React.createClass({
       onMouseOver: this.props.enablePointerEvents ? this.mouseOver : null,
       onMouseOut: this.props.enablePointerEvents ? this.mouseOut : null,
       onMouseDown: this.props.enablePointerEvents ? this.mouseDown : null,
-      pointerEvents: this.props.enablePointerEvents ? 'fill' : 'none'
+      pointerEvents: this.props.enablePointerEvents ? 'stroke' : 'none'
     });
   }
 });
