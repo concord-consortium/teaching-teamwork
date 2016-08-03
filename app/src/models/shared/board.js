@@ -13,6 +13,7 @@ var Board = function (options) {
   this.wires = [];
   this.circuits = [];
   this.allBoards = [];
+  this.fixedComponents = options.fixedComponents || false;
   this.updateComponentList();
 
   // reset the pic so the pin output is set
@@ -48,8 +49,10 @@ Board.prototype.clear = function () {
   var i;
   this.wires = [];
   this.circuits = [];
-  this.components = {};
-  this.updateComponentList();
+  if (!this.fixedComponents) {
+    this.components = {};
+    this.updateComponentList();
+  }
   this.reset();
   for (i = 0; i < this.pinsAndHoles.length; i++) {
     this.pinsAndHoles[i].connected = false;

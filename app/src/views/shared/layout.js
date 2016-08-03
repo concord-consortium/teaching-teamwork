@@ -1,6 +1,7 @@
 module.exports = {
   getBezierPath: function (options) {
-    var normalize, dy, dx, dist, x3, y3, x4, y4, height, curvyness;
+    var closeCutoff = 500,
+        normalize, dy, dx, dist, x3, y3, x4, y4, height, curvyness, closeModifier;
 
     normalize = function (v, d) {
       var n = v / d;
@@ -15,7 +16,8 @@ module.exports = {
     dx = options.x1 - options.x2;
     dy = options.y1 - options.y2;
     dist = Math.sqrt(dx*dx + dy*dy);
-    height = dist * curvyness;
+    closeModifier = 5 * curvyness * (1 - (Math.min(dist, closeCutoff) / closeCutoff));
+    height = dist * (curvyness + closeModifier);
     dx = normalize(dx, dist);
     dy = normalize(dy, dist);
     x3 = (options.x1 + options.x2) / 2;
