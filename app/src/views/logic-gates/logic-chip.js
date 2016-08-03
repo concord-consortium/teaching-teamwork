@@ -20,11 +20,6 @@ module.exports = React.createClass({
         y: pos.y
       };
     }
-    // TODO: fix me - the width and height are not set when the chip is dragged to the board
-    if (!this.props.component.position.width) {
-      this.props.component.position.width = this.props.component.layout.width;
-      this.props.component.position.height = this.props.component.layout.height;
-    }
     if (this.props.startDragPos) {
       this.startDrag(this.props.startDragPos);
     }
@@ -71,33 +66,7 @@ module.exports = React.createClass({
   layout: function () {
     var label = this.props.component.label,
         selectedConstants = constants.selectedConstants(this.props.selected),
-        position = this.props.component.position,
-        pinDX, pinDY, i, j, pin, pinNumber, xOffset, y;
-
-    pinDX = (position.width - (selectedConstants.PIN_WIDTH * 7)) / 8;
-
-    for (i = 0; i < 2; i++) {
-      y = i === 0 ? position.y + position.height : position.y - selectedConstants.PIN_HEIGHT;
-      pinDY = i === 0 ? -(selectedConstants.PIN_HEIGHT / 2) : 2 * selectedConstants.PIN_HEIGHT;
-
-      for (j = 0; j < 7; j++) {
-        pinNumber = (i * 7) + j;
-        pin = this.props.component.pins[pinNumber];
-        xOffset = i === 0 ? j : 6 - j;
-
-        pin.x = position.x + pinDX + (xOffset * (selectedConstants.PIN_WIDTH + pinDX));
-        pin.y = y;
-
-        pin.cx = pin.x + (selectedConstants.PIN_WIDTH / 2);
-        pin.cy = pin.y + (selectedConstants.PIN_HEIGHT / 2);
-        pin.width = selectedConstants.PIN_WIDTH;
-        pin.height = selectedConstants.PIN_HEIGHT;
-        pin.labelSize = selectedConstants.PIC_FONT_SIZE;
-        pin.label.x = pin.x + (selectedConstants.PIN_WIDTH / 2);
-        pin.label.y = pin.y + pinDY;
-        pin.label.anchor = 'middle';
-      }
-    }
+        position = this.props.component.position;
 
     label.x = position.x + (position.width / 2);
     label.y = position.y + (position.height / 2) + (selectedConstants.CHIP_LABEL_SIZE / 4);

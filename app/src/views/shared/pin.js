@@ -39,8 +39,8 @@ module.exports = React.createClass({
         outputRect = {x: pin.x + (pin.width / 2), y: pin.y, width: pin.width / 2, height: pin.height};
         break;
       default:
-        outputRect = {x: pin.x, y: pin.y, width: pin.width / 2, height: pin.height};
         inputRect = {x: pin.x + (pin.width / 2), y: pin.y, width: pin.width / 2, height: pin.height};
+        outputRect = {x: pin.x, y: pin.y, width: pin.width / 2, height: pin.height};
         break;
     }
 

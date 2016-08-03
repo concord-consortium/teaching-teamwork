@@ -8,11 +8,16 @@ module.exports = React.createClass({
     this.props.toggleAllChipsAndWires();
   },
 
+  toggleDebugPins: function () {
+    this.props.toggleDebugPins();
+  },
+
   render: function () {
     return div({id: 'demo-control'},
       div({id: 'demo-control-title'}, 'Demo Control'),
       div({id: 'demo-control-area'},
-        button({onClick: this.toggleAllChipsAndWires}, (this.props.addedAllChipsAndWires ? '-' : '+') + ' Wires')
+        this.props.hasDemoData ? button({onClick: this.toggleAllChipsAndWires}, (this.props.toggledAllChipsAndWires ? '-' : '+') + ' Chips/Wires') : null,
+        button({onClick: this.toggleDebugPins}, (this.props.showDebugPins ? '-' : '+') + ' Pin Colors')
       )
     );
   }

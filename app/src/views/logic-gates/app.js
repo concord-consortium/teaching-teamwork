@@ -1,6 +1,7 @@
 var Connector = require('../../models/shared/connector'),
     Board = require('../../models/shared/board'),
     TTL = require('../../models/shared/ttl'),
+    LogicChip =  require('../../models/logic-gates/logic-chip'),
     //LogicChip =  require('../../models/logic-gates/logic-chip'),
     boardWatcher = require('../../controllers/pic/board-watcher'),
     userController = require('../../controllers/shared/user'),
@@ -9,6 +10,7 @@ var Connector = require('../../models/shared/connector'),
     WeGotItView = React.createFactory(require('../shared/we-got-it')),
     WorkspaceView = React.createFactory(require('./workspace')),
     OfflineCheckView = React.createFactory(require('../shared/offline-check')),
+    DemoControlView = React.createFactory(require('./demo-control')),
     constants = require('./constants'),
     div = React.DOM.div,
     h1 = React.DOM.h1,
@@ -43,7 +45,11 @@ module.exports = React.createClass({
       currentBoard: 0,
       currentUser: null,
       currentGroup: null,
-      activity: null
+      activity: null,
+      showDemo: window.location.search.indexOf('demo') !== -1,
+      showDebugPins: false,
+      toggledAllChipsAndWires: false,
+      hasDemoData: false
     };
   },
 
@@ -132,11 +138,23 @@ module.exports = React.createClass({
   },
 
   startActivity: function (activityName, activity) {
-    var self = this;
+    var self = this,
+        hasDemoData = false,
+        i;
 
     this.setupConnectors(activity);
 
-    this.setState({activity: activity});
+    for (i = 0; i < activity.boards.length; i++) {
+      if (activity.boards[i].demo) {
+        hasDemoData = true;
+        break;
+      }
+    }
+
+    this.setState({
+      activity: activity,
+      hasDemoData: hasDemoData
+    });
 
     boardWatcher.addListener(this.state.boards[0], this.updateWatchedBoard);
     boardWatcher.addListener(this.state.boards[1], this.updateWatchedBoard);
@@ -209,13 +227,13 @@ module.exports = React.createClass({
   updateWatchedBoard: function (board, boardInfo) {
     var wires, components;
 
-    // update the wires
-    wires = (boardInfo ? boardInfo.wires : null) || [];
-    board.updateWires(wires);
-
     // update the components
-    components = (boardInfo ? boardInfo.components : null) || [];
+    components = (boardInfo && boardInfo.layout ? boardInfo.layout.components : null) || [];
     board.updateComponents(components);
+
+    // update the wires
+    wires = (boardInfo && boardInfo.layout ? boardInfo.layout.wires : null) || [];
+    board.updateWires(wires);
 
     board.resolveIOVoltages();
 
@@ -332,14 +350,80 @@ module.exports = React.createClass({
     callback(allCorrect, truthTable);
   },
 
+  toggleAllChipsAndWires: function () {
+    var chipMap = {}, i, j, board, demo, addChip, getEndpoint, wire, wireParts, sourceParts, destParts, source, dest;
+
+    addChip = function (name, chip) {
+      chipMap[name] = new LogicChip({type: chip.type, layout: {x: chip.x, y: chip.y}, selectable: true});
+      board.addComponent(name, chipMap[name]);
+    };
+
+    getEndpoint = function (name, index) {
+      var item = chipMap[name] || (name == "in" ? board.connectors.input : (name == "out" ? board.connectors.output : null)),
+          endPoint = null;
+
+      if (item) {
+        if (item instanceof Connector) {
+          endPoint = item.holes[index - 1];
+        }
+        else {
+          endPoint = item.pins[index - 1];
+        }
+      }
+
+      return endPoint;
+    };
+
+    for (i = 0; i < this.state.boards.length; i++) {
+      board = this.state.boards[i];
+      board.clear();
+      if (!this.state.toggledAllChipsAndWires && this.state.activity.boards[i].demo) {
+        demo = this.state.activity.boards[i].demo;
+        if (demo.chips) {
+          $.each(demo.chips, addChip);
+        }
+        if (demo.wires) {
+          for (j = 0; j < demo.wires.length; j++) {
+            wire = $.trim(demo.wires[j]);
+            if (wire.substr(0, 2) === "//") {
+              continue;
+            }
+            wireParts = wire.split(",");
+            sourceParts = $.trim(wireParts[0]).split(":");
+            destParts = $.trim(wireParts[1] || "").split(":");
+
+            source = getEndpoint(sourceParts[0], parseInt(sourceParts[1], 10));
+            dest = getEndpoint(destParts[0], parseInt(destParts[1], 10));
+
+            if (source && dest) {
+              board.addWire(source, dest, source.color || dest.color || '#555');
+            }
+          }
+        }
+      }
+      board.updateComponentList();
+      boardWatcher.circuitChanged(board);
+    }
+
+    this.setState({boards: this.state.boards, toggledAllChipsAndWires: !this.state.toggledAllChipsAndWires});
+  },
+
+  toggleDebugPins: function () {
+    this.setState({showDebugPins: !this.state.showDebugPins});
+  },
+
   render: function () {
+    var demoTop = this.state.showSimulator ? 75 : 0,
+        sidebarTop = demoTop + (this.state.showDemo ? 75 : 0);
+
     return div({},
       h1({}, "Teaching Teamwork" + (this.state.activity ? ": " + this.state.activity.name : "")),
       this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
       WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect}),
       div({id: 'logicapp'},
-        WorkspaceView({constants: constants, boards: this.state.boards, users: this.state.users, userBoardNumber: this.state.userBoardNumber, activity: this.state.activity}),
-        SidebarChatView({numClients: 2, top: 0})
+        WorkspaceView({constants: constants, boards: this.state.boards, showDebugPins: this.state.showDebugPins, users: this.state.users, userBoardNumber: this.state.userBoardNumber, activity: this.state.activity}),
+        this.state.showDemo ? DemoControlView({top: demoTop, toggleAllChipsAndWires: this.toggleAllChipsAndWires, toggleDebugPins: this.toggleDebugPins, showDebugPins: this.state.showDebugPins, toggledAllChipsAndWires: this.state.toggledAllChipsAndWires, hasDemoData: this.state.hasDemoData}) : null,
+        SidebarChatView({numClients: 2, top: sidebarTop})
       ),
       OfflineCheckView({})
     );

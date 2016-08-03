@@ -14,24 +14,31 @@ var LogicChip = function (options) {
 
   this.position = {
     x: this.layout.x,
-    y: this.layout.y
+    y: this.layout.y,
+    width: 150,
+    height: 75
   };
+
+  switch (this.type) {
+    case '7404':
+      outputPins = [1, 3, 5, 6, 7, 9, 11, 13];
+      break;
+    case '7411':
+      outputPins = [5, 6, 7, 11, 13];
+      break;
+    default:
+      outputPins = [2, 5, 6, 7, 10, 13];
+      break;
+  }
 
   this.pins = [];
   this.pinMap = {};
   for (i = 0; i < 14; i++) {
-    if (this.type == '7404') {
-      outputPins = [1, 3, 5, 6, 7, 9, 11, 13];
-    }
-    else {
-      outputPins = [2, 5, 6, 7, 10, 13];
-    }
-
     pin = {
       number: i,
       voltage: i == 13 ? TTL.HIGH_VOLTAGE : TTL.LOW_VOLTAGE,
       inputMode: outputPins.indexOf(i) === -1,
-      placement: i < 7 ? 'left' : 'right',
+      placement: i < 7 ? 'bottom' : 'top',
       x: 0,
       y: 0,
       height: 0,
@@ -66,6 +73,36 @@ LogicChip.prototype.reset = function () {
   var i;
   for (i = 0; i < this.pins.length; i++) {
     this.pins[i].reset();
+  }
+};
+LogicChip.prototype.calculatePosition = function (constants, selected) {
+  var selectedConstants = constants.selectedConstants(selected),
+      position = this.position,
+      pinDX, pinDY, i, j, pin, pinNumber, xOffset, y;
+
+  pinDX = (position.width - (selectedConstants.PIN_WIDTH * 7)) / 8;
+
+  for (i = 0; i < 2; i++) {
+    y = i === 0 ? position.y + position.height : position.y - selectedConstants.PIN_HEIGHT;
+    pinDY = i === 0 ? -(selectedConstants.PIN_HEIGHT / 2) : 2 * selectedConstants.PIN_HEIGHT;
+
+    for (j = 0; j < 7; j++) {
+      pinNumber = (i * 7) + j;
+      pin = this.pins[pinNumber];
+      xOffset = i === 0 ? j : 6 - j;
+
+      pin.x = position.x + pinDX + (xOffset * (selectedConstants.PIN_WIDTH + pinDX));
+      pin.y = y;
+
+      pin.cx = pin.x + (selectedConstants.PIN_WIDTH / 2);
+      pin.cy = pin.y + (selectedConstants.PIN_HEIGHT / 2);
+      pin.width = selectedConstants.PIN_WIDTH;
+      pin.height = selectedConstants.PIN_HEIGHT;
+      pin.labelSize = selectedConstants.PIC_FONT_SIZE;
+      pin.label.x = pin.x + (selectedConstants.PIN_WIDTH / 2);
+      pin.label.y = pin.y + pinDY;
+      pin.label.anchor = 'middle';
+    }
   }
 };
 LogicChip.prototype.mapAndSetPins = function (pinConnections, fn) {

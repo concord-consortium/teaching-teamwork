@@ -240,7 +240,10 @@ module.exports = React.createClass({
       }
 
       if (callback) {
-        callback(addedWire, moved);
+        if (callback(addedWire, moved)) {
+          // callback can return true to signal a re-render
+          self.setState({wires: self.props.board.wires});
+        }
       }
     };
 
@@ -403,7 +406,7 @@ module.exports = React.createClass({
         chipCY = 37,
         chipX = pageX - this.svgOffset.left - chipCX,
         chipY = pageY - this.svgOffset.top - chipCY,
-        draggingChip = new LogicChip({type: chip.type, layout: {x: chipX, y: chipY, width: 150, height: 75}});
+        draggingChip = new LogicChip({type: chip.type, layout: {x: chipX, y: chipY}});
 
     this.setState({
       selectedWires: [],
@@ -430,7 +433,7 @@ module.exports = React.createClass({
 
     // don't add if hidden by drawer
     if (chip.x < r.right - 100) {
-      var component = new LogicChip({type: chip.type, layout: {x: chip.x, y: chip.y, width: 150, height: 75}, selectable: true});
+      var component = new LogicChip({type: chip.type, layout: {x: chip.x, y: chip.y}, selectable: true});
       this.addLogicChip(component);
       this.setState({draggingChip: null, selectedWires: [], selectedComponents: [component]});
     }
