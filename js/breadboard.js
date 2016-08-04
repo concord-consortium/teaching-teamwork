@@ -3462,9 +3462,12 @@ module.exports = SubmitButton = React.createClass({
   },
 
   popupButtonClicked: function () {
+    var inIframe = (function() { try { return window.self !== window.top; } catch (e) { return true; } })();
+
     logController.logEvent("Submit close button clicked", this.state.allCorrect ? 'done' : 'resume');
 
-    if (this.state.allCorrect) {
+    // don't redirect when iframed in LARA
+    if (this.state.allCorrect && !inIframe) {
       window.location = 'http://concord.org/projects/teaching-teamwork/activities2';
     }
     else {

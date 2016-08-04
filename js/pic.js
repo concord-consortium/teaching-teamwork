@@ -3144,7 +3144,7 @@ module.exports = React.createClass({
       currentBoard: 0,
       currentUser: null,
       currentGroup: null,
-      wireSettings: {color: '#ddd', curvyness: 0.25}
+      wireSettings: {color: '#00f', curvyness: 0.25}
     };
   },
 
@@ -3320,7 +3320,7 @@ module.exports = React.createClass({
   },
 
   toggleAllWires: function () {
-    var defaultColor = '#ddd',
+    var defaultColor = '#00f',
 
         b0 = this.state.boards[0],
         b0Keypad = b0.components.keypad.pinMap,
@@ -4699,7 +4699,7 @@ module.exports = events = {
 },{"../../controllers/pic/board-watcher":2,"../../controllers/shared/log":4}],40:[function(require,module,exports){
 module.exports = {
   getBezierPath: function (options) {
-    var closeCutoff = 500,
+    var closeCutoff = 300,
         normalize, dy, dx, dist, x3, y3, x4, y4, height, curvyness, closeModifier;
 
     normalize = function (v, d) {
@@ -4939,7 +4939,7 @@ module.exports = React.createClass({
   },
 
   startDrag: function (e) {
-    this.props.drawConnection(this.props.pin, e, '#ddd');
+    this.props.drawConnection(this.props.pin, e, '#00f');
   },
 
   renderPin: function (pin, enableHandlers) {
