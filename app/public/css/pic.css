@@ -127,6 +127,7 @@ button {
 #sidebar-chat .sidebar-chat-input textarea {
   width: 100%;
   height: 60px;
+  resize: none;
 }
 #sidebar-chat .sidebar-chat-input button {
   margin-top: 5px;
