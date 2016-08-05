@@ -164,18 +164,31 @@ Board.prototype.serializeEndpoint = function (endPoint, label) {
   return serialized;
 };
 Board.prototype.removeWire = function (source, dest) {
-  var i;
+  var numSourceConnections = 0,
+      numDestConnections = 0,
+      i;
+
+  // determine the number of wires connected at the source and dest endpoints
+  for (i = 0; i < this.wires.length; i++) {
+    if (this.wires[i].source == source) {
+      numSourceConnections++;
+    }
+    if (this.wires[i].dest == dest) {
+      numDestConnections++;
+    }
+  }
 
   for (i = 0; i < this.wires.length; i++) {
     if (this.wires[i].connects(source, dest)) {
+      // set as disconnected if this is the only wire connected to the endpoint
+      this.wires[i].source.connected = (numSourceConnections > 1);
+      this.wires[i].dest.connected = (numDestConnections > 1);
       if (this.wires[i].source.inputMode) {
         this.wires[i].source.reset();
       }
-      this.wires[i].source.connected = false;
       if (this.wires[i].dest.inputMode) {
         this.wires[i].dest.reset();
       }
-      this.wires[i].dest.connected = false;
       this.wires.splice(i, 1);
       this.resolveCircuitsAcrossAllBoards();
       return true;
