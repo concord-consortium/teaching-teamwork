@@ -13,7 +13,7 @@ module.exports = React.createClass({
   },
 
   startDrag: function (e) {
-    this.props.drawConnection(this.props.pin, e, '#ddd');
+    this.props.drawConnection(this.props.pin, e, '#00f');
   },
 
   renderPin: function (pin, enableHandlers) {

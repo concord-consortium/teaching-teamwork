@@ -1,6 +1,6 @@
 module.exports = {
   getBezierPath: function (options) {
-    var closeCutoff = 500,
+    var closeCutoff = 300,
         normalize, dy, dx, dist, x3, y3, x4, y4, height, curvyness, closeModifier;
 
     normalize = function (v, d) {

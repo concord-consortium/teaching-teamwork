@@ -110,7 +110,7 @@
     {
       "show_multimeter": true,
       "showComponentEditor": true,
-      "notes": "Level 3: E = $E volts, R = $R Ω, your goal is to make your voltage $V1 volts.",
+      "notes": "E = $E volts, R = $R Ω, your goal is to make your voltage $V1 volts.",
       "circuit": [
         {
           "type": "wire",
@@ -135,7 +135,7 @@
     {
       "show_multimeter": true,
       "showComponentEditor": true,
-      "notes": "Level 3: E = $E volts, R = $R Ω, your goal is to make your voltage $V2 volts.",
+      "notes": "E = $E volts, R = $R Ω, your goal is to make your voltage $V2 volts.",
       "circuit": [
         {
           "type": "wire",
@@ -160,7 +160,7 @@
     {
       "show_multimeter": true,
       "showComponentEditor": true,
-      "notes": "Level 3: E = $E volts, R = $R Ω, your goal is to make your voltage $V3 volts.",
+      "notes": "E = $E volts, R = $R Ω, your goal is to make your voltage $V3 volts.",
       "circuit": [
         {
           "type": "wire",

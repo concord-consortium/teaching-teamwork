@@ -61,7 +61,7 @@ module.exports = React.createClass({
       currentBoard: 0,
       currentUser: null,
       currentGroup: null,
-      wireSettings: {color: '#ddd', curvyness: 0.25}
+      wireSettings: {color: '#00f', curvyness: 0.25}
     };
   },
 
@@ -237,7 +237,7 @@ module.exports = React.createClass({
   },
 
   toggleAllWires: function () {
-    var defaultColor = '#ddd',
+    var defaultColor = '#00f',
 
         b0 = this.state.boards[0],
         b0Keypad = b0.components.keypad.pinMap,
