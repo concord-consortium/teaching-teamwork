@@ -504,8 +504,9 @@ form button:disabled {
 
 #connection-status {
   margin: 0 auto;
-  width: 10em;
+  width: 70px;
   margin-top: 1em;
+  margin-bottom: 1em;
   font-size: 0.9em;
 }
 
@@ -588,4 +589,8 @@ form button:disabled {
 
 .circuit-board {
   width: 740px;
+}
+
+.ribbon {
+  background-color: #ddd;
 }

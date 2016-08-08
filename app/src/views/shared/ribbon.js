@@ -20,7 +20,7 @@ module.exports = React.createClass({
         }
       }
     }
-    return div({style: {height: this.props.constants.RIBBON_HEIGHT}},
+    return div({className: 'ribbon', style: {height: this.props.constants.RIBBON_HEIGHT}},
       svg({}, wires)
     );
   }

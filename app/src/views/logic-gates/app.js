@@ -20,26 +20,8 @@ module.exports = React.createClass({
   displayName: 'AppView',
 
   getInitialState: function () {
-    var boards = [
-          new Board({
-            number: 0,
-            bezierReflectionModifier: -0.5,
-            components: {},
-            connectors: {}
-          }),
-          new Board({
-            number: 1,
-            bezierReflectionModifier: -0.5,
-            components: {},
-            connectors: {}
-          })
-        ];
-
-    boards[0].allBoards = boards;
-    boards[1].allBoards = boards;
-
     return {
-      boards: boards,
+      boards: [],
       userBoardNumber: -1,
       users: {},
       currentBoard: 0,
@@ -142,7 +124,8 @@ module.exports = React.createClass({
         hasDemoData = false,
         i;
 
-    this.setupConnectors(activity);
+    // create the boards
+    this.setupBoards(activity);
 
     for (i = 0; i < activity.boards.length; i++) {
       if (activity.boards[i].demo) {
@@ -156,11 +139,8 @@ module.exports = React.createClass({
       hasDemoData: hasDemoData
     });
 
-    boardWatcher.addListener(this.state.boards[0], this.updateWatchedBoard);
-    boardWatcher.addListener(this.state.boards[1], this.updateWatchedBoard);
-
     logController.init(activityName);
-    userController.init(2, activityName, function(userBoardNumber) {
+    userController.init(activity.boards.length, activityName, function(userBoardNumber) {
       var users = self.state.users,
           currentUser = userController.getUsername();
 
@@ -198,30 +178,49 @@ module.exports = React.createClass({
     }
   },
 
-  setupConnectors: function (activity) {
-    var board0Input = new Connector({type: 'input', count: activity.input.length, labels: activity.input}),
-        board0Output = new Connector({type: 'output', count: activity.ribbon.length, labels: activity.ribbon}),
-        board1Input = new Connector({type: 'input', count: activity.ribbon.length, labels: activity.ribbon}),
-        board1Output = new Connector({type: 'output', count: activity.output.length, labels: activity.output}),
-        boards = this.state.boards;
+  setupBoards: function (activity) {
+    var boards = [],
+        inputs = [],
+        outputs = [],
+        boardSettings, board, i, input, output;
 
-    boards[0].setConnectors({input: board0Input, output: board0Output});
-    boards[1].setConnectors({input: board1Input, output: board1Output});
+    for (i = 0; i < activity.boards.length; i++) {
+      boardSettings = activity.boards[i];
+      input = new Connector({type: 'input', count: boardSettings.input.length, labels: boardSettings.input});
+      output = new Connector({type: 'output', count: boardSettings.output.length, labels: boardSettings.output});
+      board = new Board({
+        number: i,
+        bezierReflectionModifier: -0.5,
+        components: {},
+        connectors: {
+          input: input,
+          output: output
+        }
+      });
+      input.board = board;
+      output.board = board;
+      boardWatcher.addListener(board, this.updateWatchedBoard);
+      boards.push(board);
+      inputs.push(input);
+      outputs.push(output);
+    }
 
-    board0Output.setConnectsTo(board1Input);
-    board1Input.setConnectsTo(board0Output);
-
-    board0Input.board = boards[0];
-    board0Output.board = boards[0];
-    board1Input.board = boards[1];
-    board1Output.board = boards[1];
+    for (i = 0; i < activity.boards.length; i++) {
+      boards[i].allBoards = boards;
+      if (i > 0) {
+        inputs[i].setConnectsTo(outputs[i-1]);
+        outputs[i-1].setConnectsTo(inputs[i]);
+      }
+    }
 
     this.setState({boards: boards});
   },
 
   componentWillUnmount: function () {
-    boardWatcher.removeListener(this.state.boards[0], this.updateWatchedBoard);
-    boardWatcher.removeListener(this.state.boards[1], this.updateWatchedBoard);
+    var i;
+    for (i = 0; i < this.state.boards.length; i++) {
+      boardWatcher.removeListener(this.state.boards[i], this.updateWatchedBoard);
+    }
   },
 
   updateWatchedBoard: function (board, boardInfo) {
@@ -251,8 +250,8 @@ module.exports = React.createClass({
     generateTests = function () {
       var truthTable = self.state.activity.truthTable,
           header = truthTable[0],
-          input = self.state.activity.input,
-          output = self.state.activity.output,
+          input = self.state.activity.boards[0].input,
+          output = self.state.activity.boards[numBoards-1].output,
           defaultTestInput = [],
           defaultTestOutput = [],
           tests = [],
@@ -319,7 +318,7 @@ module.exports = React.createClass({
       boards[0].connectors.input.setHoleVoltages(test.inputVoltages);
       resolveBoards();
 
-      outputVoltages = boards[1].connectors.output.getHoleVoltages();
+      outputVoltages = boards[numBoards-1].connectors.output.getHoleVoltages();
       output = [];
       for (i = 0; i < test.outputLevels.length; i++) {
         dontCare = test.outputLevels[i] == 'x';
@@ -351,24 +350,52 @@ module.exports = React.createClass({
   },
 
   toggleAllChipsAndWires: function () {
-    var chipMap = {}, i, j, board, demo, addChip, getEndpoint, wire, wireParts, sourceParts, destParts, source, dest;
+    var chipMap, holeMap, i, j, board, demo, addChip, getEndpoint, wire, wireParts, sourceParts, destParts, source, dest, mapHoles;
 
     addChip = function (name, chip) {
       chipMap[name] = new LogicChip({type: chip.type, layout: {x: chip.x, y: chip.y}, selectable: true});
       board.addComponent(name, chipMap[name]);
     };
 
-    getEndpoint = function (name, index) {
-      var item = chipMap[name] || (name == "in" ? board.connectors.input : (name == "out" ? board.connectors.output : null)),
+    mapHoles = function (name, connector) {
+      var i;
+      holeMap[name] = {};
+      for (i = 0; i < connector.holes.length; i++) {
+        holeMap[name][connector.holes[i].label] = i + 1;
+      }
+    };
+
+    getEndpoint = function (name, stringIndex) {
+      var item = chipMap[name] || (name == "input" ? board.connectors.input : (name == "output" ? board.connectors.output : null)),
+          intIndex = parseInt(stringIndex, 10),
+          list = null,
           endPoint = null;
+
 
       if (item) {
         if (item instanceof Connector) {
-          endPoint = item.holes[index - 1];
+          if (isNaN(intIndex)) {
+            intIndex = holeMap[name][stringIndex];
+          }
+          if (!isNaN(intIndex)) {
+            list = item.holes;
+          }
         }
         else {
-          endPoint = item.pins[index - 1];
+          list = item.pins;
         }
+      }
+
+      if (list) {
+        if (intIndex - 1 < list.length) {
+          endPoint = list[intIndex - 1];
+        }
+        else {
+          console.error("Invalid endpoint index: " + (name + ":" + intIndex));
+        }
+      }
+      if (!endPoint) {
+        console.error("Unknown wire endpoint: " + (name + ":" + stringIndex));
       }
 
       return endPoint;
@@ -379,10 +406,14 @@ module.exports = React.createClass({
       board.clear();
       if (!this.state.toggledAllChipsAndWires && this.state.activity.boards[i].demo) {
         demo = this.state.activity.boards[i].demo;
+        chipMap = {};
         if (demo.chips) {
           $.each(demo.chips, addChip);
         }
         if (demo.wires) {
+          holeMap = {};
+          mapHoles('input', board.connectors.input);
+          mapHoles('output', board.connectors.output);
           for (j = 0; j < demo.wires.length; j++) {
             wire = $.trim(demo.wires[j]);
             if (wire.substr(0, 2) === "//") {
@@ -392,8 +423,8 @@ module.exports = React.createClass({
             sourceParts = $.trim(wireParts[0]).split(":");
             destParts = $.trim(wireParts[1] || "").split(":");
 
-            source = getEndpoint(sourceParts[0], parseInt(sourceParts[1], 10));
-            dest = getEndpoint(destParts[0], parseInt(destParts[1], 10));
+            source = getEndpoint($.trim(sourceParts[0]), $.trim(sourceParts[1]));
+            dest = getEndpoint($.trim(destParts[0]), $.trim(destParts[1]));
 
             if (source && dest) {
               board.addWire(source, dest, '#00f');
@@ -419,13 +450,13 @@ module.exports = React.createClass({
     return div({},
       h1({}, "Teaching Teamwork" + (this.state.activity ? ": " + this.state.activity.name : "")),
       this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
+      OfflineCheckView({}),
       WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect}),
       div({id: 'logicapp'},
         WorkspaceView({constants: constants, boards: this.state.boards, showDebugPins: this.state.showDebugPins, users: this.state.users, userBoardNumber: this.state.userBoardNumber, activity: this.state.activity}),
         this.state.showDemo ? DemoControlView({top: demoTop, toggleAllChipsAndWires: this.toggleAllChipsAndWires, toggleDebugPins: this.toggleDebugPins, showDebugPins: this.state.showDebugPins, toggledAllChipsAndWires: this.state.toggledAllChipsAndWires, hasDemoData: this.state.hasDemoData}) : null,
         SidebarChatView({numClients: 2, top: sidebarTop})
-      ),
-      OfflineCheckView({})
+      )
     );
   }
 });
