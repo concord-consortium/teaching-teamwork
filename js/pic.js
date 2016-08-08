@@ -3307,14 +3307,14 @@ module.exports = React.createClass({
     var pins = [],
         selectedConstants = constants.selectedConstants(this.props.selected),
         position = this.props.component.position,
-        showPinOut = this.state.hovering || (this.props.editable && this.props.selected && this.props.componentSelected),
+        showPinOut = this.props.showPinouts && (this.state.hovering || (this.props.editable && this.props.selected && this.props.componentSelected)),
         pin, i, groundComponent, vccComponents, vccPos, label, labelText, rectParams, pinOut;
 
     this.layout();
 
     for (i = 0; i < this.props.component.pins.length; i++) {
       pin = this.props.component.pins[i];
-      pins.push(PinView({key: 'pin' + i, pin: pin, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
+      pins.push(PinView({key: 'pin' + i, pin: pin, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showPinColors: this.props.showPinColors, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
       if (!showPinOut) {
         pins.push(PinLabelView({key: 'label' + i, pin: pin, selected: this.props.selected, editable: this.props.editable, reportHover: this.props.reportHover}));
       }
@@ -3367,7 +3367,7 @@ var Connector = require('../../models/shared/connector'),
     WeGotItView = React.createFactory(require('../shared/we-got-it')),
     WorkspaceView = React.createFactory(require('./workspace')),
     SimulatorControlView = React.createFactory(require('./simulator-control')),
-    DemoControlView = React.createFactory(require('./demo-control')),
+    AutoWiringView = React.createFactory(require('./auto-wiring')),
     SidebarChatView = React.createFactory(require('../shared/sidebar-chat')),
     WireControlsView = React.createFactory(require('../shared/wire-controls')),
     OfflineCheckView = React.createFactory(require('../shared/offline-check')),
@@ -3408,10 +3408,9 @@ module.exports = React.createClass({
     return {
       boards: boards,
       running: true,
-      showDebugPins: true,
-      addedAllWires: false,
-      showDemo: window.location.search.indexOf('demo') !== -1,
-      showSimulator: window.location.search.indexOf('simulator') !== -1,
+      showPinColors: window.location.search.indexOf('showPinColors') !== -1,
+      showAutoWiring: window.location.search.indexOf('allowAutoWiring') !== -1,
+      showSimulator: window.location.search.indexOf('showSimulator') !== -1,
       showWireControls: window.location.search.indexOf('wireSettings') !== -1,
       userBoardNumber: -1,
       users: {},
@@ -3610,7 +3609,7 @@ module.exports = React.createClass({
         b2PIC = b2.components.pic.pinMap,
         b2LED = b2.components.led.pinMap,
         b2i = b2.connectors.input.holes,
-        wire, boardWires, i, j;
+        wire, boardWires, i, j, hasWires;
 
     boardWires = [
       [
@@ -3652,8 +3651,9 @@ module.exports = React.createClass({
     ];
 
     for (i = 0; i < this.state.boards.length; i++) {
+      hasWires = this.state.boards[i].wires.length > 0;
       this.state.boards[i].clear();
-      if (!this.state.addedAllWires) {
+      if (!hasWires) {
         for (j = 0; j < boardWires[i].length; j++) {
           wire = boardWires[i][j];
           this.state.boards[i].addWire(wire.source, wire.dest, wire.color);
@@ -3662,11 +3662,7 @@ module.exports = React.createClass({
       boardWatcher.circuitChanged(this.state.boards[i]);
     }
 
-    this.setState({boards: this.state.boards, addedAllWires: !this.state.addedAllWires});
-  },
-
-  toggleDebugPins: function () {
-    this.setState({showDebugPins: !this.state.showDebugPins});
+    this.setState({boards: this.state.boards});
   },
 
   updateWireSettings: function (newSettings) {
@@ -3674,8 +3670,8 @@ module.exports = React.createClass({
   },
 
   render: function () {
-    var demoTop = this.state.showSimulator ? 75 : 0,
-        sidebarTop = demoTop + (this.state.showDemo ? 75 : 0);
+    var autoWiringTop = this.state.showSimulator ? 75 : 0,
+        sidebarTop = autoWiringTop + (this.state.showAutoWiring ? 75 : 0);
 
     return div({},
       this.state.showWireControls ? WireControlsView({wireSettings: this.state.wireSettings, updateWireSettings: this.updateWireSettings}) : null,
@@ -3684,9 +3680,9 @@ module.exports = React.createClass({
       OfflineCheckView({}),
       WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect}),
       div({id: 'picapp'},
-        WorkspaceView({constants: constants, boards: this.state.boards, stepping: !this.state.running, showDebugPins: this.state.showDebugPins, users: this.state.users, userBoardNumber: this.state.userBoardNumber, wireSettings: this.state.wireSettings}),
+        WorkspaceView({constants: constants, boards: this.state.boards, stepping: !this.state.running, showPinColors: this.state.showPinColors, users: this.state.users, userBoardNumber: this.state.userBoardNumber, wireSettings: this.state.wireSettings}),
         this.state.showSimulator ? SimulatorControlView({running: this.state.running, run: this.run, step: this.step, reset: this.reset}) : null,
-        this.state.showDemo ? DemoControlView({top: demoTop, running: this.state.running, toggleAllWires: this.toggleAllWires, toggleDebugPins: this.toggleDebugPins, showDebugPins: this.state.showDebugPins, addedAllWires: this.state.addedAllWires}) : null,
+        this.state.showAutoWiring ? AutoWiringView({top: autoWiringTop, running: this.state.running, toggleAllWires: this.toggleAllWires}) : null,
         SidebarChatView({numClients: 3, top: sidebarTop})
       )
     );
@@ -3694,7 +3690,29 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/pic/board-watcher":2,"../../controllers/shared/log":4,"../../controllers/shared/user":5,"../../data/pic/pic-code":6,"../../models/pic/keypad":11,"../../models/pic/led":12,"../../models/pic/pic":13,"../../models/shared/board":15,"../../models/shared/connector":17,"../shared/events":39,"../shared/offline-check":42,"../shared/sidebar-chat":47,"../shared/we-got-it":50,"../shared/wire-controls":51,"./constants":27,"./demo-control":28,"./simulator-control":32,"./workspace":33}],25:[function(require,module,exports){
+},{"../../controllers/pic/board-watcher":2,"../../controllers/shared/log":4,"../../controllers/shared/user":5,"../../data/pic/pic-code":6,"../../models/pic/keypad":11,"../../models/pic/led":12,"../../models/pic/pic":13,"../../models/shared/board":15,"../../models/shared/connector":17,"../shared/events":39,"../shared/offline-check":42,"../shared/sidebar-chat":47,"../shared/we-got-it":50,"../shared/wire-controls":51,"./auto-wiring":25,"./constants":28,"./simulator-control":32,"./workspace":33}],25:[function(require,module,exports){
+var div = React.DOM.div,
+    button = React.DOM.button;
+
+module.exports = React.createClass({
+  displayName: 'AutoWiringView',
+
+  toggleAllWires: function () {
+    this.props.toggleAllWires();
+  },
+
+  render: function () {
+    return div({id: 'auto-wiring', style: {top: this.props.top}},
+      div({id: 'auto-wiring-title'}, 'Auto Wiring'),
+      div({id: 'auto-wiring-area'},
+        button({onClick: this.toggleAllWires}, 'Toggle Wires')
+      )
+    );
+  }
+});
+
+
+},{}],26:[function(require,module,exports){
 var div = React.DOM.div;
 
 module.exports = React.createClass({
@@ -3717,7 +3735,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],26:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 var g = React.DOM.g,
     rect = React.DOM.rect,
     text = React.DOM.text;
@@ -3741,7 +3759,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],27:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 var constants;
 
 module.exports = constants = {
@@ -3800,33 +3818,6 @@ module.exports = constants = {
 };
 
 
-},{}],28:[function(require,module,exports){
-var div = React.DOM.div,
-    button = React.DOM.button;
-
-module.exports = React.createClass({
-  displayName: 'DemoControlView',
-
-  toggleAllWires: function () {
-    this.props.toggleAllWires();
-  },
-
-  toggleDebugPins: function () {
-    this.props.toggleDebugPins();
-  },
-
-  render: function () {
-    return div({id: 'demo-control', style: {top: this.props.top}},
-      div({id: 'demo-control-title'}, 'Demo Control'),
-      div({id: 'demo-control-area'},
-        button({onClick: this.toggleAllWires}, (this.props.addedAllWires ? '-' : '+') + ' Wires'),
-        !this.props.running ? button({onClick: this.toggleDebugPins}, (this.props.showDebugPins ? '-' : '+') + ' Pin Colors') : null
-      )
-    );
-  }
-});
-
-
 },{}],29:[function(require,module,exports){
 var PinView = React.createFactory(require('../shared/pin')),
     PinLabelView = React.createFactory(require('../shared/pin-label')),
@@ -3872,7 +3863,7 @@ module.exports = React.createClass({
 
     for (i = 0; i < this.props.component.pins.length; i++) {
       pin = this.props.component.pins[i];
-      pins.push(PinView({key: 'pin' + i, constants: this.props.constants, pin: pin, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
+      pins.push(PinView({key: 'pin' + i, constants: this.props.constants, pin: pin, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showPinColors: this.props.showPinColors, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
       pins.push(PinLabelView({key: 'label' + i, pin: pin, selected: this.props.selected, editable: this.props.editable, reportHover: this.props.reportHover}));
     }
 
@@ -3890,7 +3881,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../shared/events":39,"../shared/pin":44,"../shared/pin-label":43,"./button":26}],30:[function(require,module,exports){
+},{"../shared/events":39,"../shared/pin":44,"../shared/pin-label":43,"./button":27}],30:[function(require,module,exports){
 var PinView = React.createFactory(require('../shared/pin')),
     PinLabelView = React.createFactory(require('../shared/pin-label')),
     path = React.DOM.path,
@@ -3914,7 +3905,7 @@ module.exports = React.createClass({
 
     for (i = 0; i < this.props.component.pins.length; i++) {
       pin = this.props.component.pins[i];
-      pins.push(PinView({key: 'pin' + i, pin: pin, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
+      pins.push(PinView({key: 'pin' + i, pin: pin, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showPinColors: this.props.showPinColors, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
       pins.push(PinLabelView({key: 'label' + i, pin: pin, selected: this.props.selected, editable: this.props.editable, reportHover: this.props.reportHover}));
     }
 
@@ -4037,7 +4028,7 @@ module.exports = React.createClass({
 
     for (i = 0; i < this.props.component.pins.length; i++) {
       pin = this.props.component.pins[i];
-      pins.push(PinView({key: 'pin' + i, pin: pin, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
+      pins.push(PinView({key: 'pin' + i, pin: pin, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showPinColors: this.props.showPinColors, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
       pins.push(PinLabelView({key: 'label' + i, pin: pin, selected: this.props.selected, editable: this.props.editable, reportHover: this.props.reportHover}));
     }
 
@@ -4179,7 +4170,7 @@ module.exports = React.createClass({
           editable: this.props.userBoardNumber === this.state.selectedBoard.number,
           user: this.props.users[this.state.selectedBoard.number],
           stepping: this.props.stepping,
-          showDebugPins: this.props.showDebugPins,
+          showPinColors: this.props.showPinColors,
           toggleBoard: this.toggleBoard,
           showProbe: true,
           wireSettings: this.props.wireSettings
@@ -4195,7 +4186,7 @@ module.exports = React.createClass({
           editable: this.props.userBoardNumber === 0,
           user: this.props.users[0],
           stepping: this.props.stepping,
-          showDebugPins: this.props.showDebugPins,
+          showPinColors: this.props.showPinColors,
           toggleBoard: this.toggleBoard,
           showProbe: true,
           wireSettings: this.props.wireSettings
@@ -4210,7 +4201,7 @@ module.exports = React.createClass({
           editable: this.props.userBoardNumber === 1,
           user: this.props.users[1],
           stepping: this.props.stepping,
-          showDebugPins: this.props.showDebugPins,
+          showPinColors: this.props.showPinColors,
           toggleBoard: this.toggleBoard,
           showProbe: true,
           wireSettings: this.props.wireSettings
@@ -4225,7 +4216,7 @@ module.exports = React.createClass({
           editable: this.props.userBoardNumber === 2,
           user: this.props.users[2],
           stepping: this.props.stepping,
-          showDebugPins: this.props.showDebugPins,
+          showPinColors: this.props.showPinColors,
           toggleBoard: this.toggleBoard,
           showProbe: true,
           wireSettings: this.props.wireSettings
@@ -4236,7 +4227,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../shared/board":34,"../shared/events":39,"../shared/ribbon":46,"./board-editor":25}],34:[function(require,module,exports){
+},{"../shared/board":34,"../shared/events":39,"../shared/ribbon":46,"./board-editor":26}],34:[function(require,module,exports){
 var boardWatcher = require('../../controllers/pic/board-watcher'),
     ConnectorView = React.createFactory(require('./connector')),
     WireView = React.createFactory(require('./wire')),
@@ -4755,7 +4746,7 @@ module.exports = React.createClass({
         if (component.calculatePosition) {
           component.calculatePosition(this.props.constants, this.props.selected, componentIndex++, this.props.board.numComponents);
         }
-        components.push(component.view({key: name, constants: this.props.constants, component: component, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.drawConnection, reportHover: this.reportHover, layoutChanged: this.layoutChanged, snapToGrid: this.snapToGrid, componentSelected: this.state.selectedComponents.indexOf(component) !== -1, componentClicked: this.componentSelected, logicChipDragRect: logicChipDragRect}));
+        components.push(component.view({key: name, constants: this.props.constants, component: component, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showPinColors: this.props.showPinColors, showPinouts: this.props.showPinouts, drawConnection: this.drawConnection, reportHover: this.reportHover, layoutChanged: this.layoutChanged, snapToGrid: this.snapToGrid, componentSelected: this.state.selectedComponents.indexOf(component) !== -1, componentClicked: this.componentSelected, logicChipDragRect: logicChipDragRect}));
       }
     }
 
@@ -5255,7 +5246,7 @@ module.exports = React.createClass({
 
   render: function () {
     var pin = this.props.pin,
-        showColors = this.props.stepping && this.props.showDebugPins && !pin.notConnectable,
+        showColors = this.props.stepping && this.props.showPinColors && !pin.notConnectable,
         enableHandlers = this.props.selected && this.props.editable;
 
     return showColors ? this.renderIOPin(pin, enableHandlers) : this.renderPin(pin, enableHandlers);

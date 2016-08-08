@@ -1815,7 +1815,7 @@ var Connector = require('../../models/shared/connector'),
     WeGotItView = React.createFactory(require('../shared/we-got-it')),
     WorkspaceView = React.createFactory(require('./workspace')),
     OfflineCheckView = React.createFactory(require('../shared/offline-check')),
-    DemoControlView = React.createFactory(require('./demo-control')),
+    AutoWiringView = React.createFactory(require('./auto-wiring')),
     constants = require('./constants'),
     div = React.DOM.div,
     h1 = React.DOM.h1,
@@ -1833,10 +1833,7 @@ module.exports = React.createClass({
       currentUser: null,
       currentGroup: null,
       activity: null,
-      showDemo: window.location.search.indexOf('demo') !== -1,
-      showDebugPins: false,
-      toggledAllChipsAndWires: false,
-      hasDemoData: false
+      interface: {}
     };
   },
 
@@ -1926,22 +1923,25 @@ module.exports = React.createClass({
 
   startActivity: function (activityName, activity) {
     var self = this,
-        hasDemoData = false,
+        hasAutoWiringData = false,
+        interface = activity.interface || {},
         i;
 
     // create the boards
     this.setupBoards(activity);
 
     for (i = 0; i < activity.boards.length; i++) {
-      if (activity.boards[i].demo) {
-        hasDemoData = true;
+      if (activity.boards[i].autoWiring) {
+        hasAutoWiringData = true;
         break;
       }
     }
 
     this.setState({
       activity: activity,
-      hasDemoData: hasDemoData
+      allowAutoWiring: !!interface.allowAutoWiring && hasAutoWiringData,
+      showPinColors: !!interface.showPinColors,
+      showPinouts: !!interface.showPinouts
     });
 
     logController.init(activityName);
@@ -2155,7 +2155,7 @@ module.exports = React.createClass({
   },
 
   toggleAllChipsAndWires: function () {
-    var chipMap, holeMap, i, j, board, demo, addChip, getEndpoint, wire, wireParts, sourceParts, destParts, source, dest, mapHoles;
+    var chipMap, holeMap, i, j, board, autoWiring, addChip, getEndpoint, wire, wireParts, sourceParts, destParts, source, dest, mapHoles, hasWires;
 
     addChip = function (name, chip) {
       chipMap[name] = new LogicChip({type: chip.type, layout: {x: chip.x, y: chip.y}, selectable: true});
@@ -2208,19 +2208,20 @@ module.exports = React.createClass({
 
     for (i = 0; i < this.state.boards.length; i++) {
       board = this.state.boards[i];
+      hasWires = this.state.boards[i].wires.length > 0;
       board.clear();
-      if (!this.state.toggledAllChipsAndWires && this.state.activity.boards[i].demo) {
-        demo = this.state.activity.boards[i].demo;
+      if (!hasWires && this.state.activity.boards[i].autoWiring) {
+        autoWiring = this.state.activity.boards[i].autoWiring;
         chipMap = {};
-        if (demo.chips) {
-          $.each(demo.chips, addChip);
+        if (autoWiring.chips) {
+          $.each(autoWiring.chips, addChip);
         }
-        if (demo.wires) {
+        if (autoWiring.wires) {
           holeMap = {};
           mapHoles('input', board.connectors.input);
           mapHoles('output', board.connectors.output);
-          for (j = 0; j < demo.wires.length; j++) {
-            wire = $.trim(demo.wires[j]);
+          for (j = 0; j < autoWiring.wires.length; j++) {
+            wire = $.trim(autoWiring.wires[j]);
             if (wire.substr(0, 2) === "//") {
               continue;
             }
@@ -2241,16 +2242,11 @@ module.exports = React.createClass({
       boardWatcher.circuitChanged(board);
     }
 
-    this.setState({boards: this.state.boards, toggledAllChipsAndWires: !this.state.toggledAllChipsAndWires});
-  },
-
-  toggleDebugPins: function () {
-    this.setState({showDebugPins: !this.state.showDebugPins});
+    this.setState({boards: this.state.boards});
   },
 
   render: function () {
-    var demoTop = this.state.showSimulator ? 75 : 0,
-        sidebarTop = demoTop + (this.state.showDemo ? 75 : 0);
+    var sidebarTop = this.state.allowAutoWiring ? 75 : 0;
 
     return div({},
       h1({}, "Teaching Teamwork" + (this.state.activity ? ": " + this.state.activity.name : "")),
@@ -2258,8 +2254,8 @@ module.exports = React.createClass({
       OfflineCheckView({}),
       WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect}),
       div({id: 'logicapp'},
-        WorkspaceView({constants: constants, boards: this.state.boards, showDebugPins: this.state.showDebugPins, users: this.state.users, userBoardNumber: this.state.userBoardNumber, activity: this.state.activity}),
-        this.state.showDemo ? DemoControlView({top: demoTop, toggleAllChipsAndWires: this.toggleAllChipsAndWires, toggleDebugPins: this.toggleDebugPins, showDebugPins: this.state.showDebugPins, toggledAllChipsAndWires: this.state.toggledAllChipsAndWires, hasDemoData: this.state.hasDemoData}) : null,
+        WorkspaceView({constants: constants, boards: this.state.boards, showPinColors: this.state.showPinColors, showPinouts: this.state.showPinouts, users: this.state.users, userBoardNumber: this.state.userBoardNumber, activity: this.state.activity}),
+        this.state.allowAutoWiring ? AutoWiringView({top: 0, toggleAllChipsAndWires: this.toggleAllChipsAndWires}) : null,
         SidebarChatView({numClients: 2, top: sidebarTop})
       )
     );
@@ -2267,7 +2263,29 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/pic/board-watcher":2,"../../controllers/shared/log":4,"../../controllers/shared/user":5,"../../models/logic-gates/logic-chip":8,"../../models/shared/board":9,"../../models/shared/connector":11,"../../models/shared/ttl":14,"../shared/offline-check":29,"../shared/sidebar-chat":34,"../shared/we-got-it":37,"./constants":17,"./demo-control":18,"./workspace":20}],17:[function(require,module,exports){
+},{"../../controllers/pic/board-watcher":2,"../../controllers/shared/log":4,"../../controllers/shared/user":5,"../../models/logic-gates/logic-chip":8,"../../models/shared/board":9,"../../models/shared/connector":11,"../../models/shared/ttl":14,"../shared/offline-check":29,"../shared/sidebar-chat":34,"../shared/we-got-it":37,"./auto-wiring":17,"./constants":18,"./workspace":20}],17:[function(require,module,exports){
+var div = React.DOM.div,
+    button = React.DOM.button;
+
+module.exports = React.createClass({
+  displayName: 'AutoWiringView',
+
+  toggleAllChipsAndWires: function () {
+    this.props.toggleAllChipsAndWires();
+  },
+
+  render: function () {
+    return div({id: 'auto-wiring'},
+      div({id: 'auto-wiring-title'}, 'Auto Wiring'),
+      div({id: 'auto-wiring-area'},
+        button({onClick: this.toggleAllChipsAndWires}, 'Toggle Chips/Wires')
+      )
+    );
+  }
+});
+
+
+},{}],18:[function(require,module,exports){
 var workspaceWidth = 936 - 200,
     logicDrawerWidth = 100,
     constants;
@@ -2313,33 +2331,6 @@ module.exports = constants = {
     };
   }
 };
-
-
-},{}],18:[function(require,module,exports){
-var div = React.DOM.div,
-    button = React.DOM.button;
-
-module.exports = React.createClass({
-  displayName: 'DemoControlView',
-
-  toggleAllChipsAndWires: function () {
-    this.props.toggleAllChipsAndWires();
-  },
-
-  toggleDebugPins: function () {
-    this.props.toggleDebugPins();
-  },
-
-  render: function () {
-    return div({id: 'demo-control'},
-      div({id: 'demo-control-title'}, 'Demo Control'),
-      div({id: 'demo-control-area'},
-        this.props.hasDemoData ? button({onClick: this.toggleAllChipsAndWires}, (this.props.toggledAllChipsAndWires ? '-' : '+') + ' Chips/Wires') : null,
-        button({onClick: this.toggleDebugPins}, (this.props.showDebugPins ? '-' : '+') + ' Pin Colors')
-      )
-    );
-  }
-});
 
 
 },{}],19:[function(require,module,exports){
@@ -2742,14 +2733,14 @@ module.exports = React.createClass({
     var pins = [],
         selectedConstants = constants.selectedConstants(this.props.selected),
         position = this.props.component.position,
-        showPinOut = this.state.hovering || (this.props.editable && this.props.selected && this.props.componentSelected),
+        showPinOut = this.props.showPinouts && (this.state.hovering || (this.props.editable && this.props.selected && this.props.componentSelected)),
         pin, i, groundComponent, vccComponents, vccPos, label, labelText, rectParams, pinOut;
 
     this.layout();
 
     for (i = 0; i < this.props.component.pins.length; i++) {
       pin = this.props.component.pins[i];
-      pins.push(PinView({key: 'pin' + i, pin: pin, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
+      pins.push(PinView({key: 'pin' + i, pin: pin, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showPinColors: this.props.showPinColors, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
       if (!showPinOut) {
         pins.push(PinLabelView({key: 'label' + i, pin: pin, selected: this.props.selected, editable: this.props.editable, reportHover: this.props.reportHover}));
       }
@@ -2789,7 +2780,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../shared/events":26,"../shared/pin":31,"../shared/pin-label":30,"./constants":17}],20:[function(require,module,exports){
+},{"../shared/events":26,"../shared/pin":31,"../shared/pin-label":30,"./constants":18}],20:[function(require,module,exports){
 var BoardView = React.createFactory(require('../shared/board')),
     RibbonView = React.createFactory(require('../shared/ribbon')),
     events = require('../shared/events'),
@@ -2852,7 +2843,8 @@ module.exports = React.createClass({
           toggleBoard: this.props.userBoardNumber === this.state.selectedBoard.number ? this.toggleBoard : null,
           toggleBoardButtonStyle: {marginTop: -35},
           showProbe: true,
-          showDebugPins: this.props.showDebugPins,
+          showPinColors: this.props.showPinColors,
+          showPinouts: this.props.showPinouts,
           stepping: true
         }),
         RibbonView({
@@ -2877,7 +2869,8 @@ module.exports = React.createClass({
           user: this.props.users[i],
           logicChipDrawer: this.props.activity ? this.props.activity.boards[i].logicChipDrawer : null,
           toggleBoard: this.props.userBoardNumber === i ? this.toggleBoard : null,
-          showDebugPins: this.props.showDebugPins,
+          showPinColors: this.props.showPinColors,
+          showPinouts: this.props.showPinouts,
           stepping: true
         }));
       }
@@ -3406,7 +3399,7 @@ module.exports = React.createClass({
         if (component.calculatePosition) {
           component.calculatePosition(this.props.constants, this.props.selected, componentIndex++, this.props.board.numComponents);
         }
-        components.push(component.view({key: name, constants: this.props.constants, component: component, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.drawConnection, reportHover: this.reportHover, layoutChanged: this.layoutChanged, snapToGrid: this.snapToGrid, componentSelected: this.state.selectedComponents.indexOf(component) !== -1, componentClicked: this.componentSelected, logicChipDragRect: logicChipDragRect}));
+        components.push(component.view({key: name, constants: this.props.constants, component: component, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showPinColors: this.props.showPinColors, showPinouts: this.props.showPinouts, drawConnection: this.drawConnection, reportHover: this.reportHover, layoutChanged: this.layoutChanged, snapToGrid: this.snapToGrid, componentSelected: this.state.selectedComponents.indexOf(component) !== -1, componentClicked: this.componentSelected, logicChipDragRect: logicChipDragRect}));
       }
     }
 
@@ -3906,7 +3899,7 @@ module.exports = React.createClass({
 
   render: function () {
     var pin = this.props.pin,
-        showColors = this.props.stepping && this.props.showDebugPins && !pin.notConnectable,
+        showColors = this.props.stepping && this.props.showPinColors && !pin.notConnectable,
         enableHandlers = this.props.selected && this.props.editable;
 
     return showColors ? this.renderIOPin(pin, enableHandlers) : this.renderPin(pin, enableHandlers);

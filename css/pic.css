@@ -56,7 +56,7 @@ button {
   margin: 15px 5px;
 }
 
-#demo-control {
+#auto-wiring {
   position: absolute;
   top: 75px;
   right: 0;
@@ -64,16 +64,16 @@ button {
   height: 75px;
   background-color: #777;
 }
-#demo-control-title {
+#auto-wiring-title {
   padding: 5px;
   background-color: #ccc;
 }
-#demo-control-area {
+#auto-wiring-area {
   color: #fff;
   font-size: 12px;
   text-align: center;
 }
-#demo-control-area button {
+#auto-wiring-area button {
   margin: 15px 2px;
 }
 
