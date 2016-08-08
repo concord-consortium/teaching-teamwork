@@ -1,8 +1,5 @@
 {
   "name": "Single XOR",
-  "input": ["A", "B"],
-  "ribbon": ["A", "B"],
-  "output": ["XOR"],
   "boards": [
     {
       "logicChipDrawer": {
@@ -11,6 +8,8 @@
           "7404": {"max": 3}
         }
       },
+      "input": ["A", "B"],
+      "output": ["C", "D"],
       "demo": {
         "chips": {
           "not": {
@@ -25,14 +24,14 @@
           }
         },
         "wires": [
-          "in:1,not:13",   "// create NOT A on not pin 12",
-          "in:2,not:9",    "// create NOT B on not pin 8",
+          "input:A,not:13",   "// create NOT A on not pin 12",
+          "input:B,not:9",    "// create NOT B on not pin 8",
           "not:12,and:13", "// NOT A to and pin 13",
-          "in:2,and:12",   "// B to and pin 12",
-          "and:11,out:1",  "// (NOT A AND B) to output hole 1",
+          "input:B,and:12",   "// B to and pin 12",
+          "and:11,output:C",  "// (NOT A AND B) to output hole 1",
           "not:8,and:10",  "// NOT B to and pin 10",
-          "in:1,and:9",    "// A to and pin 9",
-          "and:8,out:2",   "// (NOT B AND A) to output hole 2"
+          "input:A,and:9",    "// A to and pin 9",
+          "and:8,output:D",   "// (NOT B AND A) to output hole 2"
         ]
       }
     },
@@ -42,6 +41,8 @@
           "7432": {"max": 2}
         }
       },
+      "input": ["C", "D"],
+      "output": ["XOR"],
       "demo": {
         "chips": {
           "or": {
@@ -51,9 +52,9 @@
           }
         },
         "wires": [
-          "in:1,or:13",  "// C = (NOT A AND B) from input hole 1",
-          "in:2,or:12",  "// D = (NOT B AND A) from input hole 2",
-          "or:11,out:1", "// (C OR D) to output hole 1"
+          "input:C,or:13",  "// C = (NOT A AND B) from input hole 1",
+          "input:D,or:12",  "// D = (NOT B AND A) from input hole 2",
+          "or:11,output:XOR", "// (C OR D) to output hole 1"
         ]
       }
     }
