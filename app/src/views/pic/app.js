@@ -324,14 +324,14 @@ module.exports = React.createClass({
       this.state.showWireControls ? WireControlsView({wireSettings: this.state.wireSettings, updateWireSettings: this.updateWireSettings}) : null,
       h1({}, "Teaching Teamwork PIC Activity"),
       this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
+      OfflineCheckView({}),
       WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect}),
       div({id: 'picapp'},
         WorkspaceView({constants: constants, boards: this.state.boards, stepping: !this.state.running, showDebugPins: this.state.showDebugPins, users: this.state.users, userBoardNumber: this.state.userBoardNumber, wireSettings: this.state.wireSettings}),
         this.state.showSimulator ? SimulatorControlView({running: this.state.running, run: this.run, step: this.step, reset: this.reset}) : null,
         this.state.showDemo ? DemoControlView({top: demoTop, running: this.state.running, toggleAllWires: this.toggleAllWires, toggleDebugPins: this.toggleDebugPins, showDebugPins: this.state.showDebugPins, addedAllWires: this.state.addedAllWires}) : null,
         SidebarChatView({numClients: 3, top: sidebarTop})
-      ),
-      OfflineCheckView({})
+      )
     );
   }
 });

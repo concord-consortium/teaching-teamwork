@@ -36,7 +36,8 @@ module.exports = React.createClass({
   },
 
   render: function () {
-    var selectedConstants;
+    var selectedConstants,
+        ribbonsAndBoards, i;
 
     if (this.props.userBoardNumber == -1) {
       return div({id: 'workspace', style: {width: this.props.constants.WORKSPACE_WIDTH}});
@@ -70,36 +71,25 @@ module.exports = React.createClass({
       );
     }
     else {
-      return div({id: 'workspace', style: {width: this.props.constants.WORKSPACE_WIDTH}},
-        RibbonView({
+      selectedConstants = this.props.constants.selectedConstants(false);
+      ribbonsAndBoards = [];
+      for (i = 0; i < this.props.boards.length; i++) {
+        ribbonsAndBoards.push(RibbonView({
           constants: this.props.constants,
-          connector: this.props.boards[0].connectors.input
-        }),
-        BoardView({
+          connector: this.props.boards[i].connectors.input
+        }));
+        ribbonsAndBoards.push(BoardView({
           constants: this.props.constants,
-          board: this.props.boards[0],
-          editable: this.props.userBoardNumber === 0,
-          user: this.props.users[0],
-          logicChipDrawer: this.props.activity ? this.props.activity.boards[0].logicChipDrawer : null,
-          toggleBoard: this.props.userBoardNumber === 0 ? this.toggleBoard : null,
+          board: this.props.boards[i],
+          editable: this.props.userBoardNumber === i,
+          user: this.props.users[i],
+          logicChipDrawer: this.props.activity ? this.props.activity.boards[i].logicChipDrawer : null,
+          toggleBoard: this.props.userBoardNumber === i ? this.toggleBoard : null,
           showDebugPins: this.props.showDebugPins,
           stepping: true
-        }),
-        RibbonView({
-          constants: this.props.constants,
-          connector: this.props.boards[0].connectors.output
-        }),
-        BoardView({
-          constants: this.props.constants,
-          board: this.props.boards[1],
-          editable: this.props.userBoardNumber === 1,
-          user: this.props.users[1],
-          logicChipDrawer: this.props.activity ? this.props.activity.boards[1].logicChipDrawer : null,
-          toggleBoard: this.props.userBoardNumber === 1 ? this.toggleBoard : null,
-          showDebugPins: this.props.showDebugPins,
-          stepping: true
-        })
-      );
+        }));
+      }
+      return div({id: 'workspace', style: {width: this.props.constants.WORKSPACE_WIDTH, height: (this.props.boards.length * (selectedConstants.BOARD_HEIGHT + this.props.constants.RIBBON_HEIGHT)) + 20}}, ribbonsAndBoards);
     }
   }
 });
