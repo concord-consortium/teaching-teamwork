@@ -228,7 +228,7 @@ Board.prototype.addWire = function (source, dest, color) {
   wire = new Wire({
     source: source,
     dest: dest,
-    color: color
+    color: '#00f' // color used to be settable but is now forced to blue
   });
   this.wires.push(wire);
   if (!this.resolveCircuits()) {
