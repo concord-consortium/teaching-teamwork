@@ -56,6 +56,23 @@ th {
 #breadboard-wrapper {
 }
 
+#enter-unknowns {
+  float: right;
+  padding: 10px;
+  width: 165px;
+  background-color: #ddd;
+  margin-right: 10px;
+  margin-top: 20px;
+}
+#enter-unknowns input {
+  width: 50px;
+}
+#enter-unknowns select {
+  padding: .2em 5px;
+  border: 1px solid #a1d2d1;
+  margin-top: 5px;
+}
+
 /* fix bug in MathPad overlay - the breadboard svg 'bleeds though' the MathPad overlay at full opacity and steals focus */
 #breadboard-wrapper {
   opacity: 0.9999;
@@ -96,7 +113,7 @@ th {
 }
 
 #image-wrapper {
-  text-align: center;
+  text-align: left;
 }
 
 #values {

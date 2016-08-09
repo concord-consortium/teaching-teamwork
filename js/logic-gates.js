@@ -3,7 +3,7 @@ var AppView = React.createFactory(require('./views/logic-gates/app'));
 ReactDOM.render(AppView({}), document.getElementById('content'));
 
 
-},{"./views/logic-gates/app":16}],2:[function(require,module,exports){
+},{"./views/logic-gates/app":18}],2:[function(require,module,exports){
 var userController = require('../shared/user');
 
 var BoardWatcher = function () {
@@ -156,7 +156,7 @@ controller.init();
 module.exports = controller;
 
 
-},{"iframe-phone":43}],4:[function(require,module,exports){
+},{"iframe-phone":45}],4:[function(require,module,exports){
 var logManagerUrl  = '//teaching-teamwork-log-manager.herokuapp.com/api/logs',
     xhrObserver    = require('../../data/shared/xhrObserver'),
     laraController = require('./lara'),
@@ -352,7 +352,7 @@ LogController.prototype = {
 module.exports = new LogController();
 
 
-},{"../../data/shared/xhrObserver":7,"./lara":3}],5:[function(require,module,exports){
+},{"../../data/shared/xhrObserver":9,"./lara":3}],5:[function(require,module,exports){
 var UserRegistrationView = require('../../views/shared/userRegistration.jsx'),
     groups = require('../../data/shared/group-names'),
     logController = require('./log'),
@@ -561,6 +561,10 @@ module.exports = userController = {
     firebaseUsersRef.child(userName).set({client: client});
   },
 
+  setUnknownValues: function (unknownValues) {
+    firebaseUsersRef.child(userName).set({client: client, unknownValues: unknownValues});
+  },
+
   selectedClient: function() {
     firebaseUsersRef.off("value");
     UserRegistrationView.close();
@@ -633,7 +637,19 @@ module.exports = userController = {
 };
 
 
-},{"../../data/shared/group-names":6,"../../views/shared/userRegistration.jsx":35,"./lara":3,"./log":4}],6:[function(require,module,exports){
+},{"../../data/shared/group-names":7,"../../views/shared/userRegistration.jsx":37,"./lara":3,"./log":4}],6:[function(require,module,exports){
+module.exports = {
+  '7400': 'Quad 2-Input NAND',
+  '7402': 'Quad 2-Input NOR',
+  '7404': 'Hex Inverter',
+  '7408': 'Quad 2-Input AND',
+  '7411': 'Tri 3-Input AND',
+  '7432': 'Quad 2-Input OR',
+  '7486': 'Quad 2-Input XOR'
+};
+
+
+},{}],7:[function(require,module,exports){
 var sortByName = function (a, b) {
   if (a.name < b.name) {
     return -1;
@@ -780,7 +796,18 @@ module.exports = [
 ].sort(sortByName);
 
 
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
+module.exports = function() {
+  try {
+    return window.self !== window.top;
+  }
+  catch (e) {
+    return true;
+  }
+};
+
+
+},{}],9:[function(require,module,exports){
 var xhrObserver;
 
 function XHRObserver() {
@@ -855,7 +882,7 @@ XHRObserver.prototype = {
 module.exports = xhrObserver = new XHRObserver();
 
 
-},{}],8:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 var LogicChipView = React.createFactory(require('../../views/logic-gates/logic-chip')),
     Pin = require('../shared/pin'),
     TTL = require('../shared/ttl');
@@ -878,6 +905,9 @@ var LogicChip = function (options) {
   };
 
   switch (this.type) {
+    case '7402':
+      outputPins = [0, 3, 9, 12, 13];
+      break;
     case '7404':
       outputPins = [1, 3, 5, 6, 7, 9, 11, 13];
       break;
@@ -983,29 +1013,28 @@ LogicChip.prototype.standardPinConnections = [
   [[13, 12], 11]
 ];
 LogicChip.prototype.resolveOutputVoltages = function () {
+
   // NOTE: all pin indexes are 1 based below to make it easier to verify against 1-based pinout diagrams
   switch (this.type) {
-    // Quad 2-input AND
-    case '7408':
+    // Quad 2-Input NAND
+    case '7400':
       this.mapAndSetPins(this.standardPinConnections, function (a, b) {
         if (TTL.isInvalid(a) || TTL.isInvalid(b)) {
           return TTL.INVALID;
         }
-        return TTL.getBooleanLogicLevel(TTL.isHigh(a) && TTL.isHigh(b));
+        return TTL.getBooleanLogicLevel(!(TTL.isHigh(a) && TTL.isHigh(b)));
       });
       break;
 
-    // Quad 2-input OR
-    case '7432':
-      this.mapAndSetPins(this.standardPinConnections, function (a, b) {
-        return TTL.getBooleanLogicLevel(TTL.isHigh(a) || TTL.isHigh(b));
-      });
-      break;
-
-    // Quad 2-Input XOR
-    case '7486':
-      this.mapAndSetPins(this.standardPinConnections, function (a, b) {
-        return TTL.getBooleanLogicLevel((TTL.isHigh(a) || TTL.isHigh(b)) && !(TTL.isHigh(a) && TTL.isHigh(b)));
+    // Quad 2-Input NOR
+    case '7402':
+      this.mapAndSetPins([
+        [[2, 3], 1],
+        [[5, 6], 4],
+        [[9, 8], 10],
+        [[12, 11], 13]
+      ], function (a, b) {
+        return TTL.getBooleanLogicLevel(!(TTL.isHigh(a) || TTL.isHigh(b)));
       });
       break;
 
@@ -1026,6 +1055,16 @@ LogicChip.prototype.resolveOutputVoltages = function () {
       });
       break;
 
+    // Quad 2-input AND
+    case '7408':
+      this.mapAndSetPins(this.standardPinConnections, function (a, b) {
+        if (TTL.isInvalid(a) || TTL.isInvalid(b)) {
+          return TTL.INVALID;
+        }
+        return TTL.getBooleanLogicLevel(TTL.isHigh(a) && TTL.isHigh(b));
+      });
+      break;
+
     // Tri 3-Input AND
     case '7411':
       this.mapAndSetPins([
@@ -1037,6 +1076,20 @@ LogicChip.prototype.resolveOutputVoltages = function () {
           return TTL.INVALID;
         }
         return TTL.getBooleanLogicLevel(TTL.isHigh(a) && TTL.isHigh(b) && TTL.isHigh(c));
+      });
+      break;
+
+    // Quad 2-input OR
+    case '7432':
+      this.mapAndSetPins(this.standardPinConnections, function (a, b) {
+        return TTL.getBooleanLogicLevel(TTL.isHigh(a) || TTL.isHigh(b));
+      });
+      break;
+
+    // Quad 2-Input XOR
+    case '7486':
+      this.mapAndSetPins(this.standardPinConnections, function (a, b) {
+        return TTL.getBooleanLogicLevel((TTL.isHigh(a) || TTL.isHigh(b)) && !(TTL.isHigh(a) && TTL.isHigh(b)));
       });
       break;
   }
@@ -1054,7 +1107,7 @@ LogicChip.prototype.serialize = function () {
 module.exports = LogicChip;
 
 
-},{"../../views/logic-gates/logic-chip":19,"../shared/pin":13,"../shared/ttl":14}],9:[function(require,module,exports){
+},{"../../views/logic-gates/logic-chip":21,"../shared/pin":15,"../shared/ttl":16}],11:[function(require,module,exports){
 var Hole = require('./hole'),
     Pin = require('./pin'),
     Wire = require('./wire'),
@@ -1433,7 +1486,7 @@ Board.prototype.updateComponents = function (newSerializedComponents) {
 module.exports = Board;
 
 
-},{"../logic-gates/logic-chip":8,"./circuit":10,"./hole":12,"./pin":13,"./wire":15}],10:[function(require,module,exports){
+},{"../logic-gates/logic-chip":10,"./circuit":12,"./hole":14,"./pin":15,"./wire":17}],12:[function(require,module,exports){
 var Circuit = function (options) {
   this.inputs = options.inputs;
   this.outputs = options.outputs;
@@ -1500,7 +1553,7 @@ Circuit.prototype.setAverageOutputVoltage = function (list) {
 module.exports = Circuit;
 
 
-},{}],11:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 var Hole = require('./hole');
 
 var Connector = function (options) {
@@ -1593,7 +1646,7 @@ Connector.prototype.updateFromConnectedBoard = function () {
 module.exports = Connector;
 
 
-},{"./hole":12}],12:[function(require,module,exports){
+},{"./hole":14}],14:[function(require,module,exports){
 var TTL = require('./ttl');
 
 var Hole = function (options) {
@@ -1644,7 +1697,7 @@ Hole.prototype.getColor = function (editableInput) {
 module.exports = Hole;
 
 
-},{"./ttl":14}],13:[function(require,module,exports){
+},{"./ttl":16}],15:[function(require,module,exports){
 var TTL = require('./ttl');
 
 var Pin = function (options) {
@@ -1701,7 +1754,7 @@ Pin.prototype.reset = function () {
 module.exports = Pin;
 
 
-},{"./ttl":14}],14:[function(require,module,exports){
+},{"./ttl":16}],16:[function(require,module,exports){
 var TTL = module.exports = {
   LOW: 'LOW',
   INVALID: 'INVALID',
@@ -1759,7 +1812,7 @@ var TTL = module.exports = {
 };
 
 
-},{}],15:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 var Hole = require('./hole'),
     Pin = require('./pin');
 
@@ -1802,7 +1855,7 @@ Wire.EndpointId = function (endPoint) {
 module.exports = Wire;
 
 
-},{"./hole":12,"./pin":13}],16:[function(require,module,exports){
+},{"./hole":14,"./pin":15}],18:[function(require,module,exports){
 var Connector = require('../../models/shared/connector'),
     Board = require('../../models/shared/board'),
     TTL = require('../../models/shared/ttl'),
@@ -1817,6 +1870,7 @@ var Connector = require('../../models/shared/connector'),
     OfflineCheckView = React.createFactory(require('../shared/offline-check')),
     AutoWiringView = React.createFactory(require('./auto-wiring')),
     constants = require('./constants'),
+    inIframe = require('../../data/shared/in-iframe'),
     div = React.DOM.div,
     h1 = React.DOM.h1,
     h2 = React.DOM.h2;
@@ -1833,7 +1887,8 @@ module.exports = React.createClass({
       currentUser: null,
       currentGroup: null,
       activity: null,
-      interface: {}
+      interface: {},
+      inIframe: inIframe()
     };
   },
 
@@ -2249,7 +2304,7 @@ module.exports = React.createClass({
     var sidebarTop = this.state.allowAutoWiring ? 75 : 0;
 
     return div({},
-      h1({}, "Teaching Teamwork" + (this.state.activity ? ": " + this.state.activity.name : "")),
+      this.state.inIframe ? null : h1({}, "Teaching Teamwork" + (this.state.activity ? ": " + this.state.activity.name : "")),
       this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
       OfflineCheckView({}),
       WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect}),
@@ -2263,7 +2318,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/pic/board-watcher":2,"../../controllers/shared/log":4,"../../controllers/shared/user":5,"../../models/logic-gates/logic-chip":8,"../../models/shared/board":9,"../../models/shared/connector":11,"../../models/shared/ttl":14,"../shared/offline-check":29,"../shared/sidebar-chat":34,"../shared/we-got-it":37,"./auto-wiring":17,"./constants":18,"./workspace":20}],17:[function(require,module,exports){
+},{"../../controllers/pic/board-watcher":2,"../../controllers/shared/log":4,"../../controllers/shared/user":5,"../../data/shared/in-iframe":8,"../../models/logic-gates/logic-chip":10,"../../models/shared/board":11,"../../models/shared/connector":13,"../../models/shared/ttl":16,"../shared/offline-check":31,"../shared/sidebar-chat":36,"../shared/we-got-it":39,"./auto-wiring":19,"./constants":20,"./workspace":22}],19:[function(require,module,exports){
 var div = React.DOM.div,
     button = React.DOM.button;
 
@@ -2285,7 +2340,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],18:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 var workspaceWidth = 936 - 200,
     logicDrawerWidth = 100,
     constants;
@@ -2333,11 +2388,12 @@ module.exports = constants = {
 };
 
 
-},{}],19:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 var PinView = React.createFactory(require('../shared/pin')),
     PinLabelView = React.createFactory(require('../shared/pin-label')),
     constants = require('./constants'),
     events = require('../shared/events'),
+    chipNames = require('../../data/logic-gates/chip-names'),
     line = React.DOM.line,
     g = React.DOM.g,
     rect = React.DOM.rect,
@@ -2478,14 +2534,7 @@ module.exports = React.createClass({
   },
 
   getTitle: function () {
-    var titles = {
-      '7408': 'Quad 2-Input AND',
-      '7432': 'Quad 2-Input OR',
-      '7486': 'Quad 2-Input XOR',
-      '7404': 'Hex Inverter',
-      '7411': 'Tri 3-Input AND'
-    };
-    return titles[this.props.component.type];
+    return chipNames[this.props.component.type] || 'Unknown';
   },
 
   renderQuad: function (source1PinIndex, source2PinIndex, destPinIndex, renderConnectorFn) {
@@ -2780,7 +2829,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../shared/events":26,"../shared/pin":31,"../shared/pin-label":30,"./constants":18}],20:[function(require,module,exports){
+},{"../../data/logic-gates/chip-names":6,"../shared/events":28,"../shared/pin":33,"../shared/pin-label":32,"./constants":20}],22:[function(require,module,exports){
 var BoardView = React.createFactory(require('../shared/board')),
     RibbonView = React.createFactory(require('../shared/ribbon')),
     events = require('../shared/events'),
@@ -2880,7 +2929,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../shared/board":21,"../shared/events":26,"../shared/ribbon":33}],21:[function(require,module,exports){
+},{"../shared/board":23,"../shared/events":28,"../shared/ribbon":35}],23:[function(require,module,exports){
 var boardWatcher = require('../../controllers/pic/board-watcher'),
     ConnectorView = React.createFactory(require('./connector')),
     WireView = React.createFactory(require('./wire')),
@@ -3428,7 +3477,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/pic/board-watcher":2,"../../models/logic-gates/logic-chip":8,"../shared/events":26,"./connector":25,"./layout":27,"./logic-chip-drawer":28,"./probe":32,"./wire":38}],22:[function(require,module,exports){
+},{"../../controllers/pic/board-watcher":2,"../../models/logic-gates/logic-chip":10,"../shared/events":28,"./connector":27,"./layout":29,"./logic-chip-drawer":30,"./probe":34,"./wire":40}],24:[function(require,module,exports){
 var div = React.DOM.div,
     b = React.DOM.b;
     
@@ -3445,7 +3494,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],23:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 var userController = require('../../controllers/shared/user'),
     ChatItemView = React.createFactory(require('./chat-item')),
     div = React.DOM.div;
@@ -3472,7 +3521,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/shared/user":5,"./chat-item":22}],24:[function(require,module,exports){
+},{"../../controllers/shared/user":5,"./chat-item":24}],26:[function(require,module,exports){
 var g = React.DOM.g,
     circle = React.DOM.circle,
     title = React.DOM.title;
@@ -3511,7 +3560,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],25:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 var ConnectorHoleView = React.createFactory(require('./connector-hole')),
     svg = React.DOM.svg,
     rect = React.DOM.rect;
@@ -3537,7 +3586,7 @@ module.exports = React.createClass({
 });
 
 
-},{"./connector-hole":24}],26:[function(require,module,exports){
+},{"./connector-hole":26}],28:[function(require,module,exports){
 var boardWatcher = require('../../controllers/pic/board-watcher'),
     logController = require('../../controllers/shared/log'),
     events;
@@ -3614,7 +3663,7 @@ module.exports = events = {
 };
 
 
-},{"../../controllers/pic/board-watcher":2,"../../controllers/shared/log":4}],27:[function(require,module,exports){
+},{"../../controllers/pic/board-watcher":2,"../../controllers/shared/log":4}],29:[function(require,module,exports){
 module.exports = {
   getBezierPath: function (options) {
     var closeCutoff = 300,
@@ -3666,11 +3715,12 @@ module.exports = {
 };
 
 
-},{}],28:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 var g = React.DOM.g,
     rect = React.DOM.rect,
     text = React.DOM.text,
     title = React.DOM.title,
+    chipNames = require('../../data/logic-gates/chip-names'),
     ChipView;
 
 ChipView = React.createFactory(React.createClass({
@@ -3683,14 +3733,7 @@ ChipView = React.createFactory(React.createClass({
   },
 
   getTitle: function () {
-    var titles = {
-      '7408': 'Quad 2-Input AND',
-      '7432': 'Quad 2-Input OR',
-      '7486': 'Quad 2-Input XOR',
-      '7404': 'Hex Inverter',
-      '7411': 'Tri 3-Input AND'
-    };
-    return titles[this.props.type];
+    return chipNames[this.props.type] || 'Unknown';
   },
 
   render: function () {
@@ -3753,7 +3796,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],29:[function(require,module,exports){
+},{"../../data/logic-gates/chip-names":6}],31:[function(require,module,exports){
 var logController = require('../../controllers/shared/log'),
     div = React.DOM.div,
     h2 = React.DOM.h2,
@@ -3818,7 +3861,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/shared/log":4}],30:[function(require,module,exports){
+},{"../../controllers/shared/log":4}],32:[function(require,module,exports){
 var text = React.DOM.text;
 
 module.exports = React.createClass({
@@ -3841,7 +3884,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],31:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 var g = React.DOM.g,
     rect = React.DOM.rect;
 
@@ -3907,7 +3950,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],32:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 var events = require('../shared/events'),
     g = React.DOM.g,
     path = React.DOM.path,
@@ -4096,7 +4139,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../shared/events":26}],33:[function(require,module,exports){
+},{"../shared/events":28}],35:[function(require,module,exports){
 var line = React.DOM.line,
     div = React.DOM.div,
     svg = React.DOM.svg;
@@ -4126,7 +4169,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],34:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 var userController = require('../../controllers/shared/user'),
     logController = require('../../controllers/shared/log'),
     ChatItems = React.createFactory(require('./chat-items')),
@@ -4250,7 +4293,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/shared/log":4,"../../controllers/shared/user":5,"./chat-items":23}],35:[function(require,module,exports){
+},{"../../controllers/shared/log":4,"../../controllers/shared/user":5,"./chat-items":25}],37:[function(require,module,exports){
 var userController, UserRegistrationView, UserRegistrationViewFactory,
     groups = require('../../data/shared/group-names');
 
@@ -4476,7 +4519,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
 UserRegistrationViewFactory = React.createFactory(UserRegistrationView);
 
 
-},{"../../data/shared/group-names":6}],36:[function(require,module,exports){
+},{"../../data/shared/group-names":7}],38:[function(require,module,exports){
 var div = React.DOM.div,
     h2 = React.DOM.h2,
     button = React.DOM.button;
@@ -4504,7 +4547,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],37:[function(require,module,exports){
+},{}],39:[function(require,module,exports){
 var WeGotItPopupView = React.createFactory(require('./we-got-it-popup')),
     userController = require('../../controllers/shared/user'),
     logController = require('../../controllers/shared/log'),
@@ -4578,7 +4621,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/shared/log":4,"../../controllers/shared/user":5,"./we-got-it-popup":36}],38:[function(require,module,exports){
+},{"../../controllers/shared/log":4,"../../controllers/shared/user":5,"./we-got-it-popup":38}],40:[function(require,module,exports){
 var layout = require('../../views/shared/layout'),
     path = React.DOM.path;
 
@@ -4625,7 +4668,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../views/shared/layout":27}],39:[function(require,module,exports){
+},{"../../views/shared/layout":29}],41:[function(require,module,exports){
 var structuredClone = require('./structured-clone');
 var HELLO_INTERVAL_LENGTH = 200;
 var HELLO_TIMEOUT_LENGTH = 60000;
@@ -4774,7 +4817,7 @@ module.exports = function getIFrameEndpoint() {
   }
   return instance;
 };
-},{"./structured-clone":42}],40:[function(require,module,exports){
+},{"./structured-clone":44}],42:[function(require,module,exports){
 "use strict";
 
 var ParentEndpoint = require('./parent-endpoint');
@@ -4866,7 +4909,7 @@ module.exports = function IframePhoneRpcEndpoint(handler, namespace, targetWindo
     this.disconnect = disconnect.bind(this);
 };
 
-},{"./iframe-endpoint":39,"./parent-endpoint":41}],41:[function(require,module,exports){
+},{"./iframe-endpoint":41,"./parent-endpoint":43}],43:[function(require,module,exports){
 var structuredClone = require('./structured-clone');
 
 /**
@@ -5039,7 +5082,7 @@ module.exports = function ParentEndpoint(targetWindowOrIframeEl, targetOrigin, a
   };
 };
 
-},{"./structured-clone":42}],42:[function(require,module,exports){
+},{"./structured-clone":44}],44:[function(require,module,exports){
 var featureSupported = false;
 
 (function () {
@@ -5077,7 +5120,7 @@ exports.supported = function supported() {
   return featureSupported && featureSupported.structuredClones > 0;
 };
 
-},{}],43:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 module.exports = {
   /**
    * Allows to communicate with an iframe.
@@ -5095,4 +5138,4 @@ module.exports = {
 
 };
 
-},{"./lib/iframe-endpoint":39,"./lib/iframe-phone-rpc-endpoint":40,"./lib/parent-endpoint":41,"./lib/structured-clone":42}]},{},[1]);
+},{"./lib/iframe-endpoint":41,"./lib/iframe-phone-rpc-endpoint":42,"./lib/parent-endpoint":43,"./lib/structured-clone":44}]},{},[1]);

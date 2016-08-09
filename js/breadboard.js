@@ -6,7 +6,7 @@ var App = React.createFactory(require('./views/breadboard/app'));
 ReactDOM.render(App({}), document.getElementById('content'));
 
 
-},{"../vendor/pathseg.js":22,"./views/breadboard/app":11}],2:[function(require,module,exports){
+},{"../vendor/pathseg.js":24,"./views/breadboard/app":12}],2:[function(require,module,exports){
 module.exports = {
   modelsBase: "activities/breadboard/"
 };
@@ -227,7 +227,7 @@ controller.init();
 module.exports = controller;
 
 
-},{"iframe-phone":27}],5:[function(require,module,exports){
+},{"iframe-phone":29}],5:[function(require,module,exports){
 var logManagerUrl  = '//teaching-teamwork-log-manager.herokuapp.com/api/logs',
     xhrObserver    = require('../../data/shared/xhrObserver'),
     laraController = require('./lara'),
@@ -423,7 +423,7 @@ LogController.prototype = {
 module.exports = new LogController();
 
 
-},{"../../data/shared/xhrObserver":10,"./lara":4}],6:[function(require,module,exports){
+},{"../../data/shared/xhrObserver":11,"./lara":4}],6:[function(require,module,exports){
 var UserRegistrationView = require('../../views/shared/userRegistration.jsx'),
     groups = require('../../data/shared/group-names'),
     logController = require('./log'),
@@ -632,6 +632,10 @@ module.exports = userController = {
     firebaseUsersRef.child(userName).set({client: client});
   },
 
+  setUnknownValues: function (unknownValues) {
+    firebaseUsersRef.child(userName).set({client: client, unknownValues: unknownValues});
+  },
+
   selectedClient: function() {
     firebaseUsersRef.off("value");
     UserRegistrationView.close();
@@ -704,7 +708,7 @@ module.exports = userController = {
 };
 
 
-},{"../../data/shared/group-names":7,"../../views/shared/userRegistration.jsx":21,"./lara":4,"./log":5}],7:[function(require,module,exports){
+},{"../../data/shared/group-names":7,"../../views/shared/userRegistration.jsx":23,"./lara":4,"./log":5}],7:[function(require,module,exports){
 var sortByName = function (a, b) {
   if (a.name < b.name) {
     return -1;
@@ -852,6 +856,17 @@ module.exports = [
 
 
 },{}],8:[function(require,module,exports){
+module.exports = function() {
+  try {
+    return window.self !== window.top;
+  }
+  catch (e) {
+    return true;
+  }
+};
+
+
+},{}],9:[function(require,module,exports){
 /**
  The workbench adaptor takes a TT-workbench definition such as
 
@@ -1057,7 +1072,7 @@ WorkbenchAdaptor.prototype = {
 module.exports = WorkbenchAdaptor;
 
 
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 var eventsController = require('../../controllers/shared/events'),
     logController = require('../../controllers/shared/log'),
     clientListFirebaseRef,
@@ -1133,7 +1148,7 @@ WorkbenchFBConnector.prototype.resetMeters = function () {
 module.exports = WorkbenchFBConnector;
 
 
-},{"../../controllers/shared/events":3,"../../controllers/shared/log":5}],10:[function(require,module,exports){
+},{"../../controllers/shared/events":3,"../../controllers/shared/log":5}],11:[function(require,module,exports){
 var xhrObserver;
 
 function XHRObserver() {
@@ -1208,7 +1223,7 @@ XHRObserver.prototype = {
 module.exports = xhrObserver = new XHRObserver();
 
 
-},{}],11:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 var PageView              = React.createFactory(require('./page.jsx')),
     WorkbenchAdaptor      = require('../../data/shared/workbenchAdaptor'),
     WorkbenchFBConnector  = require('../../data/shared/workbenchFBConnector'),
@@ -1234,7 +1249,8 @@ module.exports = React.createClass({
       goals: null,
       nextActivity: null,
       activityName: null,
-      ttWorkbench: null
+      ttWorkbench: null,
+      model: null
     };
   },
 
@@ -1255,7 +1271,8 @@ module.exports = React.createClass({
         goals: this.state.goals,
         nextActivity: this.state.nextActivity,
         activityName: this.state.activityName,
-        ttWorkbench: this.state.ttWorkbench
+        ttWorkbench: this.state.ttWorkbench,
+        model: this.state.model
       });
     }
   },
@@ -1370,7 +1387,7 @@ module.exports = React.createClass({
 
       // look for a model and update the workbench values if found
       // NOTE: the callback might be called more than once if there is a race condition setting the model values
-      self.preProcessWorkbench(ttWorkbench, function (ttWorkbench) {
+      self.preProcessWorkbench(ttWorkbench, function (ttWorkbench, model) {
 
         // set the event controller
         eventsController.init({
@@ -1383,7 +1400,8 @@ module.exports = React.createClass({
         self.setState({
           activity: ttWorkbench,
           ttWorkbench: JSON.parse(JSON.stringify(ttWorkbench)), // this makes a deep clone before the circuit connections are modified by processTTWorkbench
-          activityName: activityName
+          activityName: activityName,
+          model: model
         });
 
         workbenchAdaptor = new WorkbenchAdaptor(clientNumber);
@@ -1474,7 +1492,7 @@ module.exports = React.createClass({
           logController.logEvent('model name', workbench.model.name);
           logController.logEvent('model options', null, workbench.model.options || {});
           logController.logEvent('model values', null, model);
-          cb(JSON.parse(json));
+          cb(JSON.parse(json), model);
         },
         models = {
           "three-resistors": this.threeResistorsModel
@@ -1615,7 +1633,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../config":2,"../../controllers/shared/events":3,"../../controllers/shared/log":5,"../../controllers/shared/user":6,"../../data/shared/workbenchAdaptor":8,"../../data/shared/workbenchFBConnector":9,"./page.jsx":17,"./view-other-circuit":20}],12:[function(require,module,exports){
+},{"../../config":2,"../../controllers/shared/events":3,"../../controllers/shared/log":5,"../../controllers/shared/user":6,"../../data/shared/workbenchAdaptor":9,"../../data/shared/workbenchFBConnector":10,"./page.jsx":19,"./view-other-circuit":22}],13:[function(require,module,exports){
 // adapted from http://thecodeplayer.com/walkthrough/javascript-css3-calculator
 /*jslint evil: true */
 
@@ -1951,7 +1969,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/shared/log":5}],13:[function(require,module,exports){
+},{"../../controllers/shared/log":5}],14:[function(require,module,exports){
 var xhrObserver = require('../../data/shared/xhrObserver');
 var logController = require('../../controllers/shared/log');
 
@@ -1998,7 +2016,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/shared/log":5,"../../data/shared/xhrObserver":10}],14:[function(require,module,exports){
+},{"../../controllers/shared/log":5,"../../data/shared/xhrObserver":11}],15:[function(require,module,exports){
 /* global CodeMirror: false */
 
 var div = React.DOM.div,
@@ -2571,7 +2589,136 @@ Dialog = React.createFactory(React.createClass({
 }));
 
 
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
+var userController = require('../../controllers/shared/user'),
+    logController = require('../../controllers/shared/log'),
+    div = React.DOM.div,
+    p = React.DOM.p,
+    strong = React.DOM.strong,
+    input = React.DOM.input,
+    button = React.DOM.button,
+    select = React.DOM.select,
+    option = React.DOM.option;
+
+module.exports = React.createClass({
+
+  displayName: 'EnterUnknowns',
+
+  getInitialState: function () {
+    return {
+      E: '',
+      R: '',
+      EUnit: '',
+      RUnit: '',
+      pluralize: this.props.activity.enterUnknowns.E && this.props.activity.enterUnknowns.R,
+      eCorrect: false,
+      rCorrect: false
+    };
+  },
+
+  filterInput: function (currentValue, newValue) {
+    newValue = $.trim(newValue);
+    if (newValue.length === 0) {
+      return '';
+    }
+    return isNaN(parseInt(newValue, 10)) ? currentValue : newValue;
+  },
+
+  eChanged: function () {
+    this.setState({E: this.filterInput(this.state.E, this.refs.E.value)});
+  },
+
+  rChanged: function () {
+    this.setState({R: this.filterInput(this.state.R, this.refs.R.value)});
+  },
+
+  eUnitChanged: function () {
+    this.setState({EUnit: this.refs.eUnit.value});
+  },
+
+  rUnitChanged: function () {
+    this.setState({RUnit: this.refs.rUnit.value});
+  },
+
+  submit: function () {
+    var needE = this.props.activity.enterUnknowns.E,
+        haveE = this.state.E.length > 0,
+        haveEUnit = this.state.EUnit.length > 0,
+        needR = this.props.activity.enterUnknowns.R,
+        haveR = this.state.R.length > 0,
+        haveRUnit = this.state.RUnit.length > 0,
+        eCorrect = false,
+        rCorrect = false;
+
+    eCorrect = this.state.eCorrect || ((this.state.E == this.props.model.E) && (this.state.EUnit == 'volts'));
+    rCorrect = this.state.rCorrect || ((this.state.R == this.props.model.R) && (this.state.RUnit== 'ohms'));
+    if ((needE && !eCorrect) && (needR && !rCorrect)) {
+      alert("Sorry, both of your E and R values or units are incorrect");
+    }
+    else if (needE && !eCorrect) {
+      alert("Sorry, your E value or unit is incorrect");
+    }
+    else if (needR && !rCorrect) {
+      alert("Sorry, your R value or unit is incorrect");
+    }
+
+    this.setState({
+      eCorrect: eCorrect,
+      rCorrect: rCorrect
+    });
+
+    userController.setUnknownValues({
+      E: {
+        have: haveE && haveEUnit,
+        correct: eCorrect
+      },
+      R: {
+        have: haveR && haveRUnit,
+        correct: rCorrect
+      }
+    });
+
+    logController.logEvent("Unknown Values Submitted", null, {
+      'E: Need': needE,
+      'E: Have Value': needE && haveE,
+      'E: Have Unit': needE && haveEUnit,
+      'E: Correct': eCorrect,
+      'R: Need': needR,
+      'R: Have Value': needR && haveR,
+      'R: Have Unit': needR && haveRUnit,
+      'R: Correct': rCorrect
+    });
+  },
+
+  pluralize: function (text) {
+    return this.state.pluralize ? text + 's' : text;
+  },
+
+  renderUnknown: function (component, correct, onValueChange, onUnitChange) {
+    var units = [
+          option({key: 'none', value: ''}, ''),
+          option({key: 'volts', value: 'volts'}, 'volts'),
+          option({key: 'ohms', value: 'ohms'}, 'ohms')
+        ];
+    if (correct) {
+      return p({}, component + ': ' + this.props.model[component] + ' ' + (component == 'E' ? 'volts' : 'ohms'));
+    }
+    return p({}, component + ': ', input({ref: component, value: this.state[component], onChange: onValueChange}), select({ref: component.toLowerCase(component) + 'Unit', value: this.state[component + 'Unit'], onChange: onUnitChange}, units));
+  },
+
+  render: function () {
+    var showMessage = (!this.props.activity.enterUnknowns.E || this.state.eCorrect) && (!this.props.activity.enterUnknowns.R || this.state.rCorrect);
+    return div({id: 'enter-unknowns'},
+      p({}, strong({}, "Enter Unknown " + this.pluralize("Value"))),
+      this.props.activity.enterUnknowns.E ? this.renderUnknown('E', this.state.eCorrect, this.eChanged, this.eUnitChanged) : null,
+      this.props.activity.enterUnknowns.R ? this.renderUnknown('R', this.state.rCorrect, this.rChanged, this.rUnitChanged) : null,
+      showMessage ? p({}, "You have entered the correct " + this.pluralize("value") + " and " + this.pluralize("unit") + ".") : button({onClick: this.submit}, "Submit Unknown " + this.pluralize("Value"))
+    );
+  }
+});
+
+
+},{"../../controllers/shared/log":5,"../../controllers/shared/user":6}],17:[function(require,module,exports){
 // adapted from SPARKS math-parser.js
 
 module.exports = React.createClass({
@@ -2711,7 +2858,7 @@ module.exports = React.createClass({
   }
 });
 
-},{}],16:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 var config = require('../../config'),
     logController = require('../../controllers/shared/log'),
     OtherCircuits, Popup, PopupIFrame, CircuitLink, CircuitImage, ScaledIFrame;
@@ -3010,7 +3157,7 @@ Popup = React.createFactory(React.createClass({
 }));
 
 
-},{"../../config":2,"../../controllers/shared/log":5}],17:[function(require,module,exports){
+},{"../../config":2,"../../controllers/shared/log":5}],19:[function(require,module,exports){
 var userController = require('../../controllers/shared/user'),
     SidebarChatView = require('./sidebar-chat.jsx'),
     SidebarChatViewFactory = React.createFactory(SidebarChatView),
@@ -3020,17 +3167,24 @@ var userController = require('../../controllers/shared/user'),
     EditorView = require('./editor'),
     SubmitButtonView = require('./submitButton'),
     OtherCircuitsView = require('./other-circuits'),
+    inIframe = require('../../data/shared/in-iframe'),
+    EnterUnknownsView = require('./enter-unknowns'),
     config = require('../../config');
 
 module.exports = React.createClass({
 
   displayName: 'Page',
 
+  getInitialState: function () {
+    return {
+      inIframe: inIframe()
+    };
+  },
+
   render: function() {
     var activity = this.props.activity ? this.props.activity : {},
-        inIframe = (function() { try { return window.self !== window.top; } catch (e) { return true; } })(),
         activityName = activity.name ? ': ' + activity.name : '',
-        title = inIframe ? null : (React.createElement("h1", null, "Teaching Teamwork",  activityName )),
+        title = this.state.inIframe ? null : (React.createElement("h1", null, "Teaching Teamwork",  activityName )),
         hasMultipleClients = activity.clients && (activity.clients.length > 1),
         username = userController.getUsername(),
         groupname = userController.getGroupname(),
@@ -3039,8 +3193,9 @@ module.exports = React.createClass({
         connection = React.createElement(ConnectionView, null),
         editor = this.props.showEditor ? (React.createElement(EditorView, {parseAndStartActivity:  this.props.parseAndStartActivity, editorState:  this.props.editorState})) : null,
         wrapperClass = hasMultipleClients ? 'multiple-clients' : null,
-        image = activity.image ? (React.createElement("div", {id: "image-wrapper", className:  wrapperClass }, React.createElement("img", {src:  /^https?:\/\//.test(activity.image) ? activity.image : config.modelsBase + activity.image}))) : null,
-        submitButton = this.props.showSubmit && this.props.circuit ? (React.createElement(SubmitButtonView, {label: hasMultipleClients ? 'We got it!' : "I got it!", goals:  this.props.goals, nextActivity:  this.props.nextActivity})) : null,
+        enterUnknowns = activity.enterUnknowns && (activity.enterUnknowns.E || activity.enterUnknowns.R),
+        image = activity.image ? (React.createElement("div", {id: "image-wrapper", className:  wrapperClass }, React.createElement("img", {src:  /^https?:\/\//.test(activity.image) ? activity.image : config.modelsBase + activity.image}), enterUnknowns ? React.createElement(EnterUnknownsView, {activity: activity, model: this.props.model}) : null)) : null,
+        submitButton = this.props.showSubmit && this.props.circuit ? (React.createElement(SubmitButtonView, {label: hasMultipleClients ? 'We got it!' : "I got it!", goals:  this.props.goals, nextActivity:  this.props.nextActivity, enterUnknowns: activity.enterUnknowns})) : null,
         otherCircuitsButton = hasMultipleClients && this.props.circuit ? (React.createElement(OtherCircuitsView, {circuit:  this.props.circuit, numClients:  activity.clients.length, activityName:  this.props.activityName, groupName:  userController.getGroupname(), ttWorkbench:  this.props.ttWorkbench})) : null,
         calculator = this.props.circuit ? (React.createElement(CalculatorView, null)) : null,
         chatProps = hasMultipleClients ? $.extend({}, activity, {numClients: activity.clients.length}) : null;
@@ -3068,7 +3223,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../config":2,"../../controllers/shared/user":6,"./calculator.jsx":12,"./connection.jsx":13,"./editor":14,"./notes":15,"./other-circuits":16,"./sidebar-chat.jsx":18,"./submitButton":19}],18:[function(require,module,exports){
+},{"../../config":2,"../../controllers/shared/user":6,"../../data/shared/in-iframe":8,"./calculator.jsx":13,"./connection.jsx":14,"./editor":15,"./enter-unknowns":16,"./notes":17,"./other-circuits":18,"./sidebar-chat.jsx":20,"./submitButton":21}],20:[function(require,module,exports){
 var userController = require('../../controllers/shared/user'),
     logController = require('../../controllers/shared/log'),
     ChatItems, ChatItem;
@@ -3220,7 +3375,7 @@ ChatItem = React.createClass({
 });
 
 
-},{"../../controllers/shared/log":5,"../../controllers/shared/user":6}],19:[function(require,module,exports){
+},{"../../controllers/shared/log":5,"../../controllers/shared/user":6}],21:[function(require,module,exports){
 var userController = require('../../controllers/shared/user'),
     logController = require('../../controllers/shared/log'),
     SubmitButton, Popup;
@@ -3235,7 +3390,9 @@ module.exports = SubmitButton = React.createClass({
       allCorrect: false,
       goalValues: {},
       closePopup: false,
-      nextActivity: this.props.nextActivity
+      nextActivity: this.props.nextActivity,
+      enterUnknowns: this.props.enterUnknowns,
+      numCircuits: this.props.goals.length
     };
   },
 
@@ -3461,13 +3618,13 @@ module.exports = SubmitButton = React.createClass({
     }
   },
 
-  popupButtonClicked: function () {
+  popupButtonClicked: function (dontRedirect) {
     var inIframe = (function() { try { return window.self !== window.top; } catch (e) { return true; } })();
 
     logController.logEvent("Submit close button clicked", this.state.allCorrect ? 'done' : 'resume');
 
-    // don't redirect when iframed in LARA
-    if (this.state.allCorrect && !inIframe) {
+    // don't redirect when iframed in LARA or told not to redirect (as we are waiting on unknown values to be reported)
+    if (this.state.allCorrect && !inIframe && !dontRedirect) {
       window.location = 'http://concord.org/projects/teaching-teamwork/activities2';
     }
     else {
@@ -3478,10 +3635,10 @@ module.exports = SubmitButton = React.createClass({
   statics: {
     showPopup: function(props, multipleClients, buttonClicked) {
       var $anchor = $('#submit-popup'),
-          closePopup = function (e) {
+          closePopup = function (e, dontRedirect) {
             e.preventDefault();
             SubmitButton.closePopup();
-            buttonClicked();
+            buttonClicked(dontRedirect);
           };
 
       if (!$anchor.length) {
@@ -3497,6 +3654,8 @@ module.exports = SubmitButton = React.createClass({
         waiting: props.waiting,
         allCorrect: props.allCorrect,
         nextActivity: props.nextActivity,
+        enterUnknowns: props.enterUnknowns,
+        numCircuits: props.numCircuits,
         multipleClients: multipleClients,
         buttonClicked: closePopup,
       }), $anchor.get(0));
@@ -3532,6 +3691,66 @@ module.exports = SubmitButton = React.createClass({
 Popup = React.createFactory(React.createClass({
   displayName: 'Popup',
 
+  getInitialState: function () {
+    return {
+      unknownValues: {},
+      showEColumn: this.props.enterUnknowns && this.props.enterUnknowns.E,
+      showRColumn: this.props.enterUnknowns && this.props.enterUnknowns.R,
+      haveAllUnknowns: false
+    };
+  },
+
+  componentWillMount: function () {
+    var self = this;
+    // listen for user unknown value updates if needed
+    if (self.props.enterUnknowns) {
+      self.usersRef = userController.getFirebaseGroupRef().child('users');
+      self.usersRef.on("value", function(dataSnapshot) {
+        var users = dataSnapshot.val(),
+            unknownValues = {},
+            haveAllUnknowns = true,
+            i;
+
+        $.each(users, function (name, info) {
+          if (info.hasOwnProperty("client")) {
+            unknownValues[info.client] = info.unknownValues || {};
+          }
+        });
+
+        for (i = 0; i < self.props.numCircuits; i++) {
+          haveAllUnknowns = haveAllUnknowns &&   // all have to be true
+                            unknownValues[i] &&  // circuit has unknown values set by the user
+                            (!self.props.enterUnknowns.E || (unknownValues[i].E && unknownValues[i].E.have)) &&  // either E isn't needed or it has a value
+                            (!self.props.enterUnknowns.R || (unknownValues[i].R && unknownValues[i].R.have)); // either R isn't needed or it has a value
+        }
+
+        self.setState({
+          unknownValues: unknownValues,
+          haveAllUnknowns: haveAllUnknowns
+        });
+      });
+    }
+  },
+
+  componentWillUnmount: function () {
+    if (this.usersRef) {
+      this.usersRef.off();
+    }
+  },
+
+  renderUnknownColumnValue: function (circuit, component) {
+    var unknownValue = this.state.unknownValues[circuit] && this.state.unknownValues[circuit][component] ? this.state.unknownValues[circuit][component] : null;
+    if (unknownValue && unknownValue.have) {
+      return React.DOM.span({dangerouslySetInnerHTML: {__html: unknownValue.correct ? '&#x2714;' : '&#x2718;'}});
+    }
+    return '';
+  },
+
+  buttonClicked: function (e) {
+    var dontRedirect = this.props.enterUnknowns && !this.state.haveAllUnknowns;
+    this.props.buttonClicked(e, dontRedirect);
+  },
+
   render: function () {
     var circuitRows = [],
       th = React.DOM.th,
@@ -3539,15 +3758,23 @@ Popup = React.createFactory(React.createClass({
       i, row, title, label;
 
     if (this.props.allCorrect) {
+
       title = 'All Goals Are Correct!';
       label = this.props.nextActivity ? this.props.nextActivity : 'All Done!';
+
+      // change button label if all client unknowns have or have not been entered
+      if (this.props.enterUnknowns && !this.state.haveAllUnknowns) {
+        label = 'Waiting for all unknown values to be entered...';
+      }
 
       circuitRows.push(React.DOM.tr({key: 'header'},
         this.props.multipleClients ? th({}, 'Circuit') : null,
         th({}, 'Goal'),
         th({}, 'Goal Value'),
         th({}, 'Measured Value'),
-        th({}, 'Correct')
+        th({}, 'Correct'),
+        this.state.showEColumn ? th({}, 'E?') : null,
+        this.state.showRColumn ? th({}, 'R?') : null
       ));
 
       for (i = 0; i < this.props.table.length; i++) {
@@ -3557,7 +3784,9 @@ Popup = React.createFactory(React.createClass({
           td({}, row.goal),
           td({}, row.goalValue),
           td({}, row.currentValue),
-          td({className: row.correctClass}, row.correct)
+          td({className: row.correctClass}, row.correct),
+          this.state.showEColumn ? td({}, this.renderUnknownColumnValue(i, 'E')) : null,
+          this.state.showRColumn ? td({}, this.renderUnknownColumnValue(i, 'R')) : null
         ));
       }
     }
@@ -3569,13 +3798,13 @@ Popup = React.createFactory(React.createClass({
     return React.DOM.div({className: 'submit-button-popup'},
       React.DOM.h1({}, title),
       (this.props.allCorrect ? React.DOM.table({}, React.DOM.tbody({}, circuitRows)) : React.DOM.p({}, (this.props.multipleClients ? "At least one of your team's voltage drops doesn't match that player's goal. Try again." : "At least one of your voltage drops doesn't match the goal. Try again."))),
-      React.DOM.button({onClick: this.props.buttonClicked}, label)
+      React.DOM.button({onClick: this.buttonClicked}, label)
     );
   }
 }));
 
 
-},{"../../controllers/shared/log":5,"../../controllers/shared/user":6}],20:[function(require,module,exports){
+},{"../../controllers/shared/log":5,"../../controllers/shared/user":6}],22:[function(require,module,exports){
 var userController       = require('../../controllers/shared/user'),
     WorkbenchAdaptor     = require('../../data/shared/workbenchAdaptor'),
     WorkbenchFBConnector = require('../../data/shared/workbenchFBConnector');
@@ -3778,7 +4007,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/shared/user":6,"../../data/shared/workbenchAdaptor":8,"../../data/shared/workbenchFBConnector":9}],21:[function(require,module,exports){
+},{"../../controllers/shared/user":6,"../../data/shared/workbenchAdaptor":9,"../../data/shared/workbenchFBConnector":10}],23:[function(require,module,exports){
 var userController, UserRegistrationView, UserRegistrationViewFactory,
     groups = require('../../data/shared/group-names');
 
@@ -4004,7 +4233,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
 UserRegistrationViewFactory = React.createFactory(UserRegistrationView);
 
 
-},{"../../data/shared/group-names":7}],22:[function(require,module,exports){
+},{"../../data/shared/group-names":7}],24:[function(require,module,exports){
 // SVGPathSeg API polyfill
 // https://github.com/progers/pathseg
 //
@@ -4822,7 +5051,7 @@ UserRegistrationViewFactory = React.createFactory(UserRegistrationView);
 }());
 
 
-},{}],23:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 var structuredClone = require('./structured-clone');
 var HELLO_INTERVAL_LENGTH = 200;
 var HELLO_TIMEOUT_LENGTH = 60000;
@@ -4971,7 +5200,7 @@ module.exports = function getIFrameEndpoint() {
   }
   return instance;
 };
-},{"./structured-clone":26}],24:[function(require,module,exports){
+},{"./structured-clone":28}],26:[function(require,module,exports){
 "use strict";
 
 var ParentEndpoint = require('./parent-endpoint');
@@ -5063,7 +5292,7 @@ module.exports = function IframePhoneRpcEndpoint(handler, namespace, targetWindo
     this.disconnect = disconnect.bind(this);
 };
 
-},{"./iframe-endpoint":23,"./parent-endpoint":25}],25:[function(require,module,exports){
+},{"./iframe-endpoint":25,"./parent-endpoint":27}],27:[function(require,module,exports){
 var structuredClone = require('./structured-clone');
 
 /**
@@ -5236,7 +5465,7 @@ module.exports = function ParentEndpoint(targetWindowOrIframeEl, targetOrigin, a
   };
 };
 
-},{"./structured-clone":26}],26:[function(require,module,exports){
+},{"./structured-clone":28}],28:[function(require,module,exports){
 var featureSupported = false;
 
 (function () {
@@ -5274,7 +5503,7 @@ exports.supported = function supported() {
   return featureSupported && featureSupported.structuredClones > 0;
 };
 
-},{}],27:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 module.exports = {
   /**
    * Allows to communicate with an iframe.
@@ -5292,4 +5521,4 @@ module.exports = {
 
 };
 
-},{"./lib/iframe-endpoint":23,"./lib/iframe-phone-rpc-endpoint":24,"./lib/parent-endpoint":25,"./lib/structured-clone":26}]},{},[1]);
+},{"./lib/iframe-endpoint":25,"./lib/iframe-phone-rpc-endpoint":26,"./lib/parent-endpoint":27,"./lib/structured-clone":28}]},{},[1]);
