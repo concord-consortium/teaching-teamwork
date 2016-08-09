@@ -2455,6 +2455,12 @@ Board.prototype.resolveCircuitOutputVoltages = function () {
     this.circuits[i].resolveOutputVoltages();
   }
 };
+Board.prototype.resolveIOVoltagesAcrossAllBoards = function() {
+  var i;
+  for (i = 0; i < this.allBoards.length; i++) {
+    this.allBoards[i].resolveIOVoltages();
+  }
+};
 Board.prototype.resolveIOVoltages = function () {
   this.resolveCircuitInputVoltages();
   this.resolveComponentOutputVoltages();
@@ -2720,6 +2726,8 @@ var Hole = function (options) {
   this.label = options.label;
   this.inputMode = options.inputMode;
   this.connectedHole = null; // set via Connector.prototype.setConnectsTo
+  this.hasForcedVoltage = false;
+  this.forcedVoltage = 0;
 };
 Hole.prototype.getBezierReflection = function () {
   return this.connector.type === 'input' ? 1 : -1;
@@ -2729,10 +2737,10 @@ Hole.prototype.setVoltage = function (newVoltage) {
   this.voltage = newVoltage;
 };
 Hole.prototype.getVoltage = function () {
-  return this.voltage;
+  return this.hasForcedVoltage ? this.forcedVoltage : this.voltage;
 };
 Hole.prototype.getLogicLevel = function () {
-  return TTL.getVoltageLogicLevel(this.voltage);
+  return TTL.getVoltageLogicLevel(this.getVoltage());
 };
 Hole.prototype.isLow = function () {
   return TTL.isLow(this.getLogicLevel());
@@ -2747,8 +2755,20 @@ Hole.prototype.reset = function () {
   this.voltage = this.startingVoltage;
   this.pulseProbeDuration = 0;
 };
-Hole.prototype.getColor = function (editableInput) {
-  return editableInput ? TTL.getColor(this.voltage) : this.color;
+Hole.prototype.getColor = function () {
+  return this.hasForcedVoltage ? TTL.getColor(this.forcedVoltage) : (this.connected && this.inputMode ? TTL.getColor(this.voltage) : this.color);
+};
+Hole.prototype.toggleForcedVoltage = function () {
+  if (!this.hasForcedVoltage) {
+    this.hasForcedVoltage = true;
+    this.forcedVoltage = TTL.HIGH_VOLTAGE;
+  }
+  else if (this.forcedVoltage == TTL.HIGH_VOLTAGE) {
+    this.forcedVoltage = TTL.LOW_VOLTAGE;
+  }
+  else {
+    this.hasForcedVoltage = false;
+  }
 };
 
 module.exports = Hole;
@@ -3525,6 +3545,10 @@ module.exports = React.createClass({
     boardWatcher.removeListener(this.state.boards[2], this.updateWatchedBoard);
   },
 
+  forceRerender: function () {
+    this.setState({boards: this.state.boards});
+  },
+
   updateWatchedBoard: function (board, boardInfo) {
     var wires;
 
@@ -3729,7 +3753,7 @@ module.exports = React.createClass({
       OfflineCheckView({}),
       WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect}),
       div({id: 'picapp'},
-        WorkspaceView({constants: constants, boards: this.state.boards, stepping: !this.state.running, showPinColors: this.state.showPinColors, users: this.state.users, userBoardNumber: this.state.userBoardNumber, wireSettings: this.state.wireSettings}),
+        WorkspaceView({constants: constants, boards: this.state.boards, stepping: !this.state.running, showPinColors: this.state.showPinColors, users: this.state.users, userBoardNumber: this.state.userBoardNumber, wireSettings: this.state.wireSettings, forceRerender: this.forceRerender}),
         this.state.showSimulator ? SimulatorControlView({running: this.state.running, run: this.run, step: this.step, reset: this.reset}) : null,
         this.state.showAutoWiring ? AutoWiringView({top: autoWiringTop, running: this.state.running, toggleAllWires: this.toggleAllWires}) : null,
         SidebarChatView({numClients: 3, top: sidebarTop})
@@ -4222,7 +4246,8 @@ module.exports = React.createClass({
           showPinColors: this.props.showPinColors,
           toggleBoard: this.toggleBoard,
           showProbe: true,
-          wireSettings: this.props.wireSettings
+          wireSettings: this.props.wireSettings,
+          forceRerender: this.props.forceRerender
         }),
         BoardEditorView({constants: this.props.constants, board: this.state.selectedBoard})
       );
@@ -4238,7 +4263,8 @@ module.exports = React.createClass({
           showPinColors: this.props.showPinColors,
           toggleBoard: this.toggleBoard,
           showProbe: true,
-          wireSettings: this.props.wireSettings
+          wireSettings: this.props.wireSettings,
+          forceRerender: this.props.forceRerender
         }),
         RibbonView({
           constants: this.props.constants,
@@ -4253,7 +4279,8 @@ module.exports = React.createClass({
           showPinColors: this.props.showPinColors,
           toggleBoard: this.toggleBoard,
           showProbe: true,
-          wireSettings: this.props.wireSettings
+          wireSettings: this.props.wireSettings,
+          forceRerender: this.props.forceRerender
         }),
         RibbonView({
           constants: this.props.constants,
@@ -4268,7 +4295,8 @@ module.exports = React.createClass({
           showPinColors: this.props.showPinColors,
           toggleBoard: this.toggleBoard,
           showProbe: true,
-          wireSettings: this.props.wireSettings
+          wireSettings: this.props.wireSettings,
+          forceRerender: this.props.forceRerender
         })
       );
     }
@@ -4519,10 +4547,7 @@ module.exports = React.createClass({
       }
 
       if (callback) {
-        if (callback(addedWire, moved)) {
-          // callback can return true to signal a re-render
-          self.setState({wires: self.props.board.wires});
-        }
+        callback(addedWire, moved);
       }
     };
 
@@ -4782,11 +4807,11 @@ module.exports = React.createClass({
     // calculate the position so the wires can be updated
     if (this.props.board.connectors.input) {
       this.props.board.connectors.input.calculatePosition(this.props.constants, this.props.selected);
-      connectors.push(ConnectorView({key: 'input', constants: this.props.constants, connector: this.props.board.connectors.input, selected: this.props.selected, editable: this.props.editable, drawConnection: this.drawConnection, reportHover: this.reportHover}));
+      connectors.push(ConnectorView({key: 'input', constants: this.props.constants, connector: this.props.board.connectors.input, selected: this.props.selected, editable: this.props.editable, drawConnection: this.drawConnection, reportHover: this.reportHover, forceRerender: this.props.forceRerender}));
     }
     if (this.props.board.connectors.output) {
       this.props.board.connectors.output.calculatePosition(this.props.constants, this.props.selected);
-      connectors.push(ConnectorView({key: 'output', constants: this.props.constants, connector: this.props.board.connectors.output, selected: this.props.selected, editable: this.props.editable, drawConnection: this.drawConnection, reportHover: this.reportHover}));
+      connectors.push(ConnectorView({key: 'output', constants: this.props.constants, connector: this.props.board.connectors.output, selected: this.props.selected, editable: this.props.editable, drawConnection: this.drawConnection, reportHover: this.reportHover, forceRerender: this.props.forceRerender}));
     }
 
     for (name in this.props.board.components) {
@@ -4884,23 +4909,26 @@ module.exports = React.createClass({
     this.props.reportHover(null);
   },
 
-  componentWillMount: function () {
-    this.setState({editableInput: (window.location.search.indexOf('editableInput') !== -1) && !this.props.hole.inputMode && this.props.editable});
-  },
-
   startDrag: function (e) {
     var self = this;
     this.props.drawConnection(this.props.hole, e, this.props.hole.color, function (addedWire, moved) {
-      if (self.state.editableInput && !addedWire && !moved) {
-        self.props.hole.setVoltage(self.props.hole.getVoltage() ? 0 : 5);
-        return true; // signal a render
+      if (!addedWire && !moved) {
+        self.handleToggle();
       }
     });
   },
 
+  handleToggle: function () {
+    if (!this.props.hole.inputMode) {
+      this.props.hole.toggleForcedVoltage();
+      this.props.hole.connector.board.resolveIOVoltagesAcrossAllBoards();
+      this.props.forceRerender();
+    }
+  },
+
   render: function () {
     var enableHandlers = this.props.selected && this.props.editable;
-    return g({}, circle({cx: this.props.hole.cx, cy: this.props.hole.cy, r: this.props.hole.radius, fill: this.props.hole.getColor(this.state.editableInput), onMouseDown: enableHandlers ? this.startDrag : null, onMouseOver: enableHandlers ? this.mouseOver : null, onMouseOut: enableHandlers ? this.mouseOut : null},
+    return g({}, circle({cx: this.props.hole.cx, cy: this.props.hole.cy, r: this.props.hole.radius, fill: this.props.hole.getColor(), onClick: !enableHandlers && this.props.editable ? this.handleToggle : null, onMouseDown: enableHandlers ? this.startDrag : null, onMouseOver: enableHandlers ? this.mouseOver : null, onMouseOut: enableHandlers ? this.mouseOut : null},
       title({}, this.props.hole.label)
     ));
   }
@@ -4922,7 +4950,7 @@ module.exports = React.createClass({
 
     for (i = 0; i < this.props.connector.holes.length; i++) {
       hole = this.props.connector.holes[i];
-      holes.push(ConnectorHoleView({key: i, connector: this.props.connector, hole: hole, selected: this.props.selected, editable: this.props.editable, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
+      holes.push(ConnectorHoleView({key: i, connector: this.props.connector, hole: hole, selected: this.props.selected, editable: this.props.editable, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover, forceRerender: this.props.forceRerender}));
     }
 
     return svg({},
@@ -5393,7 +5421,7 @@ module.exports = React.createClass({
     };
     return pos;
   },
-  
+
   // copied from http://stackoverflow.com/a/9232092
   truncateDecimals: function (num, digits) {
     var numS = num.toString(),
@@ -5423,7 +5451,7 @@ module.exports = React.createClass({
 
     if (this.props.probeSource && (!this.props.probeSource.inputMode || this.props.probeSource.connected)) {
 
-      voltage = this.truncateDecimals(this.props.probeSource.voltage, 2);
+      voltage = this.truncateDecimals(this.props.probeSource.getVoltage(), 2);
 
       if (this.props.probeSource.isHigh()) {
         redFill = 1;
@@ -5504,7 +5532,7 @@ module.exports = React.createClass({
       this.props.connector.calculatePosition(this.props.constants, this.props.selected);
       for (i = 0; i < this.props.connector.holes.length; i++) {
         hole = this.props.connector.holes[i];
-        if (!hole.forcedValue) {
+        if (!hole.hasForcedVoltage) {
           wires.push(line({key: i, x1: hole.cx, y1: 0, x2: hole.cx, y2: this.props.constants.RIBBON_HEIGHT, strokeWidth: selectedConstants.WIRE_WIDTH, stroke: colors[i % colors.length]}));
         }
       }
