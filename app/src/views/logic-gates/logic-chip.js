@@ -397,14 +397,14 @@ module.exports = React.createClass({
     var pins = [],
         selectedConstants = constants.selectedConstants(this.props.selected),
         position = this.props.component.position,
-        showPinOut = this.state.hovering || (this.props.editable && this.props.selected && this.props.componentSelected),
+        showPinOut = this.props.showPinouts && (this.state.hovering || (this.props.editable && this.props.selected && this.props.componentSelected)),
         pin, i, groundComponent, vccComponents, vccPos, label, labelText, rectParams, pinOut;
 
     this.layout();
 
     for (i = 0; i < this.props.component.pins.length; i++) {
       pin = this.props.component.pins[i];
-      pins.push(PinView({key: 'pin' + i, pin: pin, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
+      pins.push(PinView({key: 'pin' + i, pin: pin, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showPinColors: this.props.showPinColors, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
       if (!showPinOut) {
         pins.push(PinLabelView({key: 'label' + i, pin: pin, selected: this.props.selected, editable: this.props.editable, reportHover: this.props.reportHover}));
       }

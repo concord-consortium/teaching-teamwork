@@ -10,7 +10,7 @@ var Connector = require('../../models/shared/connector'),
     WeGotItView = React.createFactory(require('../shared/we-got-it')),
     WorkspaceView = React.createFactory(require('./workspace')),
     OfflineCheckView = React.createFactory(require('../shared/offline-check')),
-    DemoControlView = React.createFactory(require('./demo-control')),
+    AutoWiringView = React.createFactory(require('./auto-wiring')),
     constants = require('./constants'),
     div = React.DOM.div,
     h1 = React.DOM.h1,
@@ -28,10 +28,7 @@ module.exports = React.createClass({
       currentUser: null,
       currentGroup: null,
       activity: null,
-      showDemo: window.location.search.indexOf('demo') !== -1,
-      showDebugPins: false,
-      toggledAllChipsAndWires: false,
-      hasDemoData: false
+      interface: {}
     };
   },
 
@@ -121,22 +118,25 @@ module.exports = React.createClass({
 
   startActivity: function (activityName, activity) {
     var self = this,
-        hasDemoData = false,
+        hasAutoWiringData = false,
+        interface = activity.interface || {},
         i;
 
     // create the boards
     this.setupBoards(activity);
 
     for (i = 0; i < activity.boards.length; i++) {
-      if (activity.boards[i].demo) {
-        hasDemoData = true;
+      if (activity.boards[i].autoWiring) {
+        hasAutoWiringData = true;
         break;
       }
     }
 
     this.setState({
       activity: activity,
-      hasDemoData: hasDemoData
+      allowAutoWiring: !!interface.allowAutoWiring && hasAutoWiringData,
+      showPinColors: !!interface.showPinColors,
+      showPinouts: !!interface.showPinouts
     });
 
     logController.init(activityName);
@@ -350,7 +350,7 @@ module.exports = React.createClass({
   },
 
   toggleAllChipsAndWires: function () {
-    var chipMap, holeMap, i, j, board, demo, addChip, getEndpoint, wire, wireParts, sourceParts, destParts, source, dest, mapHoles;
+    var chipMap, holeMap, i, j, board, autoWiring, addChip, getEndpoint, wire, wireParts, sourceParts, destParts, source, dest, mapHoles, hasWires;
 
     addChip = function (name, chip) {
       chipMap[name] = new LogicChip({type: chip.type, layout: {x: chip.x, y: chip.y}, selectable: true});
@@ -403,19 +403,20 @@ module.exports = React.createClass({
 
     for (i = 0; i < this.state.boards.length; i++) {
       board = this.state.boards[i];
+      hasWires = this.state.boards[i].wires.length > 0;
       board.clear();
-      if (!this.state.toggledAllChipsAndWires && this.state.activity.boards[i].demo) {
-        demo = this.state.activity.boards[i].demo;
+      if (!hasWires && this.state.activity.boards[i].autoWiring) {
+        autoWiring = this.state.activity.boards[i].autoWiring;
         chipMap = {};
-        if (demo.chips) {
-          $.each(demo.chips, addChip);
+        if (autoWiring.chips) {
+          $.each(autoWiring.chips, addChip);
         }
-        if (demo.wires) {
+        if (autoWiring.wires) {
           holeMap = {};
           mapHoles('input', board.connectors.input);
           mapHoles('output', board.connectors.output);
-          for (j = 0; j < demo.wires.length; j++) {
-            wire = $.trim(demo.wires[j]);
+          for (j = 0; j < autoWiring.wires.length; j++) {
+            wire = $.trim(autoWiring.wires[j]);
             if (wire.substr(0, 2) === "//") {
               continue;
             }
@@ -436,16 +437,11 @@ module.exports = React.createClass({
       boardWatcher.circuitChanged(board);
     }
 
-    this.setState({boards: this.state.boards, toggledAllChipsAndWires: !this.state.toggledAllChipsAndWires});
-  },
-
-  toggleDebugPins: function () {
-    this.setState({showDebugPins: !this.state.showDebugPins});
+    this.setState({boards: this.state.boards});
   },
 
   render: function () {
-    var demoTop = this.state.showSimulator ? 75 : 0,
-        sidebarTop = demoTop + (this.state.showDemo ? 75 : 0);
+    var sidebarTop = this.state.allowAutoWiring ? 75 : 0;
 
     return div({},
       h1({}, "Teaching Teamwork" + (this.state.activity ? ": " + this.state.activity.name : "")),
@@ -453,8 +449,8 @@ module.exports = React.createClass({
       OfflineCheckView({}),
       WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect}),
       div({id: 'logicapp'},
-        WorkspaceView({constants: constants, boards: this.state.boards, showDebugPins: this.state.showDebugPins, users: this.state.users, userBoardNumber: this.state.userBoardNumber, activity: this.state.activity}),
-        this.state.showDemo ? DemoControlView({top: demoTop, toggleAllChipsAndWires: this.toggleAllChipsAndWires, toggleDebugPins: this.toggleDebugPins, showDebugPins: this.state.showDebugPins, toggledAllChipsAndWires: this.state.toggledAllChipsAndWires, hasDemoData: this.state.hasDemoData}) : null,
+        WorkspaceView({constants: constants, boards: this.state.boards, showPinColors: this.state.showPinColors, showPinouts: this.state.showPinouts, users: this.state.users, userBoardNumber: this.state.userBoardNumber, activity: this.state.activity}),
+        this.state.allowAutoWiring ? AutoWiringView({top: 0, toggleAllChipsAndWires: this.toggleAllChipsAndWires}) : null,
         SidebarChatView({numClients: 2, top: sidebarTop})
       )
     );
