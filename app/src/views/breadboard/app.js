@@ -23,7 +23,8 @@ module.exports = React.createClass({
       goals: null,
       nextActivity: null,
       activityName: null,
-      ttWorkbench: null
+      ttWorkbench: null,
+      model: null
     };
   },
 
@@ -44,7 +45,8 @@ module.exports = React.createClass({
         goals: this.state.goals,
         nextActivity: this.state.nextActivity,
         activityName: this.state.activityName,
-        ttWorkbench: this.state.ttWorkbench
+        ttWorkbench: this.state.ttWorkbench,
+        model: this.state.model
       });
     }
   },
@@ -159,7 +161,7 @@ module.exports = React.createClass({
 
       // look for a model and update the workbench values if found
       // NOTE: the callback might be called more than once if there is a race condition setting the model values
-      self.preProcessWorkbench(ttWorkbench, function (ttWorkbench) {
+      self.preProcessWorkbench(ttWorkbench, function (ttWorkbench, model) {
 
         // set the event controller
         eventsController.init({
@@ -172,7 +174,8 @@ module.exports = React.createClass({
         self.setState({
           activity: ttWorkbench,
           ttWorkbench: JSON.parse(JSON.stringify(ttWorkbench)), // this makes a deep clone before the circuit connections are modified by processTTWorkbench
-          activityName: activityName
+          activityName: activityName,
+          model: model
         });
 
         workbenchAdaptor = new WorkbenchAdaptor(clientNumber);
@@ -263,7 +266,7 @@ module.exports = React.createClass({
           logController.logEvent('model name', workbench.model.name);
           logController.logEvent('model options', null, workbench.model.options || {});
           logController.logEvent('model values', null, model);
-          cb(JSON.parse(json));
+          cb(JSON.parse(json), model);
         },
         models = {
           "three-resistors": this.threeResistorsModel

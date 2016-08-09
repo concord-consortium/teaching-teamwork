@@ -1,6 +1,10 @@
 {
   "name": "Three Resistors Solo - Level 5",
   "image": "images/three-resistors-circuit.v2.png",
+  "enterUnknowns": {
+    "E": true,
+    "R": true
+  },
   "model": {
     "name": "three-resistors",
     "options": {

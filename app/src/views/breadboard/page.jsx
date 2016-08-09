@@ -8,6 +8,7 @@ var userController = require('../../controllers/shared/user'),
     SubmitButtonView = require('./submitButton'),
     OtherCircuitsView = require('./other-circuits'),
     inIframe = require('../../data/shared/in-iframe'),
+    EnterUnknownsView = require('./enter-unknowns'),
     config = require('../../config');
 
 module.exports = React.createClass({
@@ -32,8 +33,9 @@ module.exports = React.createClass({
         connection = <ConnectionView />,
         editor = this.props.showEditor ? (<EditorView parseAndStartActivity={ this.props.parseAndStartActivity } editorState={ this.props.editorState } />) : null,
         wrapperClass = hasMultipleClients ? 'multiple-clients' : null,
-        image = activity.image ? (<div id="image-wrapper" className={ wrapperClass }><img src={ /^https?:\/\//.test(activity.image) ? activity.image : config.modelsBase + activity.image } /></div>) : null,
-        submitButton = this.props.showSubmit && this.props.circuit ? (<SubmitButtonView label={hasMultipleClients ? 'We got it!' : "I got it!"} goals={ this.props.goals } nextActivity={ this.props.nextActivity } />) : null,
+        enterUnknowns = activity.enterUnknowns && (activity.enterUnknowns.E || activity.enterUnknowns.R),
+        image = activity.image ? (<div id="image-wrapper" className={ wrapperClass }><img src={ /^https?:\/\//.test(activity.image) ? activity.image : config.modelsBase + activity.image } />{enterUnknowns ? <EnterUnknownsView activity={activity} model={this.props.model} /> : null}</div>) : null,
+        submitButton = this.props.showSubmit && this.props.circuit ? (<SubmitButtonView label={hasMultipleClients ? 'We got it!' : "I got it!"} goals={ this.props.goals } nextActivity={ this.props.nextActivity } enterUnknowns={activity.enterUnknowns} />) : null,
         otherCircuitsButton = hasMultipleClients && this.props.circuit ? (<OtherCircuitsView circuit={ this.props.circuit } numClients={ activity.clients.length } activityName={ this.props.activityName } groupName={ userController.getGroupname() } ttWorkbench={ this.props.ttWorkbench } />) : null,
         calculator = this.props.circuit ? (<CalculatorView />) : null,
         chatProps = hasMultipleClients ? $.extend({}, activity, {numClients: activity.clients.length}) : null;
