@@ -10,7 +10,7 @@ var Connector = require('../../models/shared/connector'),
     WeGotItView = React.createFactory(require('../shared/we-got-it')),
     WorkspaceView = React.createFactory(require('./workspace')),
     SimulatorControlView = React.createFactory(require('./simulator-control')),
-    DemoControlView = React.createFactory(require('./demo-control')),
+    AutoWiringView = React.createFactory(require('./auto-wiring')),
     SidebarChatView = React.createFactory(require('../shared/sidebar-chat')),
     WireControlsView = React.createFactory(require('../shared/wire-controls')),
     OfflineCheckView = React.createFactory(require('../shared/offline-check')),
@@ -51,10 +51,9 @@ module.exports = React.createClass({
     return {
       boards: boards,
       running: true,
-      showDebugPins: true,
-      addedAllWires: false,
-      showDemo: window.location.search.indexOf('demo') !== -1,
-      showSimulator: window.location.search.indexOf('simulator') !== -1,
+      showPinColors: window.location.search.indexOf('showPinColors') !== -1,
+      showAutoWiring: window.location.search.indexOf('allowAutoWiring') !== -1,
+      showSimulator: window.location.search.indexOf('showSimulator') !== -1,
       showWireControls: window.location.search.indexOf('wireSettings') !== -1,
       userBoardNumber: -1,
       users: {},
@@ -253,7 +252,7 @@ module.exports = React.createClass({
         b2PIC = b2.components.pic.pinMap,
         b2LED = b2.components.led.pinMap,
         b2i = b2.connectors.input.holes,
-        wire, boardWires, i, j;
+        wire, boardWires, i, j, hasWires;
 
     boardWires = [
       [
@@ -295,8 +294,9 @@ module.exports = React.createClass({
     ];
 
     for (i = 0; i < this.state.boards.length; i++) {
+      hasWires = this.state.boards[i].wires.length > 0;
       this.state.boards[i].clear();
-      if (!this.state.addedAllWires) {
+      if (!hasWires) {
         for (j = 0; j < boardWires[i].length; j++) {
           wire = boardWires[i][j];
           this.state.boards[i].addWire(wire.source, wire.dest, wire.color);
@@ -305,11 +305,7 @@ module.exports = React.createClass({
       boardWatcher.circuitChanged(this.state.boards[i]);
     }
 
-    this.setState({boards: this.state.boards, addedAllWires: !this.state.addedAllWires});
-  },
-
-  toggleDebugPins: function () {
-    this.setState({showDebugPins: !this.state.showDebugPins});
+    this.setState({boards: this.state.boards});
   },
 
   updateWireSettings: function (newSettings) {
@@ -317,8 +313,8 @@ module.exports = React.createClass({
   },
 
   render: function () {
-    var demoTop = this.state.showSimulator ? 75 : 0,
-        sidebarTop = demoTop + (this.state.showDemo ? 75 : 0);
+    var autoWiringTop = this.state.showSimulator ? 75 : 0,
+        sidebarTop = autoWiringTop + (this.state.showAutoWiring ? 75 : 0);
 
     return div({},
       this.state.showWireControls ? WireControlsView({wireSettings: this.state.wireSettings, updateWireSettings: this.updateWireSettings}) : null,
@@ -327,9 +323,9 @@ module.exports = React.createClass({
       OfflineCheckView({}),
       WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect}),
       div({id: 'picapp'},
-        WorkspaceView({constants: constants, boards: this.state.boards, stepping: !this.state.running, showDebugPins: this.state.showDebugPins, users: this.state.users, userBoardNumber: this.state.userBoardNumber, wireSettings: this.state.wireSettings}),
+        WorkspaceView({constants: constants, boards: this.state.boards, stepping: !this.state.running, showPinColors: this.state.showPinColors, users: this.state.users, userBoardNumber: this.state.userBoardNumber, wireSettings: this.state.wireSettings}),
         this.state.showSimulator ? SimulatorControlView({running: this.state.running, run: this.run, step: this.step, reset: this.reset}) : null,
-        this.state.showDemo ? DemoControlView({top: demoTop, running: this.state.running, toggleAllWires: this.toggleAllWires, toggleDebugPins: this.toggleDebugPins, showDebugPins: this.state.showDebugPins, addedAllWires: this.state.addedAllWires}) : null,
+        this.state.showAutoWiring ? AutoWiringView({top: autoWiringTop, running: this.state.running, toggleAllWires: this.toggleAllWires}) : null,
         SidebarChatView({numClients: 3, top: sidebarTop})
       )
     );

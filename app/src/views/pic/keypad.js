@@ -42,7 +42,7 @@ module.exports = React.createClass({
 
     for (i = 0; i < this.props.component.pins.length; i++) {
       pin = this.props.component.pins[i];
-      pins.push(PinView({key: 'pin' + i, constants: this.props.constants, pin: pin, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showDebugPins: this.props.showDebugPins, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
+      pins.push(PinView({key: 'pin' + i, constants: this.props.constants, pin: pin, selected: this.props.selected, editable: this.props.editable, stepping: this.props.stepping, showPinColors: this.props.showPinColors, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover}));
       pins.push(PinLabelView({key: 'label' + i, pin: pin, selected: this.props.selected, editable: this.props.editable, reportHover: this.props.reportHover}));
     }
 

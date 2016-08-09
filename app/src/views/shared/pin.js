@@ -55,7 +55,7 @@ module.exports = React.createClass({
 
   render: function () {
     var pin = this.props.pin,
-        showColors = this.props.stepping && this.props.showDebugPins && !pin.notConnectable,
+        showColors = this.props.stepping && this.props.showPinColors && !pin.notConnectable,
         enableHandlers = this.props.selected && this.props.editable;
 
     return showColors ? this.renderIOPin(pin, enableHandlers) : this.renderPin(pin, enableHandlers);

@@ -60,7 +60,8 @@ module.exports = React.createClass({
           toggleBoard: this.props.userBoardNumber === this.state.selectedBoard.number ? this.toggleBoard : null,
           toggleBoardButtonStyle: {marginTop: -35},
           showProbe: true,
-          showDebugPins: this.props.showDebugPins,
+          showPinColors: this.props.showPinColors,
+          showPinouts: this.props.showPinouts,
           stepping: true
         }),
         RibbonView({
@@ -85,7 +86,8 @@ module.exports = React.createClass({
           user: this.props.users[i],
           logicChipDrawer: this.props.activity ? this.props.activity.boards[i].logicChipDrawer : null,
           toggleBoard: this.props.userBoardNumber === i ? this.toggleBoard : null,
-          showDebugPins: this.props.showDebugPins,
+          showPinColors: this.props.showPinColors,
+          showPinouts: this.props.showPinouts,
           stepping: true
         }));
       }

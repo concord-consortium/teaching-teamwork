@@ -1,5 +1,10 @@
 {
   "name": "Adder",
+  "interface": {
+    "showPinColors": false,
+    "allowAutoWiring": false,
+    "showPinouts": false
+  },
   "boards": [
     {
       "logicChipDrawer": {
@@ -11,7 +16,7 @@
       },
       "input": ["A", "B", "C"],
       "output": ["A", "B", "C", "D", "E", "F", "G"],
-      "demo": {
+      "autoWiring": {
         "chips": {
           "not": {
             "type": "7404",
@@ -81,7 +86,7 @@
       },
       "input": ["A", "B", "C", "D", "E", "F", "G"],
       "output": ["Sum", "Carry"],
-      "demo": {
+      "autoWiring": {
         "chips": {
           "or1": {
             "type": "7432",

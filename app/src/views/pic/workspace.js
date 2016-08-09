@@ -36,7 +36,7 @@ module.exports = React.createClass({
           editable: this.props.userBoardNumber === this.state.selectedBoard.number,
           user: this.props.users[this.state.selectedBoard.number],
           stepping: this.props.stepping,
-          showDebugPins: this.props.showDebugPins,
+          showPinColors: this.props.showPinColors,
           toggleBoard: this.toggleBoard,
           showProbe: true,
           wireSettings: this.props.wireSettings
@@ -52,7 +52,7 @@ module.exports = React.createClass({
           editable: this.props.userBoardNumber === 0,
           user: this.props.users[0],
           stepping: this.props.stepping,
-          showDebugPins: this.props.showDebugPins,
+          showPinColors: this.props.showPinColors,
           toggleBoard: this.toggleBoard,
           showProbe: true,
           wireSettings: this.props.wireSettings
@@ -67,7 +67,7 @@ module.exports = React.createClass({
           editable: this.props.userBoardNumber === 1,
           user: this.props.users[1],
           stepping: this.props.stepping,
-          showDebugPins: this.props.showDebugPins,
+          showPinColors: this.props.showPinColors,
           toggleBoard: this.toggleBoard,
           showProbe: true,
           wireSettings: this.props.wireSettings
@@ -82,7 +82,7 @@ module.exports = React.createClass({
           editable: this.props.userBoardNumber === 2,
           user: this.props.users[2],
           stepping: this.props.stepping,
-          showDebugPins: this.props.showDebugPins,
+          showPinColors: this.props.showPinColors,
           toggleBoard: this.toggleBoard,
           showProbe: true,
           wireSettings: this.props.wireSettings

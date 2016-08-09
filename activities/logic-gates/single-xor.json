@@ -1,5 +1,10 @@
 {
   "name": "Single XOR",
+  "interface": {
+    "showPinColors": true,
+    "allowAutoWiring": true,
+    "showPinouts": true
+  },
   "boards": [
     {
       "logicChipDrawer": {
@@ -10,7 +15,7 @@
       },
       "input": ["A", "B"],
       "output": ["C", "D"],
-      "demo": {
+      "autoWiring": {
         "chips": {
           "not": {
             "type": "7404",
@@ -43,7 +48,7 @@
       },
       "input": ["C", "D"],
       "output": ["XOR"],
-      "demo": {
+      "autoWiring": {
         "chips": {
           "or": {
             "type": "7432",

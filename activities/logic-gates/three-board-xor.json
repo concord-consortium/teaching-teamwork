@@ -1,5 +1,10 @@
 {
   "name": "Three Board XOR",
+  "interface": {
+    "showPinColors": true,
+    "allowAutoWiring": true,
+    "showPinouts": true
+  },
   "boards": [
     {
       "logicChipDrawer": {
@@ -9,7 +14,7 @@
       },
       "input": ["A", "B"],
       "output": ["A", "B", "NOT A", "NOT B"],
-      "demo": {
+      "autoWiring": {
         "chips": {
           "not": {
             "type": "7404",
@@ -35,7 +40,7 @@
       },
       "input": ["A", "B", "NOT A", "NOT B"],
       "output": ["C", "D"],
-      "demo": {
+      "autoWiring": {
         "chips": {
           "and": {
             "type": "7408",
@@ -61,7 +66,7 @@
       },
       "input": ["C", "D"],
       "output": ["XOR"],
-      "demo": {
+      "autoWiring": {
         "chips": {
           "or": {
             "type": "7432",
