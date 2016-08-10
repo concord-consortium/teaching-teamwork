@@ -12,7 +12,9 @@ module.exports = SubmitButton = React.createClass({
       allCorrect: false,
       goalValues: {},
       closePopup: false,
-      nextActivity: this.props.nextActivity
+      nextActivity: this.props.nextActivity,
+      enterUnknowns: this.props.enterUnknowns,
+      numCircuits: this.props.goals.length
     };
   },
 
@@ -238,13 +240,13 @@ module.exports = SubmitButton = React.createClass({
     }
   },
 
-  popupButtonClicked: function () {
+  popupButtonClicked: function (dontRedirect) {
     var inIframe = (function() { try { return window.self !== window.top; } catch (e) { return true; } })();
 
     logController.logEvent("Submit close button clicked", this.state.allCorrect ? 'done' : 'resume');
 
-    // don't redirect when iframed in LARA
-    if (this.state.allCorrect && !inIframe) {
+    // don't redirect when iframed in LARA or told not to redirect (as we are waiting on unknown values to be reported)
+    if (this.state.allCorrect && !inIframe && !dontRedirect) {
       window.location = 'http://concord.org/projects/teaching-teamwork/activities2';
     }
     else {
@@ -255,10 +257,10 @@ module.exports = SubmitButton = React.createClass({
   statics: {
     showPopup: function(props, multipleClients, buttonClicked) {
       var $anchor = $('#submit-popup'),
-          closePopup = function (e) {
+          closePopup = function (e, dontRedirect) {
             e.preventDefault();
             SubmitButton.closePopup();
-            buttonClicked();
+            buttonClicked(dontRedirect);
           };
 
       if (!$anchor.length) {
@@ -274,6 +276,8 @@ module.exports = SubmitButton = React.createClass({
         waiting: props.waiting,
         allCorrect: props.allCorrect,
         nextActivity: props.nextActivity,
+        enterUnknowns: props.enterUnknowns,
+        numCircuits: props.numCircuits,
         multipleClients: multipleClients,
         buttonClicked: closePopup,
       }), $anchor.get(0));
@@ -309,6 +313,66 @@ module.exports = SubmitButton = React.createClass({
 Popup = React.createFactory(React.createClass({
   displayName: 'Popup',
 
+  getInitialState: function () {
+    return {
+      unknownValues: {},
+      showEColumn: this.props.enterUnknowns && this.props.enterUnknowns.E,
+      showRColumn: this.props.enterUnknowns && this.props.enterUnknowns.R,
+      haveAllUnknowns: false
+    };
+  },
+
+  componentWillMount: function () {
+    var self = this;
+    // listen for user unknown value updates if needed
+    if (self.props.enterUnknowns) {
+      self.usersRef = userController.getFirebaseGroupRef().child('users');
+      self.usersRef.on("value", function(dataSnapshot) {
+        var users = dataSnapshot.val(),
+            unknownValues = {},
+            haveAllUnknowns = true,
+            i;
+
+        $.each(users, function (name, info) {
+          if (info.hasOwnProperty("client")) {
+            unknownValues[info.client] = info.unknownValues || {};
+          }
+        });
+
+        for (i = 0; i < self.props.numCircuits; i++) {
+          haveAllUnknowns = haveAllUnknowns &&   // all have to be true
+                            unknownValues[i] &&  // circuit has unknown values set by the user
+                            (!self.props.enterUnknowns.E || (unknownValues[i].E && unknownValues[i].E.have)) &&  // either E isn't needed or it has a value
+                            (!self.props.enterUnknowns.R || (unknownValues[i].R && unknownValues[i].R.have)); // either R isn't needed or it has a value
+        }
+
+        self.setState({
+          unknownValues: unknownValues,
+          haveAllUnknowns: haveAllUnknowns
+        });
+      });
+    }
+  },
+
+  componentWillUnmount: function () {
+    if (this.usersRef) {
+      this.usersRef.off();
+    }
+  },
+
+  renderUnknownColumnValue: function (circuit, component) {
+    var unknownValue = this.state.unknownValues[circuit] && this.state.unknownValues[circuit][component] ? this.state.unknownValues[circuit][component] : null;
+    if (unknownValue && unknownValue.have) {
+      return React.DOM.span({dangerouslySetInnerHTML: {__html: unknownValue.correct ? '&#x2714;' : '&#x2718;'}});
+    }
+    return '';
+  },
+
+  buttonClicked: function (e) {
+    var dontRedirect = this.props.enterUnknowns && !this.state.haveAllUnknowns;
+    this.props.buttonClicked(e, dontRedirect);
+  },
+
   render: function () {
     var circuitRows = [],
       th = React.DOM.th,
@@ -316,15 +380,23 @@ Popup = React.createFactory(React.createClass({
       i, row, title, label;
 
     if (this.props.allCorrect) {
+
       title = 'All Goals Are Correct!';
       label = this.props.nextActivity ? this.props.nextActivity : 'All Done!';
+
+      // change button label if all client unknowns have or have not been entered
+      if (this.props.enterUnknowns && !this.state.haveAllUnknowns) {
+        label = 'Waiting for all unknown values to be entered...';
+      }
 
       circuitRows.push(React.DOM.tr({key: 'header'},
         this.props.multipleClients ? th({}, 'Circuit') : null,
         th({}, 'Goal'),
         th({}, 'Goal Value'),
         th({}, 'Measured Value'),
-        th({}, 'Correct')
+        th({}, 'Correct'),
+        this.state.showEColumn ? th({}, 'E?') : null,
+        this.state.showRColumn ? th({}, 'R?') : null
       ));
 
       for (i = 0; i < this.props.table.length; i++) {
@@ -334,7 +406,9 @@ Popup = React.createFactory(React.createClass({
           td({}, row.goal),
           td({}, row.goalValue),
           td({}, row.currentValue),
-          td({className: row.correctClass}, row.correct)
+          td({className: row.correctClass}, row.correct),
+          this.state.showEColumn ? td({}, this.renderUnknownColumnValue(i, 'E')) : null,
+          this.state.showRColumn ? td({}, this.renderUnknownColumnValue(i, 'R')) : null
         ));
       }
     }
@@ -346,7 +420,7 @@ Popup = React.createFactory(React.createClass({
     return React.DOM.div({className: 'submit-button-popup'},
       React.DOM.h1({}, title),
       (this.props.allCorrect ? React.DOM.table({}, React.DOM.tbody({}, circuitRows)) : React.DOM.p({}, (this.props.multipleClients ? "At least one of your team's voltage drops doesn't match that player's goal. Try again." : "At least one of your voltage drops doesn't match the goal. Try again."))),
-      React.DOM.button({onClick: this.props.buttonClicked}, label)
+      React.DOM.button({onClick: this.buttonClicked}, label)
     );
   }
 }));

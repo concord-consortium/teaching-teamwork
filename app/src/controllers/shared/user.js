@@ -206,6 +206,10 @@ module.exports = userController = {
     firebaseUsersRef.child(userName).set({client: client});
   },
 
+  setUnknownValues: function (unknownValues) {
+    firebaseUsersRef.child(userName).set({client: client, unknownValues: unknownValues});
+  },
+
   selectedClient: function() {
     firebaseUsersRef.off("value");
     UserRegistrationView.close();
