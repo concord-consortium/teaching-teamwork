@@ -2,6 +2,7 @@ var PinView = React.createFactory(require('../shared/pin')),
     PinLabelView = React.createFactory(require('../shared/pin-label')),
     constants = require('./constants'),
     events = require('../shared/events'),
+    chipNames = require('../../data/logic-gates/chip-names'),
     line = React.DOM.line,
     g = React.DOM.g,
     rect = React.DOM.rect,
@@ -142,14 +143,7 @@ module.exports = React.createClass({
   },
 
   getTitle: function () {
-    var titles = {
-      '7408': 'Quad 2-Input AND',
-      '7432': 'Quad 2-Input OR',
-      '7486': 'Quad 2-Input XOR',
-      '7404': 'Hex Inverter',
-      '7411': 'Tri 3-Input AND'
-    };
-    return titles[this.props.component.type];
+    return chipNames[this.props.component.type] || 'Unknown';
   },
 
   renderQuad: function (source1PinIndex, source2PinIndex, destPinIndex, renderConnectorFn) {

@@ -20,6 +20,9 @@ var LogicChip = function (options) {
   };
 
   switch (this.type) {
+    case '7402':
+      outputPins = [0, 3, 9, 12, 13];
+      break;
     case '7404':
       outputPins = [1, 3, 5, 6, 7, 9, 11, 13];
       break;
@@ -125,29 +128,28 @@ LogicChip.prototype.standardPinConnections = [
   [[13, 12], 11]
 ];
 LogicChip.prototype.resolveOutputVoltages = function () {
+
   // NOTE: all pin indexes are 1 based below to make it easier to verify against 1-based pinout diagrams
   switch (this.type) {
-    // Quad 2-input AND
-    case '7408':
+    // Quad 2-Input NAND
+    case '7400':
       this.mapAndSetPins(this.standardPinConnections, function (a, b) {
         if (TTL.isInvalid(a) || TTL.isInvalid(b)) {
           return TTL.INVALID;
         }
-        return TTL.getBooleanLogicLevel(TTL.isHigh(a) && TTL.isHigh(b));
+        return TTL.getBooleanLogicLevel(!(TTL.isHigh(a) && TTL.isHigh(b)));
       });
       break;
 
-    // Quad 2-input OR
-    case '7432':
-      this.mapAndSetPins(this.standardPinConnections, function (a, b) {
-        return TTL.getBooleanLogicLevel(TTL.isHigh(a) || TTL.isHigh(b));
-      });
-      break;
-
-    // Quad 2-Input XOR
-    case '7486':
-      this.mapAndSetPins(this.standardPinConnections, function (a, b) {
-        return TTL.getBooleanLogicLevel((TTL.isHigh(a) || TTL.isHigh(b)) && !(TTL.isHigh(a) && TTL.isHigh(b)));
+    // Quad 2-Input NOR
+    case '7402':
+      this.mapAndSetPins([
+        [[2, 3], 1],
+        [[5, 6], 4],
+        [[9, 8], 10],
+        [[12, 11], 13]
+      ], function (a, b) {
+        return TTL.getBooleanLogicLevel(!(TTL.isHigh(a) || TTL.isHigh(b)));
       });
       break;
 
@@ -168,6 +170,16 @@ LogicChip.prototype.resolveOutputVoltages = function () {
       });
       break;
 
+    // Quad 2-input AND
+    case '7408':
+      this.mapAndSetPins(this.standardPinConnections, function (a, b) {
+        if (TTL.isInvalid(a) || TTL.isInvalid(b)) {
+          return TTL.INVALID;
+        }
+        return TTL.getBooleanLogicLevel(TTL.isHigh(a) && TTL.isHigh(b));
+      });
+      break;
+
     // Tri 3-Input AND
     case '7411':
       this.mapAndSetPins([
@@ -179,6 +191,20 @@ LogicChip.prototype.resolveOutputVoltages = function () {
           return TTL.INVALID;
         }
         return TTL.getBooleanLogicLevel(TTL.isHigh(a) && TTL.isHigh(b) && TTL.isHigh(c));
+      });
+      break;
+
+    // Quad 2-input OR
+    case '7432':
+      this.mapAndSetPins(this.standardPinConnections, function (a, b) {
+        return TTL.getBooleanLogicLevel(TTL.isHigh(a) || TTL.isHigh(b));
+      });
+      break;
+
+    // Quad 2-Input XOR
+    case '7486':
+      this.mapAndSetPins(this.standardPinConnections, function (a, b) {
+        return TTL.getBooleanLogicLevel((TTL.isHigh(a) || TTL.isHigh(b)) && !(TTL.isHigh(a) && TTL.isHigh(b)));
       });
       break;
   }
