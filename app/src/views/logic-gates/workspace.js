@@ -62,7 +62,8 @@ module.exports = React.createClass({
           showProbe: true,
           showPinColors: this.props.showPinColors,
           showPinouts: this.props.showPinouts,
-          stepping: true
+          stepping: true,
+          forceRerender: this.props.forceRerender
         }),
         RibbonView({
           constants: this.props.constants,
@@ -88,7 +89,8 @@ module.exports = React.createClass({
           toggleBoard: this.props.userBoardNumber === i ? this.toggleBoard : null,
           showPinColors: this.props.showPinColors,
           showPinouts: this.props.showPinouts,
-          stepping: true
+          stepping: true,
+          forceRerender: this.props.forceRerender
         }));
       }
       return div({id: 'workspace', style: {width: this.props.constants.WORKSPACE_WIDTH, height: (this.props.boards.length * (selectedConstants.BOARD_HEIGHT + this.props.constants.RIBBON_HEIGHT)) + 20}}, ribbonsAndBoards);

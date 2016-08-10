@@ -93,7 +93,7 @@ module.exports = React.createClass({
     };
     return pos;
   },
-  
+
   // copied from http://stackoverflow.com/a/9232092
   truncateDecimals: function (num, digits) {
     var numS = num.toString(),
@@ -123,7 +123,7 @@ module.exports = React.createClass({
 
     if (this.props.probeSource && (!this.props.probeSource.inputMode || this.props.probeSource.connected)) {
 
-      voltage = this.truncateDecimals(this.props.probeSource.voltage, 2);
+      voltage = this.truncateDecimals(this.props.probeSource.getVoltage(), 2);
 
       if (this.props.probeSource.isHigh()) {
         redFill = 1;

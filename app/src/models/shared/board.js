@@ -288,6 +288,12 @@ Board.prototype.resolveCircuitOutputVoltages = function () {
     this.circuits[i].resolveOutputVoltages();
   }
 };
+Board.prototype.resolveIOVoltagesAcrossAllBoards = function() {
+  var i;
+  for (i = 0; i < this.allBoards.length; i++) {
+    this.allBoards[i].resolveIOVoltages();
+  }
+};
 Board.prototype.resolveIOVoltages = function () {
   this.resolveCircuitInputVoltages();
   this.resolveComponentOutputVoltages();

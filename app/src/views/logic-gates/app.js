@@ -38,6 +38,10 @@ module.exports = React.createClass({
     this.loadActivity(window.location.hash.substring(1) || 'single-xor');
   },
 
+  forceRerender: function () {
+    this.setState({boards: this.state.boards});
+  },
+
   loadActivity: function(activityName) {
     var self = this,
         matches = activityName.match(/^((local):(.+)|(remote):([^/]+)\/(.+))$/),
@@ -451,7 +455,7 @@ module.exports = React.createClass({
       OfflineCheckView({}),
       WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect}),
       div({id: 'logicapp'},
-        WorkspaceView({constants: constants, boards: this.state.boards, showPinColors: this.state.showPinColors, showPinouts: this.state.showPinouts, users: this.state.users, userBoardNumber: this.state.userBoardNumber, activity: this.state.activity}),
+        WorkspaceView({constants: constants, boards: this.state.boards, showPinColors: this.state.showPinColors, showPinouts: this.state.showPinouts, users: this.state.users, userBoardNumber: this.state.userBoardNumber, activity: this.state.activity, forceRerender: this.forceRerender}),
         this.state.allowAutoWiring ? AutoWiringView({top: 0, toggleAllChipsAndWires: this.toggleAllChipsAndWires}) : null,
         SidebarChatView({numClients: 2, top: sidebarTop})
       )
