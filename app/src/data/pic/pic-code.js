@@ -221,7 +221,7 @@ code.push({
     ";",
     ";   Software:  ",
     ";   This program takes row and column information from circuit 1 and converts that  ",
-    ";   it to a BCD number representing the key pressed in circuit 1.",
+    ";   to a BCD number representing the key pressed in circuit 1.",
     ";",
     ";*************************************************************************************",
     "",
