@@ -16,6 +16,7 @@ var Connector = require('../../models/shared/connector'),
     OfflineCheckView = React.createFactory(require('../shared/offline-check')),
     events = require('../shared/events'),
     constants = require('./constants'),
+    inIframe = require('../../data/shared/in-iframe'),
     div = React.DOM.div,
     h1 = React.DOM.h1,
     h2 = React.DOM.h2;
@@ -60,7 +61,8 @@ module.exports = React.createClass({
       currentBoard: 0,
       currentUser: null,
       currentGroup: null,
-      wireSettings: {color: '#00f', curvyness: 0.25}
+      wireSettings: {color: '#00f', curvyness: 0.25},
+      inIframe: inIframe()
     };
   },
 
@@ -318,7 +320,7 @@ module.exports = React.createClass({
 
     return div({},
       this.state.showWireControls ? WireControlsView({wireSettings: this.state.wireSettings, updateWireSettings: this.updateWireSettings}) : null,
-      h1({}, "Teaching Teamwork PIC Activity"),
+      this.state.inIframe ? null : h1({}, "Teaching Teamwork PIC Activity"),
       this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
       OfflineCheckView({}),
       WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect}),
