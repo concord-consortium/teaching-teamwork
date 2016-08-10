@@ -2,6 +2,7 @@ var g = React.DOM.g,
     rect = React.DOM.rect,
     text = React.DOM.text,
     title = React.DOM.title,
+    chipNames = require('../../data/logic-gates/chip-names'),
     ChipView;
 
 ChipView = React.createFactory(React.createClass({
@@ -14,14 +15,7 @@ ChipView = React.createFactory(React.createClass({
   },
 
   getTitle: function () {
-    var titles = {
-      '7408': 'Quad 2-Input AND',
-      '7432': 'Quad 2-Input OR',
-      '7486': 'Quad 2-Input XOR',
-      '7404': 'Hex Inverter',
-      '7411': 'Tri 3-Input AND'
-    };
-    return titles[this.props.type];
+    return chipNames[this.props.type] || 'Unknown';
   },
 
   render: function () {
