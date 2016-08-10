@@ -39,7 +39,8 @@ module.exports = React.createClass({
           showPinColors: this.props.showPinColors,
           toggleBoard: this.toggleBoard,
           showProbe: true,
-          wireSettings: this.props.wireSettings
+          wireSettings: this.props.wireSettings,
+          forceRerender: this.props.forceRerender
         }),
         BoardEditorView({constants: this.props.constants, board: this.state.selectedBoard})
       );
@@ -55,7 +56,8 @@ module.exports = React.createClass({
           showPinColors: this.props.showPinColors,
           toggleBoard: this.toggleBoard,
           showProbe: true,
-          wireSettings: this.props.wireSettings
+          wireSettings: this.props.wireSettings,
+          forceRerender: this.props.forceRerender
         }),
         RibbonView({
           constants: this.props.constants,
@@ -70,7 +72,8 @@ module.exports = React.createClass({
           showPinColors: this.props.showPinColors,
           toggleBoard: this.toggleBoard,
           showProbe: true,
-          wireSettings: this.props.wireSettings
+          wireSettings: this.props.wireSettings,
+          forceRerender: this.props.forceRerender
         }),
         RibbonView({
           constants: this.props.constants,
@@ -85,7 +88,8 @@ module.exports = React.createClass({
           showPinColors: this.props.showPinColors,
           toggleBoard: this.toggleBoard,
           showProbe: true,
-          wireSettings: this.props.wireSettings
+          wireSettings: this.props.wireSettings,
+          forceRerender: this.props.forceRerender
         })
       );
     }

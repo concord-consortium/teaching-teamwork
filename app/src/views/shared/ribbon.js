@@ -15,7 +15,7 @@ module.exports = React.createClass({
       this.props.connector.calculatePosition(this.props.constants, this.props.selected);
       for (i = 0; i < this.props.connector.holes.length; i++) {
         hole = this.props.connector.holes[i];
-        if (!hole.forcedValue) {
+        if (!hole.hasForcedVoltage) {
           wires.push(line({key: i, x1: hole.cx, y1: 0, x2: hole.cx, y2: this.props.constants.RIBBON_HEIGHT, strokeWidth: selectedConstants.WIRE_WIDTH, stroke: colors[i % colors.length]}));
         }
       }
