@@ -7,17 +7,23 @@ var userController = require('../../controllers/shared/user'),
     EditorView = require('./editor'),
     SubmitButtonView = require('./submitButton'),
     OtherCircuitsView = require('./other-circuits'),
+    inIframe = require('../../data/shared/in-iframe'),
     config = require('../../config');
 
 module.exports = React.createClass({
 
   displayName: 'Page',
 
+  getInitialState: function () {
+    return {
+      inIframe: inIframe()
+    };
+  },
+
   render: function() {
     var activity = this.props.activity ? this.props.activity : {},
-        inIframe = (function() { try { return window.self !== window.top; } catch (e) { return true; } })(),
         activityName = activity.name ? ': ' + activity.name : '',
-        title = inIframe ? null : (<h1>Teaching Teamwork{ activityName }</h1>),
+        title = this.state.inIframe ? null : (<h1>Teaching Teamwork{ activityName }</h1>),
         hasMultipleClients = activity.clients && (activity.clients.length > 1),
         username = userController.getUsername(),
         groupname = userController.getGroupname(),

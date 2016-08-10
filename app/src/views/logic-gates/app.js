@@ -12,6 +12,7 @@ var Connector = require('../../models/shared/connector'),
     OfflineCheckView = React.createFactory(require('../shared/offline-check')),
     AutoWiringView = React.createFactory(require('./auto-wiring')),
     constants = require('./constants'),
+    inIframe = require('../../data/shared/in-iframe'),
     div = React.DOM.div,
     h1 = React.DOM.h1,
     h2 = React.DOM.h2;
@@ -28,7 +29,8 @@ module.exports = React.createClass({
       currentUser: null,
       currentGroup: null,
       activity: null,
-      interface: {}
+      interface: {},
+      inIframe: inIframe()
     };
   },
 
@@ -444,7 +446,7 @@ module.exports = React.createClass({
     var sidebarTop = this.state.allowAutoWiring ? 75 : 0;
 
     return div({},
-      h1({}, "Teaching Teamwork" + (this.state.activity ? ": " + this.state.activity.name : "")),
+      this.state.inIframe ? null : h1({}, "Teaching Teamwork" + (this.state.activity ? ": " + this.state.activity.name : "")),
       this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
       OfflineCheckView({}),
       WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect}),
