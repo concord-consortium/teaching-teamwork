@@ -61,7 +61,7 @@ module.exports = React.createClass({
         }),
         RibbonView({
           constants: this.props.constants,
-          connector: this.props.boards[0].connectors.output
+          connector: this.props.boards[1].connectors.input
         }),
         BoardView({
           constants: this.props.constants,
@@ -77,7 +77,7 @@ module.exports = React.createClass({
         }),
         RibbonView({
           constants: this.props.constants,
-          connector: this.props.boards[1].connectors.output
+          connector: this.props.boards[2].connectors.input
         }),
         BoardView({
           constants: this.props.constants,
