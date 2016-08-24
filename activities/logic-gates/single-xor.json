@@ -10,7 +10,7 @@
       "logicChipDrawer": {
         "chips": {
           "7408": {"max": 2},
-          "7404": {"max": 3}
+          "7404": {"max": 5}
         }
       },
       "input": ["A", "B"],
