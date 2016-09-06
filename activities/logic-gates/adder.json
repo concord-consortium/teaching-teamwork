@@ -2,7 +2,7 @@
   "name": "Adder",
   "interface": {
     "showPinColors": true,
-    "allowAutoWiring": true,
+    "allowAutoWiring": false,
     "showPinouts": true
   },
   "boards": [
@@ -14,7 +14,7 @@
           "7408": {"max": 3}
         }
       },
-      "input": ["A", "B", "C", "D"],
+      "input": ["A", "B", "C"],
       "output": ["A", "B", "C", "D", "E", "F", "G"],
       "autoWiring": {
         "chips": {

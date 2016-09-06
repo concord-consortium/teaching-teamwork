@@ -1,0 +1,64 @@
+{
+    "name": "Four Players",
+    "interface": {
+        "showPinColors": true,
+        "allowAutoWiring": false,
+        "showPinouts": true
+    },
+    "boards": [{
+        "logicChipDrawer": {
+            "chips": {
+                "7404": {
+                    "max": 2
+                },
+                "7411": {
+                    "max": 2
+                },
+                "7408": {
+                    "max": 2
+                }
+            }
+        },
+        "input": ["A", "B", "C", "D", "E", "F", "G"],
+        "output": ["A", "B", "C", "D", "E", "F", "G"]
+    }, {
+        "logicChipDrawer": {
+            "chips": {
+                "7432": {
+                    "max": 3
+                },
+                "7411": {
+                    "max": 1
+                }
+            }
+        },
+        "input": ["A", "B", "C", "D", "E", "F", "G"],
+        "output": ["A", "B", "C", "D", "E", "F", "G"]
+    }, {
+        "logicChipDrawer": {
+            "chips": {
+                "7432": {
+                    "max": 2
+                }
+            }
+        },
+        "input": ["A", "B", "C", "D", "E", "F", "G"],
+        "output": ["A", "B", "C", "D", "E", "F"]
+    }, {
+        "logicChipDrawer": {
+            "chips": {
+                "7400": {
+                    "max": 2
+                },
+                "7402": {
+                    "max": 1
+                },
+                "7486": {
+                    "max": 1
+                }
+            }
+        },
+        "input": ["A", "B", "C", "D", "E", "F"],
+        "output": ["A", "B", "C"]
+    }]
+}
