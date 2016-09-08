@@ -1,135 +1,144 @@
 {
-  "name": "Adder",
-  "interface": {
-    "showPinColors": true,
-    "allowAutoWiring": false,
-    "showPinouts": true
-  },
-  "boards": [
-    {
-      "logicChipDrawer": {
-        "chips": {
-          "7404": {"max": 3},
-          "7411": {"max": 3},
-          "7408": {"max": 3}
-        }
-      },
-      "input": ["A", "B", "C"],
-      "output": ["A", "B", "C", "D", "E", "F", "G"],
-      "autoWiring": {
-        "chips": {
-          "not": {
-            "type": "7404",
-            "x": 150,
-            "y": 90
-          },
-          "3and1": {
-            "type": "7411",
-            "x": 415,
-            "y": 90
-          },
-          "3and2": {
-            "type": "7411",
-            "x": 150,
-            "y": 220
-          },
-          "2and": {
-            "type": "7408",
-            "x": 415,
-            "y": 220
-          }
-        },
-        "wires": [
-          "input:A,not:13",     "// create NOT A on not pin 12",
-          "input:B,not:11",     "// create NOT A on not pin 12",
-          "input:C,not:9",      "// create NOT A on not pin 12",
-
-          "input:A,3and1:13",   "// A to 3 and input",
-          "not:10,3and1:1",     "// NOT B to 3 and input",
-          "not:8,3and1:2",      "// NOT C to 3 and input",
-          "3and1:12,output:A",  "// (A AND NOT B AND NOT C) to output",
-
-          "not:12,3and1:11",   "// NOT A to 3 and input",
-          "input:B,3and1:10",  "// B to 3 and input",
-          "not:8,3and1:9",     "// NOT C to 3 and input",
-          "3and1:8,output:B",  "// (NOT A AND B AND NOT C) to output",
-
-          "not:12,3and1:3",    "// NOT A to 3 and input",
-          "not:10,3and1:4",    "// NOT B to 3 and input",
-          "input:C,3and1:5",   "// C to 3 and input",
-          "3and1:6,output:C",  "// (NOT A AND B AND C) to output",
-
-          "input:A,3and2:11",  "// A to 3 and input",
-          "input:B,3and2:10",  "// B to 3 and input",
-          "input:C,3and2:9",   "// C to 3 and input",
-          "3and2:8,output:D",  "// (A AND B AND C) to output",
-
-          "input:A,2and:13",   "// A to 2 and input",
-          "input:B,2and:12",   "// B to 2 and input",
-          "2and:11,output:E",  "// (A AND B) to output",
-
-          "input:B,2and:10",   "// B to 2 and input",
-          "input:C,2and:9",    "// C to 2 and input",
-          "2and:8,output:F",   "// (B AND C) to output",
-
-          "input:A,2and:1",    "// A to 2 and input",
-          "input:C,2and:2",    "// C to 2 and input",
-          "2and:3,output:G",   "// (A AND C) to output"
-        ]
-      }
+    "name": "Adder",
+    "interface": {
+        "showPinColors": true,
+        "allowAutoWiring": false,
+        "showPinouts": true
     },
-    {
-      "logicChipDrawer": {
-        "chips": {
-          "7432": {"max": 5}
-        }
-      },
-      "input": ["A", "B", "C", "D", "E", "F", "G"],
-      "output": ["Sum", "Carry"],
-      "autoWiring": {
-        "chips": {
-          "or1": {
-            "type": "7432",
-            "x": 150,
-            "y": 135
-          },
-          "or2": {
-            "type": "7432",
-            "x": 415,
-            "y": 135
-          }
+    "boards": [{
+        "logicChipDrawer": {
+            "chips": {
+                "7404": {
+                    "max": 1
+                },
+                "7411": {
+                    "max": 2
+                },
+                "7408": {
+                    "max": 1
+                }
+            }
         },
-        "wires": [
-          "input:A,or1:13",   "// (A AND NOT B AND NOT C) to or input",
-          "input:B,or1:12",   "// (NOT A AND B AND NOT C) to or input",
-          "or1:11,or2:13",   "// ((A AND NOT B AND NOT C) OR (NOT A AND B AND NOT C)) to sum or input",
+        "input": ["A", "B", "C"],
+        "output": ["A", "B", "C", "D", "E", "F", "G"],
+        "autoWiring": {
+            "chips": {
+                "not": {
+                    "type": "7404",
+                    "x": 150,
+                    "y": 90
+                },
+                "3and1": {
+                    "type": "7411",
+                    "x": 415,
+                    "y": 90
+                },
+                "3and2": {
+                    "type": "7411",
+                    "x": 150,
+                    "y": 220
+                },
+                "2and": {
+                    "type": "7408",
+                    "x": 415,
+                    "y": 220
+                }
+            },
+            "wires": [
+                "input:A,not:13", "// create NOT A on not pin 12",
+                "input:B,not:11", "// create NOT A on not pin 12",
+                "input:C,not:9", "// create NOT A on not pin 12",
 
-          "input:C,or1:10",   "// (NOT A AND B AND C) to or input",
-          "input:D,or1:9",   "// (A AND B AND C) to or input",
-          "or1:8,or2:12",   "// ((NOT A AND B AND C) OR (A AND B AND C)) to sum or input",
+                "input:A,3and1:13", "// A to 3 and input",
+                "not:10,3and1:1", "// NOT B to 3 and input",
+                "not:8,3and1:2", "// NOT C to 3 and input",
+                "3and1:12,output:A", "// (A AND NOT B AND NOT C) to output",
 
-          "input:E,or1:1",   "// (A AND B) to or input",
-          "input:F,or1:2",   "// (B AND C) to or input",
-          "or1:3,or2:1",   "// ((A AND B) OR (B AND C)) to carry or input",
+                "not:12,3and1:11", "// NOT A to 3 and input",
+                "input:B,3and1:10", "// B to 3 and input",
+                "not:8,3and1:9", "// NOT C to 3 and input",
+                "3and1:8,output:B", "// (NOT A AND B AND NOT C) to output",
 
-          "input:G,or2:2",   "// (A AND C) to carry or input",
+                "not:12,3and1:3", "// NOT A to 3 and input",
+                "not:10,3and1:4", "// NOT B to 3 and input",
+                "input:C,3and1:5", "// C to 3 and input",
+                "3and1:6,output:C", "// (NOT A AND B AND C) to output",
 
-          "or2:11,output:Sum",   "// (((A AND NOT B AND NOT C) OR (NOT A AND B AND NOT C)) OR ((NOT A AND B AND C) OR (A AND B AND C))) to sum output",
+                "input:A,3and2:11", "// A to 3 and input",
+                "input:B,3and2:10", "// B to 3 and input",
+                "input:C,3and2:9", "// C to 3 and input",
+                "3and2:8,output:D", "// (A AND B AND C) to output",
 
-          "or2:3,output:Carry",   "// (((A AND B) OR (B AND C)) OR (A AND C)) to carry output"
-        ]
-      }
-    }
-  ],
-  "truthTable": [
-    ["input:A", "input:B", "input:C", "output:Sum", "output:Carry"],
-    [0, 0, 0, 0, 0],
-    [0, 0, 1, 1, 0],
-    [0, 1, 0, 1, 0],
-    [0, 1, 1, 0, 1],
-    [1, 0, 0, 1, 0],
-    [1, 0, 1, 0, 1],
-    [1, 1, 0, 0, 1],
-    [1, 1, 1, 1, 1]
-  ]
+                "input:A,2and:13", "// A to 2 and input",
+                "input:B,2and:12", "// B to 2 and input",
+                "2and:11,output:E", "// (A AND B) to output",
+
+                "input:B,2and:10", "// B to 2 and input",
+                "input:C,2and:9", "// C to 2 and input",
+                "2and:8,output:F", "// (B AND C) to output",
+
+                "input:A,2and:1", "// A to 2 and input",
+                "input:C,2and:2", "// C to 2 and input",
+                "2and:3,output:G", "// (A AND C) to output"
+            ]
+        }
+    }, {
+        "logicChipDrawer": {
+            "chips": {
+                "7432": {
+                    "max": 5
+                }
+            },
+            "type": "7432",
+            "x": 300,
+            "y": 135
+
+        },
+        "input": ["A", "B", "C", "D", "E", "F", "G"],
+        "output": ["Sum", "Carry"],
+        "autoWiring": {
+            "chips": {
+                "or1": {
+                    "type": "7432",
+                    "x": 150,
+                    "y": 135
+                },
+                "or2": {
+                    "type": "7432",
+                    "x": 415,
+                    "y": 135
+                }
+            },
+            "wires": [
+                "input:A,or1:13", "// (A AND NOT B AND NOT C) to or input",
+                "input:B,or1:12", "// (NOT A AND B AND NOT C) to or input",
+                "or1:11,or2:13", "// ((A AND NOT B AND NOT C) OR (NOT A AND B AND NOT C)) to sum or input",
+
+                "input:C,or1:10", "// (NOT A AND B AND C) to or input",
+                "input:D,or1:9", "// (A AND B AND C) to or input",
+                "or1:8,or2:12", "// ((NOT A AND B AND C) OR (A AND B AND C)) to sum or input",
+
+                "input:E,or1:1", "// (A AND B) to or input",
+                "input:F,or1:2", "// (B AND C) to or input",
+                "or1:3,or2:1", "// ((A AND B) OR (B AND C)) to carry or input",
+
+                "input:G,or2:2", "// (A AND C) to carry or input",
+
+                "or2:11,output:Sum", "// (((A AND NOT B AND NOT C) OR (NOT A AND B AND NOT C)) OR ((NOT A AND B AND C) OR (A AND B AND C))) to sum output",
+
+                "or2:3,output:Carry", "// (((A AND B) OR (B AND C)) OR (A AND C)) to carry output"
+            ]
+        }
+    }],
+    "truthTable": [
+        ["input:A", "input:B", "input:C", "output:Sum", "output:Carry"],
+        [0, 0, 0, 0, 0],
+        [0, 0, 1, 1, 0],
+        [0, 1, 0, 1, 0],
+        [0, 1, 1, 0, 1],
+        [1, 0, 0, 1, 0],
+        [1, 0, 1, 0, 1],
+        [1, 1, 0, 0, 1],
+        [1, 1, 1, 1, 1]
+    ]
 }

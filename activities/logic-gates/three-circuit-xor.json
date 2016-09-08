@@ -1,0 +1,49 @@
+{
+    "name": "Three circuit XOR",
+    "interface": {
+        "showPinColors": true,
+        "allowAutoWiring": false,
+        "showPinouts": true
+    },
+    "boards": [{
+        "logicChipDrawer": {
+            "chips": {
+                "7404": {
+                    "max": 1
+                }
+            }
+        },
+        "input": ["A", "B"],
+        "output": ["A", "B", "not A", "not B"]
+    }, {
+        "logicChipDrawer": {
+            "chips": {
+                "7408": {
+                    "max": 1
+                }
+            }
+        },
+        "input": ["A", "not A", "B", "not B"],
+        "output": ["C", "D"]
+    }, {
+        "logicChipDrawer": {
+            "chips": {
+                "7432": {
+                    "max": 1
+                }
+            }
+        },
+        "input": ["C", "D"],
+        "output": ["E"]
+    }, {
+        "logicChipDrawer": {
+            "chips": {
+                "7432": {
+                    "max": 1
+                }
+            }
+        },
+        "input": ["C", "D"],
+        "output": ["F"]
+    }]
+}
