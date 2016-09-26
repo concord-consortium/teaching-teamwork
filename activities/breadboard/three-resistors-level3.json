@@ -17,7 +17,7 @@
       "level": 3
     }
   },
-  "nextActivity": "Move To Level 4",
+  "nextActivity": "Ok",
   "initialChatMessage": "You can find your goal at the top of the screen. Use this area to chat with your teammates.",
   "goals": [
     {
