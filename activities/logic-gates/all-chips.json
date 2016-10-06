@@ -1,0 +1,41 @@
+{
+  "name": "Single XOR",
+  "interface": {
+    "showPinColors": true,
+    "allowAutoWiring": true,
+    "showPinouts": true
+  },
+  "boards": [
+    {
+      "logicChipDrawer": {
+        "chips": {
+          "7400": {"max": 2},
+          "7402": {"max": 2},
+          "7404": {"max": 5}
+        }
+      },
+      "input": ["A", "B"],
+      "output": ["C", "D"]
+    },
+    {
+      "logicChipDrawer": {
+        "chips": {
+          "7408": {"max": 2},
+          "7411": {"max": 2},
+          "7432": {"max": 2}
+        }
+      },
+      "input": ["A", "B"],
+      "output": ["C", "D"]
+    },
+    {
+      "logicChipDrawer": {
+        "chips": {
+          "7486": {"max": 2}
+        }
+      },
+      "input": ["A", "B"],
+      "output": ["C", "D"]
+    }
+  ]
+}
