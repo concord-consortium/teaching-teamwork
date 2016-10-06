@@ -30,6 +30,10 @@ module.exports = React.createClass({
         }
 
         self.props.checkIfCircuitIsCorrect(function (allCorrect) {
+          if (self.userClickedSubmit) {
+            logController.logEvent("Submit clicked", userController.getUsername(), {correct: allCorrect});
+            self.userClickedSubmit = false;
+          }
           self.setState({showPopup: true, allCorrect: allCorrect});
         });
       });
@@ -45,14 +49,12 @@ module.exports = React.createClass({
   },
 
   clicked: function (e) {
-    var username = userController.getUsername();
-
     e.preventDefault();
 
-    logController.logEvent("Submit clicked", username);
+    this.userClickedSubmit = true;
 
     this.submitRef.set({
-      user: username,
+      user: userController.getUsername(),
       at: Firebase.ServerValue.TIMESTAMP
     });
   },

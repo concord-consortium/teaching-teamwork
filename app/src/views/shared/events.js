@@ -45,21 +45,12 @@ module.exports = events = {
       };
       boardWatcher.circuitChanged(parameters.board);
     }
-    else if (eventName == events.ADD_LOGIC_CHIP_EVENT) {
-      // TODO
+    else if ((eventName == events.ADD_LOGIC_CHIP_EVENT) || (eventName == events.REMOVE_LOGIC_CHIP_EVENT) || (eventName == events.MOVE_LOGIC_CHIP_EVENT)) {
       loggedParameters = {
-      };
-      boardWatcher.circuitChanged(parameters.board);
-    }
-    else if (eventName == events.REMOVE_LOGIC_CHIP_EVENT) {
-      // TODO
-      loggedParameters = {
-      };
-      boardWatcher.circuitChanged(parameters.board);
-    }
-    else if (eventName == events.MOVE_LOGIC_CHIP_EVENT) {
-      // TODO
-      loggedParameters = {
+        name: parameters.chip.name,
+        type: parameters.chip.type,
+        x: parameters.chip.position.x,
+        y: parameters.chip.position.y
       };
       boardWatcher.circuitChanged(parameters.board);
     }
