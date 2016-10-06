@@ -616,9 +616,9 @@ form button:disabled {
 }
 
 .alert-wrapper {
-  z-index: 1000;
 }
 .alert-background {
+  z-index: 1000;
   position: absolute;
   top: 0;
   left: 0;
@@ -628,6 +628,7 @@ form button:disabled {
   opacity: 0.5;
 }
 .alert-window-wrapper {
+  z-index: 1001;
   position: absolute;
   top: 0;
   left: 0;

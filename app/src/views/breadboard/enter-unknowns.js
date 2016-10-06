@@ -94,10 +94,16 @@ module.exports = React.createClass({
       'E: Need': needE,
       'E: Have Value': needE && haveE,
       'E: Have Unit': needE && haveEUnit,
+      'E: Value': this.state.E,
+      'E: Unit': this.state.EUnit,
+      'E: Correct Value': this.props.model.E,
       'E: Correct': eCorrect,
       'R: Need': needR,
       'R: Have Value': needR && haveR,
       'R: Have Unit': needR && haveRUnit,
+      'R: Value': this.state.R,
+      'R: Unit': this.state.RUnit,
+      'R: Correct Value': this.props.model.R,
       'R: Correct': rCorrect
     });
   },
