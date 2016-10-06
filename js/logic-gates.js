@@ -3168,7 +3168,7 @@ module.exports = React.createClass({
       for (i = 0; i < wiresToRemove.length; i++) {
         wire = wiresToRemove[i];
         this.props.board.removeWire(wire.source, wire.dest);
-        events.logEvent(events.REMOVE_WIRE_EVENT, null, {board: this.props.board, source: wire.source});
+        events.logEvent(events.REMOVE_WIRE_EVENT, null, {board: this.props.board, source: wire.source, dest: wire.dest});
       }
 
       this.setState({
@@ -3724,7 +3724,8 @@ module.exports = events = {
     }
     else if (eventName == events.REMOVE_WIRE_EVENT) {
       loggedParameters = {
-        source: parameters.board.serializeEndpoint(parameters.source, 'type')
+        source: parameters.board.serializeEndpoint(parameters.source, 'type'),
+        dest: parameters.board.serializeEndpoint(parameters.dest, 'type')
       };
       boardWatcher.circuitChanged(parameters.board);
     }
