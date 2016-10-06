@@ -142,7 +142,7 @@ module.exports = React.createClass({
       for (i = 0; i < wiresToRemove.length; i++) {
         wire = wiresToRemove[i];
         this.props.board.removeWire(wire.source, wire.dest);
-        events.logEvent(events.REMOVE_WIRE_EVENT, null, {board: this.props.board, source: wire.source});
+        events.logEvent(events.REMOVE_WIRE_EVENT, null, {board: this.props.board, source: wire.source, dest: wire.dest});
       }
 
       this.setState({

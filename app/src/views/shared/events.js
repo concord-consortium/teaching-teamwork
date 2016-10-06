@@ -41,7 +41,8 @@ module.exports = events = {
     }
     else if (eventName == events.REMOVE_WIRE_EVENT) {
       loggedParameters = {
-        source: parameters.board.serializeEndpoint(parameters.source, 'type')
+        source: parameters.board.serializeEndpoint(parameters.source, 'type'),
+        dest: parameters.board.serializeEndpoint(parameters.dest, 'type')
       };
       boardWatcher.circuitChanged(parameters.board);
     }
