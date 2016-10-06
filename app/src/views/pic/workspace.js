@@ -9,8 +9,7 @@ module.exports = React.createClass({
 
   getInitialState: function () {
     return {
-      selectedBoard: null,
-      showCode: window.location.search.indexOf('showCode') !== -1
+      selectedBoard: null
     };
   },
 
@@ -27,17 +26,18 @@ module.exports = React.createClass({
   },
 
   render: function () {
-    var selectedConstants;
+    var editable, selectedConstants;
     if (this.state.selectedBoard) {
+      editable = this.props.userBoardNumber === this.state.selectedBoard.number;
       selectedConstants = this.props.constants.selectedConstants(true);
       return div({id: 'workspace'},
-        this.state.showCode ? null : div({style: {height: (this.props.constants.WORKSPACE_HEIGHT - selectedConstants.BOARD_HEIGHT) / 2}}), // this centers the BoardView below
+        editable ? null : div({style: {height: (this.props.constants.WORKSPACE_HEIGHT - selectedConstants.BOARD_HEIGHT) / 2}}), // this centers the BoardView below
         BoardView({
           constants: this.props.constants,
           key: 'selectedBoard' + this.state.selectedBoard.number,
           board: this.state.selectedBoard,
           selected: true,
-          editable: this.props.userBoardNumber === this.state.selectedBoard.number,
+          editable: editable,
           user: this.props.users[this.state.selectedBoard.number],
           stepping: this.props.stepping,
           showPinColors: this.props.showPinColors,
@@ -46,7 +46,7 @@ module.exports = React.createClass({
           wireSettings: this.props.wireSettings,
           forceRerender: this.props.forceRerender
         }),
-        this.state.showCode ? BoardEditorView({constants: this.props.constants, board: this.state.selectedBoard}) : null
+        editable ? BoardEditorView({constants: this.props.constants, board: this.state.selectedBoard}) : null
       );
     }
     else {
