@@ -3728,21 +3728,12 @@ module.exports = events = {
       };
       boardWatcher.circuitChanged(parameters.board);
     }
-    else if (eventName == events.ADD_LOGIC_CHIP_EVENT) {
-      // TODO
+    else if ((eventName == events.ADD_LOGIC_CHIP_EVENT) || (eventName == events.REMOVE_LOGIC_CHIP_EVENT) || (eventName == events.MOVE_LOGIC_CHIP_EVENT)) {
       loggedParameters = {
-      };
-      boardWatcher.circuitChanged(parameters.board);
-    }
-    else if (eventName == events.REMOVE_LOGIC_CHIP_EVENT) {
-      // TODO
-      loggedParameters = {
-      };
-      boardWatcher.circuitChanged(parameters.board);
-    }
-    else if (eventName == events.MOVE_LOGIC_CHIP_EVENT) {
-      // TODO
-      loggedParameters = {
+        name: parameters.chip.name,
+        type: parameters.chip.type,
+        x: parameters.chip.position.x,
+        y: parameters.chip.position.y
       };
       boardWatcher.circuitChanged(parameters.board);
     }
@@ -4616,12 +4607,14 @@ UserRegistrationViewFactory = React.createFactory(UserRegistrationView);
 },{"../../data/shared/group-names":7}],38:[function(require,module,exports){
 var div = React.DOM.div,
     h2 = React.DOM.h2,
+    logController = require('../../controllers/shared/log'),
     button = React.DOM.button;
 
 module.exports = React.createClass({
   displayName: 'WeGotItPopupView',
 
   clicked: function () {
+    logController.logEvent("Submit close button clicked", this.props.allCorrect ? 'done' : 'resume');
     this.props.hidePopup();
   },
 
@@ -4641,7 +4634,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],39:[function(require,module,exports){
+},{"../../controllers/shared/log":4}],39:[function(require,module,exports){
 var WeGotItPopupView = React.createFactory(require('./we-got-it-popup')),
     userController = require('../../controllers/shared/user'),
     logController = require('../../controllers/shared/log'),
@@ -4674,6 +4667,10 @@ module.exports = React.createClass({
         }
 
         self.props.checkIfCircuitIsCorrect(function (allCorrect) {
+          if (self.userClickedSubmit) {
+            logController.logEvent("Submit clicked", userController.getUsername(), {correct: allCorrect});
+            self.userClickedSubmit = false;
+          }
           self.setState({showPopup: true, allCorrect: allCorrect});
         });
       });
@@ -4689,14 +4686,12 @@ module.exports = React.createClass({
   },
 
   clicked: function (e) {
-    var username = userController.getUsername();
-
     e.preventDefault();
 
-    logController.logEvent("Submit clicked", username);
+    this.userClickedSubmit = true;
 
     this.submitRef.set({
-      user: username,
+      user: userController.getUsername(),
       at: Firebase.ServerValue.TIMESTAMP
     });
   },
