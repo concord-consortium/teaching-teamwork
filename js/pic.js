@@ -28,17 +28,26 @@ BoardWatcher.prototype.startListeners = function () {
   this.firebase.child(1).on('value', listenerCallbackFn(1));
   this.firebase.child(2).on('value', listenerCallbackFn(2));
 };
+
+// NOTE: the if (this.firebase) conditionals are needed below because startListeners is not called in the PIC solo mode
+
 BoardWatcher.prototype.movedProbe = function (board, probeInfo) {
-  this.firebase.child(board.number).child('probe').set(probeInfo);
+  if (this.firebase) {
+    this.firebase.child(board.number).child('probe').set(probeInfo);
+  }
 };
 BoardWatcher.prototype.pushedButton = function (board, buttonValue) {
-  this.firebase.child(board.number).child('button').set(buttonValue);
+  if (this.firebase) {
+    this.firebase.child(board.number).child('button').set(buttonValue);
+  }
 };
 BoardWatcher.prototype.circuitChanged = function (board) {
-  this.firebase.child(board.number).child('layout').set({
-    wires: board.serializeWiresToArray(),
-    components: board.serializeComponents()
-  });
+  if (this.firebase) {
+    this.firebase.child(board.number).child('layout').set({
+      wires: board.serializeWiresToArray(),
+      components: board.serializeComponents()
+    });
+  }
 };
 BoardWatcher.prototype.addListener = function (board, listener) {
   this.listeners[board.number] = this.listeners[board.number] || [];
@@ -1996,7 +2005,7 @@ LED.prototype.getPinBitField = function () {
   var bitfield = 0,
       i;
   for (i = 0; i < this.pins.length; i++) {
-    bitfield = bitfield | ((this.pins[i].value ? 1 : 0) << i);
+    bitfield = bitfield | ((this.pins[i].isHigh() ? 1 : 0) << i);
   }
   return bitfield;
 };
@@ -3548,6 +3557,7 @@ module.exports = React.createClass({
       showAutoWiring: window.location.search.indexOf('allowAutoWiring') !== -1,
       showSimulator: window.location.search.indexOf('showSimulator') !== -1,
       showWireControls: window.location.search.indexOf('wireSettings') !== -1,
+      soloMode: window.location.search.indexOf('soloMode') !== -1,
       userBoardNumber: -1,
       users: {},
       currentBoard: 0,
@@ -3562,44 +3572,50 @@ module.exports = React.createClass({
     var activityName = 'pic',
         self = this;
 
-    boardWatcher.addListener(this.state.boards[0], this.updateWatchedBoard);
-    boardWatcher.addListener(this.state.boards[1], this.updateWatchedBoard);
-    boardWatcher.addListener(this.state.boards[2], this.updateWatchedBoard);
-
     logController.init(activityName);
-    userController.init(3, activityName, function(userBoardNumber) {
-      var users = self.state.users,
-          currentUser = userController.getUsername();
 
-      userBoardNumber = parseInt(userBoardNumber, 10);
-      users[userBoardNumber] = {
-        name: currentUser
-      };
+    if (this.state.soloMode) {
+      logController.setClientNumber(0);
+    }
+    else {
+      boardWatcher.addListener(this.state.boards[0], this.updateWatchedBoard);
+      boardWatcher.addListener(this.state.boards[1], this.updateWatchedBoard);
+      boardWatcher.addListener(this.state.boards[2], this.updateWatchedBoard);
 
-      logController.setClientNumber(userBoardNumber);
+      userController.init(3, activityName, function(userBoardNumber) {
+        var users = self.state.users,
+            currentUser = userController.getUsername();
 
-      self.setState({
-        userBoardNumber: userBoardNumber,
-        users: users,
-        currentUser: currentUser,
-        currentGroup: userController.getGroupname(),
-        currentBoard: userBoardNumber
-      });
+        userBoardNumber = parseInt(userBoardNumber, 10);
+        users[userBoardNumber] = {
+          name: currentUser
+        };
 
-      userController.onGroupRefCreation(function() {
-        boardWatcher.startListeners();
-        userController.getFirebaseGroupRef().child('users').on("value", function(snapshot) {
-          var fbUsers = snapshot.val(),
-              users = {};
-          $.each(fbUsers, function (user) {
-            users[parseInt(fbUsers[user].client)] = {
-              name: user
-            };
+        logController.setClientNumber(userBoardNumber);
+
+        self.setState({
+          userBoardNumber: userBoardNumber,
+          users: users,
+          currentUser: currentUser,
+          currentGroup: userController.getGroupname(),
+          currentBoard: userBoardNumber
+        });
+
+        userController.onGroupRefCreation(function() {
+          boardWatcher.startListeners();
+          userController.getFirebaseGroupRef().child('users').on("value", function(snapshot) {
+            var fbUsers = snapshot.val(),
+                users = {};
+            $.each(fbUsers, function (user) {
+              users[parseInt(fbUsers[user].client)] = {
+                name: user
+              };
+            });
+            self.setState({users: users});
           });
-          self.setState({users: users});
         });
       });
-    });
+    }
 
     // start the simulator without the event logged if set to run at startup
     if (this.state.running) {
@@ -3665,7 +3681,7 @@ module.exports = React.createClass({
       // evaluate all the boards so the keypad input propogates to the led
       for (i = 0; i < numBoards; i++) {
         for (j = 0; j < numBoards; j++) {
-          boards[i].components.pic.evaluateRemainingPICInstructions();
+          boards[j].components.pic.evaluateRemainingPICInstructions();
         }
       }
     };
@@ -3819,12 +3835,12 @@ module.exports = React.createClass({
       this.state.inIframe ? null : h1({}, "Teaching Teamwork PIC Activity"),
       this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
       OfflineCheckView({}),
-      WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect}),
+      WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect, soloMode: this.state.soloMode}),
       div({id: 'picapp'},
-        WorkspaceView({constants: constants, boards: this.state.boards, stepping: !this.state.running, showPinColors: this.state.showPinColors, users: this.state.users, userBoardNumber: this.state.userBoardNumber, wireSettings: this.state.wireSettings, forceRerender: this.forceRerender}),
+        WorkspaceView({constants: constants, boards: this.state.boards, stepping: !this.state.running, showPinColors: this.state.showPinColors, users: this.state.users, userBoardNumber: this.state.userBoardNumber, wireSettings: this.state.wireSettings, forceRerender: this.forceRerender, soloMode: this.state.soloMode}),
         this.state.showSimulator ? SimulatorControlView({running: this.state.running, run: this.run, step: this.step, reset: this.reset}) : null,
         this.state.showAutoWiring ? AutoWiringView({top: autoWiringTop, running: this.state.running, toggleAllWires: this.toggleAllWires}) : null,
-        SidebarChatView({numClients: 3, top: sidebarTop})
+        this.state.soloMode ? null : SidebarChatView({numClients: 3, top: sidebarTop})
       )
     );
   }
@@ -4303,7 +4319,7 @@ module.exports = React.createClass({
   render: function () {
     var editable, selectedConstants;
     if (this.state.selectedBoard) {
-      editable = this.props.userBoardNumber === this.state.selectedBoard.number;
+      editable = this.props.soloMode || (this.props.userBoardNumber === this.state.selectedBoard.number);
       selectedConstants = this.props.constants.selectedConstants(true);
       return div({id: 'workspace'},
         editable ? null : div({style: {height: (this.props.constants.WORKSPACE_HEIGHT - selectedConstants.BOARD_HEIGHT) / 2}}), // this centers the BoardView below
@@ -4319,7 +4335,8 @@ module.exports = React.createClass({
           toggleBoard: this.toggleBoard,
           showProbe: true,
           wireSettings: this.props.wireSettings,
-          forceRerender: this.props.forceRerender
+          forceRerender: this.props.forceRerender,
+          soloMode: this.props.soloMode
         }),
         editable ? BoardEditorView({constants: this.props.constants, board: this.state.selectedBoard}) : null
       );
@@ -4329,14 +4346,15 @@ module.exports = React.createClass({
         BoardView({
           constants: this.props.constants,
           board: this.props.boards[0],
-          editable: this.props.userBoardNumber === 0,
+          editable: this.props.soloMode || (this.props.userBoardNumber === 0),
           user: this.props.users[0],
           stepping: this.props.stepping,
           showPinColors: this.props.showPinColors,
           toggleBoard: this.toggleBoard,
           showProbe: true,
           wireSettings: this.props.wireSettings,
-          forceRerender: this.props.forceRerender
+          forceRerender: this.props.forceRerender,
+          soloMode: this.props.soloMode
         }),
         RibbonView({
           constants: this.props.constants,
@@ -4345,14 +4363,15 @@ module.exports = React.createClass({
         BoardView({
           constants: this.props.constants,
           board: this.props.boards[1],
-          editable: this.props.userBoardNumber === 1,
+          editable: this.props.soloMode || (this.props.userBoardNumber === 1),
           user: this.props.users[1],
           stepping: this.props.stepping,
           showPinColors: this.props.showPinColors,
           toggleBoard: this.toggleBoard,
           showProbe: true,
           wireSettings: this.props.wireSettings,
-          forceRerender: this.props.forceRerender
+          forceRerender: this.props.forceRerender,
+          soloMode: this.props.soloMode
         }),
         RibbonView({
           constants: this.props.constants,
@@ -4361,14 +4380,15 @@ module.exports = React.createClass({
         BoardView({
           constants: this.props.constants,
           board: this.props.boards[2],
-          editable: this.props.userBoardNumber === 2,
+          editable: this.props.soloMode || (this.props.userBoardNumber === 2),
           user: this.props.users[2],
           stepping: this.props.stepping,
           showPinColors: this.props.showPinColors,
           toggleBoard: this.toggleBoard,
           showProbe: true,
           wireSettings: this.props.wireSettings,
-          forceRerender: this.props.forceRerender
+          forceRerender: this.props.forceRerender,
+          soloMode: this.props.soloMode
         })
       );
     }
@@ -4902,7 +4922,7 @@ module.exports = React.createClass({
     }
 
     return div({className: this.props.editable ? 'board editable-board' : 'board', style: style},
-      span({className: this.props.editable ? 'board-user editable-board-user' : 'board-user'}, ('Circuit ' + (this.props.board.number + 1) + ': ') + (this.props.user ? this.props.user.name : '(unclaimed)')),
+      span({className: this.props.editable ? 'board-user editable-board-user' : 'board-user'}, ('Circuit ' + (this.props.board.number + 1)) + (this.props.user ? ': ' + this.props.user.name : (this.props.soloMode ? '' : ': (unclaimed)'))),
       svg({className: 'board-area', onMouseDown: this.props.selected && this.props.editable ? this.backgroundMouseDown : null, ref: 'svg'},
         connectors,
         components,
@@ -6040,20 +6060,29 @@ module.exports = React.createClass({
   },
 
   clicked: function (e) {
+    var self = this;
+
     e.preventDefault();
 
-    this.userClickedSubmit = true;
-
-    this.submitRef.set({
-      user: userController.getUsername(),
-      at: Firebase.ServerValue.TIMESTAMP
-    });
+    if (this.props.soloMode) {
+      this.props.checkIfCircuitIsCorrect(function (allCorrect) {
+        logController.logEvent("Submit clicked", "n/a", {correct: allCorrect});
+        self.setState({showPopup: true, allCorrect: allCorrect});
+      });
+    }
+    else {
+      this.userClickedSubmit = true;
+      this.submitRef.set({
+        user: userController.getUsername(),
+        at: Firebase.ServerValue.TIMESTAMP
+      });
+    }
   },
 
   render: function () {
-    if (this.props.currentUser) {
+    if (this.props.currentUser || this.props.soloMode) {
       return div({id: "we-got-it"},
-        button({onClick: this.clicked}, "We got it!"),
+        button({onClick: this.clicked}, this.props.soloMode ? "I got it!" : "We got it!"),
         this.state.showPopup ? WeGotItPopupView({allCorrect: this.state.allCorrect, hidePopup: this.hidePopup}) : null
       );
     }

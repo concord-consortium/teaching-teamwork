@@ -28,17 +28,26 @@ BoardWatcher.prototype.startListeners = function () {
   this.firebase.child(1).on('value', listenerCallbackFn(1));
   this.firebase.child(2).on('value', listenerCallbackFn(2));
 };
+
+// NOTE: the if (this.firebase) conditionals are needed below because startListeners is not called in the PIC solo mode
+
 BoardWatcher.prototype.movedProbe = function (board, probeInfo) {
-  this.firebase.child(board.number).child('probe').set(probeInfo);
+  if (this.firebase) {
+    this.firebase.child(board.number).child('probe').set(probeInfo);
+  }
 };
 BoardWatcher.prototype.pushedButton = function (board, buttonValue) {
-  this.firebase.child(board.number).child('button').set(buttonValue);
+  if (this.firebase) {
+    this.firebase.child(board.number).child('button').set(buttonValue);
+  }
 };
 BoardWatcher.prototype.circuitChanged = function (board) {
-  this.firebase.child(board.number).child('layout').set({
-    wires: board.serializeWiresToArray(),
-    components: board.serializeComponents()
-  });
+  if (this.firebase) {
+    this.firebase.child(board.number).child('layout').set({
+      wires: board.serializeWiresToArray(),
+      components: board.serializeComponents()
+    });
+  }
 };
 BoardWatcher.prototype.addListener = function (board, listener) {
   this.listeners[board.number] = this.listeners[board.number] || [];
@@ -3549,7 +3558,7 @@ module.exports = React.createClass({
     }
 
     return div({className: this.props.editable ? 'board editable-board' : 'board', style: style},
-      span({className: this.props.editable ? 'board-user editable-board-user' : 'board-user'}, ('Circuit ' + (this.props.board.number + 1) + ': ') + (this.props.user ? this.props.user.name : '(unclaimed)')),
+      span({className: this.props.editable ? 'board-user editable-board-user' : 'board-user'}, ('Circuit ' + (this.props.board.number + 1)) + (this.props.user ? ': ' + this.props.user.name : (this.props.soloMode ? '' : ': (unclaimed)'))),
       svg({className: 'board-area', onMouseDown: this.props.selected && this.props.editable ? this.backgroundMouseDown : null, ref: 'svg'},
         connectors,
         components,
@@ -4687,20 +4696,29 @@ module.exports = React.createClass({
   },
 
   clicked: function (e) {
+    var self = this;
+
     e.preventDefault();
 
-    this.userClickedSubmit = true;
-
-    this.submitRef.set({
-      user: userController.getUsername(),
-      at: Firebase.ServerValue.TIMESTAMP
-    });
+    if (this.props.soloMode) {
+      this.props.checkIfCircuitIsCorrect(function (allCorrect) {
+        logController.logEvent("Submit clicked", "n/a", {correct: allCorrect});
+        self.setState({showPopup: true, allCorrect: allCorrect});
+      });
+    }
+    else {
+      this.userClickedSubmit = true;
+      this.submitRef.set({
+        user: userController.getUsername(),
+        at: Firebase.ServerValue.TIMESTAMP
+      });
+    }
   },
 
   render: function () {
-    if (this.props.currentUser) {
+    if (this.props.currentUser || this.props.soloMode) {
       return div({id: "we-got-it"},
-        button({onClick: this.clicked}, "We got it!"),
+        button({onClick: this.clicked}, this.props.soloMode ? "I got it!" : "We got it!"),
         this.state.showPopup ? WeGotItPopupView({allCorrect: this.state.allCorrect, hidePopup: this.hidePopup}) : null
       );
     }
