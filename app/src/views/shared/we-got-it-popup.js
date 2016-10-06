@@ -1,11 +1,13 @@
 var div = React.DOM.div,
     h2 = React.DOM.h2,
+    logController = require('../../controllers/shared/log'),
     button = React.DOM.button;
 
 module.exports = React.createClass({
   displayName: 'WeGotItPopupView',
 
   clicked: function () {
+    logController.logEvent("Submit close button clicked", this.props.allCorrect ? 'done' : 'resume');
     this.props.hidePopup();
   },
 
