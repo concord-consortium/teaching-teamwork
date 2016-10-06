@@ -611,3 +611,41 @@ form button:disabled {
 .ribbon {
   background-color: #ddd;
 }
+
+.alert-wrapper {
+  z-index: 1000;
+}
+.alert-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #000;
+  opacity: 0.5;
+}
+.alert-window-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+.alert-window {
+  background: #fff;
+  color: #000;
+  margin: 25% auto;
+  width: 350px;
+  padding: 20px;
+  -webkit-border-radius: 10px;
+  -moz-border-radius: 10px;
+  border-radius: 10px;
+  border: 1px solid #000;
+}
+.alert-message {
+  padding: 10px 0;
+  text-align: center;
+}
+.alert-button-wrapper {
+  text-align: center;
+}
