@@ -160,6 +160,7 @@ module.exports = controller;
 var logManagerUrl  = '//teaching-teamwork-log-manager.herokuapp.com/api/logs',
     xhrObserver    = require('../../data/shared/xhrObserver'),
     laraController = require('./lara'),
+    logToConsole = window.location.search.indexOf('logToConsole') !== -1,
     laraLoggerReady,
     activityName,
     session,
@@ -221,6 +222,16 @@ var logManagerUrl  = '//teaching-teamwork-log-manager.herokuapp.com/api/logs',
         parameters: parameters
       },
       i;
+
+      if (logToConsole && console && console.log) {
+        console.log("LOG: " + eventName);
+        if ((value !== undefined) && (value !== null)) {
+          console.log("  VALUE: " + value);
+        }
+        if (parameters !== undefined) {
+          console.log("  PARMS: " + JSON.stringify(parameters));
+        }
+      }
 
       // signal the listeners we are logging
       for (i=0; i < logEventListeners.length; i++) {
@@ -3161,6 +3172,38 @@ module.exports = React.createClass({
     );
   },
 
+  renderReversedQuad: function (source1PinIndex, source2PinIndex, destPinIndex, renderConnectorFn) {
+    var source1Pin = this.props.component.pins[source1PinIndex],
+        source2Pin = this.props.component.pins[source2PinIndex],
+        destPin = this.props.component.pins[destPinIndex],
+        width = 18,
+        height = 18,
+        dy = source1Pin.placement == 'bottom' ? -1 : 1,
+        edgeY = source1Pin.placement == 'bottom' ? source1Pin.y : source1Pin.y + source1Pin.height,
+        x = source1Pin.cx - ((source1Pin.cx - destPin.cx - width) / 2),
+        y = edgeY + ((source1Pin.height * 1.25) * dy),
+        oneThirdsY = y + ((height * dy) * (1/3)),
+        twoThirdsY = y + ((height * dy) * (2/3)),
+        turnX = source1Pin.cx + ((x - source1Pin.cx) / 2),
+        turnY = edgeY + ((height / 2) * dy),
+        midY = y + ((height / 2) * dy);
+
+    return g({},
+      line({x1: source1Pin.cx, y1: edgeY, x2: source1Pin.cx, y2: twoThirdsY, strokeWidth: 1, stroke: '#fff'}),
+      line({x1: source1Pin.cx, y1: twoThirdsY, x2: x, y2: twoThirdsY, strokeWidth: 1, stroke: '#fff'}),
+
+      line({x1: source2Pin.cx, y1: edgeY, x2: source2Pin.cx, y2: turnY, strokeWidth: 1, stroke: '#fff'}),
+      line({x1: source2Pin.cx, y1: turnY, x2: turnX, y2: turnY, strokeWidth: 1, stroke: '#fff'}),
+      line({x1: turnX, y1: turnY, x2: turnX, y2: oneThirdsY, strokeWidth: 1, stroke: '#fff'}),
+      line({x1: turnX, y1: oneThirdsY, x2: x, y2: oneThirdsY, strokeWidth: 1, stroke: '#fff'}),
+
+      line({x1: x - width, y1: midY, x2: destPin.cx, y2: midY, strokeWidth: 1, stroke: '#fff'}),
+      line({x1: destPin.cx, y1: midY, x2: destPin.cx, y2: edgeY, strokeWidth: 1, stroke: '#fff'}),
+
+      renderConnectorFn ? renderConnectorFn(x - width, y, width, height, dy) : null
+    );
+  },
+
   // combination of
   renderFirstTriple: function (renderConnectorFn) {
     var source1Pin = this.props.component.pins[0],
@@ -3240,7 +3283,6 @@ module.exports = React.createClass({
   },
 
   renderInverter: function (sourcePinIndex, destPinIndex) {
-    this.renderText(x, y, width, height, 'INV');
     var sourcePin = this.props.component.pins[sourcePinIndex],
         destPin = this.props.component.pins[destPinIndex],
         width = 12,
@@ -3312,6 +3354,14 @@ module.exports = React.createClass({
     return this.renderText(x, y, width, height, dy, 'XOR');
   },
 
+  renderNand: function (x, y, width, height, dy) {
+    return this.renderText(x, y, width, height, dy, 'NAND');
+  },
+
+  renderNor: function (x, y, width, height, dy) {
+    return this.renderText(x, y, width, height, dy, 'NOR');
+  },
+
   renderText: function (x, y, width, height, dy, label) {
     return text({x: x + (width / 2), y: y + ((height * dy) / 2), fontSize: 7, fill: '#fff', style: {textAnchor: 'middle', dominantBaseline: 'central'}}, label);
   },
@@ -3320,6 +3370,35 @@ module.exports = React.createClass({
     var pinOut = null;
 
     switch (this.props.component.type) {
+      case '7400':
+        // Quad 2-Input NAND
+        pinOut = g({style: {pointerEvents: 'none'}},
+          this.renderQuad(0, 1, 2, this.renderNand),
+          this.renderQuad(3, 4, 5, this.renderNand),
+          this.renderQuad(9, 8, 7, this.renderNand),
+          this.renderQuad(12, 11, 10, this.renderNand)
+        );
+        break;
+      case '7402':
+        // "Reversed" Quad 2-Input NOR
+        pinOut = g({style: {pointerEvents: 'none'}},
+          this.renderReversedQuad(2, 1, 0, this.renderNor),
+          this.renderReversedQuad(5, 4, 3, this.renderNor),
+          this.renderReversedQuad(7, 8, 9, this.renderNor),
+          this.renderReversedQuad(10, 11, 12, this.renderNor)
+        );
+        break;
+      case '7404':
+        // Hex Inverter
+        pinOut = g({style: {pointerEvents: 'none'}},
+          this.renderInverter(0, 1),
+          this.renderInverter(2, 3),
+          this.renderInverter(4, 5),
+          this.renderInverter(8, 7),
+          this.renderInverter(10, 9),
+          this.renderInverter(12, 11)
+        );
+        break;
       case '7408':
         // Quad 2-Input AND
         pinOut = g({style: {pointerEvents: 'none'}},
@@ -3327,6 +3406,14 @@ module.exports = React.createClass({
           this.renderQuad(3, 4, 5, this.renderAnd),
           this.renderQuad(9, 8, 7, this.renderAnd),
           this.renderQuad(12, 11, 10, this.renderAnd)
+        );
+        break;
+      case '7411':
+        // Tri 3-Input AND
+        pinOut = g({style: {pointerEvents: 'none'}},
+          this.renderFirstTriple(this.renderAnd),
+          this.renderMirroredTriple(2, 3, 4, 5, this.renderAnd),
+          this.renderMirroredTriple(10, 9, 8, 7, this.renderAnd)
         );
         break;
       case '7432':
@@ -3345,25 +3432,6 @@ module.exports = React.createClass({
           this.renderQuad(3, 4, 5, this.renderXor),
           this.renderQuad(9, 8, 7, this.renderXor),
           this.renderQuad(12, 11, 10, this.renderXor)
-        );
-        break;
-      case '7404':
-        // Hex Inverter
-        pinOut = g({style: {pointerEvents: 'none'}},
-          this.renderInverter(0, 1),
-          this.renderInverter(2, 3),
-          this.renderInverter(4, 5),
-          this.renderInverter(8, 7),
-          this.renderInverter(10, 9),
-          this.renderInverter(12, 11)
-        );
-        break;
-      case '7411':
-        // Tri 3-Input AND
-        pinOut = g({style: {pointerEvents: 'none'}},
-          this.renderFirstTriple(this.renderAnd),
-          this.renderMirroredTriple(2, 3, 4, 5, this.renderAnd),
-          this.renderMirroredTriple(10, 9, 8, 7, this.renderAnd)
         );
         break;
     }
@@ -4216,7 +4284,8 @@ module.exports = React.createClass({
 
   getInitialState: function () {
     return {
-      selectedBoard: null
+      selectedBoard: null,
+      showCode: window.location.search.indexOf('showCode') !== -1
     };
   },
 
@@ -4233,8 +4302,11 @@ module.exports = React.createClass({
   },
 
   render: function () {
+    var selectedConstants;
     if (this.state.selectedBoard) {
+      selectedConstants = this.props.constants.selectedConstants(true);
       return div({id: 'workspace'},
+        this.state.showCode ? null : div({style: {height: (this.props.constants.WORKSPACE_HEIGHT - selectedConstants.BOARD_HEIGHT) / 2}}), // this centers the BoardView below
         BoardView({
           constants: this.props.constants,
           key: 'selectedBoard' + this.state.selectedBoard.number,
@@ -4249,7 +4321,7 @@ module.exports = React.createClass({
           wireSettings: this.props.wireSettings,
           forceRerender: this.props.forceRerender
         }),
-        BoardEditorView({constants: this.props.constants, board: this.state.selectedBoard})
+        this.state.showCode ? BoardEditorView({constants: this.props.constants, board: this.state.selectedBoard}) : null
       );
     }
     else {

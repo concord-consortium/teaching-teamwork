@@ -6,7 +6,7 @@ var App = React.createFactory(require('./views/breadboard/app'));
 ReactDOM.render(App({}), document.getElementById('content'));
 
 
-},{"../vendor/pathseg.js":24,"./views/breadboard/app":12}],2:[function(require,module,exports){
+},{"../vendor/pathseg.js":25,"./views/breadboard/app":12}],2:[function(require,module,exports){
 module.exports = {
   modelsBase: "activities/breadboard/"
 };
@@ -227,10 +227,11 @@ controller.init();
 module.exports = controller;
 
 
-},{"iframe-phone":29}],5:[function(require,module,exports){
+},{"iframe-phone":30}],5:[function(require,module,exports){
 var logManagerUrl  = '//teaching-teamwork-log-manager.herokuapp.com/api/logs',
     xhrObserver    = require('../../data/shared/xhrObserver'),
     laraController = require('./lara'),
+    logToConsole = window.location.search.indexOf('logToConsole') !== -1,
     laraLoggerReady,
     activityName,
     session,
@@ -292,6 +293,16 @@ var logManagerUrl  = '//teaching-teamwork-log-manager.herokuapp.com/api/logs',
         parameters: parameters
       },
       i;
+
+      if (logToConsole && console && console.log) {
+        console.log("LOG: " + eventName);
+        if ((value !== undefined) && (value !== null)) {
+          console.log("  VALUE: " + value);
+        }
+        if (parameters !== undefined) {
+          console.log("  PARMS: " + JSON.stringify(parameters));
+        }
+      }
 
       // signal the listeners we are logging
       for (i=0; i < logEventListeners.length; i++) {
@@ -708,7 +719,7 @@ module.exports = userController = {
 };
 
 
-},{"../../data/shared/group-names":7,"../../views/shared/userRegistration.jsx":23,"./lara":4,"./log":5}],7:[function(require,module,exports){
+},{"../../data/shared/group-names":7,"../../views/shared/userRegistration.jsx":24,"./lara":4,"./log":5}],7:[function(require,module,exports){
 var sortByName = function (a, b) {
   if (a.name < b.name) {
     return -1;
@@ -1585,7 +1596,7 @@ module.exports = React.createClass({
         GoalR3 = this.uniformResistor(100, 1000, [R1, R2, R3, GoalR, GoalR1, GoalR2]),
 
         model = {
-          E: 6 + Math.round(Math.random() * (20 - 6)), // from 6 to 20 volts
+          E: 6 + Math.round(Math.random() * (19 - 6)), // from 6 to 19 volts
           R: 0,
           R1: R1,
           R2: R2,
@@ -2592,6 +2603,7 @@ Dialog = React.createFactory(React.createClass({
 },{}],16:[function(require,module,exports){
 var userController = require('../../controllers/shared/user'),
     logController = require('../../controllers/shared/log'),
+    AlertView = React.createFactory(require('../shared/alert')),
     div = React.DOM.div,
     p = React.DOM.p,
     strong = React.DOM.strong,
@@ -2612,7 +2624,8 @@ module.exports = React.createClass({
       RUnit: '',
       pluralize: this.props.activity.enterUnknowns.E && this.props.activity.enterUnknowns.R,
       eCorrect: false,
-      rCorrect: false
+      rCorrect: false,
+      alert: null
     };
   },
 
@@ -2648,23 +2661,25 @@ module.exports = React.createClass({
         haveR = this.state.R.length > 0,
         haveRUnit = this.state.RUnit.length > 0,
         eCorrect = false,
-        rCorrect = false;
+        rCorrect = false,
+        alert = null;
 
     eCorrect = this.state.eCorrect || ((this.state.E == this.props.model.E) && (this.state.EUnit == 'volts'));
     rCorrect = this.state.rCorrect || ((this.state.R == this.props.model.R) && (this.state.RUnit== 'ohms'));
     if ((needE && !eCorrect) && (needR && !rCorrect)) {
-      alert("Sorry, both of your E and R values or units are incorrect");
+      alert = "Sorry, both of your E and R values or units are incorrect";
     }
     else if (needE && !eCorrect) {
-      alert("Sorry, your E value or unit is incorrect");
+      alert = "Sorry, your E value or unit is incorrect";
     }
     else if (needR && !rCorrect) {
-      alert("Sorry, your R value or unit is incorrect");
+      alert = "Sorry, your R value or unit is incorrect";
     }
 
     this.setState({
       eCorrect: eCorrect,
-      rCorrect: rCorrect
+      rCorrect: rCorrect,
+      alert: alert
     });
 
     userController.setUnknownValues({
@@ -2694,6 +2709,10 @@ module.exports = React.createClass({
     return this.state.pluralize ? text + 's' : text;
   },
 
+  closeAlert: function () {
+    this.setState({alert: null});
+  },
+
   renderUnknown: function (component, correct, onValueChange, onUnitChange) {
     var units = [
           option({key: 'none', value: ''}, ''),
@@ -2712,13 +2731,14 @@ module.exports = React.createClass({
       p({}, strong({}, "Enter Unknown " + this.pluralize("Value"))),
       this.props.activity.enterUnknowns.E ? this.renderUnknown('E', this.state.eCorrect, this.eChanged, this.eUnitChanged) : null,
       this.props.activity.enterUnknowns.R ? this.renderUnknown('R', this.state.rCorrect, this.rChanged, this.rUnitChanged) : null,
-      showMessage ? p({}, "You have entered the correct " + this.pluralize("value") + " and " + this.pluralize("unit") + ".") : button({onClick: this.submit}, "Submit Unknown " + this.pluralize("Value"))
+      showMessage ? p({}, "You have entered the correct " + this.pluralize("value") + " and " + this.pluralize("unit") + ".") : button({onClick: this.submit}, "Submit Unknown " + this.pluralize("Value")),
+      this.state.alert ? AlertView({message: this.state.alert, onClose: this.closeAlert}) : null
     );
   }
 });
 
 
-},{"../../controllers/shared/log":5,"../../controllers/shared/user":6}],17:[function(require,module,exports){
+},{"../../controllers/shared/log":5,"../../controllers/shared/user":6,"../shared/alert":23}],17:[function(require,module,exports){
 // adapted from SPARKS math-parser.js
 
 module.exports = React.createClass({
@@ -4008,6 +4028,29 @@ module.exports = React.createClass({
 
 
 },{"../../controllers/shared/user":6,"../../data/shared/workbenchAdaptor":9,"../../data/shared/workbenchFBConnector":10}],23:[function(require,module,exports){
+var div = React.DOM.div,
+    button = React.DOM.button;
+
+module.exports = React.createClass({
+  displayName: 'Alert',
+
+  render: function() {
+    return div({className: "alert-wrapper"},
+      div({className: 'alert-background'}),
+      div({className: "alert-window-wrapper"},
+        div({className: "alert-window"},
+          div({className: "alert-message"}, this.props.message),
+          div({className: "alert-button-wrapper"},
+            button({onClick: this.props.onClose}, 'Ok')
+          )
+        )
+      )
+    );
+  }
+});
+
+
+},{}],24:[function(require,module,exports){
 var userController, UserRegistrationView, UserRegistrationViewFactory,
     groups = require('../../data/shared/group-names');
 
@@ -4233,7 +4276,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
 UserRegistrationViewFactory = React.createFactory(UserRegistrationView);
 
 
-},{"../../data/shared/group-names":7}],24:[function(require,module,exports){
+},{"../../data/shared/group-names":7}],25:[function(require,module,exports){
 // SVGPathSeg API polyfill
 // https://github.com/progers/pathseg
 //
@@ -5051,7 +5094,7 @@ UserRegistrationViewFactory = React.createFactory(UserRegistrationView);
 }());
 
 
-},{}],25:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 var structuredClone = require('./structured-clone');
 var HELLO_INTERVAL_LENGTH = 200;
 var HELLO_TIMEOUT_LENGTH = 60000;
@@ -5200,7 +5243,7 @@ module.exports = function getIFrameEndpoint() {
   }
   return instance;
 };
-},{"./structured-clone":28}],26:[function(require,module,exports){
+},{"./structured-clone":29}],27:[function(require,module,exports){
 "use strict";
 
 var ParentEndpoint = require('./parent-endpoint');
@@ -5292,7 +5335,7 @@ module.exports = function IframePhoneRpcEndpoint(handler, namespace, targetWindo
     this.disconnect = disconnect.bind(this);
 };
 
-},{"./iframe-endpoint":25,"./parent-endpoint":27}],27:[function(require,module,exports){
+},{"./iframe-endpoint":26,"./parent-endpoint":28}],28:[function(require,module,exports){
 var structuredClone = require('./structured-clone');
 
 /**
@@ -5465,7 +5508,7 @@ module.exports = function ParentEndpoint(targetWindowOrIframeEl, targetOrigin, a
   };
 };
 
-},{"./structured-clone":28}],28:[function(require,module,exports){
+},{"./structured-clone":29}],29:[function(require,module,exports){
 var featureSupported = false;
 
 (function () {
@@ -5503,7 +5546,7 @@ exports.supported = function supported() {
   return featureSupported && featureSupported.structuredClones > 0;
 };
 
-},{}],29:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 module.exports = {
   /**
    * Allows to communicate with an iframe.
@@ -5521,4 +5564,4 @@ module.exports = {
 
 };
 
-},{"./lib/iframe-endpoint":25,"./lib/iframe-phone-rpc-endpoint":26,"./lib/parent-endpoint":27,"./lib/structured-clone":28}]},{},[1]);
+},{"./lib/iframe-endpoint":26,"./lib/iframe-phone-rpc-endpoint":27,"./lib/parent-endpoint":28,"./lib/structured-clone":29}]},{},[1]);
