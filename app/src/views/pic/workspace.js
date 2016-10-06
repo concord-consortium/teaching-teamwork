@@ -9,7 +9,8 @@ module.exports = React.createClass({
 
   getInitialState: function () {
     return {
-      selectedBoard: null
+      selectedBoard: null,
+      showCode: window.location.search.indexOf('showCode') !== -1
     };
   },
 
@@ -26,8 +27,11 @@ module.exports = React.createClass({
   },
 
   render: function () {
+    var selectedConstants;
     if (this.state.selectedBoard) {
+      selectedConstants = this.props.constants.selectedConstants(true);
       return div({id: 'workspace'},
+        this.state.showCode ? null : div({style: {height: (this.props.constants.WORKSPACE_HEIGHT - selectedConstants.BOARD_HEIGHT) / 2}}), // this centers the BoardView below
         BoardView({
           constants: this.props.constants,
           key: 'selectedBoard' + this.state.selectedBoard.number,
@@ -42,7 +46,7 @@ module.exports = React.createClass({
           wireSettings: this.props.wireSettings,
           forceRerender: this.props.forceRerender
         }),
-        BoardEditorView({constants: this.props.constants, board: this.state.selectedBoard})
+        this.state.showCode ? BoardEditorView({constants: this.props.constants, board: this.state.selectedBoard}) : null
       );
     }
     else {
