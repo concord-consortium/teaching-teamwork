@@ -543,13 +543,16 @@ form button:disabled {
 }
 
 #connection-alert {
-  position: relative;
-  margin: 0 auto;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: 25% auto;
   width: 415px;
   background-color: #fee;
   border: 3px solid black;
   box-shadow: 0 0 50px #fff;
-  top: -650px;
   padding: 1.5em;
   z-index: 10001;
 }
