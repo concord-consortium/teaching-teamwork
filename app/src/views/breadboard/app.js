@@ -359,7 +359,7 @@ module.exports = React.createClass({
         GoalR3 = this.uniformResistor(100, 1000, [R1, R2, R3, GoalR, GoalR1, GoalR2]),
 
         model = {
-          E: 6 + Math.round(Math.random() * (20 - 6)), // from 6 to 20 volts
+          E: 6 + Math.round(Math.random() * (19 - 6)), // from 6 to 19 volts
           R: 0,
           R1: R1,
           R2: R2,
