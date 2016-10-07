@@ -28,7 +28,7 @@ module.exports = React.createClass({
   render: function () {
     var editable, selectedConstants;
     if (this.state.selectedBoard) {
-      editable = this.props.userBoardNumber === this.state.selectedBoard.number;
+      editable = this.props.soloMode || (this.props.userBoardNumber === this.state.selectedBoard.number);
       selectedConstants = this.props.constants.selectedConstants(true);
       return div({id: 'workspace'},
         editable ? null : div({style: {height: (this.props.constants.WORKSPACE_HEIGHT - selectedConstants.BOARD_HEIGHT) / 2}}), // this centers the BoardView below
@@ -44,7 +44,8 @@ module.exports = React.createClass({
           toggleBoard: this.toggleBoard,
           showProbe: true,
           wireSettings: this.props.wireSettings,
-          forceRerender: this.props.forceRerender
+          forceRerender: this.props.forceRerender,
+          soloMode: this.props.soloMode
         }),
         editable ? BoardEditorView({constants: this.props.constants, board: this.state.selectedBoard}) : null
       );
@@ -54,14 +55,15 @@ module.exports = React.createClass({
         BoardView({
           constants: this.props.constants,
           board: this.props.boards[0],
-          editable: this.props.userBoardNumber === 0,
+          editable: this.props.soloMode || (this.props.userBoardNumber === 0),
           user: this.props.users[0],
           stepping: this.props.stepping,
           showPinColors: this.props.showPinColors,
           toggleBoard: this.toggleBoard,
           showProbe: true,
           wireSettings: this.props.wireSettings,
-          forceRerender: this.props.forceRerender
+          forceRerender: this.props.forceRerender,
+          soloMode: this.props.soloMode
         }),
         RibbonView({
           constants: this.props.constants,
@@ -70,14 +72,15 @@ module.exports = React.createClass({
         BoardView({
           constants: this.props.constants,
           board: this.props.boards[1],
-          editable: this.props.userBoardNumber === 1,
+          editable: this.props.soloMode || (this.props.userBoardNumber === 1),
           user: this.props.users[1],
           stepping: this.props.stepping,
           showPinColors: this.props.showPinColors,
           toggleBoard: this.toggleBoard,
           showProbe: true,
           wireSettings: this.props.wireSettings,
-          forceRerender: this.props.forceRerender
+          forceRerender: this.props.forceRerender,
+          soloMode: this.props.soloMode
         }),
         RibbonView({
           constants: this.props.constants,
@@ -86,14 +89,15 @@ module.exports = React.createClass({
         BoardView({
           constants: this.props.constants,
           board: this.props.boards[2],
-          editable: this.props.userBoardNumber === 2,
+          editable: this.props.soloMode || (this.props.userBoardNumber === 2),
           user: this.props.users[2],
           stepping: this.props.stepping,
           showPinColors: this.props.showPinColors,
           toggleBoard: this.toggleBoard,
           showProbe: true,
           wireSettings: this.props.wireSettings,
-          forceRerender: this.props.forceRerender
+          forceRerender: this.props.forceRerender,
+          soloMode: this.props.soloMode
         })
       );
     }

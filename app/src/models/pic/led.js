@@ -136,7 +136,7 @@ LED.prototype.getPinBitField = function () {
   var bitfield = 0,
       i;
   for (i = 0; i < this.pins.length; i++) {
-    bitfield = bitfield | ((this.pins[i].value ? 1 : 0) << i);
+    bitfield = bitfield | ((this.pins[i].isHigh() ? 1 : 0) << i);
   }
   return bitfield;
 };
