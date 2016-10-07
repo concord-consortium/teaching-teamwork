@@ -56,6 +56,7 @@ module.exports = React.createClass({
       showAutoWiring: window.location.search.indexOf('allowAutoWiring') !== -1,
       showSimulator: window.location.search.indexOf('showSimulator') !== -1,
       showWireControls: window.location.search.indexOf('wireSettings') !== -1,
+      soloMode: window.location.search.indexOf('soloMode') !== -1,
       userBoardNumber: -1,
       users: {},
       currentBoard: 0,
@@ -70,44 +71,50 @@ module.exports = React.createClass({
     var activityName = 'pic',
         self = this;
 
-    boardWatcher.addListener(this.state.boards[0], this.updateWatchedBoard);
-    boardWatcher.addListener(this.state.boards[1], this.updateWatchedBoard);
-    boardWatcher.addListener(this.state.boards[2], this.updateWatchedBoard);
-
     logController.init(activityName);
-    userController.init(3, activityName, function(userBoardNumber) {
-      var users = self.state.users,
-          currentUser = userController.getUsername();
 
-      userBoardNumber = parseInt(userBoardNumber, 10);
-      users[userBoardNumber] = {
-        name: currentUser
-      };
+    if (this.state.soloMode) {
+      logController.setClientNumber(0);
+    }
+    else {
+      boardWatcher.addListener(this.state.boards[0], this.updateWatchedBoard);
+      boardWatcher.addListener(this.state.boards[1], this.updateWatchedBoard);
+      boardWatcher.addListener(this.state.boards[2], this.updateWatchedBoard);
 
-      logController.setClientNumber(userBoardNumber);
+      userController.init(3, activityName, function(userBoardNumber) {
+        var users = self.state.users,
+            currentUser = userController.getUsername();
 
-      self.setState({
-        userBoardNumber: userBoardNumber,
-        users: users,
-        currentUser: currentUser,
-        currentGroup: userController.getGroupname(),
-        currentBoard: userBoardNumber
-      });
+        userBoardNumber = parseInt(userBoardNumber, 10);
+        users[userBoardNumber] = {
+          name: currentUser
+        };
 
-      userController.onGroupRefCreation(function() {
-        boardWatcher.startListeners();
-        userController.getFirebaseGroupRef().child('users').on("value", function(snapshot) {
-          var fbUsers = snapshot.val(),
-              users = {};
-          $.each(fbUsers, function (user) {
-            users[parseInt(fbUsers[user].client)] = {
-              name: user
-            };
+        logController.setClientNumber(userBoardNumber);
+
+        self.setState({
+          userBoardNumber: userBoardNumber,
+          users: users,
+          currentUser: currentUser,
+          currentGroup: userController.getGroupname(),
+          currentBoard: userBoardNumber
+        });
+
+        userController.onGroupRefCreation(function() {
+          boardWatcher.startListeners();
+          userController.getFirebaseGroupRef().child('users').on("value", function(snapshot) {
+            var fbUsers = snapshot.val(),
+                users = {};
+            $.each(fbUsers, function (user) {
+              users[parseInt(fbUsers[user].client)] = {
+                name: user
+              };
+            });
+            self.setState({users: users});
           });
-          self.setState({users: users});
         });
       });
-    });
+    }
 
     // start the simulator without the event logged if set to run at startup
     if (this.state.running) {
@@ -173,7 +180,7 @@ module.exports = React.createClass({
       // evaluate all the boards so the keypad input propogates to the led
       for (i = 0; i < numBoards; i++) {
         for (j = 0; j < numBoards; j++) {
-          boards[i].components.pic.evaluateRemainingPICInstructions();
+          boards[j].components.pic.evaluateRemainingPICInstructions();
         }
       }
     };
@@ -327,12 +334,12 @@ module.exports = React.createClass({
       this.state.inIframe ? null : h1({}, "Teaching Teamwork PIC Activity"),
       this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
       OfflineCheckView({}),
-      WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect}),
+      WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect, soloMode: this.state.soloMode}),
       div({id: 'picapp'},
-        WorkspaceView({constants: constants, boards: this.state.boards, stepping: !this.state.running, showPinColors: this.state.showPinColors, users: this.state.users, userBoardNumber: this.state.userBoardNumber, wireSettings: this.state.wireSettings, forceRerender: this.forceRerender}),
+        WorkspaceView({constants: constants, boards: this.state.boards, stepping: !this.state.running, showPinColors: this.state.showPinColors, users: this.state.users, userBoardNumber: this.state.userBoardNumber, wireSettings: this.state.wireSettings, forceRerender: this.forceRerender, soloMode: this.state.soloMode}),
         this.state.showSimulator ? SimulatorControlView({running: this.state.running, run: this.run, step: this.step, reset: this.reset}) : null,
         this.state.showAutoWiring ? AutoWiringView({top: autoWiringTop, running: this.state.running, toggleAllWires: this.toggleAllWires}) : null,
-        SidebarChatView({numClients: 3, top: sidebarTop})
+        this.state.soloMode ? null : SidebarChatView({numClients: 3, top: sidebarTop})
       )
     );
   }

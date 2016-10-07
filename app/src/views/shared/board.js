@@ -523,7 +523,7 @@ module.exports = React.createClass({
     }
 
     return div({className: this.props.editable ? 'board editable-board' : 'board', style: style},
-      span({className: this.props.editable ? 'board-user editable-board-user' : 'board-user'}, ('Circuit ' + (this.props.board.number + 1) + ': ') + (this.props.user ? this.props.user.name : '(unclaimed)')),
+      span({className: this.props.editable ? 'board-user editable-board-user' : 'board-user'}, ('Circuit ' + (this.props.board.number + 1)) + (this.props.user ? ': ' + this.props.user.name : (this.props.soloMode ? '' : ': (unclaimed)'))),
       svg({className: 'board-area', onMouseDown: this.props.selected && this.props.editable ? this.backgroundMouseDown : null, ref: 'svg'},
         connectors,
         components,

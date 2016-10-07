@@ -49,20 +49,29 @@ module.exports = React.createClass({
   },
 
   clicked: function (e) {
+    var self = this;
+
     e.preventDefault();
 
-    this.userClickedSubmit = true;
-
-    this.submitRef.set({
-      user: userController.getUsername(),
-      at: Firebase.ServerValue.TIMESTAMP
-    });
+    if (this.props.soloMode) {
+      this.props.checkIfCircuitIsCorrect(function (allCorrect) {
+        logController.logEvent("Submit clicked", "n/a", {correct: allCorrect});
+        self.setState({showPopup: true, allCorrect: allCorrect});
+      });
+    }
+    else {
+      this.userClickedSubmit = true;
+      this.submitRef.set({
+        user: userController.getUsername(),
+        at: Firebase.ServerValue.TIMESTAMP
+      });
+    }
   },
 
   render: function () {
-    if (this.props.currentUser) {
+    if (this.props.currentUser || this.props.soloMode) {
       return div({id: "we-got-it"},
-        button({onClick: this.clicked}, "We got it!"),
+        button({onClick: this.clicked}, this.props.soloMode ? "I got it!" : "We got it!"),
         this.state.showPopup ? WeGotItPopupView({allCorrect: this.state.allCorrect, hidePopup: this.hidePopup}) : null
       );
     }

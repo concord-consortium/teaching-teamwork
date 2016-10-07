@@ -22,17 +22,26 @@ BoardWatcher.prototype.startListeners = function () {
   this.firebase.child(1).on('value', listenerCallbackFn(1));
   this.firebase.child(2).on('value', listenerCallbackFn(2));
 };
+
+// NOTE: the if (this.firebase) conditionals are needed below because startListeners is not called in the PIC solo mode
+
 BoardWatcher.prototype.movedProbe = function (board, probeInfo) {
-  this.firebase.child(board.number).child('probe').set(probeInfo);
+  if (this.firebase) {
+    this.firebase.child(board.number).child('probe').set(probeInfo);
+  }
 };
 BoardWatcher.prototype.pushedButton = function (board, buttonValue) {
-  this.firebase.child(board.number).child('button').set(buttonValue);
+  if (this.firebase) {
+    this.firebase.child(board.number).child('button').set(buttonValue);
+  }
 };
 BoardWatcher.prototype.circuitChanged = function (board) {
-  this.firebase.child(board.number).child('layout').set({
-    wires: board.serializeWiresToArray(),
-    components: board.serializeComponents()
-  });
+  if (this.firebase) {
+    this.firebase.child(board.number).child('layout').set({
+      wires: board.serializeWiresToArray(),
+      components: board.serializeComponents()
+    });
+  }
 };
 BoardWatcher.prototype.addListener = function (board, listener) {
   this.listeners[board.number] = this.listeners[board.number] || [];
