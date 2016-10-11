@@ -1,9 +1,77 @@
 # Teaching Teamwork
 
 Teaching Teamwork was built by [The Concord Consortium](http://concord.org/) for the
-[Teaching Teamworks Project](http://concord.org/projects/teaching-teamwork).
+[Teaching Teamwork Project](http://concord.org/projects/teaching-teamwork).
 
-See [the app here](http://concord-consortium.github.io/teaching-teamwork/#two-resistors).
+## Environments
+
+## Breadboard
+
+This was the initial Teaching Teamwork environment and builds upon the [Breadboard library](https://github.com/concord-consortium/breadboard).
+It enables either one or three players to solve analog electronic problems defined using an authorable JSON file.
+
+### Activities
+
+All activities are defined in JSON files contained the `activities/breadboard` folder.  Once an activity is defined and published it can be
+used by specifying the activity name after the hash mark in the URL.
+
+For example, the `activities/breadboard/three-resistors-level1.json` activity can be used via
+[http://concord-consortium.github.io/teaching-teamwork/#three-resistors-level1](http://concord-consortium.github.io/teaching-teamwork/#three-resistors-level1).
+
+### URL Options
+
+There is only one option that can be specified in the URL query string.  It only needs to be present - it does not need a value assigned to it.
+
+* logToConsole - prints all log messages to the console in a compact form
+
+Example: [http://concord-consortium.github.io/teaching-teamwork/?logToConsole#three-resistors-level1](http://concord-consortium.github.io/teaching-teamwork/?logToConsole#three-resistors-level1)
+
+### JSON File Format
+
+A description of the JSON file format can be found [json-file-formats.md](here).
+
+## PIC
+
+This is the second Teaching Teamwork environment.  It enables either one or three players to build a keypad to led circuit using three
+pre-programmed PICs.  The activity is fixed and cannot be authored in a JSON file.
+
+### URL Options
+
+There are many options that can be specified in the URL query string.  These options only need to be present in the query string, they do not
+need to have values assigned to them and they can be combined in any order.
+
+* logToConsole - prints all log messages to the console in a compact form
+* showPinColors - shows low/high value of the component pins
+* showAutoWiring - enables a "Toggle Wires" button that adds all the wires to the activity, useful for debugging
+* showSimulator - enables the PIC simulator buttons to allow for stopping and stepping through the PIC code
+* soloMode - enables single user mode, this skips all Firebase login and board selection
+
+Example: [http://concord-consortium.github.io/teaching-teamwork/pic/?logToConsole&soloMode](http://concord-consortium.github.io/teaching-teamwork/pic/?logToConsole&soloMode)
+
+## Logic Gates
+
+This is the third Teaching Teamwork environment.  It enables one or more players to build 74xx based circuits using a set of chips defined
+in an authorable JSON file.
+
+### Activities
+
+All activities are defined in JSON files contained the `activities/logic-gates` folder.  Once an activity is defined and published it can be
+used by specifying the activity name after the hash mark in the URL.
+
+For example, the `activities/logic-gates/all-chips.json` activity can be used via
+[http://concord-consortium.github.io/teaching-teamwork/logic-gates/#all-chips](http://concord-consortium.github.io/teaching-teamwork/logic-gates/#all-chips).
+
+### URL Options
+
+There is only one option that can be specified in the URL query string.  It only needs to be present - it does not need a value assigned to it.
+
+* logToConsole - prints all log messages to the console in a compact form
+
+Example: [http://concord-consortium.github.io/teaching-teamwork/logic-gates/?logToConsole#all-chips](http://concord-consortium.github.io/teaching-teamwork/logic-gates/?logToConsole#all-chips)
+
+### JSON File Format
+
+A description of the JSON file format can be found [json-file-formats.md](here).
 
 ## Building and Running Locally
 
