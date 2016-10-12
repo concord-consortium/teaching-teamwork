@@ -3,7 +3,7 @@ var AppView = React.createFactory(require('./views/pic/app'));
 ReactDOM.render(AppView({}), document.getElementById('content'));
 
 
-},{"./views/pic/app":26}],2:[function(require,module,exports){
+},{"./views/pic/app":27}],2:[function(require,module,exports){
 var userController = require('../shared/user');
 
 var BoardWatcher = function () {
@@ -165,7 +165,7 @@ controller.init();
 module.exports = controller;
 
 
-},{"iframe-phone":59}],4:[function(require,module,exports){
+},{"iframe-phone":61}],4:[function(require,module,exports){
 var logManagerUrl  = '//teaching-teamwork-log-manager.herokuapp.com/api/logs',
     xhrObserver    = require('../../data/shared/xhrObserver'),
     laraController = require('./lara'),
@@ -372,7 +372,7 @@ LogController.prototype = {
 module.exports = new LogController();
 
 
-},{"../../data/shared/xhrObserver":10,"./lara":3}],5:[function(require,module,exports){
+},{"../../data/shared/xhrObserver":11,"./lara":3}],5:[function(require,module,exports){
 var UserRegistrationView = require('../../views/shared/userRegistration.jsx'),
     groups = require('../../data/shared/group-names'),
     logController = require('./log'),
@@ -657,7 +657,7 @@ module.exports = userController = {
 };
 
 
-},{"../../data/shared/group-names":8,"../../views/shared/userRegistration.jsx":50,"./lara":3,"./log":4}],6:[function(require,module,exports){
+},{"../../data/shared/group-names":8,"../../views/shared/userRegistration.jsx":52,"./lara":3,"./log":4}],6:[function(require,module,exports){
 module.exports = {
   '7400': 'Quad 2-Input NAND',
   '7402': 'Quad 2-Input NOR',
@@ -1352,6 +1352,10 @@ module.exports = function() {
 
 
 },{}],10:[function(require,module,exports){
+// culled from http://godsnotwheregodsnot.blogspot.ru/2013/11/kmeans-color-quantization-seeding.html
+module.exports = ["#FF4A46","#008941","#006FA6","#A30059","#7A4900","#0000A6","#B79762","#004D43","#8FB0FF","#997D87","#5A0007","#809693","#FEFFE6","#1B4400","#4FC601","#3B5DFF","#4A3B53","#FF2F80","#61615A","#BA0900","#6B7900","#00C2A0","#FFAA92","#FF90C9","#B903AA","#D16100","#DDEFFF","#000035","#7B4F4B","#A1C299","#300018","#0AA6D8","#013349","#00846F","#372101","#FFB500","#C2FFED","#A079BF","#CC0744","#C0B9B2","#C2FF99","#001E09","#00489C","#6F0062","#0CBD66","#EEC3FF","#456D75","#B77B68","#7A87A1","#788D66","#885578","#FAD09F","#FF8A9A","#D157A0","#BEC459","#456648","#0086ED","#886F4C","#34362D","#B4A8BD","#00A6AA","#452C2C","#636375","#A3C8C9","#FF913F","#938A81","#575329","#00FECF","#B05B6F","#8CD0FF","#3B9700","#04F757","#C8A1A1","#1E6E00","#7900D7","#A77500","#6367A9","#A05837","#6B002C","#772600","#D790FF","#9B9700","#549E79","#FFF69F","#201625","#72418F","#BC23FF","#99ADC0","#3A2465","#922329","#5B4534","#FDE8DC","#404E55","#0089A3","#CB7E98","#A4E804","#324E72","#6A3A4C","#83AB58","#001C1E","#D1F7CE","#004B28","#C8D0F6","#A3A489","#806C66","#222800","#BF5650","#E83000","#66796D","#DA007C","#FF1A59","#8ADBB4","#1E0200","#5B4E51","#C895C5","#320033","#FF6832","#66E1D3","#CFCDAC","#D0AC94","#7ED379","#012C58","#7A7BFF","#D68E01","#353339","#78AFA1","#FEB2C6","#75797C","#837393","#943A4D","#B5F4FF","#D2DCD5","#9556BD","#6A714A","#001325","#02525F","#0AA3F7","#E98176","#DBD5DD","#5EBCD1","#3D4F44","#7E6405","#02684E","#962B75","#8D8546","#9695C5","#E773CE","#D86A78","#3E89BE","#CA834E","#518A87","#5B113C","#55813B","#E704C4","#00005F","#A97399","#4B8160","#59738A","#FF5DA7","#F7C9BF","#643127","#513A01","#6B94AA","#51A058","#A45B02","#1D1702","#E20027","#E7AB63","#4C6001","#9C6966","#64547B","#97979E","#006A66","#391406","#F4D749","#0045D2","#006C31","#DDB6D0","#7C6571","#9FB2A4","#00D891","#15A08A","#BC65E9","#FFFFFE","#C6DC99","#203B3C","#671190","#6B3A64","#F5E1FF","#FFA0F2","#CCAA35","#374527","#8BB400","#797868","#C6005A","#3B000A","#C86240","#29607C","#402334","#7D5A44","#CCB87C","#B88183","#AA5199","#B5D6C3","#A38469","#9F94F0","#A74571","#B894A6","#71BB8C","#00B433","#789EC9","#6D80BA","#953F00","#5EFF03","#E4FFFC","#1BE177","#BCB1E5","#76912F","#003109","#0060CD","#D20096","#895563","#29201D","#5B3213","#A76F42","#89412E","#1A3A2A","#494B5A","#A88C85","#F4ABAA","#A3F3AB","#00C6C8","#EA8B66","#958A9F","#BDC9D2","#9FA064","#BE4700","#658188","#83A485","#453C23","#47675D","#3A3F00","#061203","#DFFB71","#868E7E","#98D058","#6C8F7D","#D7BFC2","#3C3E6E","#D83D66","#2F5D9B","#6C5E46","#D25B88","#5B656C","#00B57F","#545C46","#866097","#365D25","#252F99","#00CCFF","#674E60","#FC009C","#92896B"];
+
+},{}],11:[function(require,module,exports){
 var xhrObserver;
 
 function XHRObserver() {
@@ -1426,7 +1430,7 @@ XHRObserver.prototype = {
 module.exports = xhrObserver = new XHRObserver();
 
 
-},{}],11:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 var LogicChipView = React.createFactory(require('../../views/logic-gates/logic-chip')),
     Pin = require('../shared/pin'),
     TTL = require('../shared/ttl');
@@ -1651,7 +1655,7 @@ LogicChip.prototype.serialize = function () {
 module.exports = LogicChip;
 
 
-},{"../../views/logic-gates/logic-chip":25,"../shared/pin":21,"../shared/ttl":22}],12:[function(require,module,exports){
+},{"../../views/logic-gates/logic-chip":26,"../shared/pin":22,"../shared/ttl":23}],13:[function(require,module,exports){
 var Button = function (options) {
   this.value = options.value;
   this.intValue = options.intValue;
@@ -1669,7 +1673,7 @@ var Button = function (options) {
 module.exports = Button;
 
 
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 var KeypadView = React.createFactory(require('../../views/pic/keypad')),
     Pin = require('../shared/pin'),
     TTL = require('../shared/ttl'),
@@ -1866,7 +1870,7 @@ Keypad.prototype.resolveOutputVoltages = function () {
 module.exports = Keypad;
 
 
-},{"../../views/pic/keypad":31,"../../views/shared/layout":42,"../shared/pin":21,"../shared/ttl":22,"./button":12}],14:[function(require,module,exports){
+},{"../../views/pic/keypad":32,"../../views/shared/layout":44,"../shared/pin":22,"../shared/ttl":23,"./button":13}],15:[function(require,module,exports){
 var LEDView = React.createFactory(require('../../views/pic/led')),
     Pin = require('../shared/pin'),
     Segment = require('./segment'),
@@ -2013,7 +2017,7 @@ LED.prototype.getPinBitField = function () {
 module.exports = LED;
 
 
-},{"../../views/pic/led":32,"../../views/shared/layout":42,"../shared/pin":21,"./segment":16}],15:[function(require,module,exports){
+},{"../../views/pic/led":33,"../../views/shared/layout":44,"../shared/pin":22,"./segment":17}],16:[function(require,module,exports){
 var PICView = React.createFactory(require('../../views/pic/pic')),
     Pin = require('../shared/pin'),
     TTL = require('../shared/ttl'),
@@ -2173,7 +2177,7 @@ PIC.prototype.setPinListInputMode = function (list, mask) {
 module.exports = PIC;
 
 
-},{"../../views/pic/pic":33,"../../views/shared/layout":42,"../shared/pin":21,"../shared/ttl":22}],16:[function(require,module,exports){
+},{"../../views/pic/pic":34,"../../views/shared/layout":44,"../shared/pin":22,"../shared/ttl":23}],17:[function(require,module,exports){
 var Segment = function (options) {
   this.index = options.index;
   this.layout = options.layout;
@@ -2184,7 +2188,7 @@ var Segment = function (options) {
 module.exports = Segment;
 
 
-},{}],17:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 var Hole = require('./hole'),
     Pin = require('./pin'),
     Wire = require('./wire'),
@@ -2227,8 +2231,10 @@ Board.prototype.updateComponentList = function () {
     }
   }
   $.each(this.connectors, function (name, connector) {
-    for (var i = 0; i < connector.holes.length; i++) {
-      self.pinsAndHoles.push(connector.holes[i]);
+    if (connector) {
+      for (var i = 0; i < connector.holes.length; i++) {
+        self.pinsAndHoles.push(connector.holes[i]);
+      }
     }
   });
 };
@@ -2569,7 +2575,7 @@ Board.prototype.updateComponents = function (newSerializedComponents) {
 module.exports = Board;
 
 
-},{"../logic-gates/logic-chip":11,"./circuit":18,"./hole":20,"./pin":21,"./wire":23}],18:[function(require,module,exports){
+},{"../logic-gates/logic-chip":12,"./circuit":19,"./hole":21,"./pin":22,"./wire":24}],19:[function(require,module,exports){
 var Circuit = function (options) {
   this.inputs = options.inputs;
   this.outputs = options.outputs;
@@ -2636,7 +2642,7 @@ Circuit.prototype.setAverageOutputVoltage = function (list) {
 module.exports = Circuit;
 
 
-},{}],19:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 var Hole = require('./hole');
 
 var Connector = function (options) {
@@ -2663,22 +2669,37 @@ var Connector = function (options) {
 };
 Connector.prototype.calculatePosition = function (constants, selected) {
   var selectedConstants = constants.selectedConstants(selected),
-      i, cx, cy, radius, holeWidth, hole;
+      holeWidth = selectedConstants.CONNECTOR_HOLE_DIAMETER + (selectedConstants.CONNECTOR_HOLE_MARGIN * 2),
+      radius = selectedConstants.CONNECTOR_HOLE_DIAMETER / 2,
+      vertical = this.type == 'bus',
+      dx = vertical ? 0 : holeWidth,
+      dy = vertical ? holeWidth : 0,
+      i, cx, cy, hole;
 
-  holeWidth = selectedConstants.CONNECTOR_HOLE_DIAMETER + (selectedConstants.CONNECTOR_HOLE_MARGIN * 2);
-  this.position.width = holeWidth * this.count;
-  this.position.height = holeWidth;
-  this.position.x = (constants.WORKSPACE_WIDTH - this.position.width) / 2;
-  this.position.y = this.type === 'input' ? 0 : selectedConstants.BOARD_HEIGHT - this.position.height;
 
-  radius = selectedConstants.CONNECTOR_HOLE_DIAMETER / 2;
-  cy = this.type === 'input' ? this.position.y + selectedConstants.CONNECTOR_HOLE_MARGIN + radius : selectedConstants.BOARD_HEIGHT - (selectedConstants.CONNECTOR_HOLE_MARGIN + radius);
-  cx = ((constants.WORKSPACE_WIDTH - this.position.width) / 2) + (holeWidth / 2);
+  if (vertical) {
+    this.position.width = holeWidth;
+    this.position.height = holeWidth * this.count;
+    this.position.x = 0;
+    this.position.y = (selectedConstants.BOARD_HEIGHT - this.position.height) / 2;
+
+    cy = this.position.y + selectedConstants.CONNECTOR_HOLE_MARGIN + radius;
+    cx = holeWidth / 2;
+  }
+  else {
+    this.position.width = holeWidth * this.count;
+    this.position.height = holeWidth;
+    this.position.x = (constants.WORKSPACE_WIDTH - this.position.width) / 2;
+    this.position.y = this.type === 'input' ? 0 : selectedConstants.BOARD_HEIGHT - this.position.height;
+
+    cy = this.type === 'input' ? this.position.y + selectedConstants.CONNECTOR_HOLE_MARGIN + radius : selectedConstants.BOARD_HEIGHT - (selectedConstants.CONNECTOR_HOLE_MARGIN + radius);
+    cx = ((constants.WORKSPACE_WIDTH - this.position.width) / 2) + (holeWidth / 2);
+  }
 
   for (i = 0; i < this.count; i++) {
     hole = this.holes[i];
-    hole.cx = cx + (i * holeWidth);
-    hole.cy = cy;
+    hole.cx = cx + (i * dx);
+    hole.cy = cy + (i * dy);
     hole.radius =  radius;
   }
 };
@@ -2729,7 +2750,7 @@ Connector.prototype.updateFromConnectedBoard = function () {
 module.exports = Connector;
 
 
-},{"./hole":20}],20:[function(require,module,exports){
+},{"./hole":21}],21:[function(require,module,exports){
 var TTL = require('./ttl');
 
 var Hole = function (options) {
@@ -2794,7 +2815,7 @@ Hole.prototype.toggleForcedVoltage = function () {
 module.exports = Hole;
 
 
-},{"./ttl":22}],21:[function(require,module,exports){
+},{"./ttl":23}],22:[function(require,module,exports){
 var TTL = require('./ttl');
 
 var Pin = function (options) {
@@ -2851,7 +2872,7 @@ Pin.prototype.reset = function () {
 module.exports = Pin;
 
 
-},{"./ttl":22}],22:[function(require,module,exports){
+},{"./ttl":23}],23:[function(require,module,exports){
 var TTL = module.exports = {
   LOW: 'LOW',
   INVALID: 'INVALID',
@@ -2909,7 +2930,7 @@ var TTL = module.exports = {
 };
 
 
-},{}],23:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 var Hole = require('./hole'),
     Pin = require('./pin');
 
@@ -2952,7 +2973,7 @@ Wire.EndpointId = function (endPoint) {
 module.exports = Wire;
 
 
-},{"./hole":20,"./pin":21}],24:[function(require,module,exports){
+},{"./hole":21,"./pin":22}],25:[function(require,module,exports){
 var workspaceWidth = 936 - 200,
     logicDrawerWidth = 100,
     constants;
@@ -2966,22 +2987,24 @@ module.exports = constants = {
   SELECTED_FILL: '#bbb',
   UNSELECTED_FILL: '#777',
 
-  // in the logic gate activity there is no difference in layout between selected and unselected activities but we need to maintain this shared function signature
-  selectedConstants: function () {
+  selectedConstants: function (selected) {
     var boardHeight = (constants.WORKSPACE_HEIGHT - (2 * constants.RIBBON_HEIGHT)) / 2,
+        boardLeft = selected ? 0 : 50,
         logicDrawerLayout = {
-          x: workspaceWidth - logicDrawerWidth,
+          x: workspaceWidth - logicDrawerWidth - boardLeft,
           y: 0,
           width: logicDrawerWidth,
           height: boardHeight
         };
 
     return {
-      WIRE_WIDTH: 3,
+      WIRE_WIDTH: selected ? 3 : 2,
       FOO_WIRE_WIDTH: 1,
       CONNECTOR_HOLE_DIAMETER: 15,
       CONNECTOR_HOLE_MARGIN: 4,
+      BOARD_WIDTH: workspaceWidth - boardLeft,
       BOARD_HEIGHT: boardHeight,
+      BOARD_LEFT: boardLeft,
       COMPONENT_WIDTH: boardHeight * 0.5,
       COMPONENT_HEIGHT: boardHeight * 0.5,
       COMPONENT_SPACING: boardHeight * 0.5,
@@ -3000,7 +3023,7 @@ module.exports = constants = {
 };
 
 
-},{}],25:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 var PinView = React.createFactory(require('../shared/pin')),
     PinLabelView = React.createFactory(require('../shared/pin-label')),
     constants = require('./constants'),
@@ -3498,7 +3521,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../data/logic-gates/chip-names":6,"../shared/events":41,"../shared/pin":46,"../shared/pin-label":45,"./constants":24}],26:[function(require,module,exports){
+},{"../../data/logic-gates/chip-names":6,"../shared/events":43,"../shared/pin":48,"../shared/pin-label":47,"./constants":25}],27:[function(require,module,exports){
 var Connector = require('../../models/shared/connector'),
     Board = require('../../models/shared/board'),
     Keypad = require('../../models/pic/keypad'),
@@ -3527,13 +3550,16 @@ module.exports = React.createClass({
 
   getInitialState: function () {
     var board0Output = new Connector({type: 'output', count: 4}),
+        board0Bus = new Connector({type: 'bus', count: 6}),
         board1Input = new Connector({type: 'input', count: 4}),
         board1Output = new Connector({type: 'output', count: 4}),
+        board1Bus = new Connector({type: 'bus', count: 6}),
         board2Input = new Connector({type: 'input', count: 4}),
+        board2Bus = new Connector({type: 'bus', count: 6}),
         boards = [
-          new Board({number: 0, bezierReflectionModifier: 1, components: {keypad: new Keypad(), pic: new PIC({code: picCode[0]})}, connectors: {output: board0Output}, fixedComponents: true}),
-          new Board({number: 1, bezierReflectionModifier: -0.5, components: {pic: new PIC({code: picCode[1]})}, connectors: {input: board1Input, output: board1Output}, fixedComponents: true}),
-          new Board({number: 2, bezierReflectionModifier: 0.75, components: {pic: new PIC({code: picCode[2]}), led: new LED()}, connectors: {input: board2Input}, fixedComponents: true})
+          new Board({number: 0, bezierReflectionModifier: 1, components: {keypad: new Keypad(), pic: new PIC({code: picCode[0]})}, connectors: {output: board0Output, bus: board0Bus}, fixedComponents: true}),
+          new Board({number: 1, bezierReflectionModifier: -0.5, components: {pic: new PIC({code: picCode[1]})}, connectors: {input: board1Input, output: board1Output, bus: board1Bus}, fixedComponents: true}),
+          new Board({number: 2, bezierReflectionModifier: 0.75, components: {pic: new PIC({code: picCode[2]}), led: new LED()}, connectors: {input: board2Input, bus: board2Bus}, fixedComponents: true})
         ];
 
     board0Output.setConnectsTo(board1Input);
@@ -3847,7 +3873,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/pic/board-watcher":2,"../../controllers/shared/log":4,"../../controllers/shared/user":5,"../../data/pic/pic-code":7,"../../data/shared/in-iframe":9,"../../models/pic/keypad":13,"../../models/pic/led":14,"../../models/pic/pic":15,"../../models/shared/board":17,"../../models/shared/connector":19,"../shared/events":41,"../shared/offline-check":44,"../shared/sidebar-chat":49,"../shared/we-got-it":52,"../shared/wire-controls":53,"./auto-wiring":27,"./constants":30,"./simulator-control":34,"./workspace":35}],27:[function(require,module,exports){
+},{"../../controllers/pic/board-watcher":2,"../../controllers/shared/log":4,"../../controllers/shared/user":5,"../../data/pic/pic-code":7,"../../data/shared/in-iframe":9,"../../models/pic/keypad":14,"../../models/pic/led":15,"../../models/pic/pic":16,"../../models/shared/board":18,"../../models/shared/connector":20,"../shared/events":43,"../shared/offline-check":46,"../shared/sidebar-chat":51,"../shared/we-got-it":54,"../shared/wire-controls":55,"./auto-wiring":28,"./constants":31,"./simulator-control":35,"./workspace":36}],28:[function(require,module,exports){
 var div = React.DOM.div,
     button = React.DOM.button;
 
@@ -3869,22 +3895,20 @@ module.exports = React.createClass({
 });
 
 
-},{}],28:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 var div = React.DOM.div;
 
 module.exports = React.createClass({
   displayName: 'BoardEditorView',
 
   render: function () {
-    var selectedConstants = this.props.constants.selectedConstants(true),
-        style = {
-          width: this.props.constants.WORKSPACE_WIDTH,
-          top: selectedConstants.BOARD_HEIGHT + 28
-        };
+    var selectedConstants = this.props.constants.selectedConstants(true);
 
     return div({className: 'pic-info'},
-      div({className: 'pic-info-title'}, 'Code'),
-      div({className: 'pic-info-code-wrapper', style: style},
+      div({className: 'pic-info-title-wrapper', style: {width: this.props.constants.WORKSPACE_WIDTH}},
+        div({className: 'pic-info-title'}, 'Code')
+      ),
+      div({className: 'pic-info-code-wrapper', style: {width: this.props.constants.WORKSPACE_WIDTH, top: selectedConstants.BOARD_HEIGHT + 28 }},
         div({className: 'pic-info-code'}, this.props.board.components.pic.code.asm)
       )
     );
@@ -3892,7 +3916,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],29:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 var g = React.DOM.g,
     rect = React.DOM.rect,
     text = React.DOM.text;
@@ -3916,18 +3940,20 @@ module.exports = React.createClass({
 });
 
 
-},{}],30:[function(require,module,exports){
-var constants;
+},{}],31:[function(require,module,exports){
+var workspaceWidth = 936 - 200,
+    constants;
 
 module.exports = constants = {
   WORKSPACE_HEIGHT: 768,
-  WORKSPACE_WIDTH: 936 - 200,
+  WORKSPACE_WIDTH: workspaceWidth,
   RIBBON_HEIGHT: 21,
   SELECTED_FILL: '#bbb',
   UNSELECTED_FILL: '#777',
 
   selectedConstants: function (selected) {
-    var boardHeight;
+    var boardHeight,
+        boardLeft = 50;
 
     if (selected) {
       boardHeight = constants.WORKSPACE_HEIGHT * 0.5;
@@ -3936,10 +3962,12 @@ module.exports = constants = {
         FOO_WIRE_WIDTH: 1,
         CONNECTOR_HOLE_DIAMETER: 15,
         CONNECTOR_HOLE_MARGIN: 4,
+        BOARD_WIDTH: workspaceWidth,
         BOARD_HEIGHT: boardHeight,
+        BOARD_LEFT: 0,
         COMPONENT_WIDTH: boardHeight * 0.5,
         COMPONENT_HEIGHT: boardHeight * 0.5,
-        COMPONENT_SPACING: boardHeight * 0.5,
+        COMPONENT_SPACING: boardHeight * 0.25,
         PIC_FONT_SIZE: 12,
         BUTTON_FONT_SIZE: 16,
         PIN_WIDTH: 13.72,
@@ -3957,7 +3985,9 @@ module.exports = constants = {
         FOO_WIRE_WIDTH: 1,
         CONNECTOR_HOLE_DIAMETER: 10,
         CONNECTOR_HOLE_MARGIN: 3,
+        BOARD_WIDTH: workspaceWidth - boardLeft,
         BOARD_HEIGHT: boardHeight,
+        BOARD_LEFT: boardLeft,
         COMPONENT_WIDTH: boardHeight * 0.5,
         COMPONENT_HEIGHT: boardHeight * 0.5,
         COMPONENT_SPACING: boardHeight * 0.5,
@@ -3975,7 +4005,7 @@ module.exports = constants = {
 };
 
 
-},{}],31:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
 var PinView = React.createFactory(require('../shared/pin')),
     PinLabelView = React.createFactory(require('../shared/pin-label')),
     ButtonView = React.createFactory(require('./button')),
@@ -4038,7 +4068,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../shared/events":41,"../shared/pin":46,"../shared/pin-label":45,"./button":29}],32:[function(require,module,exports){
+},{"../shared/events":43,"../shared/pin":48,"../shared/pin-label":47,"./button":30}],33:[function(require,module,exports){
 var PinView = React.createFactory(require('../shared/pin')),
     PinLabelView = React.createFactory(require('../shared/pin-label')),
     path = React.DOM.path,
@@ -4089,7 +4119,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../shared/pin":46,"../shared/pin-label":45}],33:[function(require,module,exports){
+},{"../shared/pin":48,"../shared/pin-label":47}],34:[function(require,module,exports){
 var PinView = React.createFactory(require('../shared/pin')),
     PinLabelView = React.createFactory(require('../shared/pin-label')),
     line = React.DOM.line,
@@ -4246,7 +4276,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../shared/pin":46,"../shared/pin-label":45}],34:[function(require,module,exports){
+},{"../shared/pin":48,"../shared/pin-label":47}],35:[function(require,module,exports){
 var button = React.DOM.button,
     div = React.DOM.div;
   
@@ -4288,10 +4318,11 @@ module.exports = React.createClass({
 });
 
 
-},{}],35:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 var BoardView = React.createFactory(require('../shared/board')),
     BoardEditorView = React.createFactory(require('./board-editor')),
     RibbonView = React.createFactory(require('../shared/ribbon')),
+    BusView = React.createFactory(require('../shared/bus')),
     events = require('../shared/events'),
     div = React.DOM.div;
 
@@ -4389,6 +4420,10 @@ module.exports = React.createClass({
           wireSettings: this.props.wireSettings,
           forceRerender: this.props.forceRerender,
           soloMode: this.props.soloMode
+        }),
+        BusView({
+          constants: this.props.constants,
+          boards: [this.props.boards[0], this.props.boards[1], this.props.boards[2]]
         })
       );
     }
@@ -4396,7 +4431,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../shared/board":36,"../shared/events":41,"../shared/ribbon":48,"./board-editor":28}],36:[function(require,module,exports){
+},{"../shared/board":37,"../shared/bus":38,"../shared/events":43,"../shared/ribbon":50,"./board-editor":29}],37:[function(require,module,exports){
 var boardWatcher = require('../../controllers/pic/board-watcher'),
     ConnectorView = React.createFactory(require('./connector')),
     WireView = React.createFactory(require('./wire')),
@@ -4877,11 +4912,13 @@ module.exports = React.createClass({
   },
 
   render: function () {
-    var selectedConstants = this.props.constants.selectedConstants(this.props.selected),
+    var self = this,
+        selectedConstants = this.props.constants.selectedConstants(this.props.selected),
         style = {
-          width: this.props.constants.WORKSPACE_WIDTH,
+          width: selectedConstants.BOARD_WIDTH,
           height: selectedConstants.BOARD_HEIGHT,
-          position: 'relative'
+          position: 'relative',
+          left: selectedConstants.BOARD_LEFT
         },
         connectors = [],
         components = [],
@@ -4897,14 +4934,13 @@ module.exports = React.createClass({
     this.props.board.resolveCircuitInputVoltages();
 
     // calculate the position so the wires can be updated
-    if (this.props.board.connectors.input) {
-      this.props.board.connectors.input.calculatePosition(this.props.constants, this.props.selected);
-      connectors.push(ConnectorView({key: 'input', constants: this.props.constants, connector: this.props.board.connectors.input, selected: this.props.selected, editable: this.props.editable, drawConnection: this.drawConnection, reportHover: this.reportHover, forceRerender: this.props.forceRerender}));
-    }
-    if (this.props.board.connectors.output) {
-      this.props.board.connectors.output.calculatePosition(this.props.constants, this.props.selected);
-      connectors.push(ConnectorView({key: 'output', constants: this.props.constants, connector: this.props.board.connectors.output, selected: this.props.selected, editable: this.props.editable, drawConnection: this.drawConnection, reportHover: this.reportHover, forceRerender: this.props.forceRerender}));
-    }
+    $.each(['input', 'output', 'bus'], function (index, connectorName) {
+      var connector = self.props.board.connectors[connectorName];
+      if (connector) {
+        connector.calculatePosition(self.props.constants, self.props.selected);
+        connectors.push(ConnectorView({key: connectorName, constants: self.props.constants, connector: connector, selected: self.props.selected, editable: self.props.editable, drawConnection: self.drawConnection, reportHover: self.reportHover, forceRerender: self.props.forceRerender}));
+      }
+    });
 
     for (name in this.props.board.components) {
       if (this.props.board.components.hasOwnProperty(name)) {
@@ -4941,7 +4977,64 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/pic/board-watcher":2,"../../models/logic-gates/logic-chip":11,"../shared/events":41,"./connector":40,"./layout":42,"./logic-chip-drawer":43,"./probe":47,"./wire":54}],37:[function(require,module,exports){
+},{"../../controllers/pic/board-watcher":2,"../../models/logic-gates/logic-chip":12,"../shared/events":43,"./connector":42,"./layout":44,"./logic-chip-drawer":45,"./probe":49,"./wire":56}],38:[function(require,module,exports){
+var line = React.DOM.line,
+    div = React.DOM.div,
+    svg = React.DOM.svg,
+    wireColors = require('../../data/shared/wire-colors');
+
+module.exports = React.createClass({
+  displayName: 'BusView',
+
+  render: function () {
+    var selectedConstants = this.props.constants.selectedConstants(false),
+        wires = [],
+        keyIndex = 0,
+        connectorPositions = [],
+        hole, i, j, x, y, board, connector, wireMargin, wireStartPositions, wireStartPosition, firstConnectorPosition, lastConnectorPosition, wireEndPosition, style;
+
+    if (this.props.boards && this.props.boards[0].connectors.bus) {
+      wireMargin = selectedConstants.BOARD_LEFT / (this.props.boards[0].connectors.bus.holes.length + 1);
+      x = wireMargin;
+
+      for (i = 0; i < this.props.boards.length; i++) {
+        board = this.props.boards[i];
+        connector = board.connectors.bus;
+        y = ((selectedConstants.BOARD_HEIGHT + this.props.constants.RIBBON_HEIGHT) * i) + (this.props.hasTopRibbon ? this.props.constants.RIBBON_HEIGHT : 0);
+        wireStartPositions = [];
+        for (j = 0; j < connector.holes.length; j++) {
+          hole = connector.holes[j];
+          wireStartPosition = {
+            x: x + (wireMargin * j),
+            y: y + hole.cy
+          };
+          wireStartPositions.push(wireStartPosition);
+          wires.push(line({key: 'h'+(keyIndex++), x1: wireStartPosition.x, y1: wireStartPosition.y, x2: selectedConstants.BOARD_LEFT, y2: wireStartPosition.y, strokeWidth: selectedConstants.WIRE_WIDTH, stroke: wireColors[j % wireColors.length]}));
+        }
+        connectorPositions.push(wireStartPositions);
+      }
+
+      firstConnectorPosition = connectorPositions[0];
+      lastConnectorPosition = connectorPositions[connectorPositions.length - 1];
+      for (i = 0; i < firstConnectorPosition.length; i++) {
+        wireStartPosition = firstConnectorPosition[i];
+        wireEndPosition = lastConnectorPosition[i];
+        wires.push(line({key: 'v'+(keyIndex++), x1: wireStartPosition.x, y1: wireStartPosition.y, x2: wireEndPosition.x, y2: wireEndPosition.y, strokeWidth: selectedConstants.WIRE_WIDTH, stroke: wireColors[i % wireColors.length]}));
+      }
+    }
+
+    style = {width: selectedConstants.BOARD_LEFT};
+    if (this.props.height) {
+      style.height = this.props.height;
+    }
+    return div({className: 'bus', style: style},
+      svg({}, wires)
+    );
+  }
+});
+
+
+},{"../../data/shared/wire-colors":10}],39:[function(require,module,exports){
 var div = React.DOM.div,
     b = React.DOM.b;
     
@@ -4958,7 +5051,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],38:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 var userController = require('../../controllers/shared/user'),
     ChatItemView = React.createFactory(require('./chat-item')),
     div = React.DOM.div;
@@ -4985,7 +5078,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/shared/user":5,"./chat-item":37}],39:[function(require,module,exports){
+},{"../../controllers/shared/user":5,"./chat-item":39}],41:[function(require,module,exports){
 var g = React.DOM.g,
     circle = React.DOM.circle,
     title = React.DOM.title;
@@ -5027,7 +5120,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],40:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 var ConnectorHoleView = React.createFactory(require('./connector-hole')),
     svg = React.DOM.svg,
     rect = React.DOM.rect;
@@ -5053,7 +5146,7 @@ module.exports = React.createClass({
 });
 
 
-},{"./connector-hole":39}],41:[function(require,module,exports){
+},{"./connector-hole":41}],43:[function(require,module,exports){
 var boardWatcher = require('../../controllers/pic/board-watcher'),
     logController = require('../../controllers/shared/log'),
     events;
@@ -5122,7 +5215,7 @@ module.exports = events = {
 };
 
 
-},{"../../controllers/pic/board-watcher":2,"../../controllers/shared/log":4}],42:[function(require,module,exports){
+},{"../../controllers/pic/board-watcher":2,"../../controllers/shared/log":4}],44:[function(require,module,exports){
 module.exports = {
   getBezierPath: function (options) {
     var closeCutoff = 300,
@@ -5141,7 +5234,7 @@ module.exports = {
     dx = options.x1 - options.x2;
     dy = options.y1 - options.y2;
     dist = Math.sqrt(dx*dx + dy*dy);
-    closeModifier = 5 * curvyness * (1 - (Math.min(dist, closeCutoff) / closeCutoff));
+    closeModifier = 2.5 * curvyness * (1 - (Math.min(dist, closeCutoff) / closeCutoff));
     height = dist * (curvyness + closeModifier);
     dx = normalize(dx, dist);
     dy = normalize(dy, dist);
@@ -5174,7 +5267,7 @@ module.exports = {
 };
 
 
-},{}],43:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 var g = React.DOM.g,
     rect = React.DOM.rect,
     text = React.DOM.text,
@@ -5319,7 +5412,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../data/logic-gates/chip-names":6}],44:[function(require,module,exports){
+},{"../../data/logic-gates/chip-names":6}],46:[function(require,module,exports){
 var logController = require('../../controllers/shared/log'),
     div = React.DOM.div,
     h2 = React.DOM.h2,
@@ -5384,7 +5477,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/shared/log":4}],45:[function(require,module,exports){
+},{"../../controllers/shared/log":4}],47:[function(require,module,exports){
 var text = React.DOM.text;
 
 module.exports = React.createClass({
@@ -5407,7 +5500,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],46:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 var g = React.DOM.g,
     rect = React.DOM.rect;
 
@@ -5473,7 +5566,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],47:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 var events = require('../shared/events'),
     g = React.DOM.g,
     path = React.DOM.path,
@@ -5535,7 +5628,7 @@ module.exports = React.createClass({
   getCurrentPos: function () {
     var selectedConstants = this.props.constants.selectedConstants(this.props.selected);
     return {
-      x: this.props.probeSource ? this.props.probeSource.cx : (this.props.pos ? this.props.pos.x : this.props.constants.WORKSPACE_WIDTH - selectedConstants.PROBE_WIDTH - selectedConstants.PROBE_MARGIN),
+      x: this.props.probeSource ? this.props.probeSource.cx : (this.props.pos ? this.props.pos.x : selectedConstants.BOARD_WIDTH - selectedConstants.PROBE_WIDTH - selectedConstants.PROBE_MARGIN),
       y: this.props.probeSource ? this.props.probeSource.cy - (selectedConstants.PROBE_HEIGHT / 2) : (this.props.pos ? this.props.pos.y : selectedConstants.BOARD_HEIGHT - selectedConstants.PROBE_HEIGHT - selectedConstants.PROBE_MARGIN)
     };
   },
@@ -5662,18 +5755,19 @@ module.exports = React.createClass({
 });
 
 
-},{"../shared/events":41}],48:[function(require,module,exports){
+},{"../shared/events":43}],50:[function(require,module,exports){
 var line = React.DOM.line,
     div = React.DOM.div,
-    svg = React.DOM.svg;
+    svg = React.DOM.svg,
+    wireColors = require('../../data/shared/wire-colors');
 
 module.exports = React.createClass({
   displayName: 'RibbonView',
 
   render: function () {
-    var selectedConstants = this.props.constants.selectedConstants(false),
+    var selectedConstants = this.props.constants.selectedConstants(this.props.selected),
         wires = [],
-        colors = ['#800000', '#008000', '#008080', '#00FFFF', '#000080', '#0000FF', '#800080', '#FF0000'],
+        boardLeft = selectedConstants.BOARD_LEFT,
         hole, i;
 
     if (this.props.connector) {
@@ -5681,7 +5775,7 @@ module.exports = React.createClass({
       for (i = 0; i < this.props.connector.holes.length; i++) {
         hole = this.props.connector.holes[i];
         if (!hole.hasForcedVoltage) {
-          wires.push(line({key: i, x1: hole.cx, y1: 0, x2: hole.cx, y2: this.props.constants.RIBBON_HEIGHT, strokeWidth: selectedConstants.WIRE_WIDTH, stroke: colors[i % colors.length]}));
+          wires.push(line({key: i, x1: hole.cx + boardLeft, y1: 0, x2: hole.cx + boardLeft, y2: this.props.constants.RIBBON_HEIGHT, strokeWidth: selectedConstants.WIRE_WIDTH, stroke: wireColors[i % wireColors.length]}));
         }
       }
     }
@@ -5692,7 +5786,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],49:[function(require,module,exports){
+},{"../../data/shared/wire-colors":10}],51:[function(require,module,exports){
 var userController = require('../../controllers/shared/user'),
     logController = require('../../controllers/shared/log'),
     ChatItems = React.createFactory(require('./chat-items')),
@@ -5816,7 +5910,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/shared/log":4,"../../controllers/shared/user":5,"./chat-items":38}],50:[function(require,module,exports){
+},{"../../controllers/shared/log":4,"../../controllers/shared/user":5,"./chat-items":40}],52:[function(require,module,exports){
 var userController, UserRegistrationView, UserRegistrationViewFactory,
     groups = require('../../data/shared/group-names');
 
@@ -6042,7 +6136,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
 UserRegistrationViewFactory = React.createFactory(UserRegistrationView);
 
 
-},{"../../data/shared/group-names":8}],51:[function(require,module,exports){
+},{"../../data/shared/group-names":8}],53:[function(require,module,exports){
 var div = React.DOM.div,
     h2 = React.DOM.h2,
     logController = require('../../controllers/shared/log'),
@@ -6072,7 +6166,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/shared/log":4}],52:[function(require,module,exports){
+},{"../../controllers/shared/log":4}],54:[function(require,module,exports){
 var WeGotItPopupView = React.createFactory(require('./we-got-it-popup')),
     userController = require('../../controllers/shared/user'),
     logController = require('../../controllers/shared/log'),
@@ -6157,7 +6251,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/shared/log":4,"../../controllers/shared/user":5,"./we-got-it-popup":51}],53:[function(require,module,exports){
+},{"../../controllers/shared/log":4,"../../controllers/shared/user":5,"./we-got-it-popup":53}],55:[function(require,module,exports){
 var div = React.DOM.div,
     b = React.DOM.b,
     input = React.DOM.input,
@@ -6188,7 +6282,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],54:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 var layout = require('../../views/shared/layout'),
     path = React.DOM.path;
 
@@ -6235,7 +6329,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../views/shared/layout":42}],55:[function(require,module,exports){
+},{"../../views/shared/layout":44}],57:[function(require,module,exports){
 var structuredClone = require('./structured-clone');
 var HELLO_INTERVAL_LENGTH = 200;
 var HELLO_TIMEOUT_LENGTH = 60000;
@@ -6384,7 +6478,7 @@ module.exports = function getIFrameEndpoint() {
   }
   return instance;
 };
-},{"./structured-clone":58}],56:[function(require,module,exports){
+},{"./structured-clone":60}],58:[function(require,module,exports){
 "use strict";
 
 var ParentEndpoint = require('./parent-endpoint');
@@ -6476,7 +6570,7 @@ module.exports = function IframePhoneRpcEndpoint(handler, namespace, targetWindo
     this.disconnect = disconnect.bind(this);
 };
 
-},{"./iframe-endpoint":55,"./parent-endpoint":57}],57:[function(require,module,exports){
+},{"./iframe-endpoint":57,"./parent-endpoint":59}],59:[function(require,module,exports){
 var structuredClone = require('./structured-clone');
 
 /**
@@ -6649,7 +6743,7 @@ module.exports = function ParentEndpoint(targetWindowOrIframeEl, targetOrigin, a
   };
 };
 
-},{"./structured-clone":58}],58:[function(require,module,exports){
+},{"./structured-clone":60}],60:[function(require,module,exports){
 var featureSupported = false;
 
 (function () {
@@ -6687,7 +6781,7 @@ exports.supported = function supported() {
   return featureSupported && featureSupported.structuredClones > 0;
 };
 
-},{}],59:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 module.exports = {
   /**
    * Allows to communicate with an iframe.
@@ -6705,4 +6799,4 @@ module.exports = {
 
 };
 
-},{"./lib/iframe-endpoint":55,"./lib/iframe-phone-rpc-endpoint":56,"./lib/parent-endpoint":57,"./lib/structured-clone":58}]},{},[1]);
+},{"./lib/iframe-endpoint":57,"./lib/iframe-phone-rpc-endpoint":58,"./lib/parent-endpoint":59,"./lib/structured-clone":60}]},{},[1]);

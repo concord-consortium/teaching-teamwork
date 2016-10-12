@@ -615,6 +615,12 @@ form button:disabled {
 .ribbon {
   background-color: #ddd;
 }
+.bus {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-color: #ddd;
+}
 
 .alert-wrapper {
 }
