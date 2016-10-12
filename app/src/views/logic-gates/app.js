@@ -199,19 +199,22 @@ module.exports = React.createClass({
     var boards = [],
         inputs = [],
         outputs = [],
-        boardSettings, board, i, input, output;
+        busSize = activity.busSize || 0,
+        boardSettings, board, i, input, output, bus;
 
     for (i = 0; i < activity.boards.length; i++) {
       boardSettings = activity.boards[i];
       input = new Connector({type: 'input', count: boardSettings.input.length, labels: boardSettings.input});
       output = new Connector({type: 'output', count: boardSettings.output.length, labels: boardSettings.output});
+      bus = busSize > 0 ? new Connector({type: 'bus', count: busSize}) : null;
       board = new Board({
         number: i,
         bezierReflectionModifier: -0.5,
         components: {},
         connectors: {
           input: input,
-          output: output
+          output: output,
+          bus: bus
         }
       });
       input.board = board;

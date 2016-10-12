@@ -40,8 +40,10 @@ Board.prototype.updateComponentList = function () {
     }
   }
   $.each(this.connectors, function (name, connector) {
-    for (var i = 0; i < connector.holes.length; i++) {
-      self.pinsAndHoles.push(connector.holes[i]);
+    if (connector) {
+      for (var i = 0; i < connector.holes.length; i++) {
+        self.pinsAndHoles.push(connector.holes[i]);
+      }
     }
   });
 };

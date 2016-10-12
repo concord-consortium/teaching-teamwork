@@ -5,6 +5,7 @@
     "allowAutoWiring": true,
     "showPinouts": true
   },
+  "busSize": 2,
   "boards": [
     {
       "logicChipDrawer": {

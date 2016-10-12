@@ -1,5 +1,6 @@
 var BoardView = React.createFactory(require('../shared/board')),
     RibbonView = React.createFactory(require('../shared/ribbon')),
+    BusView = React.createFactory(require('../shared/bus')),
     events = require('../shared/events'),
     div = React.DOM.div;
 
@@ -95,6 +96,11 @@ module.exports = React.createClass({
           soloMode: this.props.soloMode
         }));
       }
+      ribbonsAndBoards.push(BusView({
+        constants: this.props.constants,
+        boards: this.props.boards,
+        hasTopRibbon : true
+      }));
       return div({id: 'workspace', style: {width: this.props.constants.WORKSPACE_WIDTH, height: (this.props.boards.length * (selectedConstants.BOARD_HEIGHT + this.props.constants.RIBBON_HEIGHT)) + 20}}, ribbonsAndBoards);
     }
   }
