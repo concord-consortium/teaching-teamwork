@@ -24,22 +24,37 @@ var Connector = function (options) {
 };
 Connector.prototype.calculatePosition = function (constants, selected) {
   var selectedConstants = constants.selectedConstants(selected),
-      i, cx, cy, radius, holeWidth, hole;
+      holeWidth = selectedConstants.CONNECTOR_HOLE_DIAMETER + (selectedConstants.CONNECTOR_HOLE_MARGIN * 2),
+      radius = selectedConstants.CONNECTOR_HOLE_DIAMETER / 2,
+      vertical = this.type == 'bus',
+      dx = vertical ? 0 : holeWidth,
+      dy = vertical ? holeWidth : 0,
+      i, cx, cy, hole;
 
-  holeWidth = selectedConstants.CONNECTOR_HOLE_DIAMETER + (selectedConstants.CONNECTOR_HOLE_MARGIN * 2);
-  this.position.width = holeWidth * this.count;
-  this.position.height = holeWidth;
-  this.position.x = (constants.WORKSPACE_WIDTH - this.position.width) / 2;
-  this.position.y = this.type === 'input' ? 0 : selectedConstants.BOARD_HEIGHT - this.position.height;
 
-  radius = selectedConstants.CONNECTOR_HOLE_DIAMETER / 2;
-  cy = this.type === 'input' ? this.position.y + selectedConstants.CONNECTOR_HOLE_MARGIN + radius : selectedConstants.BOARD_HEIGHT - (selectedConstants.CONNECTOR_HOLE_MARGIN + radius);
-  cx = ((constants.WORKSPACE_WIDTH - this.position.width) / 2) + (holeWidth / 2);
+  if (vertical) {
+    this.position.width = holeWidth;
+    this.position.height = holeWidth * this.count;
+    this.position.x = 0;
+    this.position.y = (selectedConstants.BOARD_HEIGHT - this.position.height) / 2;
+
+    cy = this.position.y + selectedConstants.CONNECTOR_HOLE_MARGIN + radius;
+    cx = holeWidth / 2;
+  }
+  else {
+    this.position.width = holeWidth * this.count;
+    this.position.height = holeWidth;
+    this.position.x = (constants.WORKSPACE_WIDTH - this.position.width) / 2;
+    this.position.y = this.type === 'input' ? 0 : selectedConstants.BOARD_HEIGHT - this.position.height;
+
+    cy = this.type === 'input' ? this.position.y + selectedConstants.CONNECTOR_HOLE_MARGIN + radius : selectedConstants.BOARD_HEIGHT - (selectedConstants.CONNECTOR_HOLE_MARGIN + radius);
+    cx = ((constants.WORKSPACE_WIDTH - this.position.width) / 2) + (holeWidth / 2);
+  }
 
   for (i = 0; i < this.count; i++) {
     hole = this.holes[i];
-    hole.cx = cx + (i * holeWidth);
-    hole.cy = cy;
+    hole.cx = cx + (i * dx);
+    hole.cy = cy + (i * dy);
     hole.radius =  radius;
   }
 };

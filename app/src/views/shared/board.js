@@ -478,7 +478,8 @@ module.exports = React.createClass({
   },
 
   render: function () {
-    var selectedConstants = this.props.constants.selectedConstants(this.props.selected),
+    var self = this,
+        selectedConstants = this.props.constants.selectedConstants(this.props.selected),
         style = {
           width: this.props.constants.BOARD_WIDTH,
           height: selectedConstants.BOARD_HEIGHT,
@@ -499,14 +500,13 @@ module.exports = React.createClass({
     this.props.board.resolveCircuitInputVoltages();
 
     // calculate the position so the wires can be updated
-    if (this.props.board.connectors.input) {
-      this.props.board.connectors.input.calculatePosition(this.props.constants, this.props.selected);
-      connectors.push(ConnectorView({key: 'input', constants: this.props.constants, connector: this.props.board.connectors.input, selected: this.props.selected, editable: this.props.editable, drawConnection: this.drawConnection, reportHover: this.reportHover, forceRerender: this.props.forceRerender}));
-    }
-    if (this.props.board.connectors.output) {
-      this.props.board.connectors.output.calculatePosition(this.props.constants, this.props.selected);
-      connectors.push(ConnectorView({key: 'output', constants: this.props.constants, connector: this.props.board.connectors.output, selected: this.props.selected, editable: this.props.editable, drawConnection: this.drawConnection, reportHover: this.reportHover, forceRerender: this.props.forceRerender}));
-    }
+    $.each(['input', 'output', 'bus'], function (index, connectorName) {
+      var connector = self.props.board.connectors[connectorName];
+      if (connector) {
+        connector.calculatePosition(self.props.constants, self.props.selected);
+        connectors.push(ConnectorView({key: connectorName, constants: self.props.constants, connector: connector, selected: self.props.selected, editable: self.props.editable, drawConnection: self.drawConnection, reportHover: self.reportHover, forceRerender: self.props.forceRerender}));
+      }
+    });
 
     for (name in this.props.board.components) {
       if (this.props.board.components.hasOwnProperty(name)) {
