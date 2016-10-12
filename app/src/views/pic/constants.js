@@ -1,11 +1,15 @@
-var constants;
+var workspaceWidth = 936 - 200,
+    boardLeft = 50,
+    constants;
 
 module.exports = constants = {
   WORKSPACE_HEIGHT: 768,
-  WORKSPACE_WIDTH: 936 - 200,
+  WORKSPACE_WIDTH: workspaceWidth,
   RIBBON_HEIGHT: 21,
   SELECTED_FILL: '#bbb',
   UNSELECTED_FILL: '#777',
+  BOARD_WIDTH: workspaceWidth - boardLeft,
+  BOARD_LEFT: boardLeft,
 
   selectedConstants: function (selected) {
     var boardHeight;
@@ -20,7 +24,7 @@ module.exports = constants = {
         BOARD_HEIGHT: boardHeight,
         COMPONENT_WIDTH: boardHeight * 0.5,
         COMPONENT_HEIGHT: boardHeight * 0.5,
-        COMPONENT_SPACING: boardHeight * 0.5,
+        COMPONENT_SPACING: boardHeight * 0.25,
         PIC_FONT_SIZE: 12,
         BUTTON_FONT_SIZE: 16,
         PIN_WIDTH: 13.72,
