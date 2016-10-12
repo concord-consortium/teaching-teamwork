@@ -11,7 +11,7 @@ module.exports = React.createClass({
         wires = [],
         keyIndex = 0,
         connectorPositions = [],
-        hole, i, j, x, y, board, connector, wireMargin, wireStartPositions, wireStartPosition, firstConnectorPosition, lastConnectorPosition, wireEndPosition;
+        hole, i, j, x, y, board, connector, wireMargin, wireStartPositions, wireStartPosition, firstConnectorPosition, lastConnectorPosition, wireEndPosition, style;
 
     if (this.props.boards && this.props.boards[0].connectors.bus) {
       wireMargin = selectedConstants.BOARD_LEFT / (this.props.boards[0].connectors.bus.holes.length + 1);
@@ -42,7 +42,12 @@ module.exports = React.createClass({
         wires.push(line({key: 'v'+(keyIndex++), x1: wireStartPosition.x, y1: wireStartPosition.y, x2: wireEndPosition.x, y2: wireEndPosition.y, strokeWidth: selectedConstants.WIRE_WIDTH, stroke: wireColors[i % wireColors.length]}));
       }
     }
-    return div({className: 'bus', style: {width: selectedConstants.BOARD_LEFT}},
+
+    style = {width: selectedConstants.BOARD_LEFT};
+    if (this.props.height) {
+      style.height = this.props.height;
+    }
+    return div({className: 'bus', style: style},
       svg({}, wires)
     );
   }

@@ -38,7 +38,7 @@ module.exports = React.createClass({
 
   render: function () {
     var selectedConstants,
-        ribbonsAndBoards, i;
+        ribbonsAndBoards, i, height;
 
     if (this.props.userBoardNumber == -1) {
       return div({id: 'workspace', style: {width: this.props.constants.WORKSPACE_WIDTH}});
@@ -76,6 +76,8 @@ module.exports = React.createClass({
     }
     else {
       selectedConstants = this.props.constants.selectedConstants(false);
+      height = (this.props.boards.length * (selectedConstants.BOARD_HEIGHT + this.props.constants.RIBBON_HEIGHT));
+
       ribbonsAndBoards = [];
       for (i = 0; i < this.props.boards.length; i++) {
         ribbonsAndBoards.push(RibbonView({
@@ -99,9 +101,18 @@ module.exports = React.createClass({
       ribbonsAndBoards.push(BusView({
         constants: this.props.constants,
         boards: this.props.boards,
-        hasTopRibbon : true
+        hasTopRibbon : true,
+        height: height
       }));
-      return div({id: 'workspace', style: {width: this.props.constants.WORKSPACE_WIDTH, height: (this.props.boards.length * (selectedConstants.BOARD_HEIGHT + this.props.constants.RIBBON_HEIGHT)) + 20}}, ribbonsAndBoards);
+
+      return div({
+        id: 'workspace',
+        style: {
+          width: this.props.constants.WORKSPACE_WIDTH,
+          height: height + this.props.constants.RIBBON_HEIGHT
+        }},
+        ribbonsAndBoards
+      );
     }
   }
 });
