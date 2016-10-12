@@ -16,12 +16,12 @@ module.exports = React.createClass({
         hole, i, j, x, y, board, connector, wireMargin, wireStartPositions, wireStartPosition, firstConnectorPosition, lastConnectorPosition, wireEndPosition;
 
     if (this.props.boards && this.props.boards[0].connectors.bus) {
-      wireMargin = width / this.props.boards[0].connectors.bus.holes.length;
+      wireMargin = width / (Math.max(2, this.props.boards[0].connectors.bus.holes.length) - 1);
+      x = (boardLeft - width) / 2;
 
       for (i = 0; i < this.props.boards.length; i++) {
         board = this.props.boards[i];
         connector = board.connectors.bus;
-        x = boardLeft - width;
         y = ((selectedConstants.BOARD_HEIGHT + this.props.constants.RIBBON_HEIGHT) * i);
         wireStartPositions = [];
         for (j = 0; j < connector.holes.length; j++) {
