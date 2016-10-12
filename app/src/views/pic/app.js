@@ -27,12 +27,12 @@ module.exports = React.createClass({
 
   getInitialState: function () {
     var board0Output = new Connector({type: 'output', count: 4}),
-        board0Bus = new Connector({type: 'bus', count: 4}),
+        board0Bus = new Connector({type: 'bus', count: 6}),
         board1Input = new Connector({type: 'input', count: 4}),
         board1Output = new Connector({type: 'output', count: 4}),
-        board1Bus = new Connector({type: 'bus', count: 4}),
+        board1Bus = new Connector({type: 'bus', count: 6}),
         board2Input = new Connector({type: 'input', count: 4}),
-        board2Bus = new Connector({type: 'bus', count: 4}),
+        board2Bus = new Connector({type: 'bus', count: 6}),
         boards = [
           new Board({number: 0, bezierReflectionModifier: 1, components: {keypad: new Keypad(), pic: new PIC({code: picCode[0]})}, connectors: {output: board0Output, bus: board0Bus}, fixedComponents: true}),
           new Board({number: 1, bezierReflectionModifier: -0.5, components: {pic: new PIC({code: picCode[1]})}, connectors: {input: board1Input, output: board1Output, bus: board1Bus}, fixedComponents: true}),
