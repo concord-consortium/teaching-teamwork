@@ -9,15 +9,13 @@ module.exports = React.createClass({
   render: function () {
     var selectedConstants = this.props.constants.selectedConstants(false),
         wires = [],
-        boardLeft = selectedConstants.BOARD_LEFT,
-        width = boardLeft * 0.75,
         keyIndex = 0,
         connectorPositions = [],
         hole, i, j, x, y, board, connector, wireMargin, wireStartPositions, wireStartPosition, firstConnectorPosition, lastConnectorPosition, wireEndPosition;
 
     if (this.props.boards && this.props.boards[0].connectors.bus) {
-      wireMargin = width / (Math.max(2, this.props.boards[0].connectors.bus.holes.length) - 1);
-      x = (boardLeft - width) / 2;
+      wireMargin = selectedConstants.BOARD_LEFT / (this.props.boards[0].connectors.bus.holes.length + 1);
+      x = wireMargin;
 
       for (i = 0; i < this.props.boards.length; i++) {
         board = this.props.boards[i];
@@ -31,7 +29,7 @@ module.exports = React.createClass({
             y: y + hole.cy
           };
           wireStartPositions.push(wireStartPosition);
-          wires.push(line({key: 'h'+(keyIndex++), x1: wireStartPosition.x, y1: wireStartPosition.y, x2: boardLeft, y2: wireStartPosition.y, strokeWidth: selectedConstants.WIRE_WIDTH, stroke: wireColors[j % wireColors.length]}));
+          wires.push(line({key: 'h'+(keyIndex++), x1: wireStartPosition.x, y1: wireStartPosition.y, x2: selectedConstants.BOARD_LEFT, y2: wireStartPosition.y, strokeWidth: selectedConstants.WIRE_WIDTH, stroke: wireColors[j % wireColors.length]}));
         }
         connectorPositions.push(wireStartPositions);
       }
@@ -44,7 +42,7 @@ module.exports = React.createClass({
         wires.push(line({key: 'v'+(keyIndex++), x1: wireStartPosition.x, y1: wireStartPosition.y, x2: wireEndPosition.x, y2: wireEndPosition.y, strokeWidth: selectedConstants.WIRE_WIDTH, stroke: wireColors[i % wireColors.length]}));
       }
     }
-    return div({className: 'bus', style: {width: boardLeft}},
+    return div({className: 'bus', style: {width: selectedConstants.BOARD_LEFT}},
       svg({}, wires)
     );
   }

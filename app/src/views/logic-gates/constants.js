@@ -11,7 +11,6 @@ module.exports = constants = {
   SELECTED_FILL: '#bbb',
   UNSELECTED_FILL: '#777',
 
-  // in the logic gate activity there is no difference in layout between selected and unselected activities but we need to maintain this shared function signature
   selectedConstants: function (selected) {
     var boardHeight = (constants.WORKSPACE_HEIGHT - (2 * constants.RIBBON_HEIGHT)) / 2,
         boardLeft = selected ? 0 : 50,
@@ -23,7 +22,7 @@ module.exports = constants = {
         };
 
     return {
-      WIRE_WIDTH: 3,
+      WIRE_WIDTH: selected ? 3 : 2,
       FOO_WIRE_WIDTH: 1,
       CONNECTOR_HOLE_DIAMETER: 15,
       CONNECTOR_HOLE_MARGIN: 4,
