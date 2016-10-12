@@ -1,6 +1,7 @@
 var line = React.DOM.line,
     div = React.DOM.div,
-    svg = React.DOM.svg;
+    svg = React.DOM.svg,
+    wireColors = require('../../data/shared/wire-colors');
 
 module.exports = React.createClass({
   displayName: 'RibbonView',
@@ -8,7 +9,6 @@ module.exports = React.createClass({
   render: function () {
     var selectedConstants = this.props.constants.selectedConstants(false),
         wires = [],
-        colors = ['#800000', '#008000', '#008080', '#00FFFF', '#000080', '#0000FF', '#800080', '#FF0000'],
         boardLeft = this.props.constants.BOARD_LEFT,
         hole, i;
 
@@ -17,7 +17,7 @@ module.exports = React.createClass({
       for (i = 0; i < this.props.connector.holes.length; i++) {
         hole = this.props.connector.holes[i];
         if (!hole.hasForcedVoltage) {
-          wires.push(line({key: i, x1: hole.cx + boardLeft, y1: 0, x2: hole.cx + boardLeft, y2: this.props.constants.RIBBON_HEIGHT, strokeWidth: selectedConstants.WIRE_WIDTH, stroke: colors[i % colors.length]}));
+          wires.push(line({key: i, x1: hole.cx + boardLeft, y1: 0, x2: hole.cx + boardLeft, y2: this.props.constants.RIBBON_HEIGHT, strokeWidth: selectedConstants.WIRE_WIDTH, stroke: wireColors[i % wireColors.length]}));
         }
       }
     }

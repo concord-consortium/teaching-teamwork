@@ -1,6 +1,7 @@
 var BoardView = React.createFactory(require('../shared/board')),
     BoardEditorView = React.createFactory(require('./board-editor')),
     RibbonView = React.createFactory(require('../shared/ribbon')),
+    BusView = React.createFactory(require('../shared/bus')),
     events = require('../shared/events'),
     div = React.DOM.div;
 
@@ -98,6 +99,10 @@ module.exports = React.createClass({
           wireSettings: this.props.wireSettings,
           forceRerender: this.props.forceRerender,
           soloMode: this.props.soloMode
+        }),
+        BusView({
+          constants: this.props.constants,
+          boards: [this.props.boards[0], this.props.boards[1], this.props.boards[2]]
         })
       );
     }
