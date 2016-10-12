@@ -9,7 +9,7 @@ module.exports = React.createClass({
   render: function () {
     var selectedConstants = this.props.constants.selectedConstants(false),
         wires = [],
-        boardLeft = this.props.constants.BOARD_LEFT,
+        boardLeft = selectedConstants.BOARD_LEFT,
         width = boardLeft * 0.75,
         keyIndex = 0,
         connectorPositions = [],

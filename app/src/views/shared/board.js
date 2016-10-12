@@ -481,10 +481,10 @@ module.exports = React.createClass({
     var self = this,
         selectedConstants = this.props.constants.selectedConstants(this.props.selected),
         style = {
-          width: this.props.constants.BOARD_WIDTH,
+          width: selectedConstants.BOARD_WIDTH,
           height: selectedConstants.BOARD_HEIGHT,
           position: 'relative',
-          left: this.props.constants.BOARD_LEFT
+          left: selectedConstants.BOARD_LEFT
         },
         connectors = [],
         components = [],

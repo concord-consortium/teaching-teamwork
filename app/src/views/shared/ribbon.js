@@ -7,9 +7,9 @@ module.exports = React.createClass({
   displayName: 'RibbonView',
 
   render: function () {
-    var selectedConstants = this.props.constants.selectedConstants(false),
+    var selectedConstants = this.props.constants.selectedConstants(this.props.selected),
         wires = [],
-        boardLeft = this.props.constants.BOARD_LEFT,
+        boardLeft = selectedConstants.BOARD_LEFT,
         hole, i;
 
     if (this.props.connector) {

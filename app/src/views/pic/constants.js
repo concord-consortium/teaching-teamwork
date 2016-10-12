@@ -1,5 +1,4 @@
 var workspaceWidth = 936 - 200,
-    boardLeft = 50,
     constants;
 
 module.exports = constants = {
@@ -8,11 +7,10 @@ module.exports = constants = {
   RIBBON_HEIGHT: 21,
   SELECTED_FILL: '#bbb',
   UNSELECTED_FILL: '#777',
-  BOARD_WIDTH: workspaceWidth - boardLeft,
-  BOARD_LEFT: boardLeft,
 
   selectedConstants: function (selected) {
-    var boardHeight;
+    var boardHeight,
+        boardLeft = 50;
 
     if (selected) {
       boardHeight = constants.WORKSPACE_HEIGHT * 0.5;
@@ -21,7 +19,9 @@ module.exports = constants = {
         FOO_WIRE_WIDTH: 1,
         CONNECTOR_HOLE_DIAMETER: 15,
         CONNECTOR_HOLE_MARGIN: 4,
+        BOARD_WIDTH: workspaceWidth,
         BOARD_HEIGHT: boardHeight,
+        BOARD_LEFT: 0,
         COMPONENT_WIDTH: boardHeight * 0.5,
         COMPONENT_HEIGHT: boardHeight * 0.5,
         COMPONENT_SPACING: boardHeight * 0.25,
@@ -42,7 +42,9 @@ module.exports = constants = {
         FOO_WIRE_WIDTH: 1,
         CONNECTOR_HOLE_DIAMETER: 10,
         CONNECTOR_HOLE_MARGIN: 3,
+        BOARD_WIDTH: workspaceWidth - boardLeft,
         BOARD_HEIGHT: boardHeight,
+        BOARD_LEFT: boardLeft,
         COMPONENT_WIDTH: boardHeight * 0.5,
         COMPONENT_HEIGHT: boardHeight * 0.5,
         COMPONENT_SPACING: boardHeight * 0.5,

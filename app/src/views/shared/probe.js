@@ -63,7 +63,7 @@ module.exports = React.createClass({
   getCurrentPos: function () {
     var selectedConstants = this.props.constants.selectedConstants(this.props.selected);
     return {
-      x: this.props.probeSource ? this.props.probeSource.cx : (this.props.pos ? this.props.pos.x : this.props.constants.BOARD_WIDTH - selectedConstants.PROBE_WIDTH - selectedConstants.PROBE_MARGIN),
+      x: this.props.probeSource ? this.props.probeSource.cx : (this.props.pos ? this.props.pos.x : selectedConstants.BOARD_WIDTH - selectedConstants.PROBE_WIDTH - selectedConstants.PROBE_MARGIN),
       y: this.props.probeSource ? this.props.probeSource.cy - (selectedConstants.PROBE_HEIGHT / 2) : (this.props.pos ? this.props.pos.y : selectedConstants.BOARD_HEIGHT - selectedConstants.PROBE_HEIGHT - selectedConstants.PROBE_MARGIN)
     };
   },

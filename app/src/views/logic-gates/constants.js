@@ -1,6 +1,5 @@
 var workspaceWidth = 936 - 200,
     logicDrawerWidth = 100,
-    boardLeft = 50,
     constants;
 
 module.exports = constants = {
@@ -11,12 +10,11 @@ module.exports = constants = {
   OUTPUT_LEDS_HEIGHT: 21,
   SELECTED_FILL: '#bbb',
   UNSELECTED_FILL: '#777',
-  BOARD_WIDTH: workspaceWidth - boardLeft,
-  BOARD_LEFT: boardLeft,
 
   // in the logic gate activity there is no difference in layout between selected and unselected activities but we need to maintain this shared function signature
-  selectedConstants: function () {
+  selectedConstants: function (selected) {
     var boardHeight = (constants.WORKSPACE_HEIGHT - (2 * constants.RIBBON_HEIGHT)) / 2,
+        boardLeft = selected ? 0 : 50,
         logicDrawerLayout = {
           x: workspaceWidth - logicDrawerWidth - boardLeft,
           y: 0,
@@ -29,7 +27,9 @@ module.exports = constants = {
       FOO_WIRE_WIDTH: 1,
       CONNECTOR_HOLE_DIAMETER: 15,
       CONNECTOR_HOLE_MARGIN: 4,
+      BOARD_WIDTH: workspaceWidth - boardLeft,
       BOARD_HEIGHT: boardHeight,
+      BOARD_LEFT: boardLeft,
       COMPONENT_WIDTH: boardHeight * 0.5,
       COMPONENT_HEIGHT: boardHeight * 0.5,
       COMPONENT_SPACING: boardHeight * 0.5,
