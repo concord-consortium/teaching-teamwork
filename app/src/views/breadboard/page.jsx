@@ -9,6 +9,7 @@ var userController = require('../../controllers/shared/user'),
     OtherCircuitsView = require('./other-circuits'),
     inIframe = require('../../data/shared/in-iframe'),
     EnterUnknownsView = require('./enter-unknowns'),
+    VersionView = require('../shared/version'),
     config = require('../../config');
 
 module.exports = React.createClass({
@@ -57,6 +58,7 @@ module.exports = React.createClass({
         { calculator }
         { connection }
         { editor }
+        <VersionView/>
       </div>
     );
   }

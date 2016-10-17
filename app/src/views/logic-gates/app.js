@@ -11,6 +11,7 @@ var Connector = require('../../models/shared/connector'),
     WorkspaceView = React.createFactory(require('./workspace')),
     OfflineCheckView = React.createFactory(require('../shared/offline-check')),
     AutoWiringView = React.createFactory(require('./auto-wiring')),
+    VersionView = React.createFactory(require('../shared/version')),
     constants = require('./constants'),
     inIframe = require('../../data/shared/in-iframe'),
     div = React.DOM.div,
@@ -458,7 +459,8 @@ module.exports = React.createClass({
         WorkspaceView({constants: constants, boards: this.state.boards, showPinColors: this.state.showPinColors, showPinouts: this.state.showPinouts, users: this.state.users, userBoardNumber: this.state.userBoardNumber, activity: this.state.activity, forceRerender: this.forceRerender}),
         this.state.allowAutoWiring ? AutoWiringView({top: 0, toggleAllChipsAndWires: this.toggleAllChipsAndWires}) : null,
         SidebarChatView({numClients: 2, top: sidebarTop})
-      )
+      ),
+      VersionView({})
     );
   }
 });

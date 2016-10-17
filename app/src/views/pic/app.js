@@ -14,6 +14,7 @@ var Connector = require('../../models/shared/connector'),
     SidebarChatView = React.createFactory(require('../shared/sidebar-chat')),
     WireControlsView = React.createFactory(require('../shared/wire-controls')),
     OfflineCheckView = React.createFactory(require('../shared/offline-check')),
+    VersionView = React.createFactory(require('../shared/version')),
     events = require('../shared/events'),
     constants = require('./constants'),
     inIframe = require('../../data/shared/in-iframe'),
@@ -340,7 +341,8 @@ module.exports = React.createClass({
         this.state.showSimulator ? SimulatorControlView({running: this.state.running, run: this.run, step: this.step, reset: this.reset}) : null,
         this.state.showAutoWiring ? AutoWiringView({top: autoWiringTop, running: this.state.running, toggleAllWires: this.toggleAllWires}) : null,
         this.state.soloMode ? null : SidebarChatView({numClients: 3, top: sidebarTop})
-      )
+      ),
+      VersionView({})
     );
   }
 });
