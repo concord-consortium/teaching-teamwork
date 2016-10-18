@@ -19,7 +19,7 @@ gulp.task('browserify-breadboard', function(){
     .pipe(source('breadboard.js'))
     .pipe(replace('__TT_VERSION__', tt_version))
     .pipe(replace('__TT_BUILD_DATE__', tt_build_date))
-    .pipe(replace('__TT_COMMIT_HASH_FALLBACK__', tt_commit_hash))
+    .pipe(replace('__TT_COMMIT_HASH__', tt_commit_hash))
     .pipe(gulp.dest(config.dest));
 });
 
@@ -31,7 +31,7 @@ gulp.task('browserify-pic', function(){
     .pipe(source('pic.js'))
     .pipe(replace('__TT_VERSION__', tt_version))
     .pipe(replace('__TT_BUILD_DATE__', tt_build_date))
-    .pipe(replace('__TT_COMMIT_HASH_FALLBACK__', tt_commit_hash))
+    .pipe(replace('__TT_COMMIT_HASH__', tt_commit_hash))
     .pipe(gulp.dest(config.dest));
 });
 
@@ -43,6 +43,6 @@ gulp.task('browserify-logic-gates', function(){
     .pipe(source('logic-gates.js'))
     .pipe(replace('__TT_VERSION__', tt_version))
     .pipe(replace('__TT_BUILD_DATE__', tt_build_date))
-    .pipe(replace('__TT_COMMIT_HASH_FALLBACK__', tt_commit_hash))
+    .pipe(replace('__TT_COMMIT_HASH__', tt_commit_hash))
     .pipe(gulp.dest(config.dest));
 });

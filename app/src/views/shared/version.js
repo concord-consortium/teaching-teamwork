@@ -1,4 +1,4 @@
-// NOTE: the __TT* variables are replaced by the browserify gulp task and the __TT_COMMIT_HASH__ is replaced by the deploy.sh script
+// NOTE: the __TT* variables are replaced by the browserify gulp task
 
 var div = React.DOM.div,
     a = React.DOM.a;
