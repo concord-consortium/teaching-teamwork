@@ -1,6 +1,6 @@
 var BoardView = React.createFactory(require('../shared/board')),
     BoardEditorView = React.createFactory(require('./board-editor')),
-    RibbonView = React.createFactory(require('../shared/ribbon')),
+    SpacerView = React.createFactory(require('../shared/spacer')),
     BusView = React.createFactory(require('../shared/bus')),
     events = require('../shared/events'),
     div = React.DOM.div;
@@ -66,9 +66,8 @@ module.exports = React.createClass({
           forceRerender: this.props.forceRerender,
           soloMode: this.props.soloMode
         }),
-        RibbonView({
-          constants: this.props.constants,
-          connector: this.props.boards[1].connectors.input
+        SpacerView({
+          constants: this.props.constants
         }),
         BoardView({
           constants: this.props.constants,
@@ -83,9 +82,8 @@ module.exports = React.createClass({
           forceRerender: this.props.forceRerender,
           soloMode: this.props.soloMode
         }),
-        RibbonView({
-          constants: this.props.constants,
-          connector: this.props.boards[2].connectors.input
+        SpacerView({
+          constants: this.props.constants
         }),
         BoardView({
           constants: this.props.constants,

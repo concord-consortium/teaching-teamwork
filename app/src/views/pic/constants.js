@@ -5,6 +5,7 @@ module.exports = constants = {
   WORKSPACE_HEIGHT: 768,
   WORKSPACE_WIDTH: workspaceWidth,
   RIBBON_HEIGHT: 21,
+  SPACER_HEIGHT: 21,
   SELECTED_FILL: '#bbb',
   UNSELECTED_FILL: '#777',
 

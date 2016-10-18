@@ -492,6 +492,7 @@ module.exports = React.createClass({
         componentIndex = 0,
         enableWirePointerEvents = !this.state.draggingProbe && !this.state.drawConnection && !this.state.drawBox && (this.props.editable && this.props.selected),
         logicChipDragRect = this.getLogicChipDragRect(),
+        bus = self.props.board.connectors.bus,
         name, component, i, wire;
 
     // used to find wire click position
@@ -499,14 +500,10 @@ module.exports = React.createClass({
 
     this.props.board.resolveCircuitInputVoltages();
 
-    // calculate the position so the wires can be updated
-    $.each(['input', 'output', 'bus'], function (index, connectorName) {
-      var connector = self.props.board.connectors[connectorName];
-      if (connector) {
-        connector.calculatePosition(self.props.constants, self.props.selected);
-        connectors.push(ConnectorView({key: connectorName, constants: self.props.constants, connector: connector, selected: self.props.selected, editable: self.props.editable, drawConnection: self.drawConnection, reportHover: self.reportHover, forceRerender: self.props.forceRerender}));
-      }
-    });
+    if (bus) {
+      bus.calculatePosition(self.props.constants, self.props.selected);
+      connectors.push(ConnectorView({key: 'bus', constants: self.props.constants, connector: bus, selected: self.props.selected, editable: self.props.editable, drawConnection: self.drawConnection, reportHover: self.reportHover, forceRerender: self.props.forceRerender}));
+    }
 
     for (name in this.props.board.components) {
       if (this.props.board.components.hasOwnProperty(name)) {

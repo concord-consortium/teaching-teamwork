@@ -26,28 +26,14 @@ module.exports = React.createClass({
   displayName: 'AppView',
 
   getInitialState: function () {
-    var board0Output = new Connector({type: 'output', count: 4}),
-        board0Bus = new Connector({type: 'bus', count: 6}),
-        board1Input = new Connector({type: 'input', count: 4}),
-        board1Output = new Connector({type: 'output', count: 4}),
-        board1Bus = new Connector({type: 'bus', count: 6}),
-        board2Input = new Connector({type: 'input', count: 4}),
-        board2Bus = new Connector({type: 'bus', count: 6}),
+    var board0Bus = new Connector({type: 'bus', count: 8}),
+        board1Bus = new Connector({type: 'bus', count: 8}),
+        board2Bus = new Connector({type: 'bus', count: 8}),
         boards = [
-          new Board({number: 0, bezierReflectionModifier: 1, components: {keypad: new Keypad(), pic: new PIC({code: picCode[0]})}, connectors: {output: board0Output, bus: board0Bus}, fixedComponents: true}),
-          new Board({number: 1, bezierReflectionModifier: -0.5, components: {pic: new PIC({code: picCode[1]})}, connectors: {input: board1Input, output: board1Output, bus: board1Bus}, fixedComponents: true}),
-          new Board({number: 2, bezierReflectionModifier: 0.75, components: {pic: new PIC({code: picCode[2]}), led: new LED()}, connectors: {input: board2Input, bus: board2Bus}, fixedComponents: true})
+          new Board({number: 0, bezierReflectionModifier: 1, components: {keypad: new Keypad(), pic: new PIC({code: picCode[0]})}, connectors: {bus: board0Bus}, fixedComponents: true}),
+          new Board({number: 1, bezierReflectionModifier: -0.5, components: {pic: new PIC({code: picCode[1]})}, connectors: {bus: board1Bus}, fixedComponents: true}),
+          new Board({number: 2, bezierReflectionModifier: 0.75, components: {pic: new PIC({code: picCode[2]}), led: new LED()}, connectors: {bus: board2Bus}, fixedComponents: true})
         ];
-
-    board0Output.setConnectsTo(board1Input);
-    board1Input.setConnectsTo(board0Output);
-    board1Output.setConnectsTo(board2Input);
-    board2Input.setConnectsTo(board1Output);
-
-    board0Output.board = boards[0];
-    board1Input.board = boards[1];
-    board1Output.board = boards[1];
-    board2Input.board = boards[2];
 
     boards[0].allBoards = boards;
     boards[1].allBoards = boards;
@@ -258,17 +244,16 @@ module.exports = React.createClass({
         b0 = this.state.boards[0],
         b0Keypad = b0.components.keypad.pinMap,
         b0PIC = b0.components.pic.pinMap,
-        b0o = b0.connectors.output.holes,
+        b0Bus = b0.connectors.bus.holes,
 
         b1 = this.state.boards[1],
         b1PIC = b1.components.pic.pinMap,
-        b1o = b1.connectors.output.holes,
-        b1i = b1.connectors.input.holes,
+        b1Bus = b1.connectors.bus.holes,
 
         b2 = this.state.boards[2],
         b2PIC = b2.components.pic.pinMap,
         b2LED = b2.components.led.pinMap,
-        b2i = b2.connectors.input.holes,
+        b2Bus = b2.connectors.bus.holes,
         wire, boardWires, i, j, hasWires;
 
     boardWires = [
@@ -280,26 +265,26 @@ module.exports = React.createClass({
         {source: b0Keypad.ROW1, dest: b0PIC.RB4, color: defaultColor},
         {source: b0Keypad.ROW2, dest: b0PIC.RB5, color: defaultColor},
         {source: b0Keypad.ROW3, dest: b0PIC.RB6, color: defaultColor},
-        {source: b0PIC.RA0, dest: b0o[0], color: b0o[0].color},
-        {source: b0PIC.RA1, dest: b0o[1], color: b0o[1].color},
-        {source: b0PIC.RA2, dest: b0o[2], color: b0o[2].color},
-        {source: b0PIC.RA3, dest: b0o[3], color: b0o[3].color}
+        {source: b0PIC.RA0, dest: b0Bus[0], color: b0Bus[0].color},
+        {source: b0PIC.RA1, dest: b0Bus[1], color: b0Bus[1].color},
+        {source: b0PIC.RA2, dest: b0Bus[2], color: b0Bus[2].color},
+        {source: b0PIC.RA3, dest: b0Bus[3], color: b0Bus[3].color}
       ],
       [
-        {source: b1i[0], dest: b1PIC.RB0, color: b1i[0].color},
-        {source: b1i[1], dest: b1PIC.RB1, color: b1i[1].color},
-        {source: b1i[2], dest: b1PIC.RB2, color: b1i[2].color},
-        {source: b1i[3], dest: b1PIC.RB3, color: b1i[3].color},
-        {source: b1PIC.RA0, dest: b1o[0], color: b1o[0].color},
-        {source: b1PIC.RA1, dest: b1o[1], color: b1o[1].color},
-        {source: b1PIC.RA2, dest: b1o[2], color: b1o[2].color},
-        {source: b1PIC.RA3, dest: b1o[3], color: b1o[3].color}
+        {source: b1Bus[0], dest: b1PIC.RB0, color: b1Bus[0].color},
+        {source: b1Bus[1], dest: b1PIC.RB1, color: b1Bus[1].color},
+        {source: b1Bus[2], dest: b1PIC.RB2, color: b1Bus[2].color},
+        {source: b1Bus[3], dest: b1PIC.RB3, color: b1Bus[3].color},
+        {source: b1PIC.RA0, dest: b1Bus[4], color: b1Bus[4].color},
+        {source: b1PIC.RA1, dest: b1Bus[5], color: b1Bus[5].color},
+        {source: b1PIC.RA2, dest: b1Bus[6], color: b1Bus[6].color},
+        {source: b1PIC.RA3, dest: b1Bus[7], color: b1Bus[7].color}
       ],
       [
-        {source: b2i[0], dest: b2PIC.RA0, color: b2i[0].color},
-        {source: b2i[1], dest: b2PIC.RA1, color: b2i[1].color},
-        {source: b2i[2], dest: b2PIC.RA2, color: b2i[2].color},
-        {source: b2i[3], dest: b2PIC.RA3, color: b2i[3].color},
+        {source: b2Bus[4], dest: b2PIC.RA0, color: b2Bus[4].color},
+        {source: b2Bus[5], dest: b2PIC.RA1, color: b2Bus[5].color},
+        {source: b2Bus[6], dest: b2PIC.RA2, color: b2Bus[6].color},
+        {source: b2Bus[7], dest: b2PIC.RA3, color: b2Bus[7].color},
         {source: b2PIC.RB0, dest: b2LED.a, color: defaultColor},
         {source: b2PIC.RB1, dest: b2LED.b, color: defaultColor},
         {source: b2PIC.RB2, dest: b2LED.c, color: defaultColor},
