@@ -5,6 +5,10 @@ s3_key_prefix: teaching-teamwork
 s3_endpoint: us-east-1
 gzip: true
 
+cloudfront_distribution_id: E27WSNJL0D49A8
+cloudfront_invalidate_root: true
+cloudfront_wildcard_invalidation: true
+
 <% if ENV['TRAVIS_BRANCH'] == 'master' %>
 # in this case we are going to deploy this branch to the top level of the domain
 # so we need to ignore the version and branch folders
