@@ -7,7 +7,7 @@ if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then
 	exit 0
 fi
 
-if [ "$TRAVIS_BRANCH" = "production" ]; then
+if [ "$TRAVIS_BRANCH" = "master" ]; then
   mv dist _site
 else
   # the 2> is to prevent error messages when no match is found
