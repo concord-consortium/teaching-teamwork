@@ -14,8 +14,8 @@ var Hole = function (options) {
   this.label = options.label;
   this.inputMode = options.inputMode;
   this.connectedHole = null; // set via Connector.prototype.setConnectsTo
-  this.hasForcedVoltage = false;
-  this.forcedVoltage = 0;
+  this.hasForcedVoltage = !!options.toggleable;
+  this.forcedVoltage = TTL.LOW_VOLTAGE;
 };
 Hole.prototype.getBezierReflection = function () {
   return this.connector.type === 'input' ? 1 : -1;
@@ -47,15 +47,11 @@ Hole.prototype.getColor = function () {
   return this.hasForcedVoltage ? TTL.getColor(this.forcedVoltage) : (this.connected && this.inputMode ? TTL.getColor(this.voltage) : this.color);
 };
 Hole.prototype.toggleForcedVoltage = function () {
-  if (!this.hasForcedVoltage) {
-    this.hasForcedVoltage = true;
-    this.forcedVoltage = TTL.HIGH_VOLTAGE;
-  }
-  else if (this.forcedVoltage == TTL.HIGH_VOLTAGE) {
+  if (this.forcedVoltage == TTL.HIGH_VOLTAGE) {
     this.forcedVoltage = TTL.LOW_VOLTAGE;
   }
   else {
-    this.hasForcedVoltage = false;
+    this.forcedVoltage = TTL.HIGH_VOLTAGE;
   }
 };
 

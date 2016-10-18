@@ -27,13 +27,23 @@ module.exports = React.createClass({
 
   getInitialState: function () {
     var board0Bus = new Connector({type: 'bus', count: 8}),
+        board0Input = new Connector({type: 'input', count: 4}),
+        board0Output = new Connector({type: 'output', count: 4}),
         board1Bus = new Connector({type: 'bus', count: 8}),
+        board1Input = new Connector({type: 'input', count: 4}),
+        board1Output = new Connector({type: 'output', count: 4}),
         board2Bus = new Connector({type: 'bus', count: 8}),
+        board2Input = new Connector({type: 'input', count: 4}),
+        board2Output = new Connector({type: 'output', count: 4}),
         boards = [
-          new Board({number: 0, bezierReflectionModifier: 1, components: {keypad: new Keypad(), pic: new PIC({code: picCode[0]})}, connectors: {bus: board0Bus}, fixedComponents: true}),
-          new Board({number: 1, bezierReflectionModifier: -0.5, components: {pic: new PIC({code: picCode[1]})}, connectors: {bus: board1Bus}, fixedComponents: true}),
-          new Board({number: 2, bezierReflectionModifier: 0.75, components: {pic: new PIC({code: picCode[2]}), led: new LED()}, connectors: {bus: board2Bus}, fixedComponents: true})
+          new Board({number: 0, bezierReflectionModifier: 1, components: {keypad: new Keypad(), pic: new PIC({code: picCode[0]})}, connectors: {bus: board0Bus, input: board0Input, output: board0Output}, fixedComponents: true}),
+          new Board({number: 1, bezierReflectionModifier: -0.5, components: {pic: new PIC({code: picCode[1]})}, connectors: {bus: board1Bus, input: board1Input, output: board1Output}, fixedComponents: true}),
+          new Board({number: 2, bezierReflectionModifier: 0.75, components: {pic: new PIC({code: picCode[2]}), led: new LED()}, connectors: {bus: board2Bus, input: board2Input, output: board2Output}, fixedComponents: true})
         ];
+
+    board0Input.board = boards[0];
+    board1Input.board = boards[1];
+    board2Input.board = boards[2];
 
     boards[0].allBoards = boards;
     boards[1].allBoards = boards;
