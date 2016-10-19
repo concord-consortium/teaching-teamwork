@@ -41,6 +41,19 @@ module.exports = React.createClass({
         wireEndPosition = lastConnectorPosition[i];
         wires.push(line({key: 'v'+(keyIndex++), x1: wireStartPosition.x, y1: wireStartPosition.y, x2: wireEndPosition.x, y2: wireEndPosition.y, strokeWidth: selectedConstants.WIRE_WIDTH, stroke: wireColors[i % wireColors.length]}));
       }
+
+      if (this.props.inputSize) {
+        for (i = 0; i < this.props.inputSize; i++) {
+          wireEndPosition = firstConnectorPosition[i];
+          wires.push(line({key: 'i'+(keyIndex++), x1: wireEndPosition.x, y1: 0, x2: wireEndPosition.x, y2: wireEndPosition.y, strokeWidth: selectedConstants.WIRE_WIDTH, stroke: wireColors[i % wireColors.length]}));
+        }
+      }
+      if (this.props.outputSize) {
+        for (i = lastConnectorPosition.length - 1; i >= lastConnectorPosition.length - this.props.outputSize; i--) {
+          wireStartPosition = lastConnectorPosition[i];
+          wires.push(line({key: 'i'+(keyIndex++), x1: wireStartPosition.x, y1: wireStartPosition.y, x2: wireStartPosition.x, y2: this.props.height, strokeWidth: selectedConstants.WIRE_WIDTH, stroke: wireColors[i % wireColors.length]}));
+        }
+      }
     }
 
     style = {width: selectedConstants.BOARD_LEFT};

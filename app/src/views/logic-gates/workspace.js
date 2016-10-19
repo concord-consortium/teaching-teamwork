@@ -93,7 +93,9 @@ module.exports = React.createClass({
       spacersAndBoards.push(BusView({
         constants: this.props.constants,
         boards: this.props.boards,
-        height: height
+        height: height,
+        inputSize: this.props.activity.busInputSize,
+        outputSize: this.props.activity.busOutputSize
       }));
 
       return div({

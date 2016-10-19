@@ -230,6 +230,11 @@ module.exports = React.createClass({
       $window.off('mouseup', stopDrag);
       self.setState({drawConnection: null});
 
+      // this handles slight movements of the mouse
+      if (moved) {
+        moved = (dx * dx) + (dy * dy) > 10;
+      }
+
       if (moved && dest && (dest !== source)) {
         addedWire = true;
         wire = self.props.board.addWire(source, dest, (source.color || dest.color || color));
@@ -242,10 +247,6 @@ module.exports = React.createClass({
       }
 
       if (callback) {
-        if (!addedWire && moved) {
-          // this handles slight movements of the mouse
-          moved = (dx * dx) + (dy * dy) > 10;
-        }
         callback(addedWire, moved);
       }
     };
