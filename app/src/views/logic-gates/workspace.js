@@ -1,5 +1,5 @@
 var BoardView = React.createFactory(require('../shared/board')),
-    RibbonView = React.createFactory(require('../shared/ribbon')),
+    SpacerView = React.createFactory(require('../shared/spacer')),
     BusView = React.createFactory(require('../shared/bus')),
     events = require('../shared/events'),
     div = React.DOM.div;
@@ -38,7 +38,7 @@ module.exports = React.createClass({
 
   render: function () {
     var selectedConstants,
-        ribbonsAndBoards, i, height;
+        spacersAndBoards, i, height;
 
     if (this.props.userBoardNumber == -1) {
       return div({id: 'workspace', style: {width: this.props.constants.WORKSPACE_WIDTH}});
@@ -46,11 +46,6 @@ module.exports = React.createClass({
     else if (this.state.selectedBoard) {
       selectedConstants = this.props.constants.selectedConstants(true);
       return div({id: 'workspace', style: {width: this.props.constants.WORKSPACE_WIDTH, top: (this.props.constants.WORKSPACE_HEIGHT - selectedConstants.BOARD_HEIGHT) / 2}},
-        RibbonView({
-          constants: this.props.constants,
-          connector: this.state.selectedBoard.connectors.input,
-          selected: true
-        }),
         BoardView({
           constants: this.props.constants,
           board: this.state.selectedBoard,
@@ -66,25 +61,22 @@ module.exports = React.createClass({
           stepping: true,
           forceRerender: this.props.forceRerender,
           soloMode: this.props.soloMode
-        }),
-        RibbonView({
-          constants: this.props.constants,
-          connector: this.state.selectedBoard.connectors.output,
-          selected: true
         })
       );
     }
     else {
       selectedConstants = this.props.constants.selectedConstants(false);
-      height = (this.props.boards.length * (selectedConstants.BOARD_HEIGHT + this.props.constants.RIBBON_HEIGHT));
+      height = (this.props.boards.length * selectedConstants.BOARD_HEIGHT) + ((this.props.boards.length - 1) * this.props.constants.SPACER_HEIGHT);
 
-      ribbonsAndBoards = [];
+      spacersAndBoards = [];
       for (i = 0; i < this.props.boards.length; i++) {
-        ribbonsAndBoards.push(RibbonView({
-          constants: this.props.constants,
-          connector: this.props.boards[i].connectors.input
-        }));
-        ribbonsAndBoards.push(BoardView({
+        if (i > 0) {
+          spacersAndBoards.push(SpacerView({
+            constants: this.props.constants,
+            connector: this.props.boards[i].connectors.input
+          }));
+        }
+        spacersAndBoards.push(BoardView({
           constants: this.props.constants,
           board: this.props.boards[i],
           editable: this.props.soloMode || (this.props.userBoardNumber === i),
@@ -98,10 +90,9 @@ module.exports = React.createClass({
           soloMode: this.props.soloMode
         }));
       }
-      ribbonsAndBoards.push(BusView({
+      spacersAndBoards.push(BusView({
         constants: this.props.constants,
         boards: this.props.boards,
-        hasTopRibbon : true,
         height: height
       }));
 
@@ -111,7 +102,7 @@ module.exports = React.createClass({
           width: this.props.constants.WORKSPACE_WIDTH,
           height: height + this.props.constants.RIBBON_HEIGHT
         }},
-        ribbonsAndBoards
+        spacersAndBoards
       );
     }
   }
