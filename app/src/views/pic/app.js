@@ -305,8 +305,13 @@ module.exports = React.createClass({
       ]
     ];
 
+    // check if any have wires
+    hasWires = false;
     for (i = 0; i < this.state.boards.length; i++) {
-      hasWires = this.state.boards[i].wires.length > 0;
+      hasWires = hasWires || (this.state.boards[i].wires.length > 0);
+    }
+
+    for (i = 0; i < this.state.boards.length; i++) {
       this.state.boards[i].clear();
       if (!hasWires) {
         for (j = 0; j < boardWires[i].length; j++) {

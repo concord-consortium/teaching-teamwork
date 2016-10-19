@@ -423,9 +423,13 @@ module.exports = React.createClass({
       return endPoint;
     };
 
+    hasWires = false;
+    for (i = 0; i < this.state.boards.length; i++) {
+      hasWires = hasWires || (this.state.boards[i].wires.length > 0);
+    }
+
     for (i = 0; i < this.state.boards.length; i++) {
       board = this.state.boards[i];
-      hasWires = this.state.boards[i].wires.length > 0;
       board.clear();
       if (!hasWires && this.state.activity.boards[i].autoWiring) {
         autoWiring = this.state.activity.boards[i].autoWiring;
