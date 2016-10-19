@@ -41,7 +41,7 @@ module.exports = React.createClass({
   },
 
   forceRerender: function () {
-    this.setState({boards: this.state.boards});
+    this.forceUpdate();
   },
 
   loadActivity: function(activityName) {

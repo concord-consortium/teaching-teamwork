@@ -18,8 +18,9 @@ var Connector = function (options) {
       color: '#555', // ['blue', '#0f0', 'purple', '#cccc00'][i],
       connector: self,
       label: options.labels ? options.labels[i] : null,
-      inputMode: this.type === 'output', // seems weird but output connector holes have values set so their holes are in "inputMode" like the pins
-      toggleable: this.type == 'input'
+      inputMode: this.type != 'input', // seems weird but output connector holes have values set so their holes are in "inputMode" like the pins
+      toggleable: this.type == 'input',
+      type: options.type
     }));
   }
 };

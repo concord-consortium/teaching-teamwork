@@ -13,6 +13,8 @@ var Hole = function (options) {
   this.startingVoltage = this.voltage;
   this.label = options.label;
   this.inputMode = options.inputMode;
+  this.toggleable = options.toggleable;
+  this.type = options.type;
   this.connectedHole = null; // set via Connector.prototype.setConnectsTo
   this.hasForcedVoltage = !!options.toggleable;
   this.forcedVoltage = TTL.LOW_VOLTAGE;
@@ -53,6 +55,9 @@ Hole.prototype.toggleForcedVoltage = function () {
   else {
     this.forcedVoltage = TTL.HIGH_VOLTAGE;
   }
+};
+Hole.prototype.getLabel = function () {
+  return this.getVoltage() + "V (" + this.getLogicLevel().toLowerCase() + ")";
 };
 
 module.exports = Hole;

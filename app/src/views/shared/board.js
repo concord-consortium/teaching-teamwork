@@ -219,6 +219,8 @@ module.exports = React.createClass({
     stopDrag = function (e) {
       var dest = self.state.hoverSource,
           addedWire = false,
+          dx = self.state.drawConnection ? (self.state.drawConnection.x2 - self.state.drawConnection.x1) : 0,
+          dy = self.state.drawConnection ? (self.state.drawConnection.y2 - self.state.drawConnection.y1) : 0,
           wire;
 
       e.stopPropagation();
@@ -240,6 +242,10 @@ module.exports = React.createClass({
       }
 
       if (callback) {
+        if (!addedWire && moved) {
+          // this handles slight movements of the mouse
+          moved = (dx * dx) + (dy * dy) > 10;
+        }
         callback(addedWire, moved);
       }
     };

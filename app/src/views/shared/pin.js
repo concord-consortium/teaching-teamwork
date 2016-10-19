@@ -1,5 +1,6 @@
 var g = React.DOM.g,
-    rect = React.DOM.rect;
+    rect = React.DOM.rect,
+    title = React.DOM.title;
 
 module.exports = React.createClass({
   displayName: 'PinView',
@@ -18,7 +19,9 @@ module.exports = React.createClass({
 
   renderPin: function (pin, enableHandlers) {
     return g({onMouseDown: enableHandlers ? this.startDrag : null, onMouseOver: enableHandlers ? this.mouseOver : null, onMouseOut: enableHandlers ? this.mouseOut : null},
-      rect({x: pin.x, y: pin.y, width: pin.width, height: pin.height, fill: '#777'})
+      rect({x: pin.x, y: pin.y, width: pin.width, height: pin.height, fill: '#777'},
+        title({}, pin.getLabel())
+      )
     );
   },
 
