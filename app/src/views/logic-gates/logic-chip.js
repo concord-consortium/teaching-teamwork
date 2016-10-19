@@ -36,6 +36,7 @@ module.exports = React.createClass({
   setPosition: function (x, y) {
     this.props.component.position.x = x;
     this.props.component.position.y = y;
+    console.log(this.props.component.name, x, y);
   },
 
   pinWire: function (pin, dx) {

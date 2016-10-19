@@ -204,8 +204,8 @@ module.exports = React.createClass({
 
     for (i = 0; i < activity.boards.length; i++) {
       boardSettings = activity.boards[i];
-      input = new Connector({type: 'input', count: boardSettings.input.length, labels: boardSettings.input});
-      output = new Connector({type: 'output', count: boardSettings.output.length, labels: boardSettings.output});
+      input = new Connector({type: 'input', count: boardSettings.localInputSize});
+      output = new Connector({type: 'output', count: boardSettings.localOutputSize});
       bus = busSize > 0 ? new Connector({type: 'bus', count: busSize}) : null;
       board = new Board({
         number: i,
@@ -388,7 +388,7 @@ module.exports = React.createClass({
     };
 
     getEndpoint = function (name, stringIndex) {
-      var item = chipMap[name] || (name == "input" ? board.connectors.input : (name == "output" ? board.connectors.output : null)),
+      var item = chipMap[name] || (name == "bus" ? board.connectors.bus :  null),
           intIndex = parseInt(stringIndex, 10),
           list = null,
           endPoint = null;
