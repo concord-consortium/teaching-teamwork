@@ -31,7 +31,8 @@ module.exports = React.createClass({
       currentGroup: null,
       activity: null,
       interface: {},
-      inIframe: inIframe()
+      inIframe: inIframe(),
+      soloMode: window.location.search.indexOf('soloMode') !== -1
     };
   },
 
@@ -147,37 +148,46 @@ module.exports = React.createClass({
     });
 
     logController.init(activityName);
-    userController.init(activity.boards.length, activityName, function(userBoardNumber) {
-      var users = self.state.users,
-          currentUser = userController.getUsername();
 
-      userBoardNumber = parseInt(userBoardNumber, 10);
-      users[userBoardNumber] = {
-        name: currentUser
-      };
-
+    if (this.state.soloMode) {
+      logController.setClientNumber(0);
       self.setState({
-        userBoardNumber: userBoardNumber,
-        users: users,
-        currentUser: currentUser,
-        currentGroup: userController.getGroupname(),
-        currentBoard: userBoardNumber
+        userBoardNumber: 0
       });
+    }
+    else {
+      userController.init(activity.boards.length, activityName, function(userBoardNumber) {
+        var users = self.state.users,
+            currentUser = userController.getUsername();
 
-      userController.onGroupRefCreation(function() {
-        boardWatcher.startListeners();
-        userController.getFirebaseGroupRef().child('users').on("value", function(snapshot) {
-          var fbUsers = snapshot.val(),
-              users = {};
-          $.each(fbUsers, function (user) {
-            users[parseInt(fbUsers[user].client)] = {
-              name: user
-            };
+        userBoardNumber = parseInt(userBoardNumber, 10);
+        users[userBoardNumber] = {
+          name: currentUser
+        };
+
+        self.setState({
+          userBoardNumber: userBoardNumber,
+          users: users,
+          currentUser: currentUser,
+          currentGroup: userController.getGroupname(),
+          currentBoard: userBoardNumber
+        });
+
+        userController.onGroupRefCreation(function() {
+          boardWatcher.startListeners();
+          userController.getFirebaseGroupRef().child('users').on("value", function(snapshot) {
+            var fbUsers = snapshot.val(),
+                users = {};
+            $.each(fbUsers, function (user) {
+              users[parseInt(fbUsers[user].client)] = {
+                name: user
+              };
+            });
+            self.setState({users: users});
           });
-          self.setState({users: users});
         });
       });
-    });
+    }
 
     // start the simulator without the event logged if set to run at startup
     if (this.state.running) {
@@ -206,7 +216,9 @@ module.exports = React.createClass({
       });
       input.board = board;
       output.board = board;
-      boardWatcher.addListener(board, this.updateWatchedBoard);
+      if (!this.state.soloMode) {
+        boardWatcher.addListener(board, this.updateWatchedBoard);
+      }
       boards.push(board);
       inputs.push(input);
       outputs.push(output);
@@ -454,11 +466,11 @@ module.exports = React.createClass({
       this.state.inIframe ? null : h1({}, "Teaching Teamwork" + (this.state.activity ? ": " + this.state.activity.name : "")),
       this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
       OfflineCheckView({}),
-      WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect}),
+      WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect, soloMode: this.state.soloMode}),
       div({id: 'logicapp'},
-        WorkspaceView({constants: constants, boards: this.state.boards, showPinColors: this.state.showPinColors, showPinouts: this.state.showPinouts, users: this.state.users, userBoardNumber: this.state.userBoardNumber, activity: this.state.activity, forceRerender: this.forceRerender}),
+        WorkspaceView({constants: constants, boards: this.state.boards, showPinColors: this.state.showPinColors, showPinouts: this.state.showPinouts, users: this.state.users, userBoardNumber: this.state.userBoardNumber, activity: this.state.activity, forceRerender: this.forceRerender, soloMode: this.state.soloMode}),
         this.state.allowAutoWiring ? AutoWiringView({top: 0, toggleAllChipsAndWires: this.toggleAllChipsAndWires}) : null,
-        SidebarChatView({numClients: 2, top: sidebarTop})
+        this.state.soloMode ? null : SidebarChatView({numClients: 2, top: sidebarTop})
       ),
       VersionView({})
     );
