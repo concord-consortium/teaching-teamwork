@@ -52,7 +52,7 @@ module.exports = React.createClass({
   },
 
   componentDidMount: function () {
-    var activityName = window.location.hash.substring(1);
+    var activityName = window.location.hash.substring(1) || "three-resistors-level1";
 
     if (!viewOtherCircuit) {
       // load blank workbench
