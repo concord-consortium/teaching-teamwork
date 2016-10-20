@@ -30,7 +30,7 @@ module.exports = React.createClass({
     if (this.state.userBoardNumber != nextProps.userBoardNumber) {
       this.setState({
         userBoardNumber: nextProps.userBoardNumber,
-        selectedBoard: nextProps.boards[nextProps.userBoardNumber]
+        selectedBoard: this.props.soloMode ? null : nextProps.boards[nextProps.userBoardNumber]
       });
     }
   },
