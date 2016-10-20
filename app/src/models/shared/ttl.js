@@ -45,7 +45,7 @@ var TTL = module.exports = {
   getColor: function (voltage) {
     if (!TTL.COLOR_MAP) {
       TTL.COLOR_MAP = {
-        'LOW': 'green',
+        'LOW': 'blue',
         'INVALID': '#ffbf00',
         'HIGH': 'red'
       };
