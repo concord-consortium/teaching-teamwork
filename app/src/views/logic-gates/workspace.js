@@ -53,17 +53,18 @@ module.exports = React.createClass({
         BoardView({
           constants: this.props.constants,
           board: this.state.selectedBoard,
-          editable: this.props.userBoardNumber === this.state.selectedBoard.number,
+          editable: this.props.soloMode || (this.props.userBoardNumber === this.state.selectedBoard.number),
           selected: true,
           user: this.props.users[this.state.selectedBoard.number],
           logicChipDrawer: this.props.activity ? this.props.activity.boards[this.props.userBoardNumber].logicChipDrawer : null,
-          toggleBoard: this.props.userBoardNumber === this.state.selectedBoard.number ? this.toggleBoard : null,
+          toggleBoard: this.props.soloMode || (this.props.userBoardNumber === this.state.selectedBoard.number) ? this.toggleBoard : null,
           toggleBoardButtonStyle: {marginTop: -35},
           showProbe: true,
           showPinColors: this.props.showPinColors,
           showPinouts: this.props.showPinouts,
           stepping: true,
-          forceRerender: this.props.forceRerender
+          forceRerender: this.props.forceRerender,
+          soloMode: this.props.soloMode
         }),
         RibbonView({
           constants: this.props.constants,
@@ -83,14 +84,15 @@ module.exports = React.createClass({
         ribbonsAndBoards.push(BoardView({
           constants: this.props.constants,
           board: this.props.boards[i],
-          editable: this.props.userBoardNumber === i,
+          editable: this.props.soloMode || (this.props.userBoardNumber === i),
           user: this.props.users[i],
           logicChipDrawer: this.props.activity ? this.props.activity.boards[i].logicChipDrawer : null,
-          toggleBoard: this.props.userBoardNumber === i ? this.toggleBoard : null,
+          toggleBoard: this.props.soloMode || (this.props.userBoardNumber === i) ? this.toggleBoard : null,
           showPinColors: this.props.showPinColors,
           showPinouts: this.props.showPinouts,
           stepping: true,
-          forceRerender: this.props.forceRerender
+          forceRerender: this.props.forceRerender,
+          soloMode: this.props.soloMode
         }));
       }
       return div({id: 'workspace', style: {width: this.props.constants.WORKSPACE_WIDTH, height: (this.props.boards.length * (selectedConstants.BOARD_HEIGHT + this.props.constants.RIBBON_HEIGHT)) + 20}}, ribbonsAndBoards);
