@@ -151,7 +151,7 @@ module.exports = React.createClass({
 
     if (this.state.soloMode) {
       logController.setClientNumber(0);
-      self.setState({
+      this.setState({
         userBoardNumber: 0
       });
     }

@@ -511,7 +511,7 @@ module.exports = React.createClass({
       var connector = self.props.board.connectors[connectorName];
       if (connector) {
         connector.calculatePosition(self.props.constants, self.props.selected);
-        connectors.push(ConnectorView({key: connectorName, constants: self.props.constants, connector: connector, selected: self.props.selected, editable: self.props.editable, drawConnection: self.drawConnection, reportHover: self.reportHover, forceRerender: self.props.forceRerender}));
+        connectors.push(ConnectorView({key: connectorName, constants: self.props.constants, connector: connector, selected: self.props.selected, editable: self.props.editable, drawConnection: self.drawConnection, reportHover: self.reportHover, forceRerender: self.props.forceRerender, showBusLabels: self.props.showBusLabels}));
       }
     });
 

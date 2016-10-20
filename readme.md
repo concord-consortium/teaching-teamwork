@@ -45,6 +45,7 @@ need to have values assigned to them and they can be combined in any order.
 * showAutoWiring - enables a "Toggle Wires" button that adds all the wires to the activity, useful for debugging
 * showSimulator - enables the PIC simulator buttons to allow for stopping and stepping through the PIC code
 * soloMode - enables single user mode, this skips all Firebase login and board selection
+* showBusLabels - enables labels next to bus connector holes
 
 Example: [http://concord-consortium.github.io/teaching-teamwork/pic/?logToConsole&soloMode](http://concord-consortium.github.io/teaching-teamwork/pic/?logToConsole&soloMode)
 

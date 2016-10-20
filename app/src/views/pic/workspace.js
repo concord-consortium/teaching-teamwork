@@ -46,7 +46,8 @@ module.exports = React.createClass({
           showProbe: true,
           wireSettings: this.props.wireSettings,
           forceRerender: this.props.forceRerender,
-          soloMode: this.props.soloMode
+          soloMode: this.props.soloMode,
+          showBusLabels: this.props.showBusLabels
         }),
         editable ? BoardEditorView({constants: this.props.constants, board: this.state.selectedBoard}) : null
       );
@@ -64,7 +65,8 @@ module.exports = React.createClass({
           showProbe: true,
           wireSettings: this.props.wireSettings,
           forceRerender: this.props.forceRerender,
-          soloMode: this.props.soloMode
+          soloMode: this.props.soloMode,
+          showBusLabels: this.props.showBusLabels
         }),
         SpacerView({
           constants: this.props.constants
@@ -80,7 +82,8 @@ module.exports = React.createClass({
           showProbe: true,
           wireSettings: this.props.wireSettings,
           forceRerender: this.props.forceRerender,
-          soloMode: this.props.soloMode
+          soloMode: this.props.soloMode,
+          showBusLabels: this.props.showBusLabels
         }),
         SpacerView({
           constants: this.props.constants
@@ -96,7 +99,8 @@ module.exports = React.createClass({
           showProbe: true,
           wireSettings: this.props.wireSettings,
           forceRerender: this.props.forceRerender,
-          soloMode: this.props.soloMode
+          soloMode: this.props.soloMode,
+          showBusLabels: this.props.showBusLabels
         }),
         BusView({
           constants: this.props.constants,

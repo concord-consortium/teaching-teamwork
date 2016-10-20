@@ -57,6 +57,7 @@ module.exports = React.createClass({
       showSimulator: window.location.search.indexOf('showSimulator') !== -1,
       showWireControls: window.location.search.indexOf('wireSettings') !== -1,
       soloMode: window.location.search.indexOf('soloMode') !== -1,
+      showBusLabels: window.location.search.indexOf('showBusLabels') !== -1,
       userBoardNumber: -1,
       users: {},
       currentBoard: 0,
@@ -340,7 +341,7 @@ module.exports = React.createClass({
       OfflineCheckView({}),
       WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect, soloMode: this.state.soloMode}),
       div({id: 'picapp'},
-        WorkspaceView({constants: constants, boards: this.state.boards, stepping: !this.state.running, showPinColors: this.state.showPinColors, users: this.state.users, userBoardNumber: this.state.userBoardNumber, wireSettings: this.state.wireSettings, forceRerender: this.forceRerender, soloMode: this.state.soloMode}),
+        WorkspaceView({constants: constants, boards: this.state.boards, stepping: !this.state.running, showPinColors: this.state.showPinColors, users: this.state.users, userBoardNumber: this.state.userBoardNumber, wireSettings: this.state.wireSettings, forceRerender: this.forceRerender, soloMode: this.state.soloMode, showBusLabels: this.state.showBusLabels}),
         this.state.showSimulator ? SimulatorControlView({running: this.state.running, run: this.run, step: this.step, reset: this.reset}) : null,
         this.state.showAutoWiring ? AutoWiringView({top: autoWiringTop, running: this.state.running, toggleAllWires: this.toggleAllWires}) : null,
         this.state.soloMode ? null : SidebarChatView({numClients: 3, top: sidebarTop})

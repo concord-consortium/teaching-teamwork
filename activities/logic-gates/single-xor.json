@@ -3,7 +3,8 @@
   "interface": {
     "showPinColors": true,
     "allowAutoWiring": true,
-    "showPinouts": true
+    "showPinouts": true,
+    "showBusLabels": true
   },
   "busSize": 5,
   "busInputSize": 2,

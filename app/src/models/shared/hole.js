@@ -57,7 +57,7 @@ Hole.prototype.toggleForcedVoltage = function () {
   }
 };
 Hole.prototype.getLabel = function () {
-  return (this.label ? this.label + ": " : "") + this.getVoltage() + "V (" + this.getLogicLevel().toLowerCase() + ")";
+  return this.getVoltage() + "V (" + this.getLogicLevel().toLowerCase() + ")";
 };
 
 module.exports = Hole;

@@ -37,7 +37,8 @@ module.exports = React.createClass({
   },
 
   render: function () {
-    var selectedConstants,
+    var showBusLabels = this.props.activity && this.props.activity.interface ? this.props.activity.interface.showBusLabels : false,
+        selectedConstants,
         spacersAndBoards, i, height;
 
     if (this.props.userBoardNumber == -1) {
@@ -60,7 +61,8 @@ module.exports = React.createClass({
           showPinouts: this.props.showPinouts,
           stepping: true,
           forceRerender: this.props.forceRerender,
-          soloMode: this.props.soloMode
+          soloMode: this.props.soloMode,
+          showBusLabels: showBusLabels
         })
       );
     }
@@ -87,7 +89,8 @@ module.exports = React.createClass({
           showPinouts: this.props.showPinouts,
           stepping: true,
           forceRerender: this.props.forceRerender,
-          soloMode: this.props.soloMode
+          soloMode: this.props.soloMode,
+          showBusLabels: showBusLabels
         }));
       }
       spacersAndBoards.push(BusView({
