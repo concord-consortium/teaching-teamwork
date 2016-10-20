@@ -1,4 +1,5 @@
 var events = require('../shared/events'),
+    TTL = require('../../models/shared/ttl'),
     g = React.DOM.g,
     path = React.DOM.path,
     circle = React.DOM.circle,
@@ -10,7 +11,10 @@ module.exports = React.createClass({
 
   getInitialState: function () {
     return {
-      dragging: false
+      dragging: false,
+      lowColor: TTL.getColor(TTL.LOW_VOLTAGE),
+      highColor: TTL.getColor(TTL.HIGH_VOLTAGE),
+      invalidColor: TTL.getColor(TTL.INVALID_VOLTAGE)
     };
   },
 
@@ -178,9 +182,10 @@ module.exports = React.createClass({
       path({d: handlePath, fill: '#eee', stroke: '#777'}), // '#FDCA6E'
       rect({x: x + (2 * height), y: y + (0.15 * height), width: (2 * height), height: (0.7 * height), stroke: '#555', fill: '#ddd'}),
       text({x: x + (3 * height), y: middleY + 1, fontSize: selectedConstants.PROBE_HEIGHT * 0.6, fill: '#000', style: {textAnchor: 'middle'}, dominantBaseline: 'middle'}, voltage),
-      circle({cx: x + (4.75 * height), cy: middleY, r: height / 4, fill: 'red', stroke: '#ccc', fillOpacity: redFill}),
-      circle({cx: x + (5.75 * height), cy: middleY, r: height / 4, fill: 'green', stroke: '#ccc', fillOpacity: greenFill}),
-      circle({cx: x + (6.75 * height), cy: middleY, r: height / 4, fill: '#ffbf00', stroke: '#ccc', fillOpacity: amberFill})
+      circle({cx: x + (4.75 * height), cy: middleY, r: height / 4, fill: this.state.highColor, stroke: '#ccc', fillOpacity: redFill}),
+      circle({cx: x + (5.75 * height), cy: middleY, r: height / 4, fill: this.state.lowColor, stroke: '#ccc', fillOpacity: greenFill}),
+      circle({cx: x + (6.75 * height), cy: middleY, r: height / 4, fill: this.state.invalidColor, stroke: '#ccc', fillOpacity: amberFill})
     );
   }
 });
+
