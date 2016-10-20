@@ -675,3 +675,17 @@ form button:disabled {
 .version-info a:hover {
   opacity: 1;
 }
+
+body.homepage {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+body.homepage h1 {
+  margin: 20px;
+  padding: 0;
+}
+
+body.homepage h2 {
+  text-align: left;
+  margin: 20px;
+}
