@@ -1,4 +1,5 @@
-var g = React.DOM.g,
+var colors = require('./colors'),
+    g = React.DOM.g,
     rect = React.DOM.rect,
     title = React.DOM.title;
 
@@ -14,7 +15,7 @@ module.exports = React.createClass({
   },
 
   startDrag: function (e) {
-    this.props.drawConnection(this.props.pin, e, '#00f');
+    this.props.drawConnection(this.props.pin, e, colors.wire);
   },
 
   renderPin: function (pin, enableHandlers) {

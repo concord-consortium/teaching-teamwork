@@ -13,6 +13,7 @@ var Connector = require('../../models/shared/connector'),
     AutoWiringView = React.createFactory(require('./auto-wiring')),
     VersionView = React.createFactory(require('../shared/version')),
     constants = require('./constants'),
+    colors = require('../shared/colors'),
     inIframe = require('../../data/shared/in-iframe'),
     div = React.DOM.div,
     h1 = React.DOM.h1,
@@ -454,7 +455,7 @@ module.exports = React.createClass({
             dest = getEndpoint($.trim(destParts[0]), $.trim(destParts[1]));
 
             if (source && dest) {
-              board.addWire(source, dest, '#00f');
+              board.addWire(source, dest, colors.wire);
             }
           }
         }

@@ -17,6 +17,7 @@ var Connector = require('../../models/shared/connector'),
     VersionView = React.createFactory(require('../shared/version')),
     events = require('../shared/events'),
     constants = require('./constants'),
+    colors = require('../shared/colors'),
     inIframe = require('../../data/shared/in-iframe'),
     div = React.DOM.div,
     h1 = React.DOM.h1,
@@ -63,7 +64,7 @@ module.exports = React.createClass({
       currentBoard: 0,
       currentUser: null,
       currentGroup: null,
-      wireSettings: {color: '#00f', curvyness: 0.25},
+      wireSettings: {color: colors.wire, curvyness: 0.25},
       inIframe: inIframe()
     };
   },
@@ -250,7 +251,7 @@ module.exports = React.createClass({
   },
 
   toggleAllWires: function () {
-    var defaultColor = '#00f',
+    var defaultColor = colors.wire,
 
         b0 = this.state.boards[0],
         b0Keypad = b0.components.keypad.pinMap,
