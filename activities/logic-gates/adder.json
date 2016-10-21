@@ -3,7 +3,8 @@
   "interface": {
     "showPinColors": false,
     "allowAutoWiring": true,
-    "showPinouts": false
+    "showPinouts": false,
+    "showProbe": "edit"
   },
   "busSize": 12,
   "busInputSize": 3,

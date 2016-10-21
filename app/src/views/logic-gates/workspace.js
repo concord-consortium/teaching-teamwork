@@ -38,6 +38,7 @@ module.exports = React.createClass({
 
   render: function () {
     var showBusLabels = this.props.activity && this.props.activity.interface ? this.props.activity.interface.showBusLabels : false,
+        showProbe = this.props.activity && this.props.activity.interface ? this.props.activity.interface.showProbe : false,
         selectedConstants,
         spacersAndBoards, i, height;
 
@@ -56,7 +57,7 @@ module.exports = React.createClass({
           logicChipDrawer: this.props.activity ? this.props.activity.boards[this.props.userBoardNumber].logicChipDrawer : null,
           toggleBoard: this.props.soloMode || (this.props.userBoardNumber === this.state.selectedBoard.number) ? this.toggleBoard : null,
           toggleBoardButtonStyle: {marginTop: -35},
-          showProbe: true,
+          showProbe: (showProbe == 'edit') || (showProbe == 'all'),
           showPinColors: this.props.showPinColors,
           showPinouts: this.props.showPinouts,
           stepping: true,
@@ -87,6 +88,7 @@ module.exports = React.createClass({
           toggleBoard: this.props.soloMode || (this.props.userBoardNumber === i) ? this.toggleBoard : null,
           showPinColors: this.props.showPinColors,
           showPinouts: this.props.showPinouts,
+          showProbe: showProbe == 'all',
           stepping: true,
           forceRerender: this.props.forceRerender,
           soloMode: this.props.soloMode,

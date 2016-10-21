@@ -46,6 +46,8 @@ need to have values assigned to them and they can be combined in any order.
 * showSimulator - enables the PIC simulator buttons to allow for stopping and stepping through the PIC code
 * soloMode - enables single user mode, this skips all Firebase login and board selection
 * showBusLabels - enables labels next to bus connector holes
+* showProbeInEdit - enables display of probe only when editing a circuit
+* hideProbe - hides probe in edit and "all" view
 
 Example: [http://concord-consortium.github.io/teaching-teamwork/pic/?logToConsole&soloMode](http://concord-consortium.github.io/teaching-teamwork/pic/?logToConsole&soloMode)
 
