@@ -26,14 +26,14 @@ var Connector = function (options) {
     }));
   }
 };
-Connector.prototype.calculatePosition = function (constants, selected) {
+Connector.prototype.calculatePosition = function (constants, selected, allConnectors) {
   var selectedConstants = constants.selectedConstants(selected),
       holeWidth = selectedConstants.CONNECTOR_HOLE_DIAMETER + (selectedConstants.CONNECTOR_HOLE_MARGIN * 2),
       radius = selectedConstants.CONNECTOR_HOLE_DIAMETER / 2,
       vertical = this.type == 'bus',
       dx = vertical ? 0 : holeWidth,
       dy = vertical ? holeWidth : 0,
-      i, cx, cy, hole;
+      inputWidth, outputWidth, totalWidth, i, cx, cy, hole;
 
 
   if (vertical) {
@@ -46,13 +46,20 @@ Connector.prototype.calculatePosition = function (constants, selected) {
     cx = holeWidth / 2;
   }
   else {
-    this.position.width = holeWidth * this.count;
-    this.position.height = holeWidth;
-    this.position.x = (constants.WORKSPACE_WIDTH - this.position.width) / 2;
-    this.position.y = this.type === 'input' ? 0 : selectedConstants.BOARD_HEIGHT - this.position.height;
+    inputWidth = totalWidth = (allConnectors.input ? holeWidth * allConnectors.input.count : 0);
+    if ((inputWidth > 0) && allConnectors.output) {
+      totalWidth += selectedConstants.CONNECTOR_SPACING;
+    }
+    outputWidth = (allConnectors.output ? holeWidth * allConnectors.output.count : 0);
+    totalWidth += outputWidth;
 
-    cy = this.type === 'input' ? this.position.y + selectedConstants.CONNECTOR_HOLE_MARGIN + radius : selectedConstants.BOARD_HEIGHT - (selectedConstants.CONNECTOR_HOLE_MARGIN + radius);
-    cx = ((constants.WORKSPACE_WIDTH - this.position.width) / 2) + (holeWidth / 2);
+    this.position.width = this.type == 'input' ? inputWidth : outputWidth;
+    this.position.height = holeWidth;
+    this.position.x = ((constants.WORKSPACE_WIDTH - totalWidth) / 2) + (this.type == 'output' ? (inputWidth + selectedConstants.CONNECTOR_SPACING) : 0);
+    this.position.y = 0;
+
+    cy = this.position.y + selectedConstants.CONNECTOR_HOLE_MARGIN + radius;
+    cx = this.position.x + (holeWidth / 2);
   }
 
   for (i = 0; i < this.count; i++) {
