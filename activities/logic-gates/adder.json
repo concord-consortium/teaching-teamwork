@@ -2,10 +2,14 @@
   "name": "Adder",
   "interface": {
     "showPinColors": false,
-    "allowAutoWiring": false,
-    "showPinouts": false
+    "showBusColors": false,
+    "allowAutoWiring": true,
+    "showPinouts": false,
+    "showProbe": "edit"
   },
-  "busSize": 0,
+  "busSize": 12,
+  "busInputSize": 3,
+  "busOutputSize": 2,
   "boards": [
     {
       "logicChipDrawer": {
@@ -15,8 +19,8 @@
           "7408": {"max": 3}
         }
       },
-      "input": ["A", "B", "C"],
-      "output": ["A", "B", "C", "D", "E", "F", "G"],
+      "localInputSize": 4,
+      "localOutputSize": 4,
       "autoWiring": {
         "chips": {
           "not": {
@@ -41,41 +45,41 @@
           }
         },
         "wires": [
-          "input:A,not:13",     "// create NOT A on not pin 12",
-          "input:B,not:11",     "// create NOT A on not pin 12",
-          "input:C,not:9",      "// create NOT A on not pin 12",
+          "bus:1,not:13",     "// create NOT A on not pin 12",
+          "bus:2,not:11",     "// create NOT A on not pin 12",
+          "bus:3,not:9",      "// create NOT A on not pin 12",
 
-          "input:A,3and1:13",   "// A to 3 and input",
-          "not:10,3and1:1",     "// NOT B to 3 and input",
-          "not:8,3and1:2",      "// NOT C to 3 and input",
-          "3and1:12,output:A",  "// (A AND NOT B AND NOT C) to output",
+          "bus:1,3and1:13",   "// A to 3 and bus",
+          "not:10,3and1:1",     "// NOT B to 3 and bus",
+          "not:8,3and1:2",      "// NOT C to 3 and bus",
+          "3and1:12,bus:4",  "// (A AND NOT B AND NOT C) to bus",
 
-          "not:12,3and1:11",   "// NOT A to 3 and input",
-          "input:B,3and1:10",  "// B to 3 and input",
-          "not:8,3and1:9",     "// NOT C to 3 and input",
-          "3and1:8,output:B",  "// (NOT A AND B AND NOT C) to output",
+          "not:12,3and1:11",   "// NOT A to 3 and bus",
+          "bus:2,3and1:10",  "// B to 3 and bus",
+          "not:8,3and1:9",     "// NOT C to 3 and bus",
+          "3and1:8,bus:5",  "// (NOT A AND B AND NOT C) to bus",
 
-          "not:12,3and1:3",    "// NOT A to 3 and input",
-          "not:10,3and1:4",    "// NOT B to 3 and input",
-          "input:C,3and1:5",   "// C to 3 and input",
-          "3and1:6,output:C",  "// (NOT A AND B AND C) to output",
+          "not:12,3and1:3",    "// NOT A to 3 and bus",
+          "not:10,3and1:4",    "// NOT B to 3 and bus",
+          "bus:3,3and1:5",   "// C to 3 and bus",
+          "3and1:6,bus:6",  "// (NOT A AND B AND C) to bus",
 
-          "input:A,3and2:11",  "// A to 3 and input",
-          "input:B,3and2:10",  "// B to 3 and input",
-          "input:C,3and2:9",   "// C to 3 and input",
-          "3and2:8,output:D",  "// (A AND B AND C) to output",
+          "bus:1,3and2:11",  "// A to 3 and bus",
+          "bus:2,3and2:10",  "// B to 3 and bus",
+          "bus:3,3and2:9",   "// C to 3 and bus",
+          "3and2:8,bus:7",  "// (A AND B AND C) to bus",
 
-          "input:A,2and:13",   "// A to 2 and input",
-          "input:B,2and:12",   "// B to 2 and input",
-          "2and:11,output:E",  "// (A AND B) to output",
+          "bus:1,2and:13",   "// A to 2 and bus",
+          "bus:2,2and:12",   "// B to 2 and bus",
+          "2and:11,bus:8",  "// (A AND B) to bus",
 
-          "input:B,2and:10",   "// B to 2 and input",
-          "input:C,2and:9",    "// C to 2 and input",
-          "2and:8,output:F",   "// (B AND C) to output",
+          "bus:2,2and:10",   "// B to 2 and bus",
+          "bus:3,2and:9",    "// C to 2 and bus",
+          "2and:8,bus:9",   "// (B AND C) to bus",
 
-          "input:A,2and:1",    "// A to 2 and input",
-          "input:C,2and:2",    "// C to 2 and input",
-          "2and:3,output:G",   "// (A AND C) to output"
+          "bus:1,2and:1",    "// A to 2 and bus",
+          "bus:3,2and:2",    "// C to 2 and bus",
+          "2and:3,bus:10",   "// (A AND C) to bus"
         ]
       }
     },
@@ -85,8 +89,8 @@
           "7432": {"max": 5}
         }
       },
-      "input": ["A", "B", "C", "D", "E", "F", "G"],
-      "output": ["Sum", "Carry"],
+      "localInputSize": 4,
+      "localOutputSize": 4,
       "autoWiring": {
         "chips": {
           "or1": {
@@ -101,29 +105,28 @@
           }
         },
         "wires": [
-          "input:A,or1:13",   "// (A AND NOT B AND NOT C) to or input",
-          "input:B,or1:12",   "// (NOT A AND B AND NOT C) to or input",
-          "or1:11,or2:13",   "// ((A AND NOT B AND NOT C) OR (NOT A AND B AND NOT C)) to sum or input",
+          "bus:4,or1:13",   "// (A AND NOT B AND NOT C) to or bus",
+          "bus:5,or1:12",   "// (NOT A AND B AND NOT C) to or bus",
+          "or1:11,or2:13",   "// ((A AND NOT B AND NOT C) OR (NOT A AND B AND NOT C)) to sum or bus",
 
-          "input:C,or1:10",   "// (NOT A AND B AND C) to or input",
-          "input:D,or1:9",   "// (A AND B AND C) to or input",
-          "or1:8,or2:12",   "// ((NOT A AND B AND C) OR (A AND B AND C)) to sum or input",
+          "bus:6,or1:10",   "// (NOT A AND B AND C) to or bus",
+          "bus:7,or1:9",   "// (A AND B AND C) to or bus",
+          "or1:8,or2:12",   "// ((NOT A AND B AND C) OR (A AND B AND C)) to sum or bus",
 
-          "input:E,or1:1",   "// (A AND B) to or input",
-          "input:F,or1:2",   "// (B AND C) to or input",
-          "or1:3,or2:1",   "// ((A AND B) OR (B AND C)) to carry or input",
+          "bus:8,or1:1",   "// (A AND B) to or bus",
+          "bus:9,or1:2",   "// (B AND C) to or bus",
+          "or1:3,or2:1",   "// ((A AND B) OR (B AND C)) to carry or bus",
 
-          "input:G,or2:2",   "// (A AND C) to carry or input",
+          "bus:10,or2:2",   "// (A AND C) to carry or bus",
 
-          "or2:11,output:Sum",   "// (((A AND NOT B AND NOT C) OR (NOT A AND B AND NOT C)) OR ((NOT A AND B AND C) OR (A AND B AND C))) to sum output",
+          "or2:11,bus:11",   "// (((A AND NOT B AND NOT C) OR (NOT A AND B AND NOT C)) OR ((NOT A AND B AND C) OR (A AND B AND C))) to sum bus",
 
-          "or2:3,output:Carry",   "// (((A AND B) OR (B AND C)) OR (A AND C)) to carry output"
+          "or2:3,bus:12",   "// (((A AND B) OR (B AND C)) OR (A AND C)) to carry bus"
         ]
       }
     }
   ],
   "truthTable": [
-    ["input:A", "input:B", "input:C", "output:Sum", "output:Carry"],
     [0, 0, 0, 0, 0],
     [0, 0, 1, 1, 0],
     [0, 1, 0, 1, 0],

@@ -6,9 +6,9 @@ var App = React.createFactory(require('./views/breadboard/app'));
 ReactDOM.render(App({}), document.getElementById('content'));
 
 
-},{"../vendor/pathseg.js":25,"./views/breadboard/app":12}],2:[function(require,module,exports){
+},{"../vendor/pathseg.js":26,"./views/breadboard/app":12}],2:[function(require,module,exports){
 module.exports = {
-  modelsBase: "activities/breadboard/"
+  modelsBase: "../activities/breadboard/"
 };
 
 
@@ -227,7 +227,7 @@ controller.init();
 module.exports = controller;
 
 
-},{"iframe-phone":30}],5:[function(require,module,exports){
+},{"iframe-phone":31}],5:[function(require,module,exports){
 var logManagerUrl  = '//teaching-teamwork-log-manager.herokuapp.com/api/logs',
     xhrObserver    = require('../../data/shared/xhrObserver'),
     laraController = require('./lara'),
@@ -1289,7 +1289,7 @@ module.exports = React.createClass({
   },
 
   componentDidMount: function () {
-    var activityName = window.location.hash.substring(1);
+    var activityName = window.location.hash.substring(1) || "three-resistors-level1";
 
     if (!viewOtherCircuit) {
       // load blank workbench
@@ -3195,6 +3195,7 @@ var userController = require('../../controllers/shared/user'),
     OtherCircuitsView = require('./other-circuits'),
     inIframe = require('../../data/shared/in-iframe'),
     EnterUnknownsView = require('./enter-unknowns'),
+    VersionView = require('../shared/version'),
     config = require('../../config');
 
 module.exports = React.createClass({
@@ -3242,14 +3243,15 @@ module.exports = React.createClass({
          image, 
          calculator, 
          connection, 
-         editor 
+         editor, 
+        React.createElement(VersionView, null)
       )
     );
   }
 });
 
 
-},{"../../config":2,"../../controllers/shared/user":6,"../../data/shared/in-iframe":8,"./calculator.jsx":13,"./connection.jsx":14,"./editor":15,"./enter-unknowns":16,"./notes":17,"./other-circuits":18,"./sidebar-chat.jsx":20,"./submitButton":21}],20:[function(require,module,exports){
+},{"../../config":2,"../../controllers/shared/user":6,"../../data/shared/in-iframe":8,"../shared/version":25,"./calculator.jsx":13,"./connection.jsx":14,"./editor":15,"./enter-unknowns":16,"./notes":17,"./other-circuits":18,"./sidebar-chat.jsx":20,"./submitButton":21}],20:[function(require,module,exports){
 var userController = require('../../controllers/shared/user'),
     logController = require('../../controllers/shared/log'),
     ChatItems, ChatItem;
@@ -4283,6 +4285,37 @@ UserRegistrationViewFactory = React.createFactory(UserRegistrationView);
 
 
 },{"../../data/shared/group-names":7}],25:[function(require,module,exports){
+// NOTE: the __TT* variables are replaced by the browserify gulp task
+
+var div = React.DOM.div,
+    a = React.DOM.a;
+
+module.exports = React.createClass({
+  displayName: 'Version',
+
+  renderGitCommit: function () {
+    var commitHash = 'e7a7125a0b18c69a15bab40e77e295842323a841';
+
+    if (commitHash[0] != '_') {
+      return div({className: 'version-info'},
+        a({href: 'https://github.com/concord-consortium/teaching-teamwork/commit/' + commitHash, target: '_blank'}, 'Commit: ' + commitHash)
+      );
+    }
+    else {
+      return null;
+    }
+  },
+
+  render: function() {
+    return div({className: "version-wrapper"},
+      div({className: 'version-info'}, 'Version 1.0.1, built on Sat Oct 22 2016 02:30:17 GMT-0700 (PDT)'),
+      this.renderGitCommit()
+    );
+  }
+});
+
+
+},{}],26:[function(require,module,exports){
 // SVGPathSeg API polyfill
 // https://github.com/progers/pathseg
 //
@@ -5100,7 +5133,7 @@ UserRegistrationViewFactory = React.createFactory(UserRegistrationView);
 }());
 
 
-},{}],26:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 var structuredClone = require('./structured-clone');
 var HELLO_INTERVAL_LENGTH = 200;
 var HELLO_TIMEOUT_LENGTH = 60000;
@@ -5249,7 +5282,7 @@ module.exports = function getIFrameEndpoint() {
   }
   return instance;
 };
-},{"./structured-clone":29}],27:[function(require,module,exports){
+},{"./structured-clone":30}],28:[function(require,module,exports){
 "use strict";
 
 var ParentEndpoint = require('./parent-endpoint');
@@ -5341,7 +5374,7 @@ module.exports = function IframePhoneRpcEndpoint(handler, namespace, targetWindo
     this.disconnect = disconnect.bind(this);
 };
 
-},{"./iframe-endpoint":26,"./parent-endpoint":28}],28:[function(require,module,exports){
+},{"./iframe-endpoint":27,"./parent-endpoint":29}],29:[function(require,module,exports){
 var structuredClone = require('./structured-clone');
 
 /**
@@ -5514,7 +5547,7 @@ module.exports = function ParentEndpoint(targetWindowOrIframeEl, targetOrigin, a
   };
 };
 
-},{"./structured-clone":29}],29:[function(require,module,exports){
+},{"./structured-clone":30}],30:[function(require,module,exports){
 var featureSupported = false;
 
 (function () {
@@ -5552,7 +5585,7 @@ exports.supported = function supported() {
   return featureSupported && featureSupported.structuredClones > 0;
 };
 
-},{}],30:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 module.exports = {
   /**
    * Allows to communicate with an iframe.
@@ -5570,4 +5603,4 @@ module.exports = {
 
 };
 
-},{"./lib/iframe-endpoint":26,"./lib/iframe-phone-rpc-endpoint":27,"./lib/parent-endpoint":28,"./lib/structured-clone":29}]},{},[1]);
+},{"./lib/iframe-endpoint":27,"./lib/iframe-phone-rpc-endpoint":28,"./lib/parent-endpoint":29,"./lib/structured-clone":30}]},{},[1]);

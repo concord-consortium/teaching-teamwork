@@ -3,14 +3,14 @@ var AppView = React.createFactory(require('./views/pic/app'));
 ReactDOM.render(AppView({}), document.getElementById('content'));
 
 
-},{"./views/pic/app":27}],2:[function(require,module,exports){
+},{"./views/pic/app":28}],2:[function(require,module,exports){
 var userController = require('../shared/user');
 
 var BoardWatcher = function () {
   this.firebase = null;
   this.listeners = {};
 };
-BoardWatcher.prototype.startListeners = function () {
+BoardWatcher.prototype.startListeners = function (numBoards) {
   var self = this,
       listenerCallbackFn = function (boardNumber) {
         return function (snapshot) {
@@ -21,12 +21,13 @@ BoardWatcher.prototype.startListeners = function () {
             }
           }
         };
-      };
+      }, i;
 
   this.firebase = userController.getFirebaseGroupRef().child('clients');
-  this.firebase.child(0).on('value', listenerCallbackFn(0));
-  this.firebase.child(1).on('value', listenerCallbackFn(1));
-  this.firebase.child(2).on('value', listenerCallbackFn(2));
+
+  for (i = 0; i < numBoards; i++) {
+    this.firebase.child(i).on('value', listenerCallbackFn(i));
+  }
 };
 
 // NOTE: the if (this.firebase) conditionals are needed below because startListeners is not called in the PIC solo mode
@@ -45,7 +46,8 @@ BoardWatcher.prototype.circuitChanged = function (board) {
   if (this.firebase) {
     this.firebase.child(board.number).child('layout').set({
       wires: board.serializeWiresToArray(),
-      components: board.serializeComponents()
+      components: board.serializeComponents(),
+      inputs: board.serializeInputs()
     });
   }
 };
@@ -165,7 +167,7 @@ controller.init();
 module.exports = controller;
 
 
-},{"iframe-phone":61}],4:[function(require,module,exports){
+},{"iframe-phone":64}],4:[function(require,module,exports){
 var logManagerUrl  = '//teaching-teamwork-log-manager.herokuapp.com/api/logs',
     xhrObserver    = require('../../data/shared/xhrObserver'),
     laraController = require('./lara'),
@@ -657,7 +659,7 @@ module.exports = userController = {
 };
 
 
-},{"../../data/shared/group-names":8,"../../views/shared/userRegistration.jsx":52,"./lara":3,"./log":4}],6:[function(require,module,exports){
+},{"../../data/shared/group-names":8,"../../views/shared/userRegistration.jsx":54,"./lara":3,"./log":4}],6:[function(require,module,exports){
 module.exports = {
   '7400': 'Quad 2-Input NAND',
   '7402': 'Quad 2-Input NOR',
@@ -1650,12 +1652,19 @@ LogicChip.prototype.serialize = function () {
     y: this.position.y
   };
 };
+LogicChip.prototype.setBoard = function (board) {
+  var i;
+  this.board = board;
+  for (i = 0; i < this.pins.length; i++) {
+    this.pins[i].board = board;
+  }
+};
 
 
 module.exports = LogicChip;
 
 
-},{"../../views/logic-gates/logic-chip":26,"../shared/pin":22,"../shared/ttl":23}],13:[function(require,module,exports){
+},{"../../views/logic-gates/logic-chip":27,"../shared/pin":23,"../shared/ttl":24}],13:[function(require,module,exports){
 var Button = function (options) {
   this.value = options.value;
   this.intValue = options.intValue;
@@ -1701,7 +1710,7 @@ var Keypad = function () {
       width: 0,
       labelSize: 0,
       component: this,
-      bezierReflection: i < 3 ? -1 : 1 // the top pins should arc the opposite
+      bezierReflection: 1
     };
     pin.label = {
       x: 0,
@@ -1870,7 +1879,7 @@ Keypad.prototype.resolveOutputVoltages = function () {
 module.exports = Keypad;
 
 
-},{"../../views/pic/keypad":32,"../../views/shared/layout":44,"../shared/pin":22,"../shared/ttl":23,"./button":13}],15:[function(require,module,exports){
+},{"../../views/pic/keypad":33,"../../views/shared/layout":46,"../shared/pin":23,"../shared/ttl":24,"./button":13}],15:[function(require,module,exports){
 var LEDView = React.createFactory(require('../../views/pic/led')),
     Pin = require('../shared/pin'),
     Segment = require('./segment'),
@@ -2017,7 +2026,7 @@ LED.prototype.getPinBitField = function () {
 module.exports = LED;
 
 
-},{"../../views/pic/led":33,"../../views/shared/layout":44,"../shared/pin":22,"./segment":17}],16:[function(require,module,exports){
+},{"../../views/pic/led":34,"../../views/shared/layout":46,"../shared/pin":23,"./segment":17}],16:[function(require,module,exports){
 var PICView = React.createFactory(require('../../views/pic/pic')),
     Pin = require('../shared/pin'),
     TTL = require('../shared/ttl'),
@@ -2029,6 +2038,7 @@ var PIC = function (options) {
   this.name = 'pic';
   this.view = PICView;
   this.board = options.board;
+  this.resolver = options.resolver;
 
   this.pins = [];
   this.pinMap = {};
@@ -2149,9 +2159,9 @@ PIC.prototype.getPinListValue = function (list) {
   var value = 0,
       i;
 
-  // each get causes the board to resolve so that we have the most current value
-  this.board.resolveComponentOutputVoltages();
-
+  if (this.hasResolver()) {
+    this.board.resolver.resolveComponentOutputVoltages();
+  }
   for (i = 0; i < list.length; i++) {
     value = value | ((list[i].inputMode && list[i].isHigh() ? 1 : 0) << i);
   }
@@ -2163,21 +2173,35 @@ PIC.prototype.setPinListValue = function (list, value) {
     outputMode = !list[i].inputMode;
     list[i].setVoltage(TTL.getBooleanVoltage(outputMode && (value & (1 << i))));
   }
-  // each set causes the circuit to be resolved
-  this.board.resolveIOVoltages();
+  this.resolve();
 };
 PIC.prototype.setPinListInputMode = function (list, mask) {
   var i;
   for (i = 0; i < list.length; i++) {
     list[i].inputMode = !!(mask & (1 << i));
   }
-  this.board.resolveIOVoltages();
+  this.resolve();
+};
+PIC.prototype.hasResolver = function () {
+  return this.board && this.board.resolver;
+};
+PIC.prototype.resolve = function () {
+  if (this.hasResolver()) {
+    this.board.resolver.resolve();
+  }
+};
+PIC.prototype.setBoard = function (board) {
+  var i;
+  this.board = board;
+  for (i = 0; i < this.pins.length; i++) {
+    this.pins[i].board = board;
+  }
 };
 
 module.exports = PIC;
 
 
-},{"../../views/pic/pic":34,"../../views/shared/layout":44,"../shared/pin":22,"../shared/ttl":23}],17:[function(require,module,exports){
+},{"../../views/pic/pic":35,"../../views/shared/layout":46,"../shared/pin":23,"../shared/ttl":24}],17:[function(require,module,exports){
 var Segment = function (options) {
   this.index = options.index;
   this.layout = options.layout;
@@ -2192,7 +2216,6 @@ module.exports = Segment;
 var Hole = require('./hole'),
     Pin = require('./pin'),
     Wire = require('./wire'),
-    Circuit = require('./circuit'),
     LogicChip =  require('../logic-gates/logic-chip');
 
 var Board = function (options) {
@@ -2202,10 +2225,13 @@ var Board = function (options) {
   this.bezierReflectionModifier = options.bezierReflectionModifier;
   this.logicDrawer = options.logicDrawer;
   this.wires = [];
-  this.circuits = [];
-  this.allBoards = [];
   this.fixedComponents = options.fixedComponents || false;
   this.updateComponentList();
+
+  this.resolver = options.resolver;
+  if (this.resolver) {
+    this.resolver.updateComponents();
+  }
 
   // reset the pic so the pin output is set
   if (this.components.pic) {
@@ -2237,11 +2263,14 @@ Board.prototype.updateComponentList = function () {
       }
     }
   });
+
+  if (this.resolver) {
+    this.resolver.updateComponents();
+  }
 };
 Board.prototype.clear = function () {
   var i;
   this.wires = [];
-  this.circuits = [];
   if (!this.fixedComponents) {
     this.components = {};
     this.updateComponentList();
@@ -2258,6 +2287,14 @@ Board.prototype.reset = function () {
   }
   for (i = 0; i < this.componentList.length; i++) {
     this.componentList[i].reset();
+  }
+};
+Board.prototype.updateInputs = function (newInputs) {
+  var input = this.connectors.input,
+      length = Math.min(newInputs.length, input.count),
+      i;
+  for (i = 0; i < length; i++) {
+    input.holes[i].setForcedVoltage(newInputs[i]);
   }
 };
 Board.prototype.updateWires = function (newSerializedWires) {
@@ -2383,13 +2420,14 @@ Board.prototype.removeWire = function (source, dest) {
         this.wires[i].dest.reset();
       }
       this.wires.splice(i, 1);
-      this.resolveCircuitsAcrossAllBoards();
+      this.resolver.rewire();
+      this.resolver.resolve();
       return true;
     }
   }
   return false;
 };
-Board.prototype.addWire = function (source, dest, color) {
+Board.prototype.addWire = function (source, dest, color, skipResolver) {
   var i, id, wire;
 
   if (!source || !dest) {
@@ -2421,81 +2459,19 @@ Board.prototype.addWire = function (source, dest, color) {
   wire = new Wire({
     source: source,
     dest: dest,
-    color: '#00f' // color used to be settable but is now forced to blue
+    color: '#ffa500' // color used to be settable but is now forced
   });
   this.wires.push(wire);
-  if (!this.resolveCircuits()) {
-    this.wires.pop();
-    return null;
+  if (!skipResolver) {
+    this.resolver.rewire();
   }
   source.connected = true;
   dest.connected = true;
   return wire;
 };
-Board.prototype.resolveCircuits = function() {
-  var newCircuits;
-
-  if (this.wires.length === 0) {
-    this.circuits = [];
-    return true;
-  }
-
-  newCircuits = Circuit.ResolveWires(this.wires);
-  if (newCircuits) {
-    this.circuits = newCircuits;
-    return true;
-  }
-
-  return false;
-};
-Board.prototype.resolveCircuitsAcrossAllBoards = function() {
-  var i;
-  // reset and resolve all the circuits first
-  for (i = 0; i < this.allBoards.length; i++) {
-    this.allBoards[i].reset();
-    this.allBoards[i].resolveCircuits();
-  }
-  // and then resolve all the io values
-  for (i = 0; i < this.allBoards.length; i++) {
-    this.allBoards[i].resolveIOVoltages();
-  }
-};
-Board.prototype.resolveCircuitInputVoltages = function () {
-  var i;
-  if (this.connectors.input) {
-    this.connectors.input.updateFromConnectedBoard();
-  }
-  for (i = 0; i < this.circuits.length; i++) {
-    this.circuits[i].resolveInputVoltages();
-  }
-};
-Board.prototype.resolveComponentOutputVoltages = function () {
-  var i;
-  for (i = 0; i < this.componentList.length; i++) {
-    this.componentList[i].resolveOutputVoltages();
-  }
-};
-Board.prototype.resolveCircuitOutputVoltages = function () {
-  var i;
-  for (i = 0; i < this.circuits.length; i++) {
-    this.circuits[i].resolveOutputVoltages();
-  }
-};
-Board.prototype.resolveIOVoltagesAcrossAllBoards = function() {
-  var i;
-  for (i = 0; i < this.allBoards.length; i++) {
-    this.allBoards[i].resolveIOVoltages();
-  }
-};
-Board.prototype.resolveIOVoltages = function () {
-  this.resolveCircuitInputVoltages();
-  this.resolveComponentOutputVoltages();
-  this.resolveCircuitOutputVoltages();
-  // this final call is to set the output connector values
-  this.resolveCircuitInputVoltages();
-};
 Board.prototype.addComponent = function (name, component) {
   component.name = name;
+  component.setBoard(this);
   this.components[name] = component;
   this.updateComponentList();
 };
@@ -2571,47 +2547,188 @@ Board.prototype.updateComponents = function (newSerializedComponents) {
 
   this.updateComponentList();
 };
+Board.prototype.serializeInputs = function () {
+  var serialized = [];
+  $.each(this.connectors.input.holes, function (index, hole) {
+    serialized.push(hole.getVoltage());
+  });
+  return serialized;
+};
 
 module.exports = Board;
 
 
-},{"../logic-gates/logic-chip":12,"./circuit":19,"./hole":21,"./pin":22,"./wire":24}],19:[function(require,module,exports){
+},{"../logic-gates/logic-chip":12,"./hole":22,"./pin":23,"./wire":25}],19:[function(require,module,exports){
+var Circuit = require("./circuit"),
+    Connector = require("./connector"),
+    Wire = require("./wire");
+
+var CircuitResolver = function (options) {
+  var i;
+
+  this.boards = options.boards || [];
+  this.circuits = [];
+  this.components = [];
+  this.busSize = options.busSize || 0;
+  this.busInputSize = options.busInputSize || 0;
+  this.busOutputSize = options.busOutputSize || 0;
+  this.busOutputStartIndex = this.busSize - this.busOutputSize;
+
+  // wire the global i/o up
+  this.input = options.busInputSize > 0 ? new Connector({type: 'input', count: options.busInputSize}) : null;
+  this.output = options.busOutputSize > 0 ? new Connector({type: 'output', count: options.busOutputSize}) : null;
+
+  this.inputIndices = [];
+  this.outputIndices = [];
+  for (i = 0; i < this.busInputSize; i++) {
+    this.inputIndices.push(i);
+  }
+  for (i = this.busOutputStartIndex; i < this.busSize; i++) {
+    this.outputIndices.push(i);
+  }
+};
+CircuitResolver.prototype.rewire = function (includeGlobalIO) {
+  var graph = {},
+      isBusHole, addToGraph, addToCircuit, addBusWire;
+
+  isBusHole = function (endPoint) {
+    return endPoint.connector && (endPoint.connector.type == 'bus');
+  };
+
+  addToGraph = function (source, dest, wire) {
+    var key = source.toString();
+    if (!graph[key]) {
+      graph[key] = {
+        endPoint: source,
+        adjacent: [],
+        visited: false
+      };
+    }
+    graph[key].adjacent.push({endPoint: dest, wire: wire});
+  };
+
+  addToCircuit = function (key, circuit) {
+    var node = graph[key],
+        i, adjacent, adjacentKey;
+
+    node.visited = true;
+    (node.endPoint.inputMode ? circuit.inputs : circuit.outputs).push(node.endPoint);
+    for (i = 0; i < node.adjacent.length; i++) {
+      adjacent = node.adjacent[i];
+      adjacentKey = adjacent.endPoint.toString();
+      if (!graph[adjacentKey].visited) {
+        addToCircuit(adjacentKey, circuit);
+      }
+    }
+  };
+
+  addBusWire = function (options) {
+    var busWire = new Wire({
+      source: options.source,
+      dest: options.dest
+    });
+    addToGraph(busWire.source, busWire.dest, busWire);
+    addToGraph(busWire.dest, busWire.source, busWire);
+  };
+
+  // clear the existing circuits
+  this.circuits = [];
+
+  // create a graph of all the wire end points
+  this.forEach(this.boards, function (board) {
+    this.forEach(board.wires, function (wire) {
+      var sourceOnBus = isBusHole(wire.source),
+          destOnBus = isBusHole(wire.dest),
+          sourceIsGlobalInput = sourceOnBus && (this.inputIndices.indexOf(wire.source.index) != -1),
+          sourceIsGlobalOutput = sourceOnBus && (this.outputIndices.indexOf(wire.source.index) != -1),
+          destIsGlobalInput = destOnBus && (this.inputIndices.indexOf(wire.dest.index) != -1),
+          destIsGlobalOutput = destOnBus && (this.outputIndices.indexOf(wire.dest.index) != -1);
+
+      addToGraph(wire.source, wire.dest, wire);
+      addToGraph(wire.dest, wire.source, wire);
+
+      // create the bus ghost wires
+      if (sourceOnBus || destOnBus) {
+        this.forEach(this.boards, function (otherBoard) {
+          // wire this board to the other boards
+          if (board != otherBoard) {
+            addBusWire({
+              source: sourceOnBus ? otherBoard.connectors.bus.holes[wire.source.index] : wire.source,
+              dest: destOnBus ? otherBoard.connectors.bus.holes[wire.dest.index] : wire.dest
+            });
+          }
+
+          // wire this board to the global i/o
+          if (includeGlobalIO && (sourceIsGlobalInput || sourceIsGlobalOutput || destIsGlobalInput || destIsGlobalOutput)) {
+            addBusWire({
+              source: sourceIsGlobalInput ? this.input.holes[wire.source.index] : (sourceIsGlobalOutput ? this.output.holes[wire.source.index - this.busOutputStartIndex] : wire.source),
+              dest: destIsGlobalInput ? this.input.holes[wire.dest.index] : (destIsGlobalOutput ? this.output.holes[wire.dest.index - this.busOutputStartIndex] : wire.dest)
+            });
+          }
+        });
+      }
+    });
+  });
+
+  // search the graph to find all circuits
+  this.forEach(Object.keys(graph), function (key) {
+    var circuit;
+    if (!graph[key].visited) {
+      circuit = new Circuit({inputs: [], outputs: []});
+      this.circuits.push(circuit);
+      addToCircuit(key, circuit);
+    }
+  });
+
+  // resolve all the circuits
+  this.resolve();
+};
+CircuitResolver.prototype.forEach = function(list, fn) {
+  var i;
+  for (i = 0; i < list.length; i++) {
+    fn.call(this, list[i], i);
+  }
+};
+CircuitResolver.prototype.updateComponents = function () {
+  this.components = [];
+  this.forEach(this.boards, function (board) {
+    this.forEach(board.componentList, function (component) {
+      this.components.push(component);
+    });
+  });
+};
+CircuitResolver.prototype.resolveCircuitInputVoltages = function () {
+  this.forEach(this.circuits, function (circuit) {
+    circuit.resolveInputVoltages();
+  });
+};
+CircuitResolver.prototype.resolveComponentOutputVoltages = function () {
+  this.forEach(this.components, function (component) {
+    component.resolveOutputVoltages();
+  });
+};
+CircuitResolver.prototype.resolveCircuitOutputVoltages = function () {
+  this.forEach(this.circuits, function (circuit) {
+    circuit.resolveOutputVoltages();
+  });
+};
+CircuitResolver.prototype.resolve = function () {
+  this.forEach(this.components, function () {
+    this.resolveCircuitInputVoltages();
+    this.resolveComponentOutputVoltages();
+    this.resolveCircuitOutputVoltages();
+    this.resolveCircuitInputVoltages(); // this sets the global output
+  });
+};
+
+
+module.exports = CircuitResolver;
+
+
+},{"./circuit":20,"./connector":21,"./wire":25}],20:[function(require,module,exports){
 var Circuit = function (options) {
   this.inputs = options.inputs;
   this.outputs = options.outputs;
-};
-Circuit.ResolveWires = function (allWires) {
-  var circuits = [],
-      addToCircuit, wire, testWire, i, j, numWires, inputs, outputs;
-
-  addToCircuit = function (wire) {
-    (wire.source.inputMode ? inputs : outputs).push(wire.source);
-    (wire.dest.inputMode ? inputs : outputs).push(wire.dest);
-  };
-
-  numWires = allWires.length;
-  for (i = 0; i < numWires; i++) {
-    wire = allWires[i];
-    inputs = [];
-    outputs = [];
-    addToCircuit(wire);
-
-    for (j = i + 1; j < numWires; j++) {
-      testWire = allWires[j];
-      if ((wire.source == testWire.source) || (wire.source == testWire.dest) || (wire.dest == testWire.source) || (wire.dest == testWire.dest)) {
-        addToCircuit(testWire);
-      }
-    }
-
-    if (inputs.length + outputs.length > 0) {
-      circuits.push(new Circuit({
-        inputs: inputs,
-        outputs: outputs
-      }));
-    }
-  }
-
-  return circuits;
 };
 
 Circuit.prototype.resolveInputVoltages = function () {
@@ -2639,11 +2756,27 @@ Circuit.prototype.setAverageOutputVoltage = function (list) {
   }
 };
 
+Circuit.prototype.toString = function () {
+  var inputs = [],
+      outputs = [],
+      i;
+
+  for (i = 0; i < this.inputs.length; i++) {
+    inputs.push(this.inputs[i].toString() + ' = ' + this.inputs[i].getVoltage());
+  }
+  for (i = 0; i < this.outputs.length; i++) {
+    outputs.push(this.outputs[i].toString() + ' = ' + this.outputs[i].getVoltage());
+  }
+  return JSON.stringify({inputs: inputs, outputs: outputs});
+};
+
 module.exports = Circuit;
 
 
-},{}],20:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 var Hole = require('./hole');
+
+var letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 var Connector = function (options) {
   var self = this,
@@ -2662,19 +2795,21 @@ var Connector = function (options) {
       radius: 0,
       color: '#555', // ['blue', '#0f0', 'purple', '#cccc00'][i],
       connector: self,
-      label: options.labels ? options.labels[i] : null,
-      inputMode: this.type === 'output' // seems weird but output connector holes have values set so their holes are in "inputMode" like the pins
+      label: letters[i],
+      inputMode: this.type != 'input', // seems weird but output connector holes have values set so their holes are in "inputMode" like the pins
+      toggleable: this.type == 'input',
+      type: options.type
     }));
   }
 };
-Connector.prototype.calculatePosition = function (constants, selected) {
+Connector.prototype.calculatePosition = function (constants, selected, allConnectors) {
   var selectedConstants = constants.selectedConstants(selected),
       holeWidth = selectedConstants.CONNECTOR_HOLE_DIAMETER + (selectedConstants.CONNECTOR_HOLE_MARGIN * 2),
       radius = selectedConstants.CONNECTOR_HOLE_DIAMETER / 2,
       vertical = this.type == 'bus',
       dx = vertical ? 0 : holeWidth,
       dy = vertical ? holeWidth : 0,
-      i, cx, cy, hole;
+      inputWidth, outputWidth, totalWidth, i, cx, cy, hole;
 
 
   if (vertical) {
@@ -2687,13 +2822,20 @@ Connector.prototype.calculatePosition = function (constants, selected) {
     cx = holeWidth / 2;
   }
   else {
-    this.position.width = holeWidth * this.count;
-    this.position.height = holeWidth;
-    this.position.x = (constants.WORKSPACE_WIDTH - this.position.width) / 2;
-    this.position.y = this.type === 'input' ? 0 : selectedConstants.BOARD_HEIGHT - this.position.height;
+    inputWidth = totalWidth = (allConnectors.input ? holeWidth * allConnectors.input.count : 0);
+    if ((inputWidth > 0) && allConnectors.output) {
+      totalWidth += selectedConstants.CONNECTOR_SPACING;
+    }
+    outputWidth = (allConnectors.output ? holeWidth * allConnectors.output.count : 0);
+    totalWidth += outputWidth;
 
-    cy = this.type === 'input' ? this.position.y + selectedConstants.CONNECTOR_HOLE_MARGIN + radius : selectedConstants.BOARD_HEIGHT - (selectedConstants.CONNECTOR_HOLE_MARGIN + radius);
-    cx = ((constants.WORKSPACE_WIDTH - this.position.width) / 2) + (holeWidth / 2);
+    this.position.width = this.type == 'input' ? inputWidth : outputWidth;
+    this.position.height = holeWidth;
+    this.position.x = ((constants.WORKSPACE_WIDTH - totalWidth) / 2) + (this.type == 'output' ? (inputWidth + selectedConstants.CONNECTOR_SPACING) : 0);
+    this.position.y = 0;
+
+    cy = this.position.y + selectedConstants.CONNECTOR_HOLE_MARGIN + radius;
+    cx = this.position.x + (holeWidth / 2);
   }
 
   for (i = 0; i < this.count; i++) {
@@ -2703,15 +2845,15 @@ Connector.prototype.calculatePosition = function (constants, selected) {
     hole.radius =  radius;
   }
 };
-Connector.prototype.setHoleVoltage = function (index, voltage) {
+Connector.prototype.setHoleVoltage = function (index, voltage, forced) {
   if ((index < this.holes.length) && (voltage !== 'x')) {
-    this.holes[index].setVoltage(voltage);
+    this.holes[index][forced ? "setForcedVoltage" : "setVoltage"](voltage);
   }
 };
-Connector.prototype.setHoleVoltages = function (voltages) {
+Connector.prototype.setHoleVoltages = function (voltages, forced) {
   var i;
   for (i = 0; i < voltages.length; i++) {
-    this.setHoleVoltage(i, voltages[i]);
+    this.setHoleVoltage(i, voltages[i], forced);
   }
 };
 Connector.prototype.clearHoleVoltages = function () {
@@ -2731,26 +2873,11 @@ Connector.prototype.getHoleVoltages = function () {
   }
   return voltages;
 };
-Connector.prototype.setConnectsTo = function (toConnector) {
-  var i;
-  this.connectsTo = toConnector;
-  for (i = 0; i < this.holes.length; i++) {
-    this.holes[i].connectedHole = toConnector.holes[i];
-  }
-};
-Connector.prototype.updateFromConnectedBoard = function () {
-  var i;
-  for (i = 0; i < this.holes.length; i++) {
-    if (this.holes[i].connectedHole) {
-      this.holes[i].setVoltage(this.holes[i].connectedHole.getVoltage());
-    }
-  }
-};
 
 module.exports = Connector;
 
 
-},{"./hole":21}],21:[function(require,module,exports){
+},{"./hole":22}],22:[function(require,module,exports){
 var TTL = require('./ttl');
 
 var Hole = function (options) {
@@ -2766,9 +2893,10 @@ var Hole = function (options) {
   this.startingVoltage = this.voltage;
   this.label = options.label;
   this.inputMode = options.inputMode;
-  this.connectedHole = null; // set via Connector.prototype.setConnectsTo
-  this.hasForcedVoltage = false;
-  this.forcedVoltage = 0;
+  this.toggleable = options.toggleable;
+  this.type = options.type;
+  this.hasForcedVoltage = !!options.toggleable;
+  this.forcedVoltage = TTL.LOW_VOLTAGE;
 };
 Hole.prototype.getBezierReflection = function () {
   return this.connector.type === 'input' ? 1 : -1;
@@ -2796,26 +2924,33 @@ Hole.prototype.reset = function () {
   this.voltage = this.startingVoltage;
   this.pulseProbeDuration = 0;
 };
-Hole.prototype.getColor = function () {
-  return this.hasForcedVoltage ? TTL.getColor(this.forcedVoltage) : (this.connected && this.inputMode ? TTL.getColor(this.voltage) : this.color);
+Hole.prototype.getColor = function (showVoltageColor) {
+  showVoltageColor = showVoltageColor || (this.connected && (this.type == 'output'));
+  return this.hasForcedVoltage ? TTL.getColor(this.forcedVoltage) : (showVoltageColor ? TTL.getColor(this.voltage) : this.color);
 };
 Hole.prototype.toggleForcedVoltage = function () {
-  if (!this.hasForcedVoltage) {
-    this.hasForcedVoltage = true;
-    this.forcedVoltage = TTL.HIGH_VOLTAGE;
-  }
-  else if (this.forcedVoltage == TTL.HIGH_VOLTAGE) {
+  if (this.forcedVoltage == TTL.HIGH_VOLTAGE) {
     this.forcedVoltage = TTL.LOW_VOLTAGE;
   }
   else {
-    this.hasForcedVoltage = false;
+    this.forcedVoltage = TTL.HIGH_VOLTAGE;
   }
+  return this.forcedVoltage;
+};
+Hole.prototype.setForcedVoltage = function (voltage) {
+  this.forcedVoltage = voltage;
+};
+Hole.prototype.getLabel = function () {
+  return this.getVoltage() + "V (" + this.getLogicLevel().toLowerCase() + ")";
+};
+Hole.prototype.toString = function () {
+  return ['connector', this.connector.type, this.index, 'board', this.connector.board ? this.connector.board.number : -1].join(':');
 };
 
 module.exports = Hole;
 
 
-},{"./ttl":23}],22:[function(require,module,exports){
+},{"./ttl":24}],23:[function(require,module,exports){
 var TTL = require('./ttl');
 
 var Pin = function (options) {
@@ -2868,11 +3003,17 @@ Pin.prototype.reset = function () {
   this.voltage = this.startingVoltage;
   this.pulseProbeDuration = 0;
 };
+Pin.prototype.getLabel = function () {
+  return this.getVoltage() + "V " + (this.inputMode ? "input" : "output") + " (" + this.getLogicLevel().toLowerCase() + ")";
+};
+Pin.prototype.toString = function () {
+  return ['component', this.component.name, this.number, 'board', this.component.board.number].join(':');
+};
 
 module.exports = Pin;
 
 
-},{"./ttl":23}],23:[function(require,module,exports){
+},{"./ttl":24}],24:[function(require,module,exports){
 var TTL = module.exports = {
   LOW: 'LOW',
   INVALID: 'INVALID',
@@ -2920,7 +3061,7 @@ var TTL = module.exports = {
   getColor: function (voltage) {
     if (!TTL.COLOR_MAP) {
       TTL.COLOR_MAP = {
-        'LOW': 'green',
+        'LOW': 'blue',
         'INVALID': '#ffbf00',
         'HIGH': 'red'
       };
@@ -2930,10 +3071,7 @@ var TTL = module.exports = {
 };
 
 
-},{}],24:[function(require,module,exports){
-var Hole = require('./hole'),
-    Pin = require('./pin');
-
+},{}],25:[function(require,module,exports){
 var Wire = function (options) {
   this.source = options.source;
   this.dest = options.dest;
@@ -2950,30 +3088,20 @@ Wire.prototype.getBezierReflection = function () {
   return this.source.getBezierReflection();
 };
 Wire.GenerateId = function (source, dest, color) {
-  var sourceId = Wire.EndpointId(source),
-      destId = Wire.EndpointId(dest),
+  var sourceId = source.toString(),
+      destId = dest.toString(),
       firstId = sourceId < destId ? sourceId : destId,
       secondId = firstId === sourceId ? destId : sourceId;
   return [firstId, secondId, color].join(',');
 };
-Wire.EndpointId = function (endPoint) {
-  var id;
-  if (endPoint instanceof Hole) {
-    id = ['connector', endPoint.connector.type, endPoint.index].join(':');
-  }
-  else if (endPoint instanceof Pin) {
-    id = ['component', endPoint.component.name, endPoint.number].join(':');
-  }
-  else {
-    id = 'unknown';
-  }
-  return id;
+Wire.toString = function () {
+  return this.id;
 };
 
 module.exports = Wire;
 
 
-},{"./hole":21,"./pin":22}],25:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 var workspaceWidth = 936 - 200,
     logicDrawerWidth = 100,
     constants;
@@ -2982,13 +3110,14 @@ module.exports = constants = {
   WORKSPACE_HEIGHT: 768,
   WORKSPACE_WIDTH: workspaceWidth,
   RIBBON_HEIGHT: 21,
+  SPACER_HEIGHT: 21,
   INPUT_SWITCHES_HEIGHT: 21,
   OUTPUT_LEDS_HEIGHT: 21,
   SELECTED_FILL: '#bbb',
   UNSELECTED_FILL: '#777',
 
   selectedConstants: function (selected) {
-    var boardHeight = (constants.WORKSPACE_HEIGHT - (2 * constants.RIBBON_HEIGHT)) / 2,
+    var boardHeight = (constants.WORKSPACE_HEIGHT - constants.SPACER_HEIGHT) / 2,
         boardLeft = selected ? 0 : 50,
         logicDrawerLayout = {
           x: workspaceWidth - logicDrawerWidth - boardLeft,
@@ -3002,6 +3131,7 @@ module.exports = constants = {
       FOO_WIRE_WIDTH: 1,
       CONNECTOR_HOLE_DIAMETER: 15,
       CONNECTOR_HOLE_MARGIN: 4,
+      CONNECTOR_SPACING: 20,
       BOARD_WIDTH: workspaceWidth - boardLeft,
       BOARD_HEIGHT: boardHeight,
       BOARD_LEFT: boardLeft,
@@ -3011,6 +3141,7 @@ module.exports = constants = {
       PIC_FONT_SIZE: 12,
       CHIP_LABEL_SIZE: 16,
       BUTTON_FONT_SIZE: 16,
+      BUS_FONT_SIZE: 14,
       PIN_WIDTH: 13.72,
       PIN_HEIGHT: 13.72,
       PROBE_WIDTH: 150,
@@ -3023,7 +3154,7 @@ module.exports = constants = {
 };
 
 
-},{}],26:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 var PinView = React.createFactory(require('../shared/pin')),
     PinLabelView = React.createFactory(require('../shared/pin-label')),
     constants = require('./constants'),
@@ -3062,6 +3193,7 @@ module.exports = React.createClass({
   setPosition: function (x, y) {
     this.props.component.position.x = x;
     this.props.component.position.y = y;
+    //console.log(this.props.component.name, x, y);
   },
 
   pinWire: function (pin, dx) {
@@ -3521,12 +3653,13 @@ module.exports = React.createClass({
 });
 
 
-},{"../../data/logic-gates/chip-names":6,"../shared/events":43,"../shared/pin":48,"../shared/pin-label":47,"./constants":25}],27:[function(require,module,exports){
+},{"../../data/logic-gates/chip-names":6,"../shared/events":45,"../shared/pin":50,"../shared/pin-label":49,"./constants":26}],28:[function(require,module,exports){
 var Connector = require('../../models/shared/connector'),
     Board = require('../../models/shared/board'),
     Keypad = require('../../models/pic/keypad'),
     PIC = require('../../models/pic/pic'),
     LED = require('../../models/pic/led'),
+    CircuitResolver = require('../../models/shared/circuit-resolver'),
     picCode = require('../../data/pic/pic-code'),
     boardWatcher = require('../../controllers/pic/board-watcher'),
     userController = require('../../controllers/shared/user'),
@@ -3538,8 +3671,10 @@ var Connector = require('../../models/shared/connector'),
     SidebarChatView = React.createFactory(require('../shared/sidebar-chat')),
     WireControlsView = React.createFactory(require('../shared/wire-controls')),
     OfflineCheckView = React.createFactory(require('../shared/offline-check')),
+    VersionView = React.createFactory(require('../shared/version')),
     events = require('../shared/events'),
     constants = require('./constants'),
+    colors = require('../shared/colors'),
     inIframe = require('../../data/shared/in-iframe'),
     div = React.DOM.div,
     h1 = React.DOM.h1,
@@ -3548,48 +3683,89 @@ var Connector = require('../../models/shared/connector'),
 module.exports = React.createClass({
   displayName: 'AppView',
 
+  hasUrlOption: function (option) {
+    return window.location.search.indexOf(option) !== -1;
+  },
+
   getInitialState: function () {
-    var board0Output = new Connector({type: 'output', count: 4}),
-        board0Bus = new Connector({type: 'bus', count: 6}),
-        board1Input = new Connector({type: 'input', count: 4}),
-        board1Output = new Connector({type: 'output', count: 4}),
-        board1Bus = new Connector({type: 'bus', count: 6}),
-        board2Input = new Connector({type: 'input', count: 4}),
-        board2Bus = new Connector({type: 'bus', count: 6}),
-        boards = [
-          new Board({number: 0, bezierReflectionModifier: 1, components: {keypad: new Keypad(), pic: new PIC({code: picCode[0]})}, connectors: {output: board0Output, bus: board0Bus}, fixedComponents: true}),
-          new Board({number: 1, bezierReflectionModifier: -0.5, components: {pic: new PIC({code: picCode[1]})}, connectors: {input: board1Input, output: board1Output, bus: board1Bus}, fixedComponents: true}),
-          new Board({number: 2, bezierReflectionModifier: 0.75, components: {pic: new PIC({code: picCode[2]}), led: new LED()}, connectors: {input: board2Input, bus: board2Bus}, fixedComponents: true})
-        ];
+    var numBoards = 3,
+        busSize = 8,
+        bezierReflectionModifiers = [1, -0.5, 0.75],
+        components = [],
+        connectors = [],
+        boards = [],
+        i, setBoard;
 
-    board0Output.setConnectsTo(board1Input);
-    board1Input.setConnectsTo(board0Output);
-    board1Output.setConnectsTo(board2Input);
-    board2Input.setConnectsTo(board1Output);
+    this.circuitResolver = new CircuitResolver({busSize: busSize, busInputSize: 0, busOutputSize: 0});
 
-    board0Output.board = boards[0];
-    board1Input.board = boards[1];
-    board1Output.board = boards[1];
-    board2Input.board = boards[2];
+    setBoard = function (hash, board) {
+      var keys = Object.keys(hash),
+          i;
+      for (i = 0; i < keys.length; i++) {
+        hash[keys[i]].board = board;
+      }
+    };
 
-    boards[0].allBoards = boards;
-    boards[1].allBoards = boards;
-    boards[2].allBoards = boards;
+    for (i = 0; i < numBoards; i++) {
+      connectors.push({
+        bus: new Connector({type: 'bus', count: busSize}),
+        input: new Connector({type: 'input', count: 8}),
+        output: new Connector({type: 'output', count: 8})
+      });
+
+      switch (i) {
+        case 0:
+          components.push({
+            keypad: new Keypad(),
+            pic: new PIC({code: picCode[0]})
+          });
+          break;
+        case 1:
+          components.push({
+            pic: new PIC({code: picCode[1]})
+          });
+          break;
+        case 2:
+          components.push({
+            pic: new PIC({code: picCode[2]}),
+            led: new LED()
+          });
+          break;
+      }
+
+      boards.push(new Board({
+        number: i,
+        bezierReflectionModifier: bezierReflectionModifiers[i],
+        components: components[i],
+        connectors: connectors[i],
+        fixedComponents: true,
+        resolver: this.circuitResolver
+      }));
+
+      setBoard(components[i], boards[i]);
+      setBoard(connectors[i], boards[i]);
+    }
+
+    this.circuitResolver.boards = boards;
+    this.circuitResolver.updateComponents();
 
     return {
       boards: boards,
       running: true,
-      showPinColors: window.location.search.indexOf('showPinColors') !== -1,
-      showAutoWiring: window.location.search.indexOf('allowAutoWiring') !== -1,
-      showSimulator: window.location.search.indexOf('showSimulator') !== -1,
-      showWireControls: window.location.search.indexOf('wireSettings') !== -1,
-      soloMode: window.location.search.indexOf('soloMode') !== -1,
+      showPinColors: this.hasUrlOption('showPinColors'),
+      showBusColors: this.hasUrlOption('showBusColors'),
+      showAutoWiring: this.hasUrlOption('allowAutoWiring'),
+      showSimulator: this.hasUrlOption('showSimulator'),
+      showWireControls: this.hasUrlOption('wireSettings'),
+      soloMode: this.hasUrlOption('soloMode'),
+      showBusLabels: this.hasUrlOption('showBusLabels'),
+      showProbe: this.hasUrlOption('showProbeInEdit') ? 'edit' : this.hasUrlOption('hideProbe') ? false : 'all',
       userBoardNumber: -1,
       users: {},
       currentBoard: 0,
       currentUser: null,
       currentGroup: null,
-      wireSettings: {color: '#00f', curvyness: 0.25},
+      wireSettings: {color: colors.wire, curvyness: 0.25},
       inIframe: inIframe()
     };
   },
@@ -3628,7 +3804,7 @@ module.exports = React.createClass({
         });
 
         userController.onGroupRefCreation(function() {
-          boardWatcher.startListeners();
+          boardWatcher.startListeners(3);
           userController.getFirebaseGroupRef().child('users').on("value", function(snapshot) {
             var fbUsers = snapshot.val(),
                 users = {};
@@ -3660,7 +3836,7 @@ module.exports = React.createClass({
   },
 
   updateWatchedBoard: function (board, boardInfo) {
-    var wires;
+    var wires, inputs;
 
     if (boardInfo && board.components.keypad) {
       board.components.keypad.selectButtonValue(boardInfo.button);
@@ -3669,6 +3845,10 @@ module.exports = React.createClass({
     // update the wires
     wires = (boardInfo && boardInfo.layout ? boardInfo.layout.wires : null) || [];
     board.updateWires(wires);
+
+    // update the inputs
+    inputs = (boardInfo && boardInfo.layout ? boardInfo.layout.inputs : null) || [];
+    board.updateInputs(inputs);
   },
 
   checkIfCircuitIsCorrect: function (callback) {
@@ -3776,22 +3956,21 @@ module.exports = React.createClass({
   },
 
   toggleAllWires: function () {
-    var defaultColor = '#00f',
+    var defaultColor = colors.wire,
 
         b0 = this.state.boards[0],
         b0Keypad = b0.components.keypad.pinMap,
         b0PIC = b0.components.pic.pinMap,
-        b0o = b0.connectors.output.holes,
+        b0Bus = b0.connectors.bus.holes,
 
         b1 = this.state.boards[1],
         b1PIC = b1.components.pic.pinMap,
-        b1o = b1.connectors.output.holes,
-        b1i = b1.connectors.input.holes,
+        b1Bus = b1.connectors.bus.holes,
 
         b2 = this.state.boards[2],
         b2PIC = b2.components.pic.pinMap,
         b2LED = b2.components.led.pinMap,
-        b2i = b2.connectors.input.holes,
+        b2Bus = b2.connectors.bus.holes,
         wire, boardWires, i, j, hasWires;
 
     boardWires = [
@@ -3803,26 +3982,26 @@ module.exports = React.createClass({
         {source: b0Keypad.ROW1, dest: b0PIC.RB4, color: defaultColor},
         {source: b0Keypad.ROW2, dest: b0PIC.RB5, color: defaultColor},
         {source: b0Keypad.ROW3, dest: b0PIC.RB6, color: defaultColor},
-        {source: b0PIC.RA0, dest: b0o[0], color: b0o[0].color},
-        {source: b0PIC.RA1, dest: b0o[1], color: b0o[1].color},
-        {source: b0PIC.RA2, dest: b0o[2], color: b0o[2].color},
-        {source: b0PIC.RA3, dest: b0o[3], color: b0o[3].color}
+        {source: b0PIC.RA0, dest: b0Bus[0], color: b0Bus[0].color},
+        {source: b0PIC.RA1, dest: b0Bus[1], color: b0Bus[1].color},
+        {source: b0PIC.RA2, dest: b0Bus[2], color: b0Bus[2].color},
+        {source: b0PIC.RA3, dest: b0Bus[3], color: b0Bus[3].color}
       ],
       [
-        {source: b1i[0], dest: b1PIC.RB0, color: b1i[0].color},
-        {source: b1i[1], dest: b1PIC.RB1, color: b1i[1].color},
-        {source: b1i[2], dest: b1PIC.RB2, color: b1i[2].color},
-        {source: b1i[3], dest: b1PIC.RB3, color: b1i[3].color},
-        {source: b1PIC.RA0, dest: b1o[0], color: b1o[0].color},
-        {source: b1PIC.RA1, dest: b1o[1], color: b1o[1].color},
-        {source: b1PIC.RA2, dest: b1o[2], color: b1o[2].color},
-        {source: b1PIC.RA3, dest: b1o[3], color: b1o[3].color}
+        {source: b1Bus[0], dest: b1PIC.RB0, color: b1Bus[0].color},
+        {source: b1Bus[1], dest: b1PIC.RB1, color: b1Bus[1].color},
+        {source: b1Bus[2], dest: b1PIC.RB2, color: b1Bus[2].color},
+        {source: b1Bus[3], dest: b1PIC.RB3, color: b1Bus[3].color},
+        {source: b1PIC.RA0, dest: b1Bus[4], color: b1Bus[4].color},
+        {source: b1PIC.RA1, dest: b1Bus[5], color: b1Bus[5].color},
+        {source: b1PIC.RA2, dest: b1Bus[6], color: b1Bus[6].color},
+        {source: b1PIC.RA3, dest: b1Bus[7], color: b1Bus[7].color}
       ],
       [
-        {source: b2i[0], dest: b2PIC.RA0, color: b2i[0].color},
-        {source: b2i[1], dest: b2PIC.RA1, color: b2i[1].color},
-        {source: b2i[2], dest: b2PIC.RA2, color: b2i[2].color},
-        {source: b2i[3], dest: b2PIC.RA3, color: b2i[3].color},
+        {source: b2Bus[4], dest: b2PIC.RA0, color: b2Bus[4].color},
+        {source: b2Bus[5], dest: b2PIC.RA1, color: b2Bus[5].color},
+        {source: b2Bus[6], dest: b2PIC.RA2, color: b2Bus[6].color},
+        {source: b2Bus[7], dest: b2PIC.RA3, color: b2Bus[7].color},
         {source: b2PIC.RB0, dest: b2LED.a, color: defaultColor},
         {source: b2PIC.RB1, dest: b2LED.b, color: defaultColor},
         {source: b2PIC.RB2, dest: b2LED.c, color: defaultColor},
@@ -3833,17 +4012,26 @@ module.exports = React.createClass({
       ]
     ];
 
+    // check if any have wires
+    hasWires = false;
     for (i = 0; i < this.state.boards.length; i++) {
-      hasWires = this.state.boards[i].wires.length > 0;
+      hasWires = hasWires || (this.state.boards[i].wires.length > 0);
+    }
+
+    for (i = 0; i < this.state.boards.length; i++) {
       this.state.boards[i].clear();
       if (!hasWires) {
         for (j = 0; j < boardWires[i].length; j++) {
           wire = boardWires[i][j];
-          this.state.boards[i].addWire(wire.source, wire.dest, wire.color);
+          // add the wire without resolving the circuits
+          this.state.boards[i].addWire(wire.source, wire.dest, wire.color, true);
         }
       }
       boardWatcher.circuitChanged(this.state.boards[i]);
     }
+
+    // rewire and resolve
+    this.circuitResolver.rewire();
 
     this.setState({boards: this.state.boards});
   },
@@ -3863,17 +4051,18 @@ module.exports = React.createClass({
       OfflineCheckView({}),
       WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect, soloMode: this.state.soloMode}),
       div({id: 'picapp'},
-        WorkspaceView({constants: constants, boards: this.state.boards, stepping: !this.state.running, showPinColors: this.state.showPinColors, users: this.state.users, userBoardNumber: this.state.userBoardNumber, wireSettings: this.state.wireSettings, forceRerender: this.forceRerender, soloMode: this.state.soloMode}),
+        WorkspaceView({constants: constants, boards: this.state.boards, stepping: !this.state.running, showPinColors: this.state.showPinColors, users: this.state.users, userBoardNumber: this.state.userBoardNumber, wireSettings: this.state.wireSettings, forceRerender: this.forceRerender, soloMode: this.state.soloMode, showBusLabels: this.state.showBusLabels, showProbe: this.state.showProbe, showBusColors: this.state.showBusColors}),
         this.state.showSimulator ? SimulatorControlView({running: this.state.running, run: this.run, step: this.step, reset: this.reset}) : null,
         this.state.showAutoWiring ? AutoWiringView({top: autoWiringTop, running: this.state.running, toggleAllWires: this.toggleAllWires}) : null,
         this.state.soloMode ? null : SidebarChatView({numClients: 3, top: sidebarTop})
-      )
+      ),
+      VersionView({})
     );
   }
 });
 
 
-},{"../../controllers/pic/board-watcher":2,"../../controllers/shared/log":4,"../../controllers/shared/user":5,"../../data/pic/pic-code":7,"../../data/shared/in-iframe":9,"../../models/pic/keypad":14,"../../models/pic/led":15,"../../models/pic/pic":16,"../../models/shared/board":18,"../../models/shared/connector":20,"../shared/events":43,"../shared/offline-check":46,"../shared/sidebar-chat":51,"../shared/we-got-it":54,"../shared/wire-controls":55,"./auto-wiring":28,"./constants":31,"./simulator-control":35,"./workspace":36}],28:[function(require,module,exports){
+},{"../../controllers/pic/board-watcher":2,"../../controllers/shared/log":4,"../../controllers/shared/user":5,"../../data/pic/pic-code":7,"../../data/shared/in-iframe":9,"../../models/pic/keypad":14,"../../models/pic/led":15,"../../models/pic/pic":16,"../../models/shared/board":18,"../../models/shared/circuit-resolver":19,"../../models/shared/connector":21,"../shared/colors":42,"../shared/events":45,"../shared/offline-check":48,"../shared/sidebar-chat":52,"../shared/version":55,"../shared/we-got-it":57,"../shared/wire-controls":58,"./auto-wiring":29,"./constants":32,"./simulator-control":36,"./workspace":37}],29:[function(require,module,exports){
 var div = React.DOM.div,
     button = React.DOM.button;
 
@@ -3895,7 +4084,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],29:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 var div = React.DOM.div;
 
 module.exports = React.createClass({
@@ -3916,7 +4105,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],30:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 var g = React.DOM.g,
     rect = React.DOM.rect,
     text = React.DOM.text;
@@ -3940,7 +4129,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],31:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
 var workspaceWidth = 936 - 200,
     constants;
 
@@ -3948,6 +4137,7 @@ module.exports = constants = {
   WORKSPACE_HEIGHT: 768,
   WORKSPACE_WIDTH: workspaceWidth,
   RIBBON_HEIGHT: 21,
+  SPACER_HEIGHT: 21,
   SELECTED_FILL: '#bbb',
   UNSELECTED_FILL: '#777',
 
@@ -3962,6 +4152,7 @@ module.exports = constants = {
         FOO_WIRE_WIDTH: 1,
         CONNECTOR_HOLE_DIAMETER: 15,
         CONNECTOR_HOLE_MARGIN: 4,
+        CONNECTOR_SPACING: 20,
         BOARD_WIDTH: workspaceWidth,
         BOARD_HEIGHT: boardHeight,
         BOARD_LEFT: 0,
@@ -3970,6 +4161,7 @@ module.exports = constants = {
         COMPONENT_SPACING: boardHeight * 0.25,
         PIC_FONT_SIZE: 12,
         BUTTON_FONT_SIZE: 16,
+        BUS_FONT_SIZE: 14,
         PIN_WIDTH: 13.72,
         PIN_HEIGHT: 13.72,
         PROBE_WIDTH: 150,
@@ -3985,6 +4177,7 @@ module.exports = constants = {
         FOO_WIRE_WIDTH: 1,
         CONNECTOR_HOLE_DIAMETER: 10,
         CONNECTOR_HOLE_MARGIN: 3,
+        CONNECTOR_SPACING: 15,
         BOARD_WIDTH: workspaceWidth - boardLeft,
         BOARD_HEIGHT: boardHeight,
         BOARD_LEFT: boardLeft,
@@ -3993,6 +4186,7 @@ module.exports = constants = {
         COMPONENT_SPACING: boardHeight * 0.5,
         PIC_FONT_SIZE: 8,
         BUTTON_FONT_SIZE: 13,
+        BUS_FONT_SIZE: 10,
         PIN_WIDTH: 8.64,
         PIN_HEIGHT: 8.64,
         PROBE_WIDTH: 95,
@@ -4005,7 +4199,7 @@ module.exports = constants = {
 };
 
 
-},{}],32:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 var PinView = React.createFactory(require('../shared/pin')),
     PinLabelView = React.createFactory(require('../shared/pin-label')),
     ButtonView = React.createFactory(require('./button')),
@@ -4068,7 +4262,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../shared/events":43,"../shared/pin":48,"../shared/pin-label":47,"./button":30}],33:[function(require,module,exports){
+},{"../shared/events":45,"../shared/pin":50,"../shared/pin-label":49,"./button":31}],34:[function(require,module,exports){
 var PinView = React.createFactory(require('../shared/pin')),
     PinLabelView = React.createFactory(require('../shared/pin-label')),
     path = React.DOM.path,
@@ -4119,7 +4313,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../shared/pin":48,"../shared/pin-label":47}],34:[function(require,module,exports){
+},{"../shared/pin":50,"../shared/pin-label":49}],35:[function(require,module,exports){
 var PinView = React.createFactory(require('../shared/pin')),
     PinLabelView = React.createFactory(require('../shared/pin-label')),
     line = React.DOM.line,
@@ -4276,7 +4470,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../shared/pin":48,"../shared/pin-label":47}],35:[function(require,module,exports){
+},{"../shared/pin":50,"../shared/pin-label":49}],36:[function(require,module,exports){
 var button = React.DOM.button,
     div = React.DOM.div;
   
@@ -4318,10 +4512,10 @@ module.exports = React.createClass({
 });
 
 
-},{}],36:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 var BoardView = React.createFactory(require('../shared/board')),
     BoardEditorView = React.createFactory(require('./board-editor')),
-    RibbonView = React.createFactory(require('../shared/ribbon')),
+    SpacerView = React.createFactory(require('../shared/spacer')),
     BusView = React.createFactory(require('../shared/bus')),
     events = require('../shared/events'),
     div = React.DOM.div;
@@ -4363,11 +4557,13 @@ module.exports = React.createClass({
           user: this.props.users[this.state.selectedBoard.number],
           stepping: this.props.stepping,
           showPinColors: this.props.showPinColors,
+          showBusColors: this.props.showBusColors,
           toggleBoard: this.toggleBoard,
-          showProbe: true,
+          showProbe: (this.props.showProbe == 'edit') || (this.props.showProbe == 'all'),
           wireSettings: this.props.wireSettings,
           forceRerender: this.props.forceRerender,
-          soloMode: this.props.soloMode
+          soloMode: this.props.soloMode,
+          showBusLabels: this.props.showBusLabels
         }),
         editable ? BoardEditorView({constants: this.props.constants, board: this.state.selectedBoard}) : null
       );
@@ -4381,15 +4577,16 @@ module.exports = React.createClass({
           user: this.props.users[0],
           stepping: this.props.stepping,
           showPinColors: this.props.showPinColors,
+          showBusColors: this.props.showBusColors,
           toggleBoard: this.toggleBoard,
-          showProbe: true,
+          showProbe: this.props.showProbe == 'all',
           wireSettings: this.props.wireSettings,
           forceRerender: this.props.forceRerender,
-          soloMode: this.props.soloMode
+          soloMode: this.props.soloMode,
+          showBusLabels: this.props.showBusLabels
         }),
-        RibbonView({
-          constants: this.props.constants,
-          connector: this.props.boards[1].connectors.input
+        SpacerView({
+          constants: this.props.constants
         }),
         BoardView({
           constants: this.props.constants,
@@ -4398,15 +4595,16 @@ module.exports = React.createClass({
           user: this.props.users[1],
           stepping: this.props.stepping,
           showPinColors: this.props.showPinColors,
+          showBusColors: this.props.showBusColors,
           toggleBoard: this.toggleBoard,
-          showProbe: true,
+          showProbe: this.props.showProbe == 'all',
           wireSettings: this.props.wireSettings,
           forceRerender: this.props.forceRerender,
-          soloMode: this.props.soloMode
+          soloMode: this.props.soloMode,
+          showBusLabels: this.props.showBusLabels
         }),
-        RibbonView({
-          constants: this.props.constants,
-          connector: this.props.boards[2].connectors.input
+        SpacerView({
+          constants: this.props.constants
         }),
         BoardView({
           constants: this.props.constants,
@@ -4415,11 +4613,13 @@ module.exports = React.createClass({
           user: this.props.users[2],
           stepping: this.props.stepping,
           showPinColors: this.props.showPinColors,
+          showBusColors: this.props.showBusColors,
           toggleBoard: this.toggleBoard,
-          showProbe: true,
+          showProbe: this.props.showProbe == 'all',
           wireSettings: this.props.wireSettings,
           forceRerender: this.props.forceRerender,
-          soloMode: this.props.soloMode
+          soloMode: this.props.soloMode,
+          showBusLabels: this.props.showBusLabels
         }),
         BusView({
           constants: this.props.constants,
@@ -4431,7 +4631,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../shared/board":37,"../shared/bus":38,"../shared/events":43,"../shared/ribbon":50,"./board-editor":29}],37:[function(require,module,exports){
+},{"../shared/board":38,"../shared/bus":39,"../shared/events":45,"../shared/spacer":53,"./board-editor":30}],38:[function(require,module,exports){
 var boardWatcher = require('../../controllers/pic/board-watcher'),
     ConnectorView = React.createFactory(require('./connector')),
     WireView = React.createFactory(require('./wire')),
@@ -4653,6 +4853,8 @@ module.exports = React.createClass({
     stopDrag = function (e) {
       var dest = self.state.hoverSource,
           addedWire = false,
+          dx = self.state.drawConnection ? (self.state.drawConnection.x2 - self.state.drawConnection.x1) : 0,
+          dy = self.state.drawConnection ? (self.state.drawConnection.y2 - self.state.drawConnection.y1) : 0,
           wire;
 
       e.stopPropagation();
@@ -4661,6 +4863,11 @@ module.exports = React.createClass({
       $window.off('mousemove', drag);
       $window.off('mouseup', stopDrag);
       self.setState({drawConnection: null});
+
+      // this handles slight movements of the mouse
+      if (moved) {
+        moved = (dx * dx) + (dy * dy) > 10;
+      }
 
       if (moved && dest && (dest !== source)) {
         addedWire = true;
@@ -4931,14 +5138,14 @@ module.exports = React.createClass({
     // used to find wire click position
     this.svgOffset = $(this.refs.svg).offset();
 
-    this.props.board.resolveCircuitInputVoltages();
+    this.props.board.resolver.resolveCircuitInputVoltages();
 
     // calculate the position so the wires can be updated
     $.each(['input', 'output', 'bus'], function (index, connectorName) {
       var connector = self.props.board.connectors[connectorName];
       if (connector) {
-        connector.calculatePosition(self.props.constants, self.props.selected);
-        connectors.push(ConnectorView({key: connectorName, constants: self.props.constants, connector: connector, selected: self.props.selected, editable: self.props.editable, drawConnection: self.drawConnection, reportHover: self.reportHover, forceRerender: self.props.forceRerender}));
+        connector.calculatePosition(self.props.constants, self.props.selected, self.props.board.connectors);
+        connectors.push(ConnectorView({key: connectorName, constants: self.props.constants, connector: connector, selected: self.props.selected, editable: self.props.editable, drawConnection: self.drawConnection, reportHover: self.reportHover, forceRerender: self.props.forceRerender, showBusLabels: self.props.showBusLabels, showBusColors: self.props.showBusColors}));
       }
     });
 
@@ -4977,7 +5184,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/pic/board-watcher":2,"../../models/logic-gates/logic-chip":12,"../shared/events":43,"./connector":42,"./layout":44,"./logic-chip-drawer":45,"./probe":49,"./wire":56}],38:[function(require,module,exports){
+},{"../../controllers/pic/board-watcher":2,"../../models/logic-gates/logic-chip":12,"../shared/events":45,"./connector":44,"./layout":46,"./logic-chip-drawer":47,"./probe":51,"./wire":59}],39:[function(require,module,exports){
 var line = React.DOM.line,
     div = React.DOM.div,
     svg = React.DOM.svg,
@@ -5000,7 +5207,7 @@ module.exports = React.createClass({
       for (i = 0; i < this.props.boards.length; i++) {
         board = this.props.boards[i];
         connector = board.connectors.bus;
-        y = ((selectedConstants.BOARD_HEIGHT + this.props.constants.RIBBON_HEIGHT) * i) + (this.props.hasTopRibbon ? this.props.constants.RIBBON_HEIGHT : 0);
+        y = ((selectedConstants.BOARD_HEIGHT + this.props.constants.RIBBON_HEIGHT) * i);
         wireStartPositions = [];
         for (j = 0; j < connector.holes.length; j++) {
           hole = connector.holes[j];
@@ -5021,6 +5228,19 @@ module.exports = React.createClass({
         wireEndPosition = lastConnectorPosition[i];
         wires.push(line({key: 'v'+(keyIndex++), x1: wireStartPosition.x, y1: wireStartPosition.y, x2: wireEndPosition.x, y2: wireEndPosition.y, strokeWidth: selectedConstants.WIRE_WIDTH, stroke: wireColors[i % wireColors.length]}));
       }
+
+      if (this.props.inputSize) {
+        for (i = 0; i < this.props.inputSize; i++) {
+          wireEndPosition = firstConnectorPosition[i];
+          wires.push(line({key: 'i'+(keyIndex++), x1: wireEndPosition.x, y1: 0, x2: wireEndPosition.x, y2: wireEndPosition.y, strokeWidth: selectedConstants.WIRE_WIDTH, stroke: wireColors[i % wireColors.length]}));
+        }
+      }
+      if (this.props.outputSize) {
+        for (i = lastConnectorPosition.length - 1; i >= lastConnectorPosition.length - this.props.outputSize; i--) {
+          wireStartPosition = lastConnectorPosition[i];
+          wires.push(line({key: 'i'+(keyIndex++), x1: wireStartPosition.x, y1: wireStartPosition.y, x2: wireStartPosition.x, y2: this.props.height, strokeWidth: selectedConstants.WIRE_WIDTH, stroke: wireColors[i % wireColors.length]}));
+        }
+      }
     }
 
     style = {width: selectedConstants.BOARD_LEFT};
@@ -5034,7 +5254,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../data/shared/wire-colors":10}],39:[function(require,module,exports){
+},{"../../data/shared/wire-colors":10}],40:[function(require,module,exports){
 var div = React.DOM.div,
     b = React.DOM.b;
     
@@ -5051,7 +5271,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],40:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 var userController = require('../../controllers/shared/user'),
     ChatItemView = React.createFactory(require('./chat-item')),
     div = React.DOM.div;
@@ -5078,10 +5298,17 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/shared/user":5,"./chat-item":39}],41:[function(require,module,exports){
+},{"../../controllers/shared/user":5,"./chat-item":40}],42:[function(require,module,exports){
+module.exports = {
+  wire: '#ffa500'
+};
+
+},{}],43:[function(require,module,exports){
 var g = React.DOM.g,
     circle = React.DOM.circle,
-    title = React.DOM.title;
+    rect = React.DOM.rect,
+    title = React.DOM.title,
+    events = require('../shared/events');
 
 module.exports = React.createClass({
   displayName: 'ConnectorHoleView',
@@ -5104,49 +5331,86 @@ module.exports = React.createClass({
   },
 
   handleToggle: function () {
-    if (!this.props.hole.inputMode) {
-      this.props.hole.toggleForcedVoltage();
-      this.props.hole.connector.board.resolveIOVoltagesAcrossAllBoards();
+    if (this.props.hole.toggleable) {
+      var newVoltage = this.props.hole.toggleForcedVoltage();
+      this.props.hole.connector.board.resolver.resolve();
       this.props.forceRerender();
+      events.logEvent(events.TOGGLED_SWITCH_EVENT, newVoltage, {board: this.props.hole.connector.board, hole: this.props.hole});
     }
   },
 
+  renderInput: function (hole, enableHandlers) {
+    var radius = hole.radius,
+        layout = {x: hole.cx - radius, y: hole.cy - radius, width: radius * 2, height: radius},
+        isLow = hole.isLow(),
+        backgroundColor = '#777';
+    return g({onClick: !enableHandlers && this.props.editable ? this.handleToggle : null, onMouseDown: enableHandlers ? this.startDrag : null, onMouseOver: enableHandlers ? this.mouseOver : null, onMouseOut: enableHandlers ? this.mouseOut : null},
+      rect({x: layout.x, y: layout.y, width: layout.width, height: layout.height, fill: isLow ? hole.getColor() : backgroundColor},
+        title({}, hole.getLabel())
+      ),
+      rect({x: layout.x, y: layout.y + layout.height, width: layout.width, height: layout.height, fill: !isLow ? hole.getColor() : backgroundColor},
+        title({}, hole.getLabel())
+      )
+    );
+  },
+
+  renderOutput: function (hole, enableHandlers) {
+    return circle({cx: hole.cx, cy: hole.cy, r: hole.radius, fill: hole.getColor(), onMouseDown: enableHandlers ? this.startDrag : null, onMouseOver: enableHandlers ? this.mouseOver : null, onMouseOut: enableHandlers ? this.mouseOut : null},
+      title({}, hole.getLabel())
+    );
+  },
+
+  renderBus: function (hole, enableHandlers) {
+    var radius = hole.radius;
+    return rect({x: hole.cx - radius, y: hole.cy - radius, width: radius * 2, height: radius * 2, fill: hole.getColor(this.props.showBusColors), onMouseDown: enableHandlers ? this.startDrag : null, onMouseOver: enableHandlers ? this.mouseOver : null, onMouseOut: enableHandlers ? this.mouseOut : null},
+      title({}, hole.getLabel())
+    );
+  },
+
   render: function () {
-    var enableHandlers = this.props.selected && this.props.editable;
-    return g({}, circle({cx: this.props.hole.cx, cy: this.props.hole.cy, r: this.props.hole.radius, fill: this.props.hole.getColor(), onClick: !enableHandlers && this.props.editable ? this.handleToggle : null, onMouseDown: enableHandlers ? this.startDrag : null, onMouseOver: enableHandlers ? this.mouseOver : null, onMouseOut: enableHandlers ? this.mouseOut : null},
-      title({}, this.props.hole.label)
-    ));
+    var enableHandlers = this.props.selected && this.props.editable,
+        hole = this.props.hole,
+        symbol = hole.type == 'input' ? this.renderInput(hole, enableHandlers) : (hole.type == 'output' ? this.renderOutput(hole, enableHandlers) : this.renderBus(hole, enableHandlers));
+    return g({}, symbol);
   }
 });
 
 
-},{}],42:[function(require,module,exports){
+},{"../shared/events":45}],44:[function(require,module,exports){
 var ConnectorHoleView = React.createFactory(require('./connector-hole')),
     svg = React.DOM.svg,
-    rect = React.DOM.rect;
+    rect = React.DOM.rect,
+    text = React.DOM.text;
 
 module.exports = React.createClass({
   displayName: 'ConnectorView',
 
   render: function () {
     var position = this.props.connector.position,
+        selectedConstants = this.props.constants.selectedConstants(this.props.selected),
+        fontSize = selectedConstants.BUS_FONT_SIZE,
         holes = [],
+        labels = [],
         hole, i;
 
     for (i = 0; i < this.props.connector.holes.length; i++) {
       hole = this.props.connector.holes[i];
-      holes.push(ConnectorHoleView({key: i, connector: this.props.connector, hole: hole, selected: this.props.selected, editable: this.props.editable, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover, forceRerender: this.props.forceRerender}));
+      holes.push(ConnectorHoleView({key: i, connector: this.props.connector, hole: hole, selected: this.props.selected, editable: this.props.editable, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover, forceRerender: this.props.forceRerender, showBusColors: this.props.showBusColors}));
+      if (this.props.showBusLabels && (this.props.connector.type == 'bus')) {
+        labels.push(text({x: position.x + position.width + hole.radius, y: hole.cy + (fontSize / 2), fontSize: fontSize, fill: '#000', style: {textAnchor: 'start'}}, hole.label));
+      }
     }
 
     return svg({},
       rect({x: position.x, y: position.y, width: position.width, height: position.height, fill: '#aaa'}),
-      holes
+      holes,
+      labels
     );
   }
 });
 
 
-},{"./connector-hole":41}],43:[function(require,module,exports){
+},{"./connector-hole":43}],45:[function(require,module,exports){
 var boardWatcher = require('../../controllers/pic/board-watcher'),
     logController = require('../../controllers/shared/log'),
     events;
@@ -5165,6 +5429,7 @@ module.exports = events = {
   ADD_LOGIC_CHIP_EVENT: 'Add Logic Chip',
   REMOVE_LOGIC_CHIP_EVENT: 'Remove Logic Chip',
   MOVE_LOGIC_CHIP_EVENT: 'Move Logic Chip',
+  TOGGLED_SWITCH_EVENT: 'Toggled Switch',
 
   logEvent: function (eventName, value, parameters) {
     var loggedValue = null,
@@ -5180,6 +5445,14 @@ module.exports = events = {
         board: value.component.board.number
       };
       boardWatcher.pushedButton(parameters.board, value.value);
+    }
+    else if (eventName == events.TOGGLED_SWITCH_EVENT) {
+      loggedValue = value;
+      loggedParameters = {
+        switch: parameters.hole.index,
+        board: parameters.board.number
+      };
+      boardWatcher.circuitChanged(parameters.board);
     }
     else if (eventName == events.ADD_WIRE_EVENT) {
       loggedParameters = {
@@ -5215,7 +5488,7 @@ module.exports = events = {
 };
 
 
-},{"../../controllers/pic/board-watcher":2,"../../controllers/shared/log":4}],44:[function(require,module,exports){
+},{"../../controllers/pic/board-watcher":2,"../../controllers/shared/log":4}],46:[function(require,module,exports){
 module.exports = {
   getBezierPath: function (options) {
     var closeCutoff = 300,
@@ -5248,6 +5521,7 @@ module.exports = {
 
   calculateComponentRect: function (constants, selected, index, count, componentWidth, componentHeight) {
     var selectedConstants = constants.selectedConstants(selected),
+        connectorHeight = selectedConstants.CONNECTOR_HOLE_DIAMETER + (selectedConstants.CONNECTOR_HOLE_MARGIN * 2),
         startX, position;
 
     componentWidth = componentWidth || selectedConstants.COMPONENT_WIDTH;
@@ -5257,7 +5531,7 @@ module.exports = {
 
     position = {
       x: startX + (index * (componentWidth + selectedConstants.COMPONENT_SPACING)),
-      y: ((selectedConstants.BOARD_HEIGHT - componentHeight) / 2),
+      y: ((selectedConstants.BOARD_HEIGHT - componentHeight + connectorHeight) / 2),
       width: componentWidth,
       height: componentHeight
     };
@@ -5267,7 +5541,7 @@ module.exports = {
 };
 
 
-},{}],45:[function(require,module,exports){
+},{}],47:[function(require,module,exports){
 var g = React.DOM.g,
     rect = React.DOM.rect,
     text = React.DOM.text,
@@ -5412,7 +5686,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../data/logic-gates/chip-names":6}],46:[function(require,module,exports){
+},{"../../data/logic-gates/chip-names":6}],48:[function(require,module,exports){
 var logController = require('../../controllers/shared/log'),
     div = React.DOM.div,
     h2 = React.DOM.h2,
@@ -5477,7 +5751,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/shared/log":4}],47:[function(require,module,exports){
+},{"../../controllers/shared/log":4}],49:[function(require,module,exports){
 var text = React.DOM.text;
 
 module.exports = React.createClass({
@@ -5500,9 +5774,11 @@ module.exports = React.createClass({
 });
 
 
-},{}],48:[function(require,module,exports){
-var g = React.DOM.g,
-    rect = React.DOM.rect;
+},{}],50:[function(require,module,exports){
+var colors = require('./colors'),
+    g = React.DOM.g,
+    rect = React.DOM.rect,
+    title = React.DOM.title;
 
 module.exports = React.createClass({
   displayName: 'PinView',
@@ -5516,12 +5792,14 @@ module.exports = React.createClass({
   },
 
   startDrag: function (e) {
-    this.props.drawConnection(this.props.pin, e, '#00f');
+    this.props.drawConnection(this.props.pin, e, colors.wire);
   },
 
   renderPin: function (pin, enableHandlers) {
     return g({onMouseDown: enableHandlers ? this.startDrag : null, onMouseOver: enableHandlers ? this.mouseOver : null, onMouseOut: enableHandlers ? this.mouseOut : null},
-      rect({x: pin.x, y: pin.y, width: pin.width, height: pin.height, fill: '#777'})
+      rect({x: pin.x, y: pin.y, width: pin.width, height: pin.height, fill: '#777'},
+        title({}, pin.getLabel())
+      )
     );
   },
 
@@ -5566,8 +5844,9 @@ module.exports = React.createClass({
 });
 
 
-},{}],49:[function(require,module,exports){
+},{"./colors":42}],51:[function(require,module,exports){
 var events = require('../shared/events'),
+    TTL = require('../../models/shared/ttl'),
     g = React.DOM.g,
     path = React.DOM.path,
     circle = React.DOM.circle,
@@ -5579,7 +5858,10 @@ module.exports = React.createClass({
 
   getInitialState: function () {
     return {
-      dragging: false
+      dragging: false,
+      lowColor: TTL.getColor(TTL.LOW_VOLTAGE),
+      highColor: TTL.getColor(TTL.HIGH_VOLTAGE),
+      invalidColor: TTL.getColor(TTL.INVALID_VOLTAGE)
     };
   },
 
@@ -5747,46 +6029,16 @@ module.exports = React.createClass({
       path({d: handlePath, fill: '#eee', stroke: '#777'}), // '#FDCA6E'
       rect({x: x + (2 * height), y: y + (0.15 * height), width: (2 * height), height: (0.7 * height), stroke: '#555', fill: '#ddd'}),
       text({x: x + (3 * height), y: middleY + 1, fontSize: selectedConstants.PROBE_HEIGHT * 0.6, fill: '#000', style: {textAnchor: 'middle'}, dominantBaseline: 'middle'}, voltage),
-      circle({cx: x + (4.75 * height), cy: middleY, r: height / 4, fill: 'red', stroke: '#ccc', fillOpacity: redFill}),
-      circle({cx: x + (5.75 * height), cy: middleY, r: height / 4, fill: 'green', stroke: '#ccc', fillOpacity: greenFill}),
-      circle({cx: x + (6.75 * height), cy: middleY, r: height / 4, fill: '#ffbf00', stroke: '#ccc', fillOpacity: amberFill})
+      circle({cx: x + (4.75 * height), cy: middleY, r: height / 4, fill: this.state.highColor, stroke: '#ccc', fillOpacity: redFill}),
+      circle({cx: x + (5.75 * height), cy: middleY, r: height / 4, fill: this.state.lowColor, stroke: '#ccc', fillOpacity: greenFill}),
+      circle({cx: x + (6.75 * height), cy: middleY, r: height / 4, fill: this.state.invalidColor, stroke: '#ccc', fillOpacity: amberFill})
     );
   }
 });
 
 
-},{"../shared/events":43}],50:[function(require,module,exports){
-var line = React.DOM.line,
-    div = React.DOM.div,
-    svg = React.DOM.svg,
-    wireColors = require('../../data/shared/wire-colors');
 
-module.exports = React.createClass({
-  displayName: 'RibbonView',
-
-  render: function () {
-    var selectedConstants = this.props.constants.selectedConstants(this.props.selected),
-        wires = [],
-        boardLeft = selectedConstants.BOARD_LEFT,
-        hole, i;
-
-    if (this.props.connector) {
-      this.props.connector.calculatePosition(this.props.constants, this.props.selected);
-      for (i = 0; i < this.props.connector.holes.length; i++) {
-        hole = this.props.connector.holes[i];
-        if (!hole.hasForcedVoltage) {
-          wires.push(line({key: i, x1: hole.cx + boardLeft, y1: 0, x2: hole.cx + boardLeft, y2: this.props.constants.RIBBON_HEIGHT, strokeWidth: selectedConstants.WIRE_WIDTH, stroke: wireColors[i % wireColors.length]}));
-        }
-      }
-    }
-    return div({className: 'ribbon', style: {height: this.props.constants.RIBBON_HEIGHT}},
-      svg({}, wires)
-    );
-  }
-});
-
-
-},{"../../data/shared/wire-colors":10}],51:[function(require,module,exports){
+},{"../../models/shared/ttl":24,"../shared/events":45}],52:[function(require,module,exports){
 var userController = require('../../controllers/shared/user'),
     logController = require('../../controllers/shared/log'),
     ChatItems = React.createFactory(require('./chat-items')),
@@ -5910,7 +6162,19 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/shared/log":4,"../../controllers/shared/user":5,"./chat-items":40}],52:[function(require,module,exports){
+},{"../../controllers/shared/log":4,"../../controllers/shared/user":5,"./chat-items":41}],53:[function(require,module,exports){
+var div = React.DOM.div;
+
+module.exports = React.createClass({
+  displayName: 'SpacerView',
+
+  render: function () {
+    return div({className: 'spacer', style: {height: this.props.constants.SPACER_HEIGHT}});
+  }
+});
+
+
+},{}],54:[function(require,module,exports){
 var userController, UserRegistrationView, UserRegistrationViewFactory,
     groups = require('../../data/shared/group-names');
 
@@ -6136,7 +6400,38 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
 UserRegistrationViewFactory = React.createFactory(UserRegistrationView);
 
 
-},{"../../data/shared/group-names":8}],53:[function(require,module,exports){
+},{"../../data/shared/group-names":8}],55:[function(require,module,exports){
+// NOTE: the __TT* variables are replaced by the browserify gulp task
+
+var div = React.DOM.div,
+    a = React.DOM.a;
+
+module.exports = React.createClass({
+  displayName: 'Version',
+
+  renderGitCommit: function () {
+    var commitHash = 'e7a7125a0b18c69a15bab40e77e295842323a841';
+
+    if (commitHash[0] != '_') {
+      return div({className: 'version-info'},
+        a({href: 'https://github.com/concord-consortium/teaching-teamwork/commit/' + commitHash, target: '_blank'}, 'Commit: ' + commitHash)
+      );
+    }
+    else {
+      return null;
+    }
+  },
+
+  render: function() {
+    return div({className: "version-wrapper"},
+      div({className: 'version-info'}, 'Version 1.0.1, built on Sat Oct 22 2016 02:30:17 GMT-0700 (PDT)'),
+      this.renderGitCommit()
+    );
+  }
+});
+
+
+},{}],56:[function(require,module,exports){
 var div = React.DOM.div,
     h2 = React.DOM.h2,
     logController = require('../../controllers/shared/log'),
@@ -6166,7 +6461,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/shared/log":4}],54:[function(require,module,exports){
+},{"../../controllers/shared/log":4}],57:[function(require,module,exports){
 var WeGotItPopupView = React.createFactory(require('./we-got-it-popup')),
     userController = require('../../controllers/shared/user'),
     logController = require('../../controllers/shared/log'),
@@ -6251,7 +6546,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../controllers/shared/log":4,"../../controllers/shared/user":5,"./we-got-it-popup":53}],55:[function(require,module,exports){
+},{"../../controllers/shared/log":4,"../../controllers/shared/user":5,"./we-got-it-popup":56}],58:[function(require,module,exports){
 var div = React.DOM.div,
     b = React.DOM.b,
     input = React.DOM.input,
@@ -6282,7 +6577,7 @@ module.exports = React.createClass({
 });
 
 
-},{}],56:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 var layout = require('../../views/shared/layout'),
     path = React.DOM.path;
 
@@ -6329,7 +6624,7 @@ module.exports = React.createClass({
 });
 
 
-},{"../../views/shared/layout":44}],57:[function(require,module,exports){
+},{"../../views/shared/layout":46}],60:[function(require,module,exports){
 var structuredClone = require('./structured-clone');
 var HELLO_INTERVAL_LENGTH = 200;
 var HELLO_TIMEOUT_LENGTH = 60000;
@@ -6478,7 +6773,7 @@ module.exports = function getIFrameEndpoint() {
   }
   return instance;
 };
-},{"./structured-clone":60}],58:[function(require,module,exports){
+},{"./structured-clone":63}],61:[function(require,module,exports){
 "use strict";
 
 var ParentEndpoint = require('./parent-endpoint');
@@ -6570,7 +6865,7 @@ module.exports = function IframePhoneRpcEndpoint(handler, namespace, targetWindo
     this.disconnect = disconnect.bind(this);
 };
 
-},{"./iframe-endpoint":57,"./parent-endpoint":59}],59:[function(require,module,exports){
+},{"./iframe-endpoint":60,"./parent-endpoint":62}],62:[function(require,module,exports){
 var structuredClone = require('./structured-clone');
 
 /**
@@ -6743,7 +7038,7 @@ module.exports = function ParentEndpoint(targetWindowOrIframeEl, targetOrigin, a
   };
 };
 
-},{"./structured-clone":60}],60:[function(require,module,exports){
+},{"./structured-clone":63}],63:[function(require,module,exports){
 var featureSupported = false;
 
 (function () {
@@ -6781,7 +7076,7 @@ exports.supported = function supported() {
   return featureSupported && featureSupported.structuredClones > 0;
 };
 
-},{}],61:[function(require,module,exports){
+},{}],64:[function(require,module,exports){
 module.exports = {
   /**
    * Allows to communicate with an iframe.
@@ -6799,4 +7094,4 @@ module.exports = {
 
 };
 
-},{"./lib/iframe-endpoint":57,"./lib/iframe-phone-rpc-endpoint":58,"./lib/parent-endpoint":59,"./lib/structured-clone":60}]},{},[1]);
+},{"./lib/iframe-endpoint":60,"./lib/iframe-phone-rpc-endpoint":61,"./lib/parent-endpoint":62,"./lib/structured-clone":63}]},{},[1]);
