@@ -1,6 +1,3 @@
-var Hole = require('./hole'),
-    Pin = require('./pin');
-
 var Wire = function (options) {
   this.source = options.source;
   this.dest = options.dest;
@@ -17,24 +14,14 @@ Wire.prototype.getBezierReflection = function () {
   return this.source.getBezierReflection();
 };
 Wire.GenerateId = function (source, dest, color) {
-  var sourceId = Wire.EndpointId(source),
-      destId = Wire.EndpointId(dest),
+  var sourceId = source.toString(),
+      destId = dest.toString(),
       firstId = sourceId < destId ? sourceId : destId,
       secondId = firstId === sourceId ? destId : sourceId;
   return [firstId, secondId, color].join(',');
 };
-Wire.EndpointId = function (endPoint) {
-  var id;
-  if (endPoint instanceof Hole) {
-    id = ['connector', endPoint.connector.type, endPoint.index].join(':');
-  }
-  else if (endPoint instanceof Pin) {
-    id = ['component', endPoint.component.name, endPoint.number].join(':');
-  }
-  else {
-    id = 'unknown';
-  }
-  return id;
+Wire.toString = function () {
+  return this.id;
 };
 
 module.exports = Wire;

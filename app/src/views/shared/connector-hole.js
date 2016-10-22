@@ -26,7 +26,7 @@ module.exports = React.createClass({
   handleToggle: function () {
     if (this.props.hole.toggleable) {
       this.props.hole.toggleForcedVoltage();
-      this.props.hole.connector.board.resolveIOVoltagesAcrossAllBoards();
+      this.props.hole.connector.board.resolver.resolve();
       this.props.forceRerender();
     }
   },

@@ -1,6 +1,7 @@
 var Connector = require('../../models/shared/connector'),
     Board = require('../../models/shared/board'),
     TTL = require('../../models/shared/ttl'),
+    CircuitResolver = require('../../models/shared/circuit-resolver'),
     LogicChip =  require('../../models/logic-gates/logic-chip'),
     //LogicChip =  require('../../models/logic-gates/logic-chip'),
     boardWatcher = require('../../controllers/pic/board-watcher'),
@@ -198,9 +199,8 @@ module.exports = React.createClass({
 
   setupBoards: function (activity) {
     var boards = [],
-        inputs = [],
-        outputs = [],
         busSize = activity.busSize || 0,
+        circuitResolver = new CircuitResolver({}),
         boardSettings, board, i, input, output, bus;
 
     for (i = 0; i < activity.boards.length; i++) {
@@ -216,25 +216,22 @@ module.exports = React.createClass({
           input: input,
           output: output,
           bus: bus
-        }
+        },
+        resolver: circuitResolver
       });
       input.board = board;
       output.board = board;
+      if (bus) {
+        bus.board = board;
+      }
       if (!this.state.soloMode) {
         boardWatcher.addListener(board, this.updateWatchedBoard);
       }
       boards.push(board);
-      inputs.push(input);
-      outputs.push(output);
     }
 
-    for (i = 0; i < activity.boards.length; i++) {
-      boards[i].allBoards = boards;
-      if (i > 0) {
-        inputs[i].setConnectsTo(outputs[i-1]);
-        outputs[i-1].setConnectsTo(inputs[i]);
-      }
-    }
+    circuitResolver.boards = boards;
+    circuitResolver.updateComponents();
 
     this.setState({boards: boards});
   },
@@ -257,7 +254,7 @@ module.exports = React.createClass({
     wires = (boardInfo && boardInfo.layout ? boardInfo.layout.wires : null) || [];
     board.updateWires(wires);
 
-    board.resolveIOVoltages();
+    this.resolver.resolve();
 
     this.setState({boards: this.state.boards});
   },
@@ -268,7 +265,7 @@ module.exports = React.createClass({
         allCorrect = true,
         boards = this.state.boards,
         numBoards = boards.length,
-        generateTests, runTest, resetBoards, resolveBoards, i, tests;
+        generateTests, runTest, resetBoards, i, tests;
 
     generateTests = function () {
       var truthTable = self.state.activity.truthTable,
@@ -323,15 +320,6 @@ module.exports = React.createClass({
       }
     };
 
-    resolveBoards = function () {
-      var i, j;
-      // evaluate all the logic-chips in all the boards so the values propogate
-      for (i = 0; i < numBoards; i++) {
-        for (j = 0; j < boards[i].numComponents; j++) {
-          boards[i].resolveIOVoltages();
-        }
-      }
-    };
 
     runTest = function (test, truthTable) {
       var allCorrect = true,
@@ -339,7 +327,7 @@ module.exports = React.createClass({
 
       resetBoards();
       boards[0].connectors.input.setHoleVoltages(test.inputVoltages);
-      resolveBoards();
+      this.resolver.resolve();
 
       outputVoltages = boards[numBoards-1].connectors.output.getHoleVoltages();
       output = [];
@@ -367,7 +355,7 @@ module.exports = React.createClass({
     // reset to 0 inputs
     resetBoards();
     boards[0].connectors.input.clearHoleVoltages();
-    resolveBoards();
+    this.resolver.resolve();
 
     callback(allCorrect, truthTable);
   },

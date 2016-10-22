@@ -15,7 +15,6 @@ var Hole = function (options) {
   this.inputMode = options.inputMode;
   this.toggleable = options.toggleable;
   this.type = options.type;
-  this.connectedHole = null; // set via Connector.prototype.setConnectsTo
   this.hasForcedVoltage = !!options.toggleable;
   this.forcedVoltage = TTL.LOW_VOLTAGE;
 };
@@ -58,6 +57,9 @@ Hole.prototype.toggleForcedVoltage = function () {
 };
 Hole.prototype.getLabel = function () {
   return this.getVoltage() + "V (" + this.getLogicLevel().toLowerCase() + ")";
+};
+Hole.prototype.toString = function () {
+  return ['connector', this.connector.type, this.index, 'board', this.connector.board.number].join(':');
 };
 
 module.exports = Hole;

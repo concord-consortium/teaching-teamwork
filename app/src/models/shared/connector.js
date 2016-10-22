@@ -97,20 +97,5 @@ Connector.prototype.getHoleVoltages = function () {
   }
   return voltages;
 };
-Connector.prototype.setConnectsTo = function (toConnector) {
-  var i;
-  this.connectsTo = toConnector;
-  for (i = 0; i < this.holes.length; i++) {
-    this.holes[i].connectedHole = toConnector.holes[i];
-  }
-};
-Connector.prototype.updateFromConnectedBoard = function () {
-  var i;
-  for (i = 0; i < this.holes.length; i++) {
-    if (this.holes[i].connectedHole) {
-      this.holes[i].setVoltage(this.holes[i].connectedHole.getVoltage());
-    }
-  }
-};
 
 module.exports = Connector;
