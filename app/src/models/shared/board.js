@@ -74,6 +74,14 @@ Board.prototype.reset = function () {
     this.componentList[i].reset();
   }
 };
+Board.prototype.updateInputs = function (newInputs) {
+  var input = this.connectors.input,
+      length = Math.min(newInputs.length, input.count),
+      i;
+  for (i = 0; i < length; i++) {
+    input.holes[i].setForcedVoltage(newInputs[i]);
+  }
+};
 Board.prototype.updateWires = function (newSerializedWires) {
   var toRemove = [],
       currentSerializedWires, i, index, endpoints;
@@ -323,6 +331,13 @@ Board.prototype.updateComponents = function (newSerializedComponents) {
   });
 
   this.updateComponentList();
+};
+Board.prototype.serializeInputs = function () {
+  var serialized = [];
+  $.each(this.connectors.input.holes, function (index, hole) {
+    serialized.push(hole.getVoltage());
+  });
+  return serialized;
 };
 
 module.exports = Board;

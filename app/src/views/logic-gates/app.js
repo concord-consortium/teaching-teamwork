@@ -177,7 +177,7 @@ module.exports = React.createClass({
         });
 
         userController.onGroupRefCreation(function() {
-          boardWatcher.startListeners();
+          boardWatcher.startListeners(activity.boards.length);
           userController.getFirebaseGroupRef().child('users').on("value", function(snapshot) {
             var fbUsers = snapshot.val(),
                 users = {};
@@ -245,7 +245,7 @@ module.exports = React.createClass({
   },
 
   updateWatchedBoard: function (board, boardInfo) {
-    var wires, components;
+    var wires, components, inputs;
 
     // update the components
     components = (boardInfo && boardInfo.layout ? boardInfo.layout.components : null) || [];
@@ -254,6 +254,10 @@ module.exports = React.createClass({
     // update the wires
     wires = (boardInfo && boardInfo.layout ? boardInfo.layout.wires : null) || [];
     board.updateWires(wires);
+
+    // update the inputs
+    inputs = (boardInfo && boardInfo.layout ? boardInfo.layout.inputs : null) || [];
+    board.updateInputs(inputs);
 
     this.resolver.resolve();
 

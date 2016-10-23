@@ -1,7 +1,8 @@
 var g = React.DOM.g,
     circle = React.DOM.circle,
     rect = React.DOM.rect,
-    title = React.DOM.title;
+    title = React.DOM.title,
+    events = require('../shared/events');
 
 module.exports = React.createClass({
   displayName: 'ConnectorHoleView',
@@ -25,9 +26,10 @@ module.exports = React.createClass({
 
   handleToggle: function () {
     if (this.props.hole.toggleable) {
-      this.props.hole.toggleForcedVoltage();
+      var newVoltage = this.props.hole.toggleForcedVoltage();
       this.props.hole.connector.board.resolver.resolve();
       this.props.forceRerender();
+      events.logEvent(events.TOGGLED_SWITCH_EVENT, newVoltage, {board: this.props.hole.connector.board, hole: this.props.hole});
     }
   },
 

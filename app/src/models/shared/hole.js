@@ -55,6 +55,10 @@ Hole.prototype.toggleForcedVoltage = function () {
   else {
     this.forcedVoltage = TTL.HIGH_VOLTAGE;
   }
+  return this.forcedVoltage;
+};
+Hole.prototype.setForcedVoltage = function (voltage) {
+  this.forcedVoltage = voltage;
 };
 Hole.prototype.getLabel = function () {
   return this.getVoltage() + "V (" + this.getLogicLevel().toLowerCase() + ")";
