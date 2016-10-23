@@ -2,6 +2,7 @@
   "name": "All Chips",
   "interface": {
     "showPinColors": true,
+    "showBusColors": true,
     "allowAutoWiring": true,
     "showPinouts": true,
     "showProbe": "all"

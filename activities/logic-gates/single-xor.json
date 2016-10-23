@@ -2,6 +2,7 @@
   "name": "Single XOR",
   "interface": {
     "showPinColors": true,
+    "showBusColors": true,
     "allowAutoWiring": true,
     "showPinouts": true,
     "showBusLabels": true,

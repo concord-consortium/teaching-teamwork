@@ -16,7 +16,7 @@ module.exports = React.createClass({
 
     for (i = 0; i < this.props.connector.holes.length; i++) {
       hole = this.props.connector.holes[i];
-      holes.push(ConnectorHoleView({key: i, connector: this.props.connector, hole: hole, selected: this.props.selected, editable: this.props.editable, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover, forceRerender: this.props.forceRerender}));
+      holes.push(ConnectorHoleView({key: i, connector: this.props.connector, hole: hole, selected: this.props.selected, editable: this.props.editable, drawConnection: this.props.drawConnection, reportHover: this.props.reportHover, forceRerender: this.props.forceRerender, showBusColors: this.props.showBusColors}));
       if (this.props.showBusLabels && (this.props.connector.type == 'bus')) {
         labels.push(text({x: position.x + position.width + hole.radius, y: hole.cy + (fontSize / 2), fontSize: fontSize, fill: '#000', style: {textAnchor: 'start'}}, hole.label));
       }

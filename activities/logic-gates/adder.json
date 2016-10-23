@@ -2,6 +2,7 @@
   "name": "Adder",
   "interface": {
     "showPinColors": false,
+    "showBusColors": false,
     "allowAutoWiring": true,
     "showPinouts": false,
     "showProbe": "edit"

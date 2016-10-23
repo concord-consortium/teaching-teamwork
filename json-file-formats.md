@@ -215,7 +215,8 @@ This activity is not currently authorable in JSON.
 {
   "name": "Single XOR",                    # this is displayed at the top of the page
   "interface": {
-    "showPinColors": true,                 # show red/green pin colors that denote voltage levels
+    "showPinColors": true,                 # show red/blue pin colors that denote voltage levels
+    "showBusColors": true,                 # show red/blus connector colors on bus that denote voltage levels
     "allowAutoWiring": true,               # show button that enables toggling of all wiring of all the boards, if true a "autoWiring" option setting is required below
     "showPinouts": true                    # show schematic pinouts on hover
   },

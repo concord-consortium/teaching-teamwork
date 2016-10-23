@@ -44,8 +44,9 @@ Hole.prototype.reset = function () {
   this.voltage = this.startingVoltage;
   this.pulseProbeDuration = 0;
 };
-Hole.prototype.getColor = function () {
-  return this.hasForcedVoltage ? TTL.getColor(this.forcedVoltage) : (this.connected && this.inputMode ? TTL.getColor(this.voltage) : this.color);
+Hole.prototype.getColor = function (showVoltageColor) {
+  showVoltageColor = showVoltageColor || (this.connected && (this.type == 'output'));
+  return this.hasForcedVoltage ? TTL.getColor(this.forcedVoltage) : (showVoltageColor ? TTL.getColor(this.voltage) : this.color);
 };
 Hole.prototype.toggleForcedVoltage = function () {
   if (this.forcedVoltage == TTL.HIGH_VOLTAGE) {

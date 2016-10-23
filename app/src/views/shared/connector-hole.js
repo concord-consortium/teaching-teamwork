@@ -54,7 +54,7 @@ module.exports = React.createClass({
 
   renderBus: function (hole, enableHandlers) {
     var radius = hole.radius;
-    return rect({x: hole.cx - radius, y: hole.cy - radius, width: radius * 2, height: radius * 2, fill: hole.getColor(), onMouseDown: enableHandlers ? this.startDrag : null, onMouseOver: enableHandlers ? this.mouseOver : null, onMouseOut: enableHandlers ? this.mouseOut : null},
+    return rect({x: hole.cx - radius, y: hole.cy - radius, width: radius * 2, height: radius * 2, fill: hole.getColor(this.props.showBusColors), onMouseDown: enableHandlers ? this.startDrag : null, onMouseOver: enableHandlers ? this.mouseOver : null, onMouseOut: enableHandlers ? this.mouseOut : null},
       title({}, hole.getLabel())
     );
   },
