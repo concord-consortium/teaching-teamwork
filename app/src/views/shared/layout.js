@@ -30,6 +30,7 @@ module.exports = {
 
   calculateComponentRect: function (constants, selected, index, count, componentWidth, componentHeight) {
     var selectedConstants = constants.selectedConstants(selected),
+        connectorHeight = selectedConstants.CONNECTOR_HOLE_DIAMETER + (selectedConstants.CONNECTOR_HOLE_MARGIN * 2),
         startX, position;
 
     componentWidth = componentWidth || selectedConstants.COMPONENT_WIDTH;
@@ -39,7 +40,7 @@ module.exports = {
 
     position = {
       x: startX + (index * (componentWidth + selectedConstants.COMPONENT_SPACING)),
-      y: ((selectedConstants.BOARD_HEIGHT - componentHeight) / 2),
+      y: ((selectedConstants.BOARD_HEIGHT - componentHeight + connectorHeight) / 2),
       width: componentWidth,
       height: componentHeight
     };
