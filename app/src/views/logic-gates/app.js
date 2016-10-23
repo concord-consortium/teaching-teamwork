@@ -201,8 +201,9 @@ module.exports = React.createClass({
   setupBoards: function (activity) {
     var boards = [],
         busSize = activity.busSize || 0,
-        circuitResolver = new CircuitResolver({}),
         boardSettings, board, i, input, output, bus;
+
+    this.circuitResolver = new CircuitResolver({});
 
     for (i = 0; i < activity.boards.length; i++) {
       boardSettings = activity.boards[i];
@@ -218,7 +219,7 @@ module.exports = React.createClass({
           output: output,
           bus: bus
         },
-        resolver: circuitResolver
+        resolver: this.circuitResolver
       });
       input.board = board;
       output.board = board;
@@ -231,8 +232,8 @@ module.exports = React.createClass({
       boards.push(board);
     }
 
-    circuitResolver.boards = boards;
-    circuitResolver.updateComponents();
+    this.circuitResolver.boards = boards;
+    this.circuitResolver.updateComponents();
 
     this.setState({boards: boards});
   },
@@ -259,7 +260,7 @@ module.exports = React.createClass({
     inputs = (boardInfo && boardInfo.layout ? boardInfo.layout.inputs : null) || [];
     board.updateInputs(inputs);
 
-    this.resolver.resolve();
+    this.circuitResolver.resolve();
 
     this.setState({boards: this.state.boards});
   },
@@ -332,7 +333,7 @@ module.exports = React.createClass({
 
       resetBoards();
       boards[0].connectors.input.setHoleVoltages(test.inputVoltages);
-      this.resolver.resolve();
+      this.circuitResolver.resolve();
 
       outputVoltages = boards[numBoards-1].connectors.output.getHoleVoltages();
       output = [];
@@ -360,7 +361,7 @@ module.exports = React.createClass({
     // reset to 0 inputs
     resetBoards();
     boards[0].connectors.input.clearHoleVoltages();
-    this.resolver.resolve();
+    this.circuitResolver.resolve();
 
     callback(allCorrect, truthTable);
   },
