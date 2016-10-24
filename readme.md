@@ -42,10 +42,11 @@ need to have values assigned to them and they can be combined in any order.
 
 * logToConsole - prints all log messages to the console in a compact form
 * showPinColors - shows low/high value of the component pins
-* showAutoWiring - enables a "Toggle Wires" button that adds all the wires to the activity, useful for debugging
+* allowAutoWiring - enables a "Toggle Wires" button that adds all the wires to the activity, useful for debugging
 * showSimulator - enables the PIC simulator buttons to allow for stopping and stepping through the PIC code
 * soloMode - enables single user mode, this skips all Firebase login and board selection
 * showBusLabels - enables labels next to bus connector holes
+* showBusColors - shows low/high value of the bus connector holes
 * showProbeInEdit - enables display of probe only when editing a circuit
 * hideProbe - hides probe in edit and "all" view
 
@@ -66,15 +67,16 @@ For example, the `activities/logic-gates/all-chips.json` activity can be used vi
 
 ### URL Options
 
-There is only one option that can be specified in the URL query string.  It only needs to be present - it does not need a value assigned to it.
+There are two options that can be specified in the URL query string.  An option only needs to be present - it does not need a value assigned to it.
 
 * logToConsole - prints all log messages to the console in a compact form
+* soloMode - enables single user mode, this skips all Firebase login and board selection
 
 Example: [http://concord-consortium.github.io/teaching-teamwork/logic-gates/?logToConsole#all-chips](http://concord-consortium.github.io/teaching-teamwork/logic-gates/?logToConsole#all-chips)
 
 ### JSON File Format
 
-A description of the JSON file format can be found [json-file-formats.md](here).
+A description of the JSON file format can be found [here](json-file-formats.md).
 
 ## Building and Running Locally
 
@@ -121,11 +123,16 @@ http://localhost:8080/
 
 In combination with Gulp above, this will reload your pages any time any source file is saved.
 
-### Deploying
+### Deploying to production
 
-gh-pages releases are based on the contents of the /dist folder.
+Production releases to S3 are based on the contents of the /dist folder and are built automatically by Travis
+for each branch pushed to GitHub and each merge into master.
 
-To deploy to gh-pages, simply run `npm run deploy`.
+Merges into master are deployed to http://teaching-teamwork.concord.org.
+
+Other branches are deployed to http://teaching-teamwork.concord.org/branch/<name>.
+
+You can view the status of all the branch deploys [here](https://travis-ci.org/concord-consortium/teaching-teamwork/branches).
 
 ### Testing
 

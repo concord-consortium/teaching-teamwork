@@ -218,8 +218,13 @@ This activity is not currently authorable in JSON.
     "showPinColors": true,                 # show red/blue pin colors that denote voltage levels
     "showBusColors": true,                 # show red/blus connector colors on bus that denote voltage levels
     "allowAutoWiring": true,               # show button that enables toggling of all wiring of all the boards, if true a "autoWiring" option setting is required below
-    "showPinouts": true                    # show schematic pinouts on hover
+    "showPinouts": true,                   # show schematic pinouts on hover
+    "showBusLabels": true,                 # show labels next to the bus connector holes
+    "showProbe": "edit"                    # show probe only in edit mode, other values are "all" and false
   },
+  "busSize": 5,                            # total number of holes in the bus connector
+  "busInputSize": 2,                       # number of input holes
+  "busOutputSize": 1,                      # number of output holes
   "boards": [                              # array of boards in the activity
     {
       "logicChipDrawer": {
@@ -228,8 +233,8 @@ This activity is not currently authorable in JSON.
           "7404": {"max": 5}
         }
       },
-      "input": ["A", "B"],                 # labels the input pins, if you want unlabeled inputs use ""
-      "output": ["C", "D"],                # labels the output pins, if you want unlabeled inputs use ""
+      "localInputSize": 4,                 # number of holes in the local input connector (switches)
+      "localOutputSize": 4,                # number of holes in the local output connector (leds)
       "autoWiring": {                      # used to auto wire the boards if the interface/allowAutoWiring option is set
         "chips": {                         # defines the internal name, type and location of the chips on the board
           "not": {
@@ -246,14 +251,14 @@ This activity is not currently authorable in JSON.
         "wires": [                         # defines wires between chips and inputs and outputs, strings that start with "//" are ignored
                                            # the format is <source name>:<source location>,<dest name>:<dest location>
                                            # if the source is a chip the location is a 1-based pin, if the location is an input or output it is the input/output label defined above
-          "input:A,not:13",   "// create NOT A on not pin 12",
-          "input:B,not:9",    "// create NOT B on not pin 8",
-          "not:12,and:13",    "// NOT A to and pin 13",
-          "input:B,and:12",   "// B to and pin 12",
-          "and:11,output:C",  "// (NOT A AND B) to output hole 1",
-          "not:8,and:10",     "// NOT B to and pin 10",
-          "input:A,and:9",    "// A to and pin 9",
-          "and:8,output:D",   "// (NOT B AND A) to output hole 2"
+          "bus:1,not:13",   "// create NOT A on not pin 12",
+          "bus:2,not:9",    "// create NOT B on not pin 8",
+          "not:12,and:13", "// NOT A to and pin 13",
+          "bus:2,and:12",   "// B to and pin 12",
+          "and:11,bus:3",  "// (NOT A AND B) to bus hole 1",
+          "not:8,and:10",  "// NOT B to and pin 10",
+          "bus:1,and:9",    "// A to and pin 9",
+          "and:8,bus:4",   "// (NOT B AND A) to bus hole 2"
         ]
       }
     },
@@ -263,8 +268,8 @@ This activity is not currently authorable in JSON.
           "7432": {"max": 2}
         }
       },
-      "input": ["C", "D"],
-      "output": ["XOR"],
+      "localInputSize": 4,
+      "localOutputSize": 4,
       "autoWiring": {
         "chips": {
           "or": {
@@ -274,17 +279,16 @@ This activity is not currently authorable in JSON.
           }
         },
         "wires": [
-          "input:C,or:13",  "// C = (NOT A AND B) from input hole 1",
-          "input:D,or:12",  "// D = (NOT B AND A) from input hole 2",
-          "or:11,output:XOR", "// (C OR D) to output hole 1"
+          "bus:3,or:13",  "// C = (NOT A AND B) from bus hole 1",
+          "bus:4,or:12",  "// D = (NOT B AND A) from bus hole 2",
+          "or:11,bus:5", "// (C OR D) to bus hole 1"
         ]
       }
     }
   ],
-  "truthTable": [                         # used by the submit button to determine if the wiring is correct
-                                          # the first row is the input and output labels to check and the remaining rows are the valid combinations
-                                          # the code will cycle through all the combinations, setting the inputs, resolving the board values and then testing the output
-    ["input:A", "input:B", "output:XOR"],
+  "truthTable": [  # used by the submit button to determine if the wiring is correct
+                   # the first set of columns are the global inputs (left to right, corresponding to holes 1 and 2 in the bus) and the remainder are the global outputs
+                   # the code will cycle through all the combinations, setting the inputs, resolving the board values and then testing the output
     [0, 0, 0],
     [0, 1, 1],
     [1, 0, 1],
