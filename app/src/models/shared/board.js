@@ -256,7 +256,7 @@ Board.prototype.addWire = function (source, dest, color, skipResolver) {
 };
 Board.prototype.addComponent = function (name, component) {
   component.name = name;
-  component.board = this;
+  component.setBoard(this);
   this.components[name] = component;
   this.updateComponentList();
 };

@@ -33,13 +33,14 @@ module.exports = React.createClass({
 
   getInitialState: function () {
     var numBoards = 3,
+        busSize = 8,
         bezierReflectionModifiers = [1, -0.5, 0.75],
         components = [],
         connectors = [],
         boards = [],
         i, setBoard;
 
-    this.circuitResolver = new CircuitResolver({});
+    this.circuitResolver = new CircuitResolver({busSize: busSize, busInputSize: 0, busOutputSize: 0});
 
     setBoard = function (hash, board) {
       var keys = Object.keys(hash),
@@ -51,7 +52,7 @@ module.exports = React.createClass({
 
     for (i = 0; i < numBoards; i++) {
       connectors.push({
-        bus: new Connector({type: 'bus', count: 8}),
+        bus: new Connector({type: 'bus', count: busSize}),
         input: new Connector({type: 'input', count: 8}),
         output: new Connector({type: 'output', count: 8})
       });

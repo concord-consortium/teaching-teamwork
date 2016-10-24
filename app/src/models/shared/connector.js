@@ -69,15 +69,15 @@ Connector.prototype.calculatePosition = function (constants, selected, allConnec
     hole.radius =  radius;
   }
 };
-Connector.prototype.setHoleVoltage = function (index, voltage) {
+Connector.prototype.setHoleVoltage = function (index, voltage, forced) {
   if ((index < this.holes.length) && (voltage !== 'x')) {
-    this.holes[index].setVoltage(voltage);
+    this.holes[index][forced ? "setForcedVoltage" : "setVoltage"](voltage);
   }
 };
-Connector.prototype.setHoleVoltages = function (voltages) {
+Connector.prototype.setHoleVoltages = function (voltages, forced) {
   var i;
   for (i = 0; i < voltages.length; i++) {
-    this.setHoleVoltage(i, voltages[i]);
+    this.setHoleVoltage(i, voltages[i], forced);
   }
 };
 Connector.prototype.clearHoleVoltages = function () {

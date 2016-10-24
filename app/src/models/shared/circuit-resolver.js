@@ -3,17 +3,32 @@ var Circuit = require("./circuit"),
     Wire = require("./wire");
 
 var CircuitResolver = function (options) {
+  var i;
+
   this.boards = options.boards || [];
   this.circuits = [];
   this.components = [];
+  this.busSize = options.busSize || 0;
+  this.busInputSize = options.busInputSize || 0;
+  this.busOutputSize = options.busOutputSize || 0;
+  this.busOutputStartIndex = this.busSize - this.busOutputSize;
 
   // wire the global i/o up
-  this.input = options.numInputs > 0 ? new Connector({type: 'input', count: options.numInputs}) : null;
-  this.output = options.numOutputs > 0 ? new Connector({type: 'output', count: options.numOutputs}) : null;
+  this.input = options.busInputSize > 0 ? new Connector({type: 'input', count: options.busInputSize}) : null;
+  this.output = options.busOutputSize > 0 ? new Connector({type: 'output', count: options.busOutputSize}) : null;
+
+  this.inputIndices = [];
+  this.outputIndices = [];
+  for (i = 0; i < this.busInputSize; i++) {
+    this.inputIndices.push(i);
+  }
+  for (i = this.busOutputStartIndex; i < this.busSize; i++) {
+    this.outputIndices.push(i);
+  }
 };
-CircuitResolver.prototype.rewire = function () {
+CircuitResolver.prototype.rewire = function (includeGlobalIO) {
   var graph = {},
-      isBusHole, addToGraph, addToCircuit;
+      isBusHole, addToGraph, addToCircuit, addBusWire;
 
   isBusHole = function (endPoint) {
     return endPoint.connector && (endPoint.connector.type == 'bus');
@@ -46,6 +61,15 @@ CircuitResolver.prototype.rewire = function () {
     }
   };
 
+  addBusWire = function (options) {
+    var busWire = new Wire({
+      source: options.source,
+      dest: options.dest
+    });
+    addToGraph(busWire.source, busWire.dest, busWire);
+    addToGraph(busWire.dest, busWire.source, busWire);
+  };
+
   // clear the existing circuits
   this.circuits = [];
 
@@ -53,7 +77,11 @@ CircuitResolver.prototype.rewire = function () {
   this.forEach(this.boards, function (board) {
     this.forEach(board.wires, function (wire) {
       var sourceOnBus = isBusHole(wire.source),
-          destOnBus = isBusHole(wire.dest);
+          destOnBus = isBusHole(wire.dest),
+          sourceIsGlobalInput = sourceOnBus && (this.inputIndices.indexOf(wire.source.index) != -1),
+          sourceIsGlobalOutput = sourceOnBus && (this.outputIndices.indexOf(wire.source.index) != -1),
+          destIsGlobalInput = destOnBus && (this.inputIndices.indexOf(wire.dest.index) != -1),
+          destIsGlobalOutput = destOnBus && (this.outputIndices.indexOf(wire.dest.index) != -1);
 
       addToGraph(wire.source, wire.dest, wire);
       addToGraph(wire.dest, wire.source, wire);
@@ -61,15 +89,20 @@ CircuitResolver.prototype.rewire = function () {
       // create the bus ghost wires
       if (sourceOnBus || destOnBus) {
         this.forEach(this.boards, function (otherBoard) {
-          var busWire;
-
+          // wire this board to the other boards
           if (board != otherBoard) {
-            busWire = new Wire({
+            addBusWire({
               source: sourceOnBus ? otherBoard.connectors.bus.holes[wire.source.index] : wire.source,
               dest: destOnBus ? otherBoard.connectors.bus.holes[wire.dest.index] : wire.dest
             });
-            addToGraph(busWire.source, busWire.dest, busWire);
-            addToGraph(busWire.dest, busWire.source, busWire);
+          }
+
+          // wire this board to the global i/o
+          if (includeGlobalIO && (sourceIsGlobalInput || sourceIsGlobalOutput || destIsGlobalInput || destIsGlobalOutput)) {
+            addBusWire({
+              source: sourceIsGlobalInput ? this.input.holes[wire.source.index] : (sourceIsGlobalOutput ? this.output.holes[wire.source.index - this.busOutputStartIndex] : wire.source),
+              dest: destIsGlobalInput ? this.input.holes[wire.dest.index] : (destIsGlobalOutput ? this.output.holes[wire.dest.index - this.busOutputStartIndex] : wire.dest)
+            });
           }
         });
       }
@@ -123,6 +156,7 @@ CircuitResolver.prototype.resolve = function () {
     this.resolveCircuitInputVoltages();
     this.resolveComponentOutputVoltages();
     this.resolveCircuitOutputVoltages();
+    this.resolveCircuitInputVoltages(); // this sets the global output
   });
 };
 

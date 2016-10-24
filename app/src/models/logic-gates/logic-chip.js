@@ -217,6 +217,13 @@ LogicChip.prototype.serialize = function () {
     y: this.position.y
   };
 };
+LogicChip.prototype.setBoard = function (board) {
+  var i;
+  this.board = board;
+  for (i = 0; i < this.pins.length; i++) {
+    this.pins[i].board = board;
+  }
+};
 
 
 module.exports = LogicChip;

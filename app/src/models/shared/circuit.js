@@ -28,4 +28,18 @@ Circuit.prototype.setAverageOutputVoltage = function (list) {
   }
 };
 
+Circuit.prototype.toString = function () {
+  var inputs = [],
+      outputs = [],
+      i;
+
+  for (i = 0; i < this.inputs.length; i++) {
+    inputs.push(this.inputs[i].toString() + ' = ' + this.inputs[i].getVoltage());
+  }
+  for (i = 0; i < this.outputs.length; i++) {
+    outputs.push(this.outputs[i].toString() + ' = ' + this.outputs[i].getVoltage());
+  }
+  return JSON.stringify({inputs: inputs, outputs: outputs});
+};
+
 module.exports = Circuit;

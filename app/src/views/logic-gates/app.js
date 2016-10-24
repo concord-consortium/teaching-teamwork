@@ -203,7 +203,7 @@ module.exports = React.createClass({
         busSize = activity.busSize || 0,
         boardSettings, board, i, input, output, bus;
 
-    this.circuitResolver = new CircuitResolver({});
+    this.circuitResolver = new CircuitResolver({busSize: busSize, busInputSize: activity.busInputSize, busOutputSize: activity.busOutputSize});
 
     for (i = 0; i < activity.boards.length; i++) {
       boardSettings = activity.boards[i];
@@ -275,38 +275,33 @@ module.exports = React.createClass({
 
     generateTests = function () {
       var truthTable = self.state.activity.truthTable,
-          header = truthTable[0],
-          input = self.state.activity.boards[0].input,
-          output = self.state.activity.boards[numBoards-1].output,
+          input = self.circuitResolver.input,
+          output = self.circuitResolver.output,
           defaultTestInput = [],
           defaultTestOutput = [],
           tests = [],
-          i, j, testInputVoltages, testOutputLevels, headerPair, holeIndex;
+          maxCols = input.count + output.count,
+          i, j, testInputVoltages, testOutputLevels, numCols;
 
-      for (i = 0; i < input.length; i++) {
+      for (i = 0; i < input.count; i++) {
         defaultTestInput.push('x');
       }
-      for (i = 0; i < output.length; i++) {
+      for (i = 0; i < output.count; i++) {
         defaultTestOutput.push('x');
       }
 
-      // skip the header and generate each test
-      for (i = 1; i < truthTable.length; i++) {
+      // generate each test
+      for (i = 0; i < truthTable.length; i++) {
         testInputVoltages = defaultTestInput.slice();
         testOutputLevels = defaultTestOutput.slice();
+        numCols = Math.min(maxCols, truthTable[i].length);
 
-        for (j = 0; j < header.length; j++) {
-          headerPair = header[j].split(':');
-          if (headerPair[0] == 'input') {
-            holeIndex = input.indexOf(headerPair[1]);
-            if (holeIndex !== -1) {
-              testInputVoltages[holeIndex] = TTL.getBooleanVoltage(truthTable[i][j]);
-            }
-          } else if (headerPair[0] == 'output') {
-            holeIndex = output.indexOf(headerPair[1]);
-            if (holeIndex !== -1) {
-              testOutputLevels[holeIndex] = TTL.getBooleanLogicLevel(truthTable[i][j]);
-            }
+        for (j = 0; j < numCols; j++) {
+          if (j < input.count) {
+            testInputVoltages[j] = TTL.getBooleanVoltage(truthTable[i][j]);
+          }
+          else {
+            testOutputLevels[j - input.count] = TTL.getBooleanLogicLevel(truthTable[i][j]);
           }
         }
 
@@ -326,20 +321,20 @@ module.exports = React.createClass({
       }
     };
 
-
     runTest = function (test, truthTable) {
       var allCorrect = true,
-          i, output, outputVoltages, correct, dontCare;
+          i, output, outputVoltages, outputLevel, correct, dontCare;
 
       resetBoards();
-      boards[0].connectors.input.setHoleVoltages(test.inputVoltages);
-      this.circuitResolver.resolve();
+      self.circuitResolver.input.setHoleVoltages(test.inputVoltages, true);
+      self.circuitResolver.resolve();
 
-      outputVoltages = boards[numBoards-1].connectors.output.getHoleVoltages();
+      outputVoltages = self.circuitResolver.output.getHoleVoltages();
       output = [];
       for (i = 0; i < test.outputLevels.length; i++) {
         dontCare = test.outputLevels[i] == 'x';
-        correct = dontCare || (test.outputLevels[i] == TTL.getVoltageLogicLevel(outputVoltages[i]));
+        outputLevel = TTL.getVoltageLogicLevel(outputVoltages[i]);
+        correct = dontCare || (test.outputLevels[i] == outputLevel);
         output.push(dontCare ? 'x' : outputVoltages[i]);
         allCorrect = allCorrect && correct;
       }
@@ -352,15 +347,20 @@ module.exports = React.createClass({
       return allCorrect;
     };
 
+    // rewire the board to include global i/o
+    this.circuitResolver.rewire(true);
+
     // generate and check each test
     tests = generateTests();
     for (i = 0; i < tests.length; i++) {
       allCorrect = runTest(tests[i], truthTable) && allCorrect;
     }
 
+    // rewire to remove global i/o
+    this.circuitResolver.rewire();
+
     // reset to 0 inputs
     resetBoards();
-    boards[0].connectors.input.clearHoleVoltages();
     this.circuitResolver.resolve();
 
     callback(allCorrect, truthTable);
@@ -449,11 +449,14 @@ module.exports = React.createClass({
             dest = getEndpoint($.trim(destParts[0]), $.trim(destParts[1]));
 
             if (source && dest) {
-              board.addWire(source, dest, colors.wire);
+              board.addWire(source, dest, colors.wire, true);
             }
           }
         }
       }
+
+      this.circuitResolver.rewire();
+
       board.updateComponentList();
       boardWatcher.circuitChanged(board);
     }

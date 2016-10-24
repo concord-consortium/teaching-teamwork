@@ -161,5 +161,12 @@ PIC.prototype.resolve = function () {
     this.board.resolver.resolve();
   }
 };
+PIC.prototype.setBoard = function (board) {
+  var i;
+  this.board = board;
+  for (i = 0; i < this.pins.length; i++) {
+    this.pins[i].board = board;
+  }
+};
 
 module.exports = PIC;
