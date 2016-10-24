@@ -209,7 +209,7 @@ module.exports = React.createClass({
       boardSettings = activity.boards[i];
       input = new Connector({type: 'input', count: boardSettings.localInputSize});
       output = new Connector({type: 'output', count: boardSettings.localOutputSize});
-      bus = busSize > 0 ? new Connector({type: 'bus', count: busSize}) : null;
+      bus = busSize > 0 ? new Connector({type: 'bus', count: busSize, busInputSize: activity.busInputSize, busOutputSize: activity.busOutputSize}) : null;
       board = new Board({
         number: i,
         bezierReflectionModifier: -0.5,

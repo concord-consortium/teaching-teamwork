@@ -1,4 +1,5 @@
-var ConnectorHoleView = React.createFactory(require('./connector-hole')),
+var colors = require('./colors'),
+    ConnectorHoleView = React.createFactory(require('./connector-hole')),
     svg = React.DOM.svg,
     rect = React.DOM.rect,
     text = React.DOM.text;
@@ -12,7 +13,7 @@ module.exports = React.createClass({
         fontSize = selectedConstants.BUS_FONT_SIZE,
         holes = [],
         labels = [],
-        hole, i;
+        hole, i, inputRect, outputRect;
 
     for (i = 0; i < this.props.connector.holes.length; i++) {
       hole = this.props.connector.holes[i];
@@ -22,8 +23,17 @@ module.exports = React.createClass({
       }
     }
 
+    if (position.inputHeight > 0) {
+      inputRect = rect({x: position.x, y: position.y, width: position.width, height: position.inputHeight, fill: colors.busInput});
+    }
+    if (position.outputHeight > 0) {
+      outputRect = rect({x: position.x, y: position.y + position.height - position.outputHeight, width: position.width, height: position.outputHeight, fill: colors.busOutput});
+    }
+
     return svg({},
       rect({x: position.x, y: position.y, width: position.width, height: position.height, fill: '#aaa'}),
+      inputRect,
+      outputRect,
       holes,
       labels
     );

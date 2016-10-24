@@ -9,6 +9,8 @@ var Connector = function (options) {
   this.type = options.type;
   this.count = options.count;
   this.position = {};
+  this.busInputSize = options.busInputSize || 0;
+  this.busOutputSize = options.busOutputSize || 0;
 
   this.holes = [];
   for (i = 0; i < this.count; i++) {
@@ -41,6 +43,9 @@ Connector.prototype.calculatePosition = function (constants, selected, allConnec
     this.position.height = holeWidth * this.count;
     this.position.x = 0;
     this.position.y = (selectedConstants.BOARD_HEIGHT - this.position.height) / 2;
+
+    this.position.inputHeight = (this.busInputSize * holeWidth);
+    this.position.outputHeight = (this.busOutputSize * holeWidth);
 
     cy = this.position.y + selectedConstants.CONNECTOR_HOLE_MARGIN + radius;
     cx = holeWidth / 2;
