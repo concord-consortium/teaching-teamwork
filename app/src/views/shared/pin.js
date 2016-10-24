@@ -1,5 +1,7 @@
-var g = React.DOM.g,
-    rect = React.DOM.rect;
+var colors = require('./colors'),
+    g = React.DOM.g,
+    rect = React.DOM.rect,
+    title = React.DOM.title;
 
 module.exports = React.createClass({
   displayName: 'PinView',
@@ -13,12 +15,14 @@ module.exports = React.createClass({
   },
 
   startDrag: function (e) {
-    this.props.drawConnection(this.props.pin, e, '#00f');
+    this.props.drawConnection(this.props.pin, e, colors.wire);
   },
 
   renderPin: function (pin, enableHandlers) {
     return g({onMouseDown: enableHandlers ? this.startDrag : null, onMouseOver: enableHandlers ? this.mouseOver : null, onMouseOut: enableHandlers ? this.mouseOut : null},
-      rect({x: pin.x, y: pin.y, width: pin.width, height: pin.height, fill: '#777'})
+      rect({x: pin.x, y: pin.y, width: pin.width, height: pin.height, fill: '#777'},
+        title({}, pin.getLabel())
+      )
     );
   },
 

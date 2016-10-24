@@ -219,6 +219,8 @@ module.exports = React.createClass({
     stopDrag = function (e) {
       var dest = self.state.hoverSource,
           addedWire = false,
+          dx = self.state.drawConnection ? (self.state.drawConnection.x2 - self.state.drawConnection.x1) : 0,
+          dy = self.state.drawConnection ? (self.state.drawConnection.y2 - self.state.drawConnection.y1) : 0,
           wire;
 
       e.stopPropagation();
@@ -227,6 +229,11 @@ module.exports = React.createClass({
       $window.off('mousemove', drag);
       $window.off('mouseup', stopDrag);
       self.setState({drawConnection: null});
+
+      // this handles slight movements of the mouse
+      if (moved) {
+        moved = (dx * dx) + (dy * dy) > 10;
+      }
 
       if (moved && dest && (dest !== source)) {
         addedWire = true;
@@ -478,11 +485,13 @@ module.exports = React.createClass({
   },
 
   render: function () {
-    var selectedConstants = this.props.constants.selectedConstants(this.props.selected),
+    var self = this,
+        selectedConstants = this.props.constants.selectedConstants(this.props.selected),
         style = {
-          width: this.props.constants.WORKSPACE_WIDTH,
+          width: selectedConstants.BOARD_WIDTH,
           height: selectedConstants.BOARD_HEIGHT,
-          position: 'relative'
+          position: 'relative',
+          left: selectedConstants.BOARD_LEFT
         },
         connectors = [],
         components = [],
@@ -495,17 +504,16 @@ module.exports = React.createClass({
     // used to find wire click position
     this.svgOffset = $(this.refs.svg).offset();
 
-    this.props.board.resolveCircuitInputVoltages();
+    this.props.board.resolver.resolveCircuitInputVoltages();
 
     // calculate the position so the wires can be updated
-    if (this.props.board.connectors.input) {
-      this.props.board.connectors.input.calculatePosition(this.props.constants, this.props.selected);
-      connectors.push(ConnectorView({key: 'input', constants: this.props.constants, connector: this.props.board.connectors.input, selected: this.props.selected, editable: this.props.editable, drawConnection: this.drawConnection, reportHover: this.reportHover, forceRerender: this.props.forceRerender}));
-    }
-    if (this.props.board.connectors.output) {
-      this.props.board.connectors.output.calculatePosition(this.props.constants, this.props.selected);
-      connectors.push(ConnectorView({key: 'output', constants: this.props.constants, connector: this.props.board.connectors.output, selected: this.props.selected, editable: this.props.editable, drawConnection: this.drawConnection, reportHover: this.reportHover, forceRerender: this.props.forceRerender}));
-    }
+    $.each(['input', 'output', 'bus'], function (index, connectorName) {
+      var connector = self.props.board.connectors[connectorName];
+      if (connector) {
+        connector.calculatePosition(self.props.constants, self.props.selected, self.props.board.connectors);
+        connectors.push(ConnectorView({key: connectorName, constants: self.props.constants, connector: connector, selected: self.props.selected, editable: self.props.editable, drawConnection: self.drawConnection, reportHover: self.reportHover, forceRerender: self.props.forceRerender, showBusLabels: self.props.showBusLabels, showBusColors: self.props.showBusColors}));
+      }
+    });
 
     for (name in this.props.board.components) {
       if (this.props.board.components.hasOwnProperty(name)) {

@@ -2,9 +2,14 @@
   "name": "All Chips",
   "interface": {
     "showPinColors": true,
+    "showBusColors": true,
     "allowAutoWiring": true,
-    "showPinouts": true
+    "showPinouts": true,
+    "showProbe": "all"
   },
+  "busSize": 8,
+  "busInputSize": 2,
+  "busOutputSize": 2,
   "boards": [
     {
       "logicChipDrawer": {
@@ -18,8 +23,8 @@
           "7486": {"max": 5}
         }
       },
-      "input": ["A", "B"],
-      "output": ["C", "D"]
+      "localInputSize": 4,
+      "localOutputSize": 4
     },
     {
       "logicChipDrawer": {
@@ -33,8 +38,8 @@
           "7486": {"max": 5}
         }
       },
-      "input": ["A", "B"],
-      "output": ["C", "D"]
+      "localInputSize": 4,
+      "localOutputSize": 4
     },
     {
       "logicChipDrawer": {
@@ -48,8 +53,8 @@
           "7486": {"max": 5}
         }
       },
-      "input": ["A", "B"],
-      "output": ["C", "D"]
+      "localInputSize": 4,
+      "localOutputSize": 4
     }
   ]
 }

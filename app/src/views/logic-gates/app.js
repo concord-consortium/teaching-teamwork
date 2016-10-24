@@ -1,6 +1,7 @@
 var Connector = require('../../models/shared/connector'),
     Board = require('../../models/shared/board'),
     TTL = require('../../models/shared/ttl'),
+    CircuitResolver = require('../../models/shared/circuit-resolver'),
     LogicChip =  require('../../models/logic-gates/logic-chip'),
     //LogicChip =  require('../../models/logic-gates/logic-chip'),
     boardWatcher = require('../../controllers/pic/board-watcher'),
@@ -13,6 +14,7 @@ var Connector = require('../../models/shared/connector'),
     AutoWiringView = React.createFactory(require('./auto-wiring')),
     VersionView = React.createFactory(require('../shared/version')),
     constants = require('./constants'),
+    colors = require('../shared/colors'),
     inIframe = require('../../data/shared/in-iframe'),
     div = React.DOM.div,
     h1 = React.DOM.h1,
@@ -41,7 +43,7 @@ module.exports = React.createClass({
   },
 
   forceRerender: function () {
-    this.setState({boards: this.state.boards});
+    this.forceUpdate();
   },
 
   loadActivity: function(activityName) {
@@ -144,6 +146,7 @@ module.exports = React.createClass({
       activity: activity,
       allowAutoWiring: !!interface.allowAutoWiring && hasAutoWiringData,
       showPinColors: !!interface.showPinColors,
+      showBusColors: !!interface.showBusColors,
       showPinouts: !!interface.showPinouts
     });
 
@@ -151,7 +154,7 @@ module.exports = React.createClass({
 
     if (this.state.soloMode) {
       logController.setClientNumber(0);
-      self.setState({
+      this.setState({
         userBoardNumber: 0
       });
     }
@@ -174,7 +177,7 @@ module.exports = React.createClass({
         });
 
         userController.onGroupRefCreation(function() {
-          boardWatcher.startListeners();
+          boardWatcher.startListeners(activity.boards.length);
           userController.getFirebaseGroupRef().child('users').on("value", function(snapshot) {
             var fbUsers = snapshot.val(),
                 users = {};
@@ -197,40 +200,40 @@ module.exports = React.createClass({
 
   setupBoards: function (activity) {
     var boards = [],
-        inputs = [],
-        outputs = [],
-        boardSettings, board, i, input, output;
+        busSize = activity.busSize || 0,
+        boardSettings, board, i, input, output, bus;
+
+    this.circuitResolver = new CircuitResolver({busSize: busSize, busInputSize: activity.busInputSize, busOutputSize: activity.busOutputSize});
 
     for (i = 0; i < activity.boards.length; i++) {
       boardSettings = activity.boards[i];
-      input = new Connector({type: 'input', count: boardSettings.input.length, labels: boardSettings.input});
-      output = new Connector({type: 'output', count: boardSettings.output.length, labels: boardSettings.output});
+      input = new Connector({type: 'input', count: boardSettings.localInputSize});
+      output = new Connector({type: 'output', count: boardSettings.localOutputSize});
+      bus = busSize > 0 ? new Connector({type: 'bus', count: busSize}) : null;
       board = new Board({
         number: i,
         bezierReflectionModifier: -0.5,
         components: {},
         connectors: {
           input: input,
-          output: output
-        }
+          output: output,
+          bus: bus
+        },
+        resolver: this.circuitResolver
       });
       input.board = board;
       output.board = board;
+      if (bus) {
+        bus.board = board;
+      }
       if (!this.state.soloMode) {
         boardWatcher.addListener(board, this.updateWatchedBoard);
       }
       boards.push(board);
-      inputs.push(input);
-      outputs.push(output);
     }
 
-    for (i = 0; i < activity.boards.length; i++) {
-      boards[i].allBoards = boards;
-      if (i > 0) {
-        inputs[i].setConnectsTo(outputs[i-1]);
-        outputs[i-1].setConnectsTo(inputs[i]);
-      }
-    }
+    this.circuitResolver.boards = boards;
+    this.circuitResolver.updateComponents();
 
     this.setState({boards: boards});
   },
@@ -243,7 +246,7 @@ module.exports = React.createClass({
   },
 
   updateWatchedBoard: function (board, boardInfo) {
-    var wires, components;
+    var wires, components, inputs;
 
     // update the components
     components = (boardInfo && boardInfo.layout ? boardInfo.layout.components : null) || [];
@@ -253,7 +256,11 @@ module.exports = React.createClass({
     wires = (boardInfo && boardInfo.layout ? boardInfo.layout.wires : null) || [];
     board.updateWires(wires);
 
-    board.resolveIOVoltages();
+    // update the inputs
+    inputs = (boardInfo && boardInfo.layout ? boardInfo.layout.inputs : null) || [];
+    board.updateInputs(inputs);
+
+    this.circuitResolver.resolve();
 
     this.setState({boards: this.state.boards});
   },
@@ -264,42 +271,37 @@ module.exports = React.createClass({
         allCorrect = true,
         boards = this.state.boards,
         numBoards = boards.length,
-        generateTests, runTest, resetBoards, resolveBoards, i, tests;
+        generateTests, runTest, resetBoards, i, tests;
 
     generateTests = function () {
       var truthTable = self.state.activity.truthTable,
-          header = truthTable[0],
-          input = self.state.activity.boards[0].input,
-          output = self.state.activity.boards[numBoards-1].output,
+          input = self.circuitResolver.input,
+          output = self.circuitResolver.output,
           defaultTestInput = [],
           defaultTestOutput = [],
           tests = [],
-          i, j, testInputVoltages, testOutputLevels, headerPair, holeIndex;
+          maxCols = input.count + output.count,
+          i, j, testInputVoltages, testOutputLevels, numCols;
 
-      for (i = 0; i < input.length; i++) {
+      for (i = 0; i < input.count; i++) {
         defaultTestInput.push('x');
       }
-      for (i = 0; i < output.length; i++) {
+      for (i = 0; i < output.count; i++) {
         defaultTestOutput.push('x');
       }
 
-      // skip the header and generate each test
-      for (i = 1; i < truthTable.length; i++) {
+      // generate each test
+      for (i = 0; i < truthTable.length; i++) {
         testInputVoltages = defaultTestInput.slice();
         testOutputLevels = defaultTestOutput.slice();
+        numCols = Math.min(maxCols, truthTable[i].length);
 
-        for (j = 0; j < header.length; j++) {
-          headerPair = header[j].split(':');
-          if (headerPair[0] == 'input') {
-            holeIndex = input.indexOf(headerPair[1]);
-            if (holeIndex !== -1) {
-              testInputVoltages[holeIndex] = TTL.getBooleanVoltage(truthTable[i][j]);
-            }
-          } else if (headerPair[0] == 'output') {
-            holeIndex = output.indexOf(headerPair[1]);
-            if (holeIndex !== -1) {
-              testOutputLevels[holeIndex] = TTL.getBooleanLogicLevel(truthTable[i][j]);
-            }
+        for (j = 0; j < numCols; j++) {
+          if (j < input.count) {
+            testInputVoltages[j] = TTL.getBooleanVoltage(truthTable[i][j]);
+          }
+          else {
+            testOutputLevels[j - input.count] = TTL.getBooleanLogicLevel(truthTable[i][j]);
           }
         }
 
@@ -319,29 +321,20 @@ module.exports = React.createClass({
       }
     };
 
-    resolveBoards = function () {
-      var i, j;
-      // evaluate all the logic-chips in all the boards so the values propogate
-      for (i = 0; i < numBoards; i++) {
-        for (j = 0; j < boards[i].numComponents; j++) {
-          boards[i].resolveIOVoltages();
-        }
-      }
-    };
-
     runTest = function (test, truthTable) {
       var allCorrect = true,
-          i, output, outputVoltages, correct, dontCare;
+          i, output, outputVoltages, outputLevel, correct, dontCare;
 
       resetBoards();
-      boards[0].connectors.input.setHoleVoltages(test.inputVoltages);
-      resolveBoards();
+      self.circuitResolver.input.setHoleVoltages(test.inputVoltages, true);
+      self.circuitResolver.resolve();
 
-      outputVoltages = boards[numBoards-1].connectors.output.getHoleVoltages();
+      outputVoltages = self.circuitResolver.output.getHoleVoltages();
       output = [];
       for (i = 0; i < test.outputLevels.length; i++) {
         dontCare = test.outputLevels[i] == 'x';
-        correct = dontCare || (test.outputLevels[i] == TTL.getVoltageLogicLevel(outputVoltages[i]));
+        outputLevel = TTL.getVoltageLogicLevel(outputVoltages[i]);
+        correct = dontCare || (test.outputLevels[i] == outputLevel);
         output.push(dontCare ? 'x' : outputVoltages[i]);
         allCorrect = allCorrect && correct;
       }
@@ -354,16 +347,21 @@ module.exports = React.createClass({
       return allCorrect;
     };
 
+    // rewire the board to include global i/o
+    this.circuitResolver.rewire(true);
+
     // generate and check each test
     tests = generateTests();
     for (i = 0; i < tests.length; i++) {
       allCorrect = runTest(tests[i], truthTable) && allCorrect;
     }
 
+    // rewire to remove global i/o
+    this.circuitResolver.rewire();
+
     // reset to 0 inputs
     resetBoards();
-    boards[0].connectors.input.clearHoleVoltages();
-    resolveBoards();
+    this.circuitResolver.resolve();
 
     callback(allCorrect, truthTable);
   },
@@ -385,7 +383,7 @@ module.exports = React.createClass({
     };
 
     getEndpoint = function (name, stringIndex) {
-      var item = chipMap[name] || (name == "input" ? board.connectors.input : (name == "output" ? board.connectors.output : null)),
+      var item = chipMap[name] || (name == "bus" ? board.connectors.bus :  null),
           intIndex = parseInt(stringIndex, 10),
           list = null,
           endPoint = null;
@@ -420,9 +418,13 @@ module.exports = React.createClass({
       return endPoint;
     };
 
+    hasWires = false;
+    for (i = 0; i < this.state.boards.length; i++) {
+      hasWires = hasWires || (this.state.boards[i].wires.length > 0);
+    }
+
     for (i = 0; i < this.state.boards.length; i++) {
       board = this.state.boards[i];
-      hasWires = this.state.boards[i].wires.length > 0;
       board.clear();
       if (!hasWires && this.state.activity.boards[i].autoWiring) {
         autoWiring = this.state.activity.boards[i].autoWiring;
@@ -447,11 +449,14 @@ module.exports = React.createClass({
             dest = getEndpoint($.trim(destParts[0]), $.trim(destParts[1]));
 
             if (source && dest) {
-              board.addWire(source, dest, '#00f');
+              board.addWire(source, dest, colors.wire, true);
             }
           }
         }
       }
+
+      this.circuitResolver.rewire();
+
       board.updateComponentList();
       boardWatcher.circuitChanged(board);
     }
@@ -468,7 +473,7 @@ module.exports = React.createClass({
       OfflineCheckView({}),
       WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect, soloMode: this.state.soloMode}),
       div({id: 'logicapp'},
-        WorkspaceView({constants: constants, boards: this.state.boards, showPinColors: this.state.showPinColors, showPinouts: this.state.showPinouts, users: this.state.users, userBoardNumber: this.state.userBoardNumber, activity: this.state.activity, forceRerender: this.forceRerender, soloMode: this.state.soloMode}),
+        WorkspaceView({constants: constants, boards: this.state.boards, showPinColors: this.state.showPinColors, showPinouts: this.state.showPinouts, users: this.state.users, userBoardNumber: this.state.userBoardNumber, activity: this.state.activity, forceRerender: this.forceRerender, soloMode: this.state.soloMode, showBusColors: this.state.showBusColors}),
         this.state.allowAutoWiring ? AutoWiringView({top: 0, toggleAllChipsAndWires: this.toggleAllChipsAndWires}) : null,
         this.state.soloMode ? null : SidebarChatView({numClients: 2, top: sidebarTop})
       ),

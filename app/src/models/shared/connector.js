@@ -1,5 +1,7 @@
 var Hole = require('./hole');
 
+var letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
 var Connector = function (options) {
   var self = this,
       i;
@@ -17,41 +19,65 @@ var Connector = function (options) {
       radius: 0,
       color: '#555', // ['blue', '#0f0', 'purple', '#cccc00'][i],
       connector: self,
-      label: options.labels ? options.labels[i] : null,
-      inputMode: this.type === 'output' // seems weird but output connector holes have values set so their holes are in "inputMode" like the pins
+      label: letters[i],
+      inputMode: this.type != 'input', // seems weird but output connector holes have values set so their holes are in "inputMode" like the pins
+      toggleable: this.type == 'input',
+      type: options.type
     }));
   }
 };
-Connector.prototype.calculatePosition = function (constants, selected) {
+Connector.prototype.calculatePosition = function (constants, selected, allConnectors) {
   var selectedConstants = constants.selectedConstants(selected),
-      i, cx, cy, radius, holeWidth, hole;
+      holeWidth = selectedConstants.CONNECTOR_HOLE_DIAMETER + (selectedConstants.CONNECTOR_HOLE_MARGIN * 2),
+      radius = selectedConstants.CONNECTOR_HOLE_DIAMETER / 2,
+      vertical = this.type == 'bus',
+      dx = vertical ? 0 : holeWidth,
+      dy = vertical ? holeWidth : 0,
+      inputWidth, outputWidth, totalWidth, i, cx, cy, hole;
 
-  holeWidth = selectedConstants.CONNECTOR_HOLE_DIAMETER + (selectedConstants.CONNECTOR_HOLE_MARGIN * 2);
-  this.position.width = holeWidth * this.count;
-  this.position.height = holeWidth;
-  this.position.x = (constants.WORKSPACE_WIDTH - this.position.width) / 2;
-  this.position.y = this.type === 'input' ? 0 : selectedConstants.BOARD_HEIGHT - this.position.height;
 
-  radius = selectedConstants.CONNECTOR_HOLE_DIAMETER / 2;
-  cy = this.type === 'input' ? this.position.y + selectedConstants.CONNECTOR_HOLE_MARGIN + radius : selectedConstants.BOARD_HEIGHT - (selectedConstants.CONNECTOR_HOLE_MARGIN + radius);
-  cx = ((constants.WORKSPACE_WIDTH - this.position.width) / 2) + (holeWidth / 2);
+  if (vertical) {
+    this.position.width = holeWidth;
+    this.position.height = holeWidth * this.count;
+    this.position.x = 0;
+    this.position.y = (selectedConstants.BOARD_HEIGHT - this.position.height) / 2;
+
+    cy = this.position.y + selectedConstants.CONNECTOR_HOLE_MARGIN + radius;
+    cx = holeWidth / 2;
+  }
+  else {
+    inputWidth = totalWidth = (allConnectors.input ? holeWidth * allConnectors.input.count : 0);
+    if ((inputWidth > 0) && allConnectors.output) {
+      totalWidth += selectedConstants.CONNECTOR_SPACING;
+    }
+    outputWidth = (allConnectors.output ? holeWidth * allConnectors.output.count : 0);
+    totalWidth += outputWidth;
+
+    this.position.width = this.type == 'input' ? inputWidth : outputWidth;
+    this.position.height = holeWidth;
+    this.position.x = ((constants.WORKSPACE_WIDTH - totalWidth) / 2) + (this.type == 'output' ? (inputWidth + selectedConstants.CONNECTOR_SPACING) : 0);
+    this.position.y = 0;
+
+    cy = this.position.y + selectedConstants.CONNECTOR_HOLE_MARGIN + radius;
+    cx = this.position.x + (holeWidth / 2);
+  }
 
   for (i = 0; i < this.count; i++) {
     hole = this.holes[i];
-    hole.cx = cx + (i * holeWidth);
-    hole.cy = cy;
+    hole.cx = cx + (i * dx);
+    hole.cy = cy + (i * dy);
     hole.radius =  radius;
   }
 };
-Connector.prototype.setHoleVoltage = function (index, voltage) {
+Connector.prototype.setHoleVoltage = function (index, voltage, forced) {
   if ((index < this.holes.length) && (voltage !== 'x')) {
-    this.holes[index].setVoltage(voltage);
+    this.holes[index][forced ? "setForcedVoltage" : "setVoltage"](voltage);
   }
 };
-Connector.prototype.setHoleVoltages = function (voltages) {
+Connector.prototype.setHoleVoltages = function (voltages, forced) {
   var i;
   for (i = 0; i < voltages.length; i++) {
-    this.setHoleVoltage(i, voltages[i]);
+    this.setHoleVoltage(i, voltages[i], forced);
   }
 };
 Connector.prototype.clearHoleVoltages = function () {
@@ -70,21 +96,6 @@ Connector.prototype.getHoleVoltages = function () {
     voltages.push(this.getHoleVoltage(i));
   }
   return voltages;
-};
-Connector.prototype.setConnectsTo = function (toConnector) {
-  var i;
-  this.connectsTo = toConnector;
-  for (i = 0; i < this.holes.length; i++) {
-    this.holes[i].connectedHole = toConnector.holes[i];
-  }
-};
-Connector.prototype.updateFromConnectedBoard = function () {
-  var i;
-  for (i = 0; i < this.holes.length; i++) {
-    if (this.holes[i].connectedHole) {
-      this.holes[i].setVoltage(this.holes[i].connectedHole.getVoltage());
-    }
-  }
 };
 
 module.exports = Connector;

@@ -16,7 +16,7 @@ module.exports = {
     dx = options.x1 - options.x2;
     dy = options.y1 - options.y2;
     dist = Math.sqrt(dx*dx + dy*dy);
-    closeModifier = 5 * curvyness * (1 - (Math.min(dist, closeCutoff) / closeCutoff));
+    closeModifier = 2.5 * curvyness * (1 - (Math.min(dist, closeCutoff) / closeCutoff));
     height = dist * (curvyness + closeModifier);
     dx = normalize(dx, dist);
     dy = normalize(dy, dist);
@@ -30,6 +30,7 @@ module.exports = {
 
   calculateComponentRect: function (constants, selected, index, count, componentWidth, componentHeight) {
     var selectedConstants = constants.selectedConstants(selected),
+        connectorHeight = selectedConstants.CONNECTOR_HOLE_DIAMETER + (selectedConstants.CONNECTOR_HOLE_MARGIN * 2),
         startX, position;
 
     componentWidth = componentWidth || selectedConstants.COMPONENT_WIDTH;
@@ -39,7 +40,7 @@ module.exports = {
 
     position = {
       x: startX + (index * (componentWidth + selectedConstants.COMPONENT_SPACING)),
-      y: ((selectedConstants.BOARD_HEIGHT - componentHeight) / 2),
+      y: ((selectedConstants.BOARD_HEIGHT - componentHeight + connectorHeight) / 2),
       width: componentWidth,
       height: componentHeight
     };

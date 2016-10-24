@@ -2,39 +2,6 @@ var Circuit = function (options) {
   this.inputs = options.inputs;
   this.outputs = options.outputs;
 };
-Circuit.ResolveWires = function (allWires) {
-  var circuits = [],
-      addToCircuit, wire, testWire, i, j, numWires, inputs, outputs;
-
-  addToCircuit = function (wire) {
-    (wire.source.inputMode ? inputs : outputs).push(wire.source);
-    (wire.dest.inputMode ? inputs : outputs).push(wire.dest);
-  };
-
-  numWires = allWires.length;
-  for (i = 0; i < numWires; i++) {
-    wire = allWires[i];
-    inputs = [];
-    outputs = [];
-    addToCircuit(wire);
-
-    for (j = i + 1; j < numWires; j++) {
-      testWire = allWires[j];
-      if ((wire.source == testWire.source) || (wire.source == testWire.dest) || (wire.dest == testWire.source) || (wire.dest == testWire.dest)) {
-        addToCircuit(testWire);
-      }
-    }
-
-    if (inputs.length + outputs.length > 0) {
-      circuits.push(new Circuit({
-        inputs: inputs,
-        outputs: outputs
-      }));
-    }
-  }
-
-  return circuits;
-};
 
 Circuit.prototype.resolveInputVoltages = function () {
   this.setAverageOutputVoltage(this.inputs);
@@ -59,6 +26,20 @@ Circuit.prototype.setAverageOutputVoltage = function (list) {
   for (i = 0; i < list.length; i++) {
     list[i].setVoltage(averageVoltage);
   }
+};
+
+Circuit.prototype.toString = function () {
+  var inputs = [],
+      outputs = [],
+      i;
+
+  for (i = 0; i < this.inputs.length; i++) {
+    inputs.push(this.inputs[i].toString() + ' = ' + this.inputs[i].getVoltage());
+  }
+  for (i = 0; i < this.outputs.length; i++) {
+    outputs.push(this.outputs[i].toString() + ' = ' + this.outputs[i].getVoltage());
+  }
+  return JSON.stringify({inputs: inputs, outputs: outputs});
 };
 
 module.exports = Circuit;

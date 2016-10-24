@@ -25,7 +25,7 @@ var Keypad = function () {
       width: 0,
       labelSize: 0,
       component: this,
-      bezierReflection: i < 3 ? -1 : 1 // the top pins should arc the opposite
+      bezierReflection: 1
     };
     pin.label = {
       x: 0,
