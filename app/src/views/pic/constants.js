@@ -35,7 +35,10 @@ module.exports = constants = {
         PROBE_WIDTH: 150,
         PROBE_NEEDLE_HEIGHT: 5,
         PROBE_HEIGHT: 20,
-        PROBE_MARGIN: 10
+        PROBE_MARGIN: 10,
+        AUTO_TOGGLE_SELECTOR_WIDTH: 15,
+        AUTO_TOGGLE_SELECTOR_HEIGHT: 10,
+        AUTO_TOGGLE_SELECTOR_MARGIN: 3
       };
     }
     else {
@@ -60,7 +63,10 @@ module.exports = constants = {
         PROBE_WIDTH: 95,
         PROBE_NEEDLE_HEIGHT: 3,
         PROBE_HEIGHT: 12,
-        PROBE_MARGIN: 10
+        PROBE_MARGIN: 10,
+        AUTO_TOGGLE_SELECTOR_WIDTH: 15,
+        AUTO_TOGGLE_SELECTOR_HEIGHT: 10,
+        AUTO_TOGGLE_SELECTOR_MARGIN: 3
       };
     }
   }

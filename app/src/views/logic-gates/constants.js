@@ -44,7 +44,10 @@ module.exports = constants = {
       PROBE_NEEDLE_HEIGHT: 5,
       PROBE_HEIGHT: 20,
       PROBE_MARGIN: 10,
-      LOGIC_DRAWER_LAYOUT: logicDrawerLayout
+      LOGIC_DRAWER_LAYOUT: logicDrawerLayout,
+      AUTO_TOGGLE_SELECTOR_WIDTH: 20,
+      AUTO_TOGGLE_SELECTOR_HEIGHT: 15,
+      AUTO_TOGGLE_SELECTOR_MARGIN: 5
     };
   }
 };

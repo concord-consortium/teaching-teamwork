@@ -1,4 +1,5 @@
-var Hole = require('./hole');
+var Hole = require('./hole'),
+    TTL = require('./ttl');
 
 var letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -33,9 +34,10 @@ Connector.prototype.calculatePosition = function (constants, selected, allConnec
       holeWidth = selectedConstants.CONNECTOR_HOLE_DIAMETER + (selectedConstants.CONNECTOR_HOLE_MARGIN * 2),
       radius = selectedConstants.CONNECTOR_HOLE_DIAMETER / 2,
       vertical = this.type == 'bus',
-      dx = vertical ? 0 : holeWidth,
+      dx = vertical ? 0 : -holeWidth,
       dy = vertical ? holeWidth : 0,
-      inputWidth, outputWidth, totalWidth, i, cx, cy, hole;
+      selectorWidth,
+      inputWidth, outputWidth, totalWidth, i, cx, cy, hole, holeX, holeY;
 
 
   if (vertical) {
@@ -47,30 +49,38 @@ Connector.prototype.calculatePosition = function (constants, selected, allConnec
     this.position.inputHeight = (this.busInputSize * holeWidth);
     this.position.outputHeight = (this.busOutputSize * holeWidth);
 
-    cy = this.position.y + selectedConstants.CONNECTOR_HOLE_MARGIN + radius;
-    cx = holeWidth / 2;
+    holeY = cy = this.position.y + selectedConstants.CONNECTOR_HOLE_MARGIN + radius;
+    holeX = cx = holeWidth / 2;
   }
   else {
     inputWidth = totalWidth = (allConnectors.input ? holeWidth * allConnectors.input.count : 0);
+    selectorWidth = inputWidth > 0 ? selectedConstants.AUTO_TOGGLE_SELECTOR_WIDTH + (selectedConstants.AUTO_TOGGLE_SELECTOR_MARGIN * 3) : 0;
     if ((inputWidth > 0) && allConnectors.output) {
-      totalWidth += selectedConstants.CONNECTOR_SPACING;
+      totalWidth += selectedConstants.CONNECTOR_SPACING + selectorWidth;
     }
     outputWidth = (allConnectors.output ? holeWidth * allConnectors.output.count : 0);
     totalWidth += outputWidth;
 
     this.position.width = this.type == 'input' ? inputWidth : outputWidth;
     this.position.height = holeWidth;
-    this.position.x = ((constants.WORKSPACE_WIDTH - totalWidth) / 2) + (this.type == 'output' ? (inputWidth + selectedConstants.CONNECTOR_SPACING) : 0);
+    this.position.x = ((constants.WORKSPACE_WIDTH - totalWidth) / 2) + (this.type == 'output' ? (inputWidth + selectorWidth + selectedConstants.CONNECTOR_SPACING) : 0);
     this.position.y = 0;
 
-    cy = this.position.y + selectedConstants.CONNECTOR_HOLE_MARGIN + radius;
+    holeY = cy = this.position.y + selectedConstants.CONNECTOR_HOLE_MARGIN + radius;
     cx = this.position.x + (holeWidth / 2);
+    holeX = cx + this.position.width - holeWidth;
+
+    this.position.selectorBackgroundWidth = selectorWidth;
+    this.position.negativeSelectorCX = holeX + selectedConstants.AUTO_TOGGLE_SELECTOR_MARGIN + (selectedConstants.AUTO_TOGGLE_SELECTOR_WIDTH / 2);
+    this.position.positiveSelectorCX = this.position.negativeSelectorCX + selectedConstants.AUTO_TOGGLE_SELECTOR_MARGIN + selectedConstants.AUTO_TOGGLE_SELECTOR_WIDTH;
+    this.position.selectorWidth = selectedConstants.AUTO_TOGGLE_SELECTOR_WIDTH;
+    this.position.selectorHeight = selectedConstants.AUTO_TOGGLE_SELECTOR_HEIGHT;
   }
 
   for (i = 0; i < this.count; i++) {
     hole = this.holes[i];
-    hole.cx = cx + (i * dx);
-    hole.cy = cy + (i * dy);
+    hole.cx = holeX + (i * dx);
+    hole.cy = holeY + (i * dy);
     hole.radius =  radius;
   }
 };
@@ -101,6 +111,30 @@ Connector.prototype.getHoleVoltages = function () {
     voltages.push(this.getHoleVoltage(i));
   }
   return voltages;
+};
+Connector.prototype.autoToggleSwitches = function(direction) {
+  var currentValue = 0,
+      maxValue = Math.pow(2, this.holes.length) - 1,
+      i, bitValue;
+
+  for (i = 0; i < this.holes.length; i++) {
+    bitValue = this.holes[i].isHigh() ? 1 : 0;
+    currentValue += (bitValue << i);
+  }
+
+  if (direction == 'positive') {
+    currentValue = (currentValue + 1) % maxValue;
+  }
+  else {
+    currentValue = currentValue > 0 ? currentValue - 1 : maxValue;
+  }
+
+  for (i = 0; i < this.holes.length; i++) {
+    bitValue = currentValue & (1 << i);
+    this.holes[i].setForcedVoltage(bitValue ? TTL.HIGH_VOLTAGE : TTL.LOW_VOLTAGE);
+  }
+
+  return currentValue;
 };
 
 module.exports = Connector;

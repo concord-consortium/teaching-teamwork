@@ -17,6 +17,7 @@ module.exports = events = {
   REMOVE_LOGIC_CHIP_EVENT: 'Remove Logic Chip',
   MOVE_LOGIC_CHIP_EVENT: 'Move Logic Chip',
   TOGGLED_SWITCH_EVENT: 'Toggled Switch',
+  AUTO_TOGGLED_SWITCHES_EVENT: 'Auto Toggled Switches',
 
   logEvent: function (eventName, value, parameters) {
     var loggedValue = null,
@@ -37,6 +38,13 @@ module.exports = events = {
       loggedValue = value;
       loggedParameters = {
         switch: parameters.hole.index,
+        board: parameters.board.number
+      };
+      boardWatcher.circuitChanged(parameters.board);
+    }
+    else if (eventName == events.AUTO_TOGGLED_SWITCHES_EVENT) {
+      loggedValue = value;
+      loggedParameters = {
         board: parameters.board.number
       };
       boardWatcher.circuitChanged(parameters.board);
