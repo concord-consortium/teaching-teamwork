@@ -222,6 +222,7 @@ This activity is not currently authorable in JSON.
     "showBusLabels": true,                 # show labels next to the bus connector holes
     "showProbe": "edit",                   # show probe only in edit mode, other values are "all" and false
     "showInputAutoToggles": true           # show the increment and decrement controls next to the local board input switches
+    "showGlobalIOWires": true              # shows the wires coming and going to the global input/output on the bus
   },
   "busSize": 5,                            # total number of holes in the bus connector
   "busInputSize": 2,                       # number of input holes

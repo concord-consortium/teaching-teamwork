@@ -44,6 +44,7 @@ module.exports = React.createClass({
     var showBusLabels = this.interfaceOption('showBusLabels'),
         showProbe = this.interfaceOption('showProbe'),
         showInputAutoToggles = this.interfaceOption('showInputAutoToggles'),
+        showGlobalIOWires = this.interfaceOption('showGlobalIOWires'),
         selectedConstants,
         spacersAndBoards, i, height;
 
@@ -109,7 +110,8 @@ module.exports = React.createClass({
         boards: this.props.boards,
         height: height,
         inputSize: this.props.activity.busInputSize,
-        outputSize: this.props.activity.busOutputSize
+        outputSize: this.props.activity.busOutputSize,
+        showGlobalIOWires: showGlobalIOWires
       }));
 
       return div({

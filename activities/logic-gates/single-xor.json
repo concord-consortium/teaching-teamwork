@@ -7,7 +7,8 @@
     "showPinouts": true,
     "showBusLabels": true,
     "showProbe": "edit",
-    "showInputAutoToggles": true
+    "showInputAutoToggles": true,
+    "showGlobalIOWires": true
   },
   "busSize": 5,
   "busInputSize": 2,

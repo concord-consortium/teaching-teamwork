@@ -6,7 +6,8 @@
     "allowAutoWiring": true,
     "showPinouts": false,
     "showProbe": "edit",
-    "showInputAutoToggles": true
+    "showInputAutoToggles": true,
+    "showGlobalIOWires": true
   },
   "busSize": 12,
   "busInputSize": 3,

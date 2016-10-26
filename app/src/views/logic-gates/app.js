@@ -473,7 +473,18 @@ module.exports = React.createClass({
       OfflineCheckView({}),
       WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect, soloMode: this.state.soloMode}),
       div({id: 'logicapp'},
-        WorkspaceView({constants: constants, boards: this.state.boards, showPinColors: this.state.showPinColors, showPinouts: this.state.showPinouts, users: this.state.users, userBoardNumber: this.state.userBoardNumber, activity: this.state.activity, forceRerender: this.forceRerender, soloMode: this.state.soloMode, showBusColors: this.state.showBusColors}),
+        WorkspaceView({
+          constants: constants,
+          boards: this.state.boards,
+          users: this.state.users,
+          userBoardNumber: this.state.userBoardNumber,
+          activity: this.state.activity,
+          forceRerender: this.forceRerender,
+          soloMode: this.state.soloMode,
+          showPinColors: this.state.showPinColors,
+          showPinouts: this.state.showPinouts,
+          showBusColors: this.state.showBusColors
+        }),
         this.state.allowAutoWiring ? AutoWiringView({top: 0, toggleAllChipsAndWires: this.toggleAllChipsAndWires}) : null,
         this.state.soloMode ? null : SidebarChatView({numClients: 2, top: sidebarTop})
       ),
