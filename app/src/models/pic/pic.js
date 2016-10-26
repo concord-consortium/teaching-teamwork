@@ -139,10 +139,11 @@ PIC.prototype.getPinListValue = function (list) {
   return value;
 };
 PIC.prototype.setPinListValue = function (list, value) {
-  var i, outputMode;
+  var i;
   for (i = 0; i < list.length; i++) {
-    outputMode = !list[i].inputMode;
-    list[i].setVoltage(TTL.getBooleanVoltage(outputMode && (value & (1 << i))));
+    if (!list[i].inputMode) {
+      list[i].setVoltage(TTL.getBooleanVoltage(value & (1 << i)));
+    }
   }
   this.resolve();
 };
