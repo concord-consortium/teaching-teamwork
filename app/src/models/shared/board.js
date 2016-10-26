@@ -247,11 +247,11 @@ Board.prototype.addWire = function (source, dest, color, skipResolver) {
     color: '#ffa500' // color used to be settable but is now forced
   });
   this.wires.push(wire);
+  source.connected = true;
+  dest.connected = true;
   if (!skipResolver) {
     this.resolver.rewire();
   }
-  source.connected = true;
-  dest.connected = true;
   return wire;
 };
 Board.prototype.addComponent = function (name, component) {

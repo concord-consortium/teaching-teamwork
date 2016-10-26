@@ -17,7 +17,7 @@ var Pin = function (options) {
   this.component = options.component;
   this.bezierReflection = options.bezierReflection || 1;
   this.notConnectable = options.notConnectable || false;
-  this.connected = options.connected || false;
+  this.connected = options.connected || options.isGround || options.isVcc || false;
   this.voltage = options.voltage || 0;
   this.startingVoltage = this.voltage;
 };
@@ -29,10 +29,10 @@ Pin.prototype.setVoltage = function (newVoltage) {
   this.voltage = newVoltage;
 };
 Pin.prototype.getVoltage = function () {
-  return this.voltage;
+  return this.connected || !this.inputMode ? this.voltage : TTL.INVALID_VOLTAGE;
 };
 Pin.prototype.getLogicLevel = function () {
-  return TTL.getVoltageLogicLevel(this.voltage);
+  return TTL.getVoltageLogicLevel(this.getVoltage());
 };
 Pin.prototype.isLow = function () {
   return TTL.isLow(this.getLogicLevel());
@@ -44,7 +44,7 @@ Pin.prototype.isHigh = function () {
   return TTL.isHigh(this.getLogicLevel());
 };
 Pin.prototype.getColor = function () {
-  return TTL.getColor(this.voltage);
+  return TTL.getColor(this.getVoltage());
 };
 Pin.prototype.reset = function () {
   this.voltage = this.startingVoltage;

@@ -125,7 +125,7 @@ module.exports = React.createClass({
         voltage = "--",
         needlePath, handlePath, rotation;
 
-    if (this.props.probeSource && (!this.props.probeSource.inputMode || this.props.probeSource.connected)) {
+    if (this.props.probeSource) {
 
       voltage = this.truncateDecimals(this.props.probeSource.getVoltage(), 2);
 
@@ -134,6 +134,9 @@ module.exports = React.createClass({
       }
       else if (this.props.probeSource.isLow()) {
         greenFill = 1;
+      }
+      else {
+        amberFill = 1;
       }
 
       if (this.props.probeSource.pulseProbeDuration) {
