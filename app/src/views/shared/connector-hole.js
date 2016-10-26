@@ -39,10 +39,10 @@ module.exports = React.createClass({
         isLow = hole.isLow(),
         backgroundColor = '#777';
     return g({onClick: !enableHandlers && this.props.editable ? this.handleToggle : null, onMouseDown: enableHandlers ? this.startDrag : null, onMouseOver: enableHandlers ? this.mouseOver : null, onMouseOut: enableHandlers ? this.mouseOut : null},
-      rect({x: layout.x, y: layout.y, width: layout.width, height: layout.height, fill: isLow ? hole.getColor() : backgroundColor},
+      rect({x: layout.x, y: layout.y, width: layout.width, height: layout.height, fill: !isLow ? hole.getColor() : backgroundColor},
         title({}, hole.getLabel())
       ),
-      rect({x: layout.x, y: layout.y + layout.height, width: layout.width, height: layout.height, fill: !isLow ? hole.getColor() : backgroundColor},
+      rect({x: layout.x, y: layout.y + layout.height, width: layout.width, height: layout.height, fill: isLow ? hole.getColor() : backgroundColor},
         title({}, hole.getLabel())
       )
     );
