@@ -3,13 +3,13 @@ var userController = require('../../controllers/shared/user'),
     SidebarChatViewFactory = React.createFactory(SidebarChatView),
     CalculatorView = require('./calculator.jsx'),
     NotesView = require('./notes'),
-    ConnectionView = require('./connection.jsx'),
     EditorView = require('./editor'),
     SubmitButtonView = require('./submitButton'),
     OtherCircuitsView = require('./other-circuits'),
     inIframe = require('../../data/shared/in-iframe'),
     EnterUnknownsView = require('./enter-unknowns'),
     VersionView = require('../shared/version'),
+    OfflineCheckView = require('../shared/offline-check'),
     config = require('../../config');
 
 module.exports = React.createClass({
@@ -31,7 +31,6 @@ module.exports = React.createClass({
         groupname = userController.getGroupname(),
         circuit = hasMultipleClients && this.props.circuit ? (<h2>Circuit { this.props.circuit }{ username ? ' (User: ' + username : '' }{ groupname ? ', Group: ' + groupname + ')': ')' }</h2>) : null,
         notes = this.props.client ? (this.props.client.notes || "") : "",
-        connection = <ConnectionView />,
         editor = this.props.showEditor ? (<EditorView parseAndStartActivity={ this.props.parseAndStartActivity } editorState={ this.props.editorState } />) : null,
         wrapperClass = hasMultipleClients ? 'multiple-clients' : null,
         enterUnknowns = activity.enterUnknowns && (activity.enterUnknowns.E || activity.enterUnknowns.R),
@@ -45,6 +44,7 @@ module.exports = React.createClass({
       <div className="tt-page">
         { title }
         { circuit }
+        <OfflineCheckView />
         <div id="top-button-wrapper">
           { submitButton }
           { otherCircuitsButton }
@@ -56,7 +56,6 @@ module.exports = React.createClass({
         </div>
         { image }
         { calculator }
-        { connection }
         { editor }
         <VersionView/>
       </div>
