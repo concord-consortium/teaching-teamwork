@@ -3,9 +3,12 @@
   "interface": {
     "showPinColors": true,
     "showBusColors": true,
+    "showBusLabels": true,
     "allowAutoWiring": true,
     "showPinouts": true,
-    "showProbe": "all"
+    "showProbe": "all",
+    "showInputAutoToggles": true,
+    "showGlobalIOWires": true
   },
   "busSize": 8,
   "busInputSize": 2,

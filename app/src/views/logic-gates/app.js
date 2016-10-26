@@ -147,7 +147,8 @@ module.exports = React.createClass({
       allowAutoWiring: !!interface.allowAutoWiring && hasAutoWiringData,
       showPinColors: !!interface.showPinColors,
       showBusColors: !!interface.showBusColors,
-      showPinouts: !!interface.showPinouts
+      showPinouts: !!interface.showPinouts,
+      notes: activity.notes || false
     });
 
     logController.init(activityName);
@@ -200,16 +201,18 @@ module.exports = React.createClass({
 
   setupBoards: function (activity) {
     var boards = [],
-        busSize = activity.busSize || 0,
+        busInputSize = activity.busInputSize || 0,
+        busOutputSize = activity.busOutputSize || 0,
+        busSize = Math.max((activity.busSize || 0), (busInputSize + busOutputSize)),
         boardSettings, board, i, input, output, bus;
 
-    this.circuitResolver = new CircuitResolver({busSize: busSize, busInputSize: activity.busInputSize, busOutputSize: activity.busOutputSize});
+    this.circuitResolver = new CircuitResolver({busSize: busSize, busInputSize: busInputSize, busOutputSize: busOutputSize});
 
     for (i = 0; i < activity.boards.length; i++) {
       boardSettings = activity.boards[i];
       input = new Connector({type: 'input', count: boardSettings.localInputSize});
       output = new Connector({type: 'output', count: boardSettings.localOutputSize});
-      bus = busSize > 0 ? new Connector({type: 'bus', count: busSize, busInputSize: activity.busInputSize, busOutputSize: activity.busOutputSize}) : null;
+      bus = busSize > 0 ? new Connector({type: 'bus', count: busSize, busInputSize: busInputSize, busOutputSize: busOutputSize}) : null;
       board = new Board({
         number: i,
         bezierReflectionModifier: -0.5,
@@ -280,8 +283,7 @@ module.exports = React.createClass({
           defaultTestInput = [],
           defaultTestOutput = [],
           tests = [],
-          maxCols = input.count + output.count,
-          i, j, testInputVoltages, testOutputLevels, numCols;
+          i, j, testInputVoltages, testOutputLevels;
 
       for (i = 0; i < input.count; i++) {
         defaultTestInput.push('x');
@@ -292,16 +294,24 @@ module.exports = React.createClass({
 
       // generate each test
       for (i = 0; i < truthTable.length; i++) {
-        testInputVoltages = defaultTestInput.slice();
-        testOutputLevels = defaultTestOutput.slice();
-        numCols = Math.min(maxCols, truthTable[i].length);
+        if (truthTable[i].length != 2) {
+          console.error("Invalid truth table row length for row " + (i + 1) + " - should be 2");
+        }
+        else if (truthTable[i][0].length != input.count) {
+          console.error("Invalid truth table input count for row " + (i + 1) + " - should be " + input.count);
+        }
+        else if (truthTable[i][1].length != output.count) {
+          console.error("Invalid truth table output count for row " + (i + 1) + " - should be " + output.count);
+        }
+        else {
+          testInputVoltages = defaultTestInput.slice();
+          testOutputLevels = defaultTestOutput.slice();
 
-        for (j = 0; j < numCols; j++) {
-          if (j < input.count) {
-            testInputVoltages[j] = TTL.getBooleanVoltage(truthTable[i][j]);
+          for (j = 0; j < truthTable[i][0].length; j++) {
+            testInputVoltages[j] = TTL.getBooleanVoltage(truthTable[i][0][j]);
           }
-          else {
-            testOutputLevels[j - input.count] = TTL.getBooleanLogicLevel(truthTable[i][j]);
+          for (j = 0; j < truthTable[i][1].length; j++) {
+            testOutputLevels[j] = TTL.getBooleanLogicLevel(truthTable[i][1][j]);
           }
         }
 
@@ -471,9 +481,21 @@ module.exports = React.createClass({
       this.state.inIframe ? null : h1({}, "Teaching Teamwork" + (this.state.activity ? ": " + this.state.activity.name : "")),
       this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
       OfflineCheckView({}),
+      this.state.notes ? div({className: 'activity-notes', dangerouslySetInnerHTML: {__html: this.state.notes}}) : null,
       WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect, soloMode: this.state.soloMode}),
       div({id: 'logicapp'},
-        WorkspaceView({constants: constants, boards: this.state.boards, showPinColors: this.state.showPinColors, showPinouts: this.state.showPinouts, users: this.state.users, userBoardNumber: this.state.userBoardNumber, activity: this.state.activity, forceRerender: this.forceRerender, soloMode: this.state.soloMode, showBusColors: this.state.showBusColors}),
+        WorkspaceView({
+          constants: constants,
+          boards: this.state.boards,
+          users: this.state.users,
+          userBoardNumber: this.state.userBoardNumber,
+          activity: this.state.activity,
+          forceRerender: this.forceRerender,
+          soloMode: this.state.soloMode,
+          showPinColors: this.state.showPinColors,
+          showPinouts: this.state.showPinouts,
+          showBusColors: this.state.showBusColors
+        }),
         this.state.allowAutoWiring ? AutoWiringView({top: 0, toggleAllChipsAndWires: this.toggleAllChipsAndWires}) : null,
         this.state.soloMode ? null : SidebarChatView({numClients: 2, top: sidebarTop})
       ),

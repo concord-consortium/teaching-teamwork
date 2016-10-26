@@ -214,13 +214,16 @@ This activity is not currently authorable in JSON.
 ```
 {
   "name": "Single XOR",                    # this is displayed at the top of the page
+  "notes": "Set bus port E to be A XOR B", # if present this is displayed under the name.  HTML is allowed here.
   "interface": {
     "showPinColors": true,                 # show red/blue pin colors that denote voltage levels
     "showBusColors": true,                 # show red/blus connector colors on bus that denote voltage levels
     "allowAutoWiring": true,               # show button that enables toggling of all wiring of all the boards, if true a "autoWiring" option setting is required below
     "showPinouts": true,                   # show schematic pinouts on hover
     "showBusLabels": true,                 # show labels next to the bus connector holes
-    "showProbe": "edit"                    # show probe only in edit mode, other values are "all" and false
+    "showProbe": "edit",                   # show probe only in edit mode, other values are "all" and false
+    "showInputAutoToggles": true           # show the increment and decrement controls next to the local board input switches
+    "showGlobalIOWires": true              # shows the wires coming and going to the global input/output on the bus
   },
   "busSize": 5,                            # total number of holes in the bus connector
   "busInputSize": 2,                       # number of input holes
@@ -287,12 +290,12 @@ This activity is not currently authorable in JSON.
     }
   ],
   "truthTable": [  # used by the submit button to determine if the wiring is correct
-                   # the first set of columns are the global inputs (left to right, corresponding to holes 1 and 2 in the bus) and the remainder are the global outputs
+                   # each row is a test with the first array being the global inputs and the second the global outputs
+                   # both the input and output arrays are set right to left (the least significant bit is rightmost)
                    # the code will cycle through all the combinations, setting the inputs, resolving the board values and then testing the output
-    [0, 0, 0],
-    [0, 1, 1],
-    [1, 0, 1],
-    [1, 1, 0]
-  ]
+    [[0, 0], [0]],
+    [[0, 1], [1]],
+    [[1, 0], [1]],
+    [[1, 1], [0]]
 }
 ```

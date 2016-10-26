@@ -230,3 +230,8 @@ button {
 #we-got-it-popup-dialog div {
   margin: 10px 0;
 }
+
+.activity-notes {
+  text-align: center;
+  margin: 10px 0;
+}

@@ -1,12 +1,15 @@
 {
   "name": "Single XOR",
+  "notes": "Set bus port E to be A <em>XOR</em> B",
   "interface": {
     "showPinColors": true,
     "showBusColors": true,
     "allowAutoWiring": true,
     "showPinouts": true,
     "showBusLabels": true,
-    "showProbe": "edit"
+    "showProbe": "edit",
+    "showInputAutoToggles": true,
+    "showGlobalIOWires": true
   },
   "busSize": 5,
   "busInputSize": 2,
@@ -71,9 +74,9 @@
     }
   ],
   "truthTable": [
-    [0, 0, 0],
-    [0, 1, 1],
-    [1, 0, 1],
-    [1, 1, 0]
+    [[0, 0], [0]],
+    [[0, 1], [1]],
+    [[1, 0], [1]],
+    [[1, 1], [0]]
   ]
 }

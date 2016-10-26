@@ -26,7 +26,7 @@ module.exports = React.createClass({
       }
     }
 
-    if (this.props.connector.type == 'input') {
+    if ((this.props.connector.type == 'input') && this.props.showInputAutoToggles) {
       selectorRect = rect({x: position.x + position.width, y: position.y, width: position.selectorBackgroundWidth, height: position.height, fill: colors.inputSelectorBackground});
       negativeSelector = ConnectorSelectorView({key: 'negative', direction: 'negative', connector: this.props.connector, selected: this.props.selected, editable: this.props.editable, cx: position.negativeSelectorCX, cy: firstHole.cy, width: position.selectorWidth, height: position.selectorHeight, forceRerender: this.props.forceRerender});
       positiveSelector = ConnectorSelectorView({key: 'positive', direction: 'positive', connector: this.props.connector, selected: this.props.selected, editable: this.props.editable, cx: position.positiveSelectorCX, cy: firstHole.cy, width: position.selectorWidth, height: position.selectorHeight, forceRerender: this.props.forceRerender});

@@ -48,7 +48,8 @@ module.exports = React.createClass({
           wireSettings: this.props.wireSettings,
           forceRerender: this.props.forceRerender,
           soloMode: this.props.soloMode,
-          showBusLabels: this.props.showBusLabels
+          showBusLabels: this.props.showBusLabels,
+          showInputAutoToggles: this.props.showInputAutoToggles
         }),
         editable ? BoardEditorView({constants: this.props.constants, board: this.state.selectedBoard}) : null
       );
@@ -68,7 +69,8 @@ module.exports = React.createClass({
           wireSettings: this.props.wireSettings,
           forceRerender: this.props.forceRerender,
           soloMode: this.props.soloMode,
-          showBusLabels: this.props.showBusLabels
+          showBusLabels: this.props.showBusLabels,
+          showInputAutoToggles: this.props.showInputAutoToggles
         }),
         SpacerView({
           constants: this.props.constants
@@ -86,7 +88,8 @@ module.exports = React.createClass({
           wireSettings: this.props.wireSettings,
           forceRerender: this.props.forceRerender,
           soloMode: this.props.soloMode,
-          showBusLabels: this.props.showBusLabels
+          showBusLabels: this.props.showBusLabels,
+          showInputAutoToggles: this.props.showInputAutoToggles
         }),
         SpacerView({
           constants: this.props.constants
@@ -104,7 +107,8 @@ module.exports = React.createClass({
           wireSettings: this.props.wireSettings,
           forceRerender: this.props.forceRerender,
           soloMode: this.props.soloMode,
-          showBusLabels: this.props.showBusLabels
+          showBusLabels: this.props.showBusLabels,
+          showInputAutoToggles: this.props.showInputAutoToggles
         }),
         BusView({
           constants: this.props.constants,
