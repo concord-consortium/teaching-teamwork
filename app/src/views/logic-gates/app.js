@@ -283,8 +283,7 @@ module.exports = React.createClass({
           defaultTestInput = [],
           defaultTestOutput = [],
           tests = [],
-          maxCols = input.count + output.count,
-          i, j, testInputVoltages, testOutputLevels, numCols;
+          i, j, testInputVoltages, testOutputLevels;
 
       for (i = 0; i < input.count; i++) {
         defaultTestInput.push('x');
@@ -295,16 +294,24 @@ module.exports = React.createClass({
 
       // generate each test
       for (i = 0; i < truthTable.length; i++) {
-        testInputVoltages = defaultTestInput.slice();
-        testOutputLevels = defaultTestOutput.slice();
-        numCols = Math.min(maxCols, truthTable[i].length);
+        if (truthTable[i].length != 2) {
+          console.error("Invalid truth table row length for row " + (i + 1) + " - should be 2");
+        }
+        else if (truthTable[i][0].length != input.count) {
+          console.error("Invalid truth table input count for row " + (i + 1) + " - should be " + input.count);
+        }
+        else if (truthTable[i][1].length != output.count) {
+          console.error("Invalid truth table output count for row " + (i + 1) + " - should be " + output.count);
+        }
+        else {
+          testInputVoltages = defaultTestInput.slice();
+          testOutputLevels = defaultTestOutput.slice();
 
-        for (j = 0; j < numCols; j++) {
-          if (j < input.count) {
-            testInputVoltages[j] = TTL.getBooleanVoltage(truthTable[i][j]);
+          for (j = 0; j < truthTable[i][0].length; j++) {
+            testInputVoltages[j] = TTL.getBooleanVoltage(truthTable[i][0][j]);
           }
-          else {
-            testOutputLevels[j - input.count] = TTL.getBooleanLogicLevel(truthTable[i][j]);
+          for (j = 0; j < truthTable[i][1].length; j++) {
+            testOutputLevels[j] = TTL.getBooleanLogicLevel(truthTable[i][1][j]);
           }
         }
 

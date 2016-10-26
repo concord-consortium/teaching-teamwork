@@ -290,12 +290,12 @@ This activity is not currently authorable in JSON.
     }
   ],
   "truthTable": [  # used by the submit button to determine if the wiring is correct
-                   # the first set of columns are the global inputs (left to right, corresponding to holes 1 and 2 in the bus) and the remainder are the global outputs
+                   # each row is a test with the first array being the global inputs and the second the global outputs
+                   # both the input and output arrays are set right to left (the least significant bit is rightmost)
                    # the code will cycle through all the combinations, setting the inputs, resolving the board values and then testing the output
-    [0, 0, 0],
-    [0, 1, 1],
-    [1, 0, 1],
-    [1, 1, 0]
-  ]
+    [[0, 0], [0]],
+    [[0, 1], [1]],
+    [[1, 0], [1]],
+    [[1, 1], [0]]
 }
 ```
