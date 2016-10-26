@@ -200,16 +200,18 @@ module.exports = React.createClass({
 
   setupBoards: function (activity) {
     var boards = [],
-        busSize = activity.busSize || 0,
+        busInputSize = activity.busInputSize || 0,
+        busOutputSize = activity.busOutputSize || 0,
+        busSize = Math.max((activity.busSize || 0), (busInputSize + busOutputSize)),
         boardSettings, board, i, input, output, bus;
 
-    this.circuitResolver = new CircuitResolver({busSize: busSize, busInputSize: activity.busInputSize, busOutputSize: activity.busOutputSize});
+    this.circuitResolver = new CircuitResolver({busSize: busSize, busInputSize: busInputSize, busOutputSize: busOutputSize});
 
     for (i = 0; i < activity.boards.length; i++) {
       boardSettings = activity.boards[i];
       input = new Connector({type: 'input', count: boardSettings.localInputSize});
       output = new Connector({type: 'output', count: boardSettings.localOutputSize});
-      bus = busSize > 0 ? new Connector({type: 'bus', count: busSize, busInputSize: activity.busInputSize, busOutputSize: activity.busOutputSize}) : null;
+      bus = busSize > 0 ? new Connector({type: 'bus', count: busSize, busInputSize: busInputSize, busOutputSize: busOutputSize}) : null;
       board = new Board({
         number: i,
         bezierReflectionModifier: -0.5,
