@@ -5,7 +5,8 @@
     "showBusColors": true,
     "allowAutoWiring": true,
     "showPinouts": true,
-    "showProbe": "all"
+    "showProbe": "all",
+    "showInputAutoToggles": true
   },
   "busSize": 8,
   "busInputSize": 2,

@@ -104,6 +104,7 @@ module.exports = React.createClass({
       soloMode: this.hasUrlOption('soloMode'),
       showBusLabels: this.hasUrlOption('showBusLabels'),
       showProbe: this.hasUrlOption('showProbeInEdit') ? 'edit' : this.hasUrlOption('hideProbe') ? false : 'all',
+      showInputAutoToggles: !this.hasUrlOption('hideInputAutoToggles'),
       userBoardNumber: -1,
       users: {},
       currentBoard: 0,
@@ -395,7 +396,7 @@ module.exports = React.createClass({
       OfflineCheckView({}),
       WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect, soloMode: this.state.soloMode}),
       div({id: 'picapp'},
-        WorkspaceView({constants: constants, boards: this.state.boards, stepping: !this.state.running, showPinColors: this.state.showPinColors, users: this.state.users, userBoardNumber: this.state.userBoardNumber, wireSettings: this.state.wireSettings, forceRerender: this.forceRerender, soloMode: this.state.soloMode, showBusLabels: this.state.showBusLabels, showProbe: this.state.showProbe, showBusColors: this.state.showBusColors}),
+        WorkspaceView({constants: constants, boards: this.state.boards, stepping: !this.state.running, showPinColors: this.state.showPinColors, users: this.state.users, userBoardNumber: this.state.userBoardNumber, wireSettings: this.state.wireSettings, forceRerender: this.forceRerender, soloMode: this.state.soloMode, showBusLabels: this.state.showBusLabels, showProbe: this.state.showProbe, showBusColors: this.state.showBusColors, showInputAutoToggles: this.state.showInputAutoToggles}),
         this.state.showSimulator ? SimulatorControlView({running: this.state.running, run: this.run, step: this.step, reset: this.reset}) : null,
         this.state.showAutoWiring ? AutoWiringView({top: autoWiringTop, running: this.state.running, toggleAllWires: this.toggleAllWires}) : null,
         this.state.soloMode ? null : SidebarChatView({numClients: 3, top: sidebarTop})

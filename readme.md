@@ -49,6 +49,7 @@ need to have values assigned to them and they can be combined in any order.
 * showBusColors - shows low/high value of the bus connector holes
 * showProbeInEdit - enables display of probe only when editing a circuit
 * hideProbe - hides probe in edit and "all" view
+* hideInputAutoToggles - hides the increment and decrement controls next to the local board input switches
 
 Example: [http://concord-consortium.github.io/teaching-teamwork/pic/?logToConsole&soloMode](http://concord-consortium.github.io/teaching-teamwork/pic/?logToConsole&soloMode)
 

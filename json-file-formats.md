@@ -220,7 +220,8 @@ This activity is not currently authorable in JSON.
     "allowAutoWiring": true,               # show button that enables toggling of all wiring of all the boards, if true a "autoWiring" option setting is required below
     "showPinouts": true,                   # show schematic pinouts on hover
     "showBusLabels": true,                 # show labels next to the bus connector holes
-    "showProbe": "edit"                    # show probe only in edit mode, other values are "all" and false
+    "showProbe": "edit",                   # show probe only in edit mode, other values are "all" and false
+    "showInputAutoToggles": true           # show the increment and decrement controls next to the local board input switches
   },
   "busSize": 5,                            # total number of holes in the bus connector
   "busInputSize": 2,                       # number of input holes

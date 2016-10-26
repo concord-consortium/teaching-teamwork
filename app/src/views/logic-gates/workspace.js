@@ -36,9 +36,14 @@ module.exports = React.createClass({
     }
   },
 
+  interfaceOption: function (name) {
+    return this.props.activity && this.props.activity.interface ? this.props.activity.interface[name] : false;
+  },
+
   render: function () {
-    var showBusLabels = this.props.activity && this.props.activity.interface ? this.props.activity.interface.showBusLabels : false,
-        showProbe = this.props.activity && this.props.activity.interface ? this.props.activity.interface.showProbe : false,
+    var showBusLabels = this.interfaceOption('showBusLabels'),
+        showProbe = this.interfaceOption('showProbe'),
+        showInputAutoToggles = this.interfaceOption('showInputAutoToggles'),
         selectedConstants,
         spacersAndBoards, i, height;
 
@@ -64,7 +69,8 @@ module.exports = React.createClass({
           stepping: true,
           forceRerender: this.props.forceRerender,
           soloMode: this.props.soloMode,
-          showBusLabels: showBusLabels
+          showBusLabels: showBusLabels,
+          showInputAutoToggles: showInputAutoToggles
         })
       );
     }
@@ -94,7 +100,8 @@ module.exports = React.createClass({
           stepping: true,
           forceRerender: this.props.forceRerender,
           soloMode: this.props.soloMode,
-          showBusLabels: showBusLabels
+          showBusLabels: showBusLabels,
+          showInputAutoToggles: showInputAutoToggles
         }));
       }
       spacersAndBoards.push(BusView({
