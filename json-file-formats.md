@@ -214,6 +214,7 @@ This activity is not currently authorable in JSON.
 ```
 {
   "name": "Single XOR",                    # this is displayed at the top of the page
+  "notes": "Set bus port E to be A XOR B", # if present this is displayed under the name.  HTML is allowed here.
   "interface": {
     "showPinColors": true,                 # show red/blue pin colors that denote voltage levels
     "showBusColors": true,                 # show red/blus connector colors on bus that denote voltage levels

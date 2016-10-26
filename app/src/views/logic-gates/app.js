@@ -147,7 +147,8 @@ module.exports = React.createClass({
       allowAutoWiring: !!interface.allowAutoWiring && hasAutoWiringData,
       showPinColors: !!interface.showPinColors,
       showBusColors: !!interface.showBusColors,
-      showPinouts: !!interface.showPinouts
+      showPinouts: !!interface.showPinouts,
+      notes: activity.notes || false
     });
 
     logController.init(activityName);
@@ -473,6 +474,7 @@ module.exports = React.createClass({
       this.state.inIframe ? null : h1({}, "Teaching Teamwork" + (this.state.activity ? ": " + this.state.activity.name : "")),
       this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
       OfflineCheckView({}),
+      this.state.notes ? div({className: 'activity-notes', dangerouslySetInnerHTML: {__html: this.state.notes}}) : null,
       WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect, soloMode: this.state.soloMode}),
       div({id: 'logicapp'},
         WorkspaceView({

@@ -1,8 +1,10 @@
 {
   "name": "Adder",
+  "notes": "Set bus port E to be A XOR B",
   "interface": {
     "showPinColors": false,
     "showBusColors": false,
+    "showBusLabels": true,
     "allowAutoWiring": true,
     "showPinouts": false,
     "showProbe": "edit",

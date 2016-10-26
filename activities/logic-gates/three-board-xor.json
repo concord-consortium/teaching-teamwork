@@ -1,8 +1,10 @@
 {
   "name": "Three Board XOR",
+  "notes": "Set bus port G to be A XOR B",
   "interface": {
     "showPinColors": true,
     "showBusColors": true,
+    "showBusLabels": true,
     "allowAutoWiring": true,
     "showPinouts": true,
     "showProbe": "edit",
@@ -10,8 +12,8 @@
     "showGlobalIOWires": true
   },
   "busSize": 7,
-  "busInputSize": 3,
-  "busOutputSize": 2,
+  "busInputSize": 2,
+  "busOutputSize": 1,
   "boards": [
     {
       "logicChipDrawer": {
@@ -19,8 +21,6 @@
           "7404": {"max": 3}
         }
       },
-      "input": ["A", "B"],
-      "output": ["A", "B", "NOT A", "NOT B"],
       "localInputSize": 4,
       "localOutputSize": 4,
       "autoWiring": {
@@ -45,8 +45,6 @@
           "7408": {"max": 2}
         }
       },
-      "input": ["A", "B", "NOT A", "NOT B"],
-      "output": ["C", "D"],
       "localInputSize": 4,
       "localOutputSize": 4,
       "autoWiring": {
@@ -73,8 +71,6 @@
           "7432": {"max": 2}
         }
       },
-      "input": ["C", "D"],
-      "output": ["XOR"],
       "localInputSize": 4,
       "localOutputSize": 4,
       "autoWiring": {

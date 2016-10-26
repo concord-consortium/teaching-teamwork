@@ -3,6 +3,7 @@
   "interface": {
     "showPinColors": true,
     "showBusColors": true,
+    "showBusLabels": true,
     "allowAutoWiring": true,
     "showPinouts": true,
     "showProbe": "all",
