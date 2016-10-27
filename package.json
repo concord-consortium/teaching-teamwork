@@ -8,8 +8,6 @@
   },
   "scripts": {
     "start": "./node_modules/gulp/bin/gulp.js",
-    "predeploy": "rm -rf dist && EXIT_ON_ERRORS=1 ./node_modules/gulp/bin/gulp.js build-all",
-    "deploy": "./deploy.sh gh-pages",
     "test": "cd test; karma start"
   },
   "devDependencies": {
