@@ -1,6 +1,6 @@
 {
   "name": "Three Board XOR",
-  "notes": "Set bus port G to be A XOR B",
+  "notes": "Al's wonderful circuit",
   "interface": {
     "showPinColors": true,
     "showBusColors": true,
