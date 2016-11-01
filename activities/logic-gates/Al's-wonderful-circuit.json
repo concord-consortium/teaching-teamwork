@@ -1,0 +1,98 @@
+{
+  "name": "Three Board XOR",
+  "notes": "Al's wonderful circuit",
+  "interface": {
+    "showPinColors": true,
+    "showBusColors": true,
+    "showBusLabels": true,
+    "allowAutoWiring": true,
+    "showPinouts": true,
+    "showProbe": "edit",
+    "showInputAutoToggles": true,
+    "showGlobalIOWires": true
+  },
+  "busSize": 7,
+  "busInputSize": 2,
+  "busOutputSize": 1,
+  "boards": [
+    {
+      "logicChipDrawer": {
+        "chips": {
+          "7404": {"max": 1}
+        }
+      },
+      "localInputSize": 4,
+      "localOutputSize": 4,
+      "autoWiring": {
+        "chips": {
+          "not": {
+            "type": "7404",
+            "x": 300,
+            "y": 150
+          }
+        },
+        "wires": [
+          "bus:1,not:13",  "// create NOT A on not pin 12",
+          "bus:2,not:9",   "// create NOT B on not pin 8",
+          "not:12,bus:3",  "// NOT A to output hole 3",
+          "not:8,bus:4",   "// NOT B to output hole 4"
+        ]
+      }
+    },
+    {
+      "logicChipDrawer": {
+        "chips": {
+          "7408": {"max": 1}
+        }
+      },
+      "localInputSize": 4,
+      "localOutputSize": 4,
+      "autoWiring": {
+        "chips": {
+          "and": {
+            "type": "7408",
+            "x": 300,
+            "y": 150
+          }
+        },
+        "wires": [
+          "bus:3,and:13", "// NOT A to and pin 13",
+          "bus:2,and:12",     "// B to and pin 12",
+          "and:11,bus:5",    "// (NOT A AND B) to output hole 1",
+          "bus:4,and:10", "// NOT B to and pin 10",
+          "bus:1,and:9",      "// A to and pin 9",
+          "and:8,bus:6",     "// (NOT B AND A) to output hole 2"
+        ]
+      }
+    },
+    {
+      "logicChipDrawer": {
+        "chips": {
+          "7432": {"max": 1}
+        }
+      },
+      "localInputSize": 4,
+      "localOutputSize": 4,
+      "autoWiring": {
+        "chips": {
+          "or": {
+            "type": "7432",
+            "x": 300,
+            "y": 150
+          }
+        },
+        "wires": [
+          "bus:5,or:13",    "// C = (NOT A AND B) from input hole 1",
+          "bus:6,or:12",    "// D = (NOT B AND A) from input hole 2",
+          "or:11,bus:7", "// (C OR D) to output hole 1"
+        ]
+      }
+    }
+  ],
+  "truthTable": [
+    [[0, 0], [0]],
+    [[0, 1], [1]],
+    [[1, 0], [1]],
+    [[1, 1], [0]]
+  ]
+}
