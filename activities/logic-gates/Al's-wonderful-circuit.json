@@ -1,6 +1,6 @@
 {
   "name": "Three Board XOR",
-  "notes": "Al's wonderful circuit",
+  "notes": "Cars circuit",
   "interface": {
     "showPinColors": true,
     "showBusColors": true,
@@ -11,9 +11,9 @@
     "showInputAutoToggles": true,
     "showGlobalIOWires": true
   },
-  "busSize": 7,
-  "busInputSize": 2,
-  "busOutputSize": 1,
+  "busSize": 10,
+  "busInputSize": 3,
+  "busOutputSize": 2,
   "boards": [
     {
       "logicChipDrawer": {
