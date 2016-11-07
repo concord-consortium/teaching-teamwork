@@ -6,24 +6,24 @@
     "showBusLabels": true,
     "allowAutoWiring": true,
     "showPinouts": true,
-    "showProbe": "all",
+    "showProbe": "false",
     "showInputAutoToggles": true,
     "showGlobalIOWires": true
   },
-  "busSize": 8,
-  "busInputSize": 2,
-  "busOutputSize": 2,
+  "busSize": 14,
+  "busInputSize": 4,
+  "busOutputSize": 4,
   "boards": [
     {
       "logicChipDrawer": {
         "chips": {
-          "7400": {"max": 5},
-          "7402": {"max": 5},
-          "7404": {"max": 5},
-          "7408": {"max": 5},
-          "7411": {"max": 5},
-          "7432": {"max": 5},
-          "7486": {"max": 5}
+          "7400": {"max": 1},
+          "7402": {"max": 1},
+          "7404": {"max": 1},
+          "7408": {"max": 1},
+          "7411": {"max": 1},
+          "7432": {"max": 1},
+          "7486": {"max": 1}
         }
       },
       "localInputSize": 4,
