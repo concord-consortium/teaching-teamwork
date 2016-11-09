@@ -12,8 +12,8 @@
         "showGlobalIOWires": true
     },
     "busSize": 6,
-    "busInputSize": 2,
-    "busOutputSize": 2,
+    "busInputSize": 4,
+    "busOutputSize": 4,
     "boards": [{
         "logicChipDrawer": {
             "chips": {
