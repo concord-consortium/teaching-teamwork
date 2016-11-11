@@ -1,5 +1,5 @@
 {
-    "name": "Car Direction",
+    "name": "Car Direction Solo",
     "notes": "Design a circuit that reports the direction of travel of the car.",
     "interface": {
         "showPinColors": true,
@@ -18,27 +18,7 @@
         "logicChipDrawer": {
             "chips": {
                 "7400": {
-                    "max": 1
-                }
-            }
-        },
-        "localInputSize": 2,
-        "localOutputSize": 2
-    }, {
-        "logicChipDrawer": {
-            "chips": {
-                "7400": {
-                    "max": 1
-                }
-            }
-        },
-        "localInputSize": 2,
-        "localOutputSize": 2
-    }, {
-        "logicChipDrawer": {
-            "chips": {
-                "7400": {
-                    "max": 1
+                    "max":
                 }
             }
         },
