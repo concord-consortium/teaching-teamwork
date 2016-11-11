@@ -1,6 +1,6 @@
 {
     "name": "Al's Wonderful Circuit",
-    "notes": "Cars circuit",
+    "notes": "Design a circuit that reports the direction of travel of the car.",
     "interface": {
         "showPinColors": true,
         "showBusColors": true,
@@ -11,7 +11,7 @@
         "showInputAutoToggles": true,
         "showGlobalIOWires": true
     },
-    "busSize": 6,
+    "busSize": 10,
     "busInputSize": 2,
     "busOutputSize": 2,
     "boards": [{
