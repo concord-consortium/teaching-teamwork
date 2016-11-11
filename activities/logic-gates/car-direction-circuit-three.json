@@ -1,5 +1,5 @@
 {
-    "name": "Car direction for three (board 1 has 3 chips)",
+    "name": "Car direction for three users (board 1 has 3 chips)",
     "notes": "Design a circuit that reports the direction of travel of the car.",
     "interface": {
         "showPinColors": true,
