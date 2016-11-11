@@ -1,6 +1,6 @@
 {
-    "name": "Al's Wonderful Circuit",
-    "notes": "Cars circuit",
+    "name": "Car Direction",
+    "notes": "Design a circuit that reports the direction of travel of the car.",
     "interface": {
         "showPinColors": true,
         "showBusColors": true,
@@ -11,9 +11,9 @@
         "showInputAutoToggles": true,
         "showGlobalIOWires": true
     },
-    "busSize": 6,
-    "busInputSize": 4,
-    "busOutputSize": 4,
+    "busSize": 10,
+    "busInputSize": 2,
+    "busOutputSize": 2,
     "boards": [{
         "logicChipDrawer": {
             "chips": {
@@ -22,8 +22,8 @@
                 }
             }
         },
-        "localInputSize": 4,
-        "localOutputSize": 4
+        "localInputSize": 2,
+        "localOutputSize": 2
     }, {
         "logicChipDrawer": {
             "chips": {
@@ -32,8 +32,8 @@
                 }
             }
         },
-        "localInputSize": 4,
-        "localOutputSize": 4
+        "localInputSize": 2,
+        "localOutputSize": 2
     }, {
         "logicChipDrawer": {
             "chips": {
@@ -42,7 +42,7 @@
                 }
             }
         },
-        "localInputSize": 4,
-        "localOutputSize": 4
+        "localInputSize": 2,
+        "localOutputSize": 2
     }]
 }
