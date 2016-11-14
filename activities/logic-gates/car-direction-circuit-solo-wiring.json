@@ -1,0 +1,68 @@
+{
+    "name": "Car Direction Solo",
+    "notes": "Design a circuit that reports the direction of travel of the car.",
+    "interface": {
+        "showPinColors": true,
+        "showBusColors": true,
+        "showBusLabels": true,
+        "allowAutoWiring": true,
+        "showPinouts": true,
+        "showProbe": "edit",
+        "showInputAutoToggles": true,
+        "showGlobalIOWires": true
+    },
+    "busSize": 10,
+    "busInputSize": 2,
+    "busOutputSize": 2,
+    "boards": [{
+        "logicChipDrawer": {
+            "chips": {
+                "7400": {
+                    "max": 3
+                }
+            }
+        },
+        "localInputSize": 2,
+        "localOutputSize": 2,
+        "autoWiring": {
+            "chips": {
+                "4nand1": {
+                    "type": "7400",
+                    "x": 150,
+                    "y": 90
+                },
+                "4nand2": {
+                    "type": "7400",
+                    "x": 415,
+                    "y": 90
+                },
+                "4nand3": {
+                    "type": "7400",
+                    "x": 280,
+                    "y": 220
+                }
+            },
+            "wires": [
+                "bus:1,4nand1:13",
+                "bus:1,4nand2:13",
+                "bus:2,4nand1:2",
+                "bus:2,4nand1:10",
+                "4nand1:13,4nand1:12",
+                "4nand1:11,4nand1:1",
+                "4nand1:11,4nand1:4",
+                "4nand1:8,4nand1:5",
+                "4nand1:3,4nand3:13",
+                "4nand1:6,4nand3:10",
+                "4nand3:12,4nand3:8",
+                "4nand3:11,4nand3:9",
+                "4nand3:11,4nand2:12",
+                "bus:1,4nand2:813",
+                "4nand2:11,4nand2:10",
+                "4nand2:9,4nand2:6",
+                "4nand2:8,4nand2:4",
+                "4nand1:9,4nand2:5",
+                "4nand2:8,bus:9"
+            ]
+        }
+    }]
+}
