@@ -1,6 +1,6 @@
 {
     "name": "Car Direction Solo",
-    "notes": "Design a circuit that reports the direction of travel of the car.",
+    "notes": "Design a circuit that reports the direction of travel of the car by outputting 1 if the car is moving from left to right and 0 otherwise.",
     "interface": {
         "showPinColors": true,
         "showBusColors": true,
