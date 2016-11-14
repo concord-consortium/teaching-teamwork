@@ -1,13 +1,18 @@
 {
+<<<<<<< HEAD
     "name": "Car Direction Solo",
     "notes": "Design a circuit that reports the direction of travel of the car by outputting 1 if the car is moving from left to right and 0 otherwise.",
+=======
+    "name": "Car Direction Solo with auto-wiring",
+    "notes": "Design a circuit that reports the direction of travel of the car by setting its output high when the car goes from left to right and low otherwise.",
+>>>>>>> new-car-solo
     "interface": {
         "showPinColors": true,
         "showBusColors": true,
         "showBusLabels": true,
         "allowAutoWiring": true,
         "showPinouts": true,
-        "showProbe": "edit",
+        "showProbe": "false",
         "showInputAutoToggles": true,
         "showGlobalIOWires": true
     },
