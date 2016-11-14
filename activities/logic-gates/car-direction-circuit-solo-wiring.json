@@ -1,5 +1,5 @@
 {
-    "name": "Car Direction Solo",
+    "name": "Car Direction Solo with auto-wiring",
     "notes": "Design a circuit that reports the direction of travel of the car.",
     "interface": {
         "showPinColors": true,
