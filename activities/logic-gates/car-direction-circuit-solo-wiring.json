@@ -1,6 +1,6 @@
 {
     "name": "Car Direction Solo with auto-wiring",
-    "notes": "Design a circuit that reports the direction of travel of the car by setting its output high when the car goes from left to right and low otherwise.",
+    "notes": "Version 1.1",
 
     "interface": {
         "showPinColors": true,
