@@ -1,11 +1,7 @@
 {
-<<<<<<< HEAD
-    "name": "Car Direction Solo",
-    "notes": "Design a circuit that reports the direction of travel of the car by outputting 1 if the car is moving from left to right and 0 otherwise.",
-=======
     "name": "Car Direction Solo with auto-wiring",
     "notes": "Design a circuit that reports the direction of travel of the car by setting its output high when the car goes from left to right and low otherwise.",
->>>>>>> new-car-solo
+
     "interface": {
         "showPinColors": true,
         "showBusColors": true,
@@ -49,24 +45,25 @@
             },
             "wires": [
                 "bus:1,4nand1:13",
-                "bus:1,4nand2:13",
-                "bus:2,4nand1:2",
-                "bus:2,4nand1:10",
                 "4nand1:13,4nand1:12",
-                "4nand1:11,4nand1:1",
                 "4nand1:11,4nand1:4",
-                "4nand1:8,4nand1:5",
-                "4nand1:3,4nand3:13",
-                "4nand1:6,4nand3:10",
-                "4nand3:12,4nand3:8",
-                "4nand3:11,4nand3:9",
-                "4nand3:11,4nand2:12",
-                "bus:1,4nand2:813",
-                "4nand2:11,4nand2:10",
-                "4nand2:9,4nand2:6",
-                "4nand2:8,4nand2:4",
-                "4nand1:9,4nand2:5",
-                "4nand2:8,bus:9"
+                "4nand1:1,4nand1:2",
+                "4nand1:11,4nand1:4",
+                "4nand1:3,4nand1:5",
+                "bus:2,4nand1:10",
+                "4nand1:11,4nand1:4",
+                "4nand1:11,4nand1:9",
+                "4nand1:8,4nand2:13",
+                "4nand1:6,4nand2:1",
+                "4nand2:11,4nand2:2",
+                "4nand2:12,4nand2:3",
+                "4nand2:11,4nand2:9",
+                "bus:1,4nand2:10",
+                "4nand2:8,4nand3:13",
+                "bus:2,4nand3:1",
+                "4nand3:2,4nand3:11",
+                "4nand3:3,4nand3:12",
+                "4nand3:11,bus:10"
             ]
         }
     }]
