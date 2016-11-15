@@ -45,6 +45,7 @@
             },
             "wires": [
                 "bus:1,4nand1:13",
+                "bus:2,4nand1:1",
                 "4nand1:13,4nand1:12",
                 "4nand1:11,4nand1:4",
                 "4nand1:1,4nand1:2",
