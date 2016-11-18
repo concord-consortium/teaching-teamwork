@@ -1,0 +1,45 @@
+{
+    "name": "All Chips, single board",
+    "interface": {
+        "showPinColors": true,
+        "showBusColors": true,
+        "showBusLabels": true,
+        "allowAutoWiring": true,
+        "showPinouts": true,
+        "showProbe": "false",
+        "showInputAutoToggles": true,
+        "showGlobalIOWires": true
+    },
+    "busSize": 14,
+    "busInputSize": 4,
+    "busOutputSize": 4,
+    "boards": [{
+        "logicChipDrawer": {
+            "chips": {
+                "7400": {
+                    "max": 1
+                },
+                "7402": {
+                    "max": 1
+                },
+                "7404": {
+                    "max": 1
+                },
+                "7408": {
+                    "max": 1
+                },
+                "7411": {
+                    "max": 1
+                },
+                "7432": {
+                    "max": 1
+                },
+                "7486": {
+                    "max": 1
+                }
+            }
+        },
+        "localInputSize": 4,
+        "localOutputSize": 4
+    }]
+}

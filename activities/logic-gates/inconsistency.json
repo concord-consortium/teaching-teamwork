@@ -1,0 +1,51 @@
+{
+    "name": "Inconsistent circuit",
+    "notes": "Chained inverters don't function properly",
+    "interface": {
+        "showPinColors": true,
+        "showBusColors": true,
+        "showBusLabels": true,
+        "allowAutoWiring": true,
+        "showPinouts": true,
+        "showProbe": "edit",
+        "showInputAutoToggles": false,
+        "showGlobalIOWires": false
+    },
+    "busSize": 7,
+    "busInputSize": 1,
+    "busOutputSize": 6,
+    "boards": [{
+        "logicChipDrawer": {
+            "chips": {
+                "7411": {
+                    "max": 1
+                }
+            }
+        },
+        "localInputSize": 2,
+        "localOutputSize": 2,
+        "autoWiring": {
+            "chips": {
+                "6not": {
+                    "type": "7404",
+                    "x": 300,
+                    "y": 90
+                }
+            },
+            "wires": [
+                "bus:1, 6not:13",
+                "6not:12, 6not:11",
+                "6not:10, 6not:19",
+                "6not:8, 6not:1",
+                "6not:2, 6not:3",
+                "6not:4, 6not:5",
+                "6not:12, bus:2",
+                "6not:10, bus:3",
+                "6not:8, bus:4",
+                "6not:2, bus:5",
+                "6not:4, bus:6",
+                "6not:6, bus:7"
+            ]
+        }
+    }]
+}
