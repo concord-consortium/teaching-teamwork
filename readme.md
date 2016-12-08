@@ -28,7 +28,7 @@ Example: [http://concord-consortium.github.io/teaching-teamwork/?logToConsole#th
 
 ### JSON File Format
 
-A description of the JSON file format can be found [json-file-formats.md](here).
+A description of the JSON file format can be found in the [json-file-formats.md](json-file-formats.md) file.
 
 ## PIC
 
