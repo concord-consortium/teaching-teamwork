@@ -125,7 +125,7 @@ Connector.prototype.autoToggleSwitches = function(direction) {
   }
 
   if (direction == 'positive') {
-    currentValue = (currentValue + 1) % maxValue;
+    currentValue = (currentValue + 1) % (maxValue + 1);
   }
   else {
     currentValue = currentValue > 0 ? currentValue - 1 : maxValue;
