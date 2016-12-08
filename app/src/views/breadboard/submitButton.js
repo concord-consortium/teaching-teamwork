@@ -325,7 +325,7 @@ Popup = React.createFactory(React.createClass({
   componentWillMount: function () {
     var self = this;
     // listen for user unknown value updates if needed
-    if (self.props.enterUnknowns) {
+    if (self.props.multipleClients && self.props.enterUnknowns) {
       self.usersRef = userController.getFirebaseGroupRef().child('users');
       self.usersRef.on("value", function(dataSnapshot) {
         var users = dataSnapshot.val(),
