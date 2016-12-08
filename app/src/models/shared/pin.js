@@ -25,7 +25,6 @@ Pin.prototype.getBezierReflection = function () {
   return this.bezierReflection;
 };
 Pin.prototype.setVoltage = function (newVoltage) {
-  this.pulseProbeDuration = this.pulseProbeDuration || (newVoltage != this.voltage ? 1 : 0);
   this.voltage = newVoltage;
 };
 Pin.prototype.getVoltage = function () {
@@ -48,7 +47,6 @@ Pin.prototype.getColor = function () {
 };
 Pin.prototype.reset = function () {
   this.voltage = this.startingVoltage;
-  this.pulseProbeDuration = 0;
 };
 Pin.prototype.getLabel = function () {
   return this.getVoltage() + "V " + (this.inputMode ? "input" : "output") + " (" + this.getLogicLevel().toLowerCase() + ")";

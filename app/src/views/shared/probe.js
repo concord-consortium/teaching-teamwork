@@ -44,9 +44,6 @@ module.exports = React.createClass({
       e.preventDefault();
       $window.off('mousemove', drag);
       $window.off('mouseup', stopDrag);
-      if (self.props.hoverSource) {
-        self.props.hoverSource.pulseProbeDuration = 0;
-      }
       self.props.setProbe({source: self.props.hoverSource, pos: null});
       events.logEvent(events.MOVED_PROBE_EVENT, self.props.hoverSource, {board: self.props.board});
     };
@@ -135,24 +132,8 @@ module.exports = React.createClass({
       else if (this.props.probeSource.isLow()) {
         greenFill = 1;
       }
-
-      if (this.props.probeSource.pulseProbeDuration) {
+      else {
         amberFill = 1;
-
-        if (this.props.stepping) {
-          // show for only 1 step
-          this.props.probeSource.pulseProbeDuration = 0;
-        }
-        else {
-          // show for 3 renders (300ms) and then hide for 3 renders (300ms)
-          this.props.probeSource.pulseProbeDuration++;
-          if (this.props.probeSource.pulseProbeDuration > 3) {
-            amberFill = defaultFill;
-          }
-          if (this.props.probeSource.pulseProbeDuration > 6) {
-            this.props.probeSource.pulseProbeDuration = 0;
-          }
-        }
       }
     }
 

@@ -22,7 +22,6 @@ Hole.prototype.getBezierReflection = function () {
   return this.connector.type === 'input' ? 1 : -1;
 };
 Hole.prototype.setVoltage = function (newVoltage) {
-  this.pulseProbeDuration = this.pulseProbeDuration || (newVoltage != this.voltage ? 1 : 0);
   this.voltage = newVoltage;
 };
 Hole.prototype.getVoltage = function () {
@@ -42,7 +41,6 @@ Hole.prototype.isHigh = function () {
 };
 Hole.prototype.reset = function () {
   this.voltage = this.startingVoltage;
-  this.pulseProbeDuration = 0;
 };
 Hole.prototype.getColor = function (showVoltageColor) {
   showVoltageColor = showVoltageColor || (this.connected && (this.type == 'output'));
