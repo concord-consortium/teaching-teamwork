@@ -8,7 +8,16 @@ var sortByName = function (a, b) {
   return 0;
 };
 
-module.exports = [
+var researcherGroups = [
+  {
+    name: "Research Group",
+    members: [
+      "Researcher A", "Researcher B", "Researcher C"
+    ]
+  }
+];
+
+var studyGroups = [
   {
     name: "Animals",
     members: [
@@ -142,3 +151,7 @@ module.exports = [
     ]
   }
 ].sort(sortByName);
+
+module.exports = function () {
+  return window.location.search.indexOf('researcherMode') !== -1 ? researcherGroups : studyGroups;
+};
