@@ -53,7 +53,10 @@ module.exports = React.createClass({
 
     e.preventDefault();
 
-    if (this.props.soloMode) {
+    if (this.props.disabled) {
+      alert("The ciruit has not stablized yet, please wait to press this button until it does.");
+    }
+    else if (this.props.soloMode) {
       this.props.checkIfCircuitIsCorrect(function (allCorrect) {
         logController.logEvent("Submit clicked", "n/a", {correct: allCorrect});
         self.setState({showPopup: true, allCorrect: allCorrect});
