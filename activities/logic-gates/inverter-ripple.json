@@ -1,6 +1,6 @@
 {
-    "name": "Inconsistent circuit",
-    "notes": "Chained inverters don't function properly",
+    "name": "Inverter Ripple",
+    "notes": "Shows animated ripple of chained inverters",
     "interface": {
         "showPinColors": true,
         "showBusColors": true,
@@ -22,29 +22,24 @@
                 }
             }
         },
-        "localInputSize": 2,
-        "localOutputSize": 2,
+        "localInputSize": 1,
+        "localOutputSize": 1,
         "autoWiring": {
             "chips": {
-                "6not": {
+                "chip": {
                     "type": "7404",
                     "x": 300,
-                    "y": 90
+                    "y": 150
                 }
             },
             "wires": [
-                "bus:1, 6not:13",
-                "6not:12, 6not:11",
-                "6not:10, 6not:9",
-                "6not:8, 6not:1",
-                "6not:2, 6not:3",
-                "6not:4, 6not:5",
-                "6not:12, bus:2",
-                "6not:10, bus:3",
-                "6not:8, bus:4",
-                "6not:2, bus:5",
-                "6not:4, bus:6",
-                "6not:6, bus:7"
+                "input:1, chip:13",
+                "chip:12, chip:11",
+                "chip:10, chip:9",
+                "chip:8, chip:1",
+                "chip:2, chip:3",
+                "chip:4, chip:5",
+                "chip:6, output:1"
             ]
         }
     }]

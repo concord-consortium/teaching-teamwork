@@ -42,4 +42,13 @@ Circuit.prototype.toString = function () {
   return JSON.stringify({inputs: inputs, outputs: outputs});
 };
 
+Circuit.prototype.getOutputState = function () {
+  var outputState = [],
+      i;
+  for (i = 0; i < this.outputs.length; i++) {
+    outputState.push(this.outputs[i].toString() + '=' + this.outputs[i].getVoltage());
+  }
+  return outputState.join(',');
+};
+
 module.exports = Circuit;

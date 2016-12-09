@@ -151,14 +151,26 @@ CircuitResolver.prototype.resolveCircuitOutputVoltages = function () {
     circuit.resolveOutputVoltages();
   });
 };
-CircuitResolver.prototype.resolve = function () {
+CircuitResolver.prototype.getCircuitOutputState = function () {
+  var outputStates = [];
+  this.forEach(this.circuits, function (circuit) {
+    outputStates.push(circuit.getOutputState());
+  });
+  return outputStates.join(';');
+};
+CircuitResolver.prototype.resolve = function (callback) {
+  var initialState = callback ? this.getCircuitOutputState() : null,
+      finalState;
   this.forEach(this.components, function () {
     this.resolveCircuitInputVoltages();
     this.resolveComponentOutputVoltages();
     this.resolveCircuitOutputVoltages();
     this.resolveCircuitInputVoltages(); // this sets the global output
   });
+  if (callback) {
+    finalState = this.getCircuitOutputState();
+    callback(initialState !== finalState);
+  }
 };
-
 
 module.exports = CircuitResolver;

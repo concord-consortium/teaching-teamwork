@@ -18,7 +18,9 @@ var Connector = require('../../models/shared/connector'),
     inIframe = require('../../data/shared/in-iframe'),
     div = React.DOM.div,
     h1 = React.DOM.h1,
-    h2 = React.DOM.h2;
+    h2 = React.DOM.h2,
+    select = React.DOM.select,
+    option = React.DOM.option;
 
 module.exports = React.createClass({
   displayName: 'AppView',
@@ -34,7 +36,9 @@ module.exports = React.createClass({
       activity: null,
       interface: {},
       inIframe: inIframe(),
-      soloMode: window.location.search.indexOf('soloMode') !== -1
+      circuitNotStable: false,
+      soloMode: window.location.search.indexOf('soloMode') !== -1,
+      setSpeed: window.location.search.indexOf('setSpeed') !== -1
     };
   },
 
@@ -130,7 +134,7 @@ module.exports = React.createClass({
     var self = this,
         hasAutoWiringData = false,
         interface = activity.interface || {},
-        i;
+        i, allowAutoWiring;
 
     // create the boards
     this.setupBoards(activity);
@@ -142,9 +146,11 @@ module.exports = React.createClass({
       }
     }
 
+    allowAutoWiring = !!interface.allowAutoWiring && hasAutoWiringData;
+
     this.setState({
       activity: activity,
-      allowAutoWiring: !!interface.allowAutoWiring && hasAutoWiringData,
+      allowAutoWiring: allowAutoWiring,
       showPinColors: !!interface.showPinColors,
       showBusColors: !!interface.showBusColors,
       showPinouts: !!interface.showPinouts,
@@ -195,10 +201,31 @@ module.exports = React.createClass({
       });
     }
 
-    // start the simulator without the event logged if set to run at startup
-    if (this.state.running) {
-      this.run(true, true);
+    this.run(10);
+
+    if (allowAutoWiring && window.location.search.indexOf('autoWire')) {
+      this.toggleAllChipsAndWires();
     }
+  },
+
+  simulate: function () {
+    var self = this;
+    this.circuitResolver.resolve(function (changed) {
+      if (changed || self.state.circuitNotStable) {
+        self.setState({circuitNotStable: changed});
+      }
+
+      // redraw when the circuit outputs change
+      if (changed) {
+        self.forceUpdate();
+      }
+    });
+  },
+
+  run: function (speed) {
+    clearInterval(this.simulatorInterval);
+    this.simulatorInterval = setInterval(this.simulate, speed);
+    this.setState({speed: speed});
   },
 
   setupBoards: function (activity) {
@@ -395,11 +422,10 @@ module.exports = React.createClass({
     };
 
     getEndpoint = function (name, stringIndex) {
-      var item = chipMap[name] || (name == "bus" ? board.connectors.bus :  null),
+      var item = chipMap[name] || board.connectors[name] || null,
           intIndex = parseInt(stringIndex, 10),
           list = null,
           endPoint = null;
-
 
       if (item) {
         if (item instanceof Connector) {
@@ -476,15 +502,27 @@ module.exports = React.createClass({
     this.setState({boards: this.state.boards});
   },
 
+  changeSpeed: function () {
+    this.run(this.refs.speed.value);
+  },
+
   render: function () {
-    var sidebarTop = this.state.allowAutoWiring ? 75 : 0;
+    var sidebarTop = this.state.allowAutoWiring ? 75 : 0,
+        speedOptions = [];
+
+    if (this.state.setSpeed) {
+      speedOptions = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 250, 500, 1000].map(function (speed) {
+        return option({value: speed}, speed);
+      });
+    }
 
     return div({},
       this.state.inIframe ? null : h1({}, "Teaching Teamwork" + (this.state.activity ? ": " + this.state.activity.name : "")),
       this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
       OfflineCheckView({}),
       this.state.notes ? div({className: 'activity-notes', dangerouslySetInnerHTML: {__html: this.state.notes}}) : null,
-      WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect, soloMode: this.state.soloMode}),
+      this.state.setSpeed ? div({style: {textAlign: 'center', margin: 10}}, 'Use ', select({ref: 'speed', onChange: this.changeSpeed, value: this.state.speed}, speedOptions), ' ms circuit resolution updates') : null,
+      this.state.activity && this.state.activity.truthTable ? WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect, soloMode: this.state.soloMode, disabled: this.state.circuitNotStable}) : null,
       div({id: 'logicapp'},
         WorkspaceView({
           constants: constants,
