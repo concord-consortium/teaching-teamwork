@@ -33,7 +33,7 @@ ChipView = React.createFactory(React.createClass({
       pinX = i === 0 ? this.props.x - pinWidth : this.props.x + this.props.width;
       for (j = 0; j < 7; j++) {
         pinY = this.props.y + pinDY + (j * (pinWidth + pinDY));
-        pins.push(rect({x: pinX, y: pinY, width: pinWidth, height: pinWidth, fill: '#777'}));
+        pins.push(rect({key: 'pin' + (i + ':' + j), x: pinX, y: pinY, width: pinWidth, height: pinWidth, fill: '#777'}));
       }
     }
 
@@ -129,7 +129,7 @@ module.exports = React.createClass({
 
     i = 0;
     $.each(this.props.chips, function (type, chip) {
-      chips.push(ChipView({type: type, chip: chip, x: chipX, y: chipY + (i * (chipHeight + chipMargin)), width: chipWidth, height: chipHeight, selected: self.props.selected, editable: self.props.editable, startDrag: self.props.startDrag, onWheel: self.onWheel}));
+      chips.push(ChipView({key: 'chip' + i, type: type, chip: chip, x: chipX, y: chipY + (i * (chipHeight + chipMargin)), width: chipWidth, height: chipHeight, selected: self.props.selected, editable: self.props.editable, startDrag: self.props.startDrag, onWheel: self.onWheel}));
       i++;
     });
     return g({},
