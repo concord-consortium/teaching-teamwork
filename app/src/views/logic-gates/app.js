@@ -512,7 +512,7 @@ module.exports = React.createClass({
 
     if (this.state.setSpeed) {
       speedOptions = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 250, 500, 1000].map(function (speed) {
-        return option({value: speed}, speed);
+        return option({key: speed, value: speed}, speed);
       });
     }
 
