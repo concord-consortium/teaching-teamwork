@@ -19,9 +19,7 @@ var Connector = require('../../models/shared/connector'),
     inIframe = require('../../data/shared/in-iframe'),
     div = React.DOM.div,
     h1 = React.DOM.h1,
-    h2 = React.DOM.h2,
-    select = React.DOM.select,
-    option = React.DOM.option;
+    h2 = React.DOM.h2;
 
 module.exports = React.createClass({
   displayName: 'AppView',
@@ -39,7 +37,6 @@ module.exports = React.createClass({
       inIframe: inIframe(),
       circuitNotStable: false,
       soloMode: window.location.search.indexOf('soloMode') !== -1,
-      setSpeed: window.location.search.indexOf('setSpeed') !== -1,
       showReport: window.location.search.indexOf('report') !== -1
     };
   },
@@ -165,31 +162,33 @@ module.exports = React.createClass({
       });
     }
 
-    this.run(10);
-
     if (allowAutoWiring && window.location.search.indexOf('autoWire')) {
       this.toggleAllChipsAndWires();
     }
   },
 
-  simulate: function () {
-    var self = this;
-    this.circuitResolver.resolve(function (changed) {
-      if (changed || self.state.circuitNotStable) {
-        self.setState({circuitNotStable: changed});
-      }
+  run: function (start) {
+    var self = this,
+        simulate = function () {
+          self.circuitResolver.resolve(false, function (changed) {
+            if (changed || self.state.circuitNotStable) {
+              self.setState({circuitNotStable: changed});
+            }
 
-      // redraw when the circuit outputs change
-      if (changed) {
-        self.forceUpdate();
-      }
-    });
-  },
+            if (changed) {
+              self.forceUpdate();
+            }
+            else {
+              clearInterval(self.simulatorInterval);
+            }
+          });
+        };
 
-  run: function (speed) {
     clearInterval(this.simulatorInterval);
-    this.simulatorInterval = setInterval(this.simulate, speed);
-    this.setState({speed: speed});
+    if (start) {
+      this.simulatorInterval = setInterval(simulate, 10);
+    }
+    this.setState({circuitNotStable: !!start});
   },
 
   setupBoards: function (activity) {
@@ -199,7 +198,7 @@ module.exports = React.createClass({
         busSize = Math.max((activity.busSize || 0), (busInputSize + busOutputSize)),
         boardSettings, board, i, input, output, bus;
 
-    this.circuitResolver = new CircuitResolver({busSize: busSize, busInputSize: busInputSize, busOutputSize: busOutputSize});
+    this.circuitResolver = new CircuitResolver({busSize: busSize, busInputSize: busInputSize, busOutputSize: busOutputSize, runner: this.run});
 
     for (i = 0; i < activity.boards.length; i++) {
       boardSettings = activity.boards[i];
@@ -256,7 +255,7 @@ module.exports = React.createClass({
     inputs = (boardInfo && boardInfo.layout ? boardInfo.layout.inputs : null) || [];
     board.updateInputs(inputs);
 
-    this.circuitResolver.resolve();
+    this.circuitResolver.resolve(true);  // TODO
 
     this.setState({boards: this.state.boards});
   },
@@ -330,7 +329,7 @@ module.exports = React.createClass({
 
       resetBoards();
       self.circuitResolver.input.setHoleVoltages(test.inputVoltages, true);
-      self.circuitResolver.resolve();
+      self.circuitResolver.resolve(true);
 
       outputVoltages = self.circuitResolver.output.getHoleVoltages();
       output = [];
@@ -364,7 +363,7 @@ module.exports = React.createClass({
 
     // reset to 0 inputs
     resetBoards();
-    this.circuitResolver.resolve();
+    this.circuitResolver.resolve(true);
 
     callback(allCorrect, truthTable);
   },
@@ -466,19 +465,8 @@ module.exports = React.createClass({
     this.setState({boards: this.state.boards});
   },
 
-  changeSpeed: function () {
-    this.run(this.refs.speed.value);
-  },
-
   render: function () {
-    var sidebarTop = this.state.allowAutoWiring ? 75 : 0,
-        speedOptions = [];
-
-    if (this.state.setSpeed) {
-      speedOptions = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 250, 500, 1000].map(function (speed) {
-        return option({key: speed, value: speed}, speed);
-      });
-    }
+    var sidebarTop = this.state.allowAutoWiring ? 75 : 0;
 
     if (this.state.showReport) {
       return ReportView({});
@@ -489,7 +477,6 @@ module.exports = React.createClass({
         this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
         OfflineCheckView({}),
         this.state.notes ? div({className: 'activity-notes', dangerouslySetInnerHTML: {__html: this.state.notes}}) : null,
-        this.state.setSpeed ? div({style: {textAlign: 'center', margin: 10}}, 'Use ', select({ref: 'speed', onChange: this.changeSpeed, value: this.state.speed}, speedOptions), ' ms circuit resolution updates') : null,
         this.state.activity && this.state.activity.truthTable ? WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect, soloMode: this.state.soloMode, disabled: this.state.circuitNotStable}) : null,
         div({id: 'logicapp'},
           WorkspaceView({

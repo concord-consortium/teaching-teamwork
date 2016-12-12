@@ -145,21 +145,21 @@ PIC.prototype.setPinListValue = function (list, value) {
       list[i].setVoltage(TTL.getBooleanVoltage(value & (1 << i)));
     }
   }
-  this.resolve();
+  this.resolve(true);
 };
 PIC.prototype.setPinListInputMode = function (list, mask) {
   var i;
   for (i = 0; i < list.length; i++) {
     list[i].inputMode = !!(mask & (1 << i));
   }
-  this.resolve();
+  this.resolve(true);
 };
 PIC.prototype.hasResolver = function () {
   return this.board && this.board.resolver;
 };
 PIC.prototype.resolve = function () {
   if (this.hasResolver()) {
-    this.board.resolver.resolve();
+    this.board.resolver.resolve(true);
   }
 };
 PIC.prototype.setBoard = function (board) {

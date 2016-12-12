@@ -12,6 +12,9 @@ var CircuitResolver = function (options) {
   this.busInputSize = options.busInputSize || 0;
   this.busOutputSize = options.busOutputSize || 0;
   this.busOutputStartIndex = this.busSize - this.busOutputSize;
+  this.runner = options.runner || null;
+
+  this.numWires = 0;
 
   // wire the global i/o up
   this.input = options.busInputSize > 0 ? new Connector({type: 'input', count: options.busInputSize}) : null;
@@ -71,6 +74,7 @@ CircuitResolver.prototype.rewire = function (includeGlobalIO) {
   };
 
   // clear the existing circuits
+  this.numWires = 0;
   this.circuits = [];
 
   // create a graph of all the wire end points
@@ -82,6 +86,8 @@ CircuitResolver.prototype.rewire = function (includeGlobalIO) {
           sourceIsGlobalOutput = sourceOnBus && (this.outputIndices.indexOf(wire.source.index) != -1),
           destIsGlobalInput = destOnBus && (this.inputIndices.indexOf(wire.dest.index) != -1),
           destIsGlobalOutput = destOnBus && (this.outputIndices.indexOf(wire.dest.index) != -1);
+
+      this.numWires++;
 
       addToGraph(wire.source, wire.dest, wire);
       addToGraph(wire.dest, wire.source, wire);
@@ -95,6 +101,7 @@ CircuitResolver.prototype.rewire = function (includeGlobalIO) {
               source: sourceOnBus ? otherBoard.connectors.bus.holes[wire.source.index] : wire.source,
               dest: destOnBus ? otherBoard.connectors.bus.holes[wire.dest.index] : wire.dest
             });
+            this.numWires++;
           }
 
           // wire this board to the global i/o
@@ -103,6 +110,7 @@ CircuitResolver.prototype.rewire = function (includeGlobalIO) {
               source: sourceIsGlobalInput ? this.input.holes[wire.source.index] : (sourceIsGlobalOutput ? this.output.holes[wire.source.index - this.busOutputStartIndex] : wire.source),
               dest: destIsGlobalInput ? this.input.holes[wire.dest.index] : (destIsGlobalOutput ? this.output.holes[wire.dest.index - this.busOutputStartIndex] : wire.dest)
             });
+            this.numWires++;
           }
         });
       }
@@ -163,18 +171,37 @@ CircuitResolver.prototype.clearCircuitDebugMessages = function () {
     circuit.clearDebugMessages();
   });
 };
-CircuitResolver.prototype.resolve = function (callback) {
-  var initialState = callback ? this.getCircuitOutputState() : null,
-      finalState;
-  this.clearCircuitDebugMessages();
-  this.forEach(this.components, function () {
-    this.resolveCircuitInputVoltages('Input');
-    this.resolveComponentOutputVoltages();
-    this.resolveCircuitOutputVoltages('Output');
-  });
+CircuitResolver.prototype.resolve = function (resolveUntilStable, callback) {
+  var checkIfStable = !!resolveUntilStable || !!callback,
+      initialState = checkIfStable ? this.getCircuitOutputState() : null,
+      maxLoops = Math.max(1, resolveUntilStable ? this.numWires : 1),
+      stable, i;
+
+  // halt the runner
+  if (this.runner) {
+    this.runner(false);
+  }
+
+  for (i = 0; i < maxLoops; i++) {
+    this.forEach(this.components, function () {
+      this.resolveCircuitInputVoltages();
+      this.resolveComponentOutputVoltages();
+      this.resolveCircuitOutputVoltages();
+      this.resolveCircuitInputVoltages(); // this sets the global output
+    });
+    if (checkIfStable) {
+      stable = initialState !== this.getCircuitOutputState();
+      if (stable) {
+        break;
+      }
+    }
+  }
+
   if (callback) {
-    finalState = this.getCircuitOutputState();
-    callback(initialState !== finalState);
+    callback(stable);
+  }
+  else if (resolveUntilStable && !stable && this.runner) {
+    this.runner(true);
   }
 };
 
