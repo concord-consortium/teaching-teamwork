@@ -12,6 +12,7 @@ var tt_build_date = (new Date()).toString();
 var tt_commit_hash = gitRev.long();
 
 var dontExit = function (err) {
+  console.log(err.message);
   this.emit('end');
 };
 

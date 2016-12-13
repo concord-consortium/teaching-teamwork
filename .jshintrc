@@ -87,7 +87,7 @@
       "React": false,
       "ReactDOM": false,
       "sparks": false,
-      "Firebase": false,
+      "firebase": false,
       "fabric": false
     }
 }
