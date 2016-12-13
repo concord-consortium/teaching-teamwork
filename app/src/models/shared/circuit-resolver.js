@@ -113,7 +113,7 @@ CircuitResolver.prototype.rewire = function (includeGlobalIO) {
   this.forEach(Object.keys(graph), function (key) {
     var circuit;
     if (!graph[key].visited) {
-      circuit = new Circuit({inputs: [], outputs: []});
+      circuit = new Circuit({inputs: [], outputs: [], id: this.circuits.length + 1});
       this.circuits.push(circuit);
       addToCircuit(key, circuit);
     }
@@ -136,9 +136,9 @@ CircuitResolver.prototype.updateComponents = function () {
     });
   });
 };
-CircuitResolver.prototype.resolveCircuitInputVoltages = function () {
+CircuitResolver.prototype.resolveCircuitInputVoltages = function (debugMessage) {
   this.forEach(this.circuits, function (circuit) {
-    circuit.resolveInputVoltages();
+    circuit.resolveInputVoltages(debugMessage);
   });
 };
 CircuitResolver.prototype.resolveComponentOutputVoltages = function () {
@@ -146,9 +146,9 @@ CircuitResolver.prototype.resolveComponentOutputVoltages = function () {
     component.resolveOutputVoltages();
   });
 };
-CircuitResolver.prototype.resolveCircuitOutputVoltages = function () {
+CircuitResolver.prototype.resolveCircuitOutputVoltages = function (debugMessage) {
   this.forEach(this.circuits, function (circuit) {
-    circuit.resolveOutputVoltages();
+    circuit.resolveOutputVoltages(debugMessage);
   });
 };
 CircuitResolver.prototype.getCircuitOutputState = function () {
@@ -158,14 +158,19 @@ CircuitResolver.prototype.getCircuitOutputState = function () {
   });
   return outputStates.join(';');
 };
+CircuitResolver.prototype.clearCircuitDebugMessages = function () {
+  this.forEach(this.circuits, function (circuit) {
+    circuit.clearDebugMessages();
+  });
+};
 CircuitResolver.prototype.resolve = function (callback) {
   var initialState = callback ? this.getCircuitOutputState() : null,
       finalState;
+  this.clearCircuitDebugMessages();
   this.forEach(this.components, function () {
-    this.resolveCircuitInputVoltages();
+    this.resolveCircuitInputVoltages('Input');
     this.resolveComponentOutputVoltages();
-    this.resolveCircuitOutputVoltages();
-    this.resolveCircuitInputVoltages(); // this sets the global output
+    this.resolveCircuitOutputVoltages('Output');
   });
   if (callback) {
     finalState = this.getCircuitOutputState();
