@@ -76,7 +76,7 @@ The following are the options that can be specified in the URL query string.  An
 * soloMode - enables single user mode, this skips all Firebase login and board selection
 * researcherMode - changes the groups to a disjoint researcher group to avoid polluting the research log data
 * autoWire - performs the autowiring as soon as the activity loads if the json allows auto wiring
-* setSpeed - enables the user to change the circuit resolution update interval
+* showDebugMessages - enables display of debug messages on pins
 
 Example: [http://concord-consortium.github.io/teaching-teamwork/logic-gates/?logToConsole#all-chips](http://concord-consortium.github.io/teaching-teamwork/logic-gates/?logToConsole#all-chips)
 
