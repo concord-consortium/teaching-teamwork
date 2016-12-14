@@ -13,6 +13,7 @@ var Connector = require('../../models/shared/connector'),
     OfflineCheckView = React.createFactory(require('../shared/offline-check')),
     AutoWiringView = React.createFactory(require('./auto-wiring')),
     VersionView = React.createFactory(require('../shared/version')),
+    ReportView = React.createFactory(require('../shared/report')),
     constants = require('./constants'),
     colors = require('../shared/colors'),
     inIframe = require('../../data/shared/in-iframe'),
@@ -38,12 +39,15 @@ module.exports = React.createClass({
       inIframe: inIframe(),
       circuitNotStable: false,
       soloMode: window.location.search.indexOf('soloMode') !== -1,
-      setSpeed: window.location.search.indexOf('setSpeed') !== -1
+      setSpeed: window.location.search.indexOf('setSpeed') !== -1,
+      showReport: window.location.search.indexOf('report') !== -1
     };
   },
 
   componentDidMount: function() {
-    this.loadActivity(window.location.hash.substring(1) || 'single-xor');
+    if (!this.state.showReport) {
+      this.loadActivity(window.location.hash.substring(1) || 'single-xor');
+    }
   },
 
   forceRerender: function () {
@@ -516,30 +520,35 @@ module.exports = React.createClass({
       });
     }
 
-    return div({},
-      this.state.inIframe ? null : h1({}, "Teaching Teamwork" + (this.state.activity ? ": " + this.state.activity.name : "")),
-      this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
-      OfflineCheckView({}),
-      this.state.notes ? div({className: 'activity-notes', dangerouslySetInnerHTML: {__html: this.state.notes}}) : null,
-      this.state.setSpeed ? div({style: {textAlign: 'center', margin: 10}}, 'Use ', select({ref: 'speed', onChange: this.changeSpeed, value: this.state.speed}, speedOptions), ' ms circuit resolution updates') : null,
-      this.state.activity && this.state.activity.truthTable ? WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect, soloMode: this.state.soloMode, disabled: this.state.circuitNotStable}) : null,
-      div({id: 'logicapp'},
-        WorkspaceView({
-          constants: constants,
-          boards: this.state.boards,
-          users: this.state.users,
-          userBoardNumber: this.state.userBoardNumber,
-          activity: this.state.activity,
-          forceRerender: this.forceRerender,
-          soloMode: this.state.soloMode,
-          showPinColors: this.state.showPinColors,
-          showPinouts: this.state.showPinouts,
-          showBusColors: this.state.showBusColors
-        }),
-        this.state.allowAutoWiring ? AutoWiringView({top: 0, toggleAllChipsAndWires: this.toggleAllChipsAndWires}) : null,
-        this.state.soloMode ? null : SidebarChatView({numClients: 2, top: sidebarTop})
-      ),
-      VersionView({})
-    );
+    if (this.state.showReport) {
+      return ReportView({});
+    }
+    else {
+      return div({},
+        this.state.inIframe ? null : h1({}, "Teaching Teamwork" + (this.state.activity ? ": " + this.state.activity.name : "")),
+        this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
+        OfflineCheckView({}),
+        this.state.notes ? div({className: 'activity-notes', dangerouslySetInnerHTML: {__html: this.state.notes}}) : null,
+        this.state.setSpeed ? div({style: {textAlign: 'center', margin: 10}}, 'Use ', select({ref: 'speed', onChange: this.changeSpeed, value: this.state.speed}, speedOptions), ' ms circuit resolution updates') : null,
+        this.state.activity && this.state.activity.truthTable ? WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect, soloMode: this.state.soloMode, disabled: this.state.circuitNotStable}) : null,
+        div({id: 'logicapp'},
+          WorkspaceView({
+            constants: constants,
+            boards: this.state.boards,
+            users: this.state.users,
+            userBoardNumber: this.state.userBoardNumber,
+            activity: this.state.activity,
+            forceRerender: this.forceRerender,
+            soloMode: this.state.soloMode,
+            showPinColors: this.state.showPinColors,
+            showPinouts: this.state.showPinouts,
+            showBusColors: this.state.showBusColors
+          }),
+          this.state.allowAutoWiring ? AutoWiringView({top: 0, toggleAllChipsAndWires: this.toggleAllChipsAndWires}) : null,
+          this.state.soloMode ? null : SidebarChatView({numClients: 2, top: sidebarTop})
+        ),
+        VersionView({})
+      );
+    }
   }
 });
