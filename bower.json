@@ -3,7 +3,6 @@
   "version": "0.0.1",
   "dependencies": {
     "breadboard": "0.0.8",
-    "codemirror": "5.0.0",
     "jsonlint": "1.6.0",
     "mathjs": "1.4.0",
     "jquery.cookie": "1.4.1",

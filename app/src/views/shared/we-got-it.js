@@ -66,7 +66,7 @@ module.exports = React.createClass({
       this.userClickedSubmit = true;
       this.submitRef.set({
         user: userController.getUsername(),
-        at: Firebase.ServerValue.TIMESTAMP
+        at: firebase.database.ServerValue.TIMESTAMP
       });
     }
   },

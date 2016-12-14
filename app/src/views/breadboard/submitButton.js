@@ -235,7 +235,7 @@ module.exports = SubmitButton = React.createClass({
       // add the submit - this will trigger our submitRef watcher
       this.submitRef.set({
         user: username,
-        at: Firebase.ServerValue.TIMESTAMP
+        at: firebase.database.ServerValue.TIMESTAMP
       });
     }
   },
