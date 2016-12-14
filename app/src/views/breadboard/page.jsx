@@ -33,7 +33,7 @@ module.exports = React.createClass({
         notes = this.props.client ? (this.props.client.notes || "") : "",
         editor = this.props.showEditor ? (<EditorView parseAndStartActivity={ this.props.parseAndStartActivity } editorState={ this.props.editorState } />) : null,
         wrapperClass = hasMultipleClients ? 'multiple-clients' : null,
-        enterUnknowns = hasMultipleClients && activity.enterUnknowns && (activity.enterUnknowns.E || activity.enterUnknowns.R),
+        enterUnknowns = activity.enterUnknowns && (activity.enterUnknowns.E || activity.enterUnknowns.R),
         image = activity.image ? (<div id="image-wrapper" className={ wrapperClass }><img src={ /^https?:\/\//.test(activity.image) ? activity.image : config.modelsBase + activity.image } />{enterUnknowns ? <EnterUnknownsView activity={activity} model={this.props.model} /> : null}</div>) : null,
         submitButton = this.props.showSubmit && this.props.circuit ? (<SubmitButtonView label={hasMultipleClients ? 'We got it!' : "I got it!"} goals={ this.props.goals } nextActivity={ this.props.nextActivity } enterUnknowns={activity.enterUnknowns} />) : null,
         otherCircuitsButton = hasMultipleClients && this.props.circuit ? (<OtherCircuitsView circuit={ this.props.circuit } numClients={ activity.clients.length } activityName={ this.props.activityName } groupName={ userController.getGroupname() } ttWorkbench={ this.props.ttWorkbench } />) : null,
