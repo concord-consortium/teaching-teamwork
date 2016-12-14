@@ -16,6 +16,7 @@ var Connector = require('../../models/shared/connector'),
     WireControlsView = React.createFactory(require('../shared/wire-controls')),
     OfflineCheckView = React.createFactory(require('../shared/offline-check')),
     VersionView = React.createFactory(require('../shared/version')),
+    ReportView = React.createFactory(require('../shared/report')),
     events = require('../shared/events'),
     constants = require('./constants'),
     colors = require('../shared/colors'),
@@ -111,13 +112,18 @@ module.exports = React.createClass({
       currentUser: null,
       currentGroup: null,
       wireSettings: {color: colors.wire, curvyness: 0.25},
-      inIframe: inIframe()
+      inIframe: inIframe(),
+      showReport: this.hasUrlOption('report')
     };
   },
 
   componentDidMount: function() {
     var activityName = 'pic',
         self = this;
+
+    if (this.state.showReport) {
+      return;
+    }
 
     logController.init(activityName);
 
@@ -389,33 +395,38 @@ module.exports = React.createClass({
     var autoWiringTop = this.state.showSimulator ? 75 : 0,
         sidebarTop = autoWiringTop + (this.state.showAutoWiring ? 75 : 0);
 
-    return div({},
-      this.state.showWireControls ? WireControlsView({wireSettings: this.state.wireSettings, updateWireSettings: this.updateWireSettings}) : null,
-      this.state.inIframe ? null : h1({}, "Teaching Teamwork PIC Activity"),
-      this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
-      OfflineCheckView({}),
-      WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect, soloMode: this.state.soloMode}),
-      div({id: 'picapp'},
-        WorkspaceView({
-          constants: constants,
-          boards: this.state.boards,
-          stepping: !this.state.running,
-          users: this.state.users,
-          userBoardNumber: this.state.userBoardNumber,
-          wireSettings: this.state.wireSettings,
-          forceRerender: this.forceRerender,
-          soloMode: this.state.soloMode,
-          showPinColors: this.state.showPinColors,
-          showBusLabels: this.state.showBusLabels,
-          showProbe: this.state.showProbe,
-          showBusColors: this.state.showBusColors,
-          showInputAutoToggles: this.state.showInputAutoToggles
-        }),
-        this.state.showSimulator ? SimulatorControlView({running: this.state.running, run: this.run, step: this.step, reset: this.reset}) : null,
-        this.state.showAutoWiring ? AutoWiringView({top: autoWiringTop, running: this.state.running, toggleAllWires: this.toggleAllWires}) : null,
-        this.state.soloMode ? null : SidebarChatView({numClients: 3, top: sidebarTop})
-      ),
-      VersionView({})
-    );
+    if (this.state.showReport) {
+      return ReportView({});
+    }
+    else {
+      return div({},
+        this.state.showWireControls ? WireControlsView({wireSettings: this.state.wireSettings, updateWireSettings: this.updateWireSettings}) : null,
+        this.state.inIframe ? null : h1({}, "Teaching Teamwork PIC Activity"),
+        this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
+        OfflineCheckView({}),
+        WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect, soloMode: this.state.soloMode}),
+        div({id: 'picapp'},
+          WorkspaceView({
+            constants: constants,
+            boards: this.state.boards,
+            stepping: !this.state.running,
+            users: this.state.users,
+            userBoardNumber: this.state.userBoardNumber,
+            wireSettings: this.state.wireSettings,
+            forceRerender: this.forceRerender,
+            soloMode: this.state.soloMode,
+            showPinColors: this.state.showPinColors,
+            showBusLabels: this.state.showBusLabels,
+            showProbe: this.state.showProbe,
+            showBusColors: this.state.showBusColors,
+            showInputAutoToggles: this.state.showInputAutoToggles
+          }),
+          this.state.showSimulator ? SimulatorControlView({running: this.state.running, run: this.run, step: this.step, reset: this.reset}) : null,
+          this.state.showAutoWiring ? AutoWiringView({top: autoWiringTop, running: this.state.running, toggleAllWires: this.toggleAllWires}) : null,
+          this.state.soloMode ? null : SidebarChatView({numClients: 3, top: sidebarTop})
+        ),
+        VersionView({})
+      );
+    }
   }
 });

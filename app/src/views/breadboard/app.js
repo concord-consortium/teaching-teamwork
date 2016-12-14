@@ -5,6 +5,7 @@ var PageView              = React.createFactory(require('./page.jsx')),
     userController        = require('../../controllers/shared/user'),
     eventsController      = require('../../controllers/shared/events'),
     config                = require('../../config'),
+    ReportView            = React.createFactory(require('../shared/report')),
     OtherCircuitView      = React.createFactory(require('./view-other-circuit')),
     viewOtherCircuit      = !!window.location.search.match(/view-other-circuit!/);
 
@@ -24,12 +25,16 @@ module.exports = React.createClass({
       nextActivity: null,
       activityName: null,
       ttWorkbench: null,
-      model: null
+      model: null,
+      showReport: !!window.location.search.match(/report/)
     };
   },
 
   render: function () {
-    if (viewOtherCircuit) {
+    if (this.state.showReport) {
+      return ReportView({});
+    }
+    else if (viewOtherCircuit) {
       return OtherCircuitView({});
     }
     else {
@@ -53,6 +58,10 @@ module.exports = React.createClass({
 
   componentDidMount: function () {
     var activityName = window.location.hash.substring(1) || "three-resistors-level1";
+
+    if (this.state.showReport) {
+      return;
+    }
 
     if (!viewOtherCircuit) {
       // load blank workbench

@@ -29,13 +29,14 @@ LaraController.prototype = {
         if (self.connectionCallback) {
           self.connectionCallback();
         }
+        self.laraPhone.post('interactiveState', {
+          lara_options: {
+            reporting_url: window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port : '') + window.location.pathname + '?report'
+          }
+        });
       });
       this.laraPhone.addListener("loadInteractiveGlobal", function(state) {
         self._globalStateLoaded(state);
-      });
-      // this message is not in the production lara
-      this.laraPhone.addListener("loadInteractiveNullGlobal", function() {
-        //self._globalStateLoaded(null);
       });
       this.laraPhone.initialize();
     }
