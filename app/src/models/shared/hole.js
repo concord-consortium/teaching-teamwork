@@ -1,7 +1,5 @@
 var TTL = require('./ttl');
 
-var showDebugMessages = require('./show-debug-messages');
-
 var Hole = function (options) {
   this.isPin = false; // to allow for easy checks against pins in circuits
   this.index = options.index;
@@ -19,7 +17,6 @@ var Hole = function (options) {
   this.type = options.type;
   this.hasForcedVoltage = !!options.toggleable;
   this.forcedVoltage = TTL.LOW_VOLTAGE;
-  this.debugMessages = [];
 };
 Hole.prototype.getBezierReflection = function () {
   return this.connector.type === 'input' ? 1 : -1;
@@ -62,16 +59,10 @@ Hole.prototype.setForcedVoltage = function (voltage) {
   this.forcedVoltage = voltage;
 };
 Hole.prototype.getLabel = function () {
-  return this.label + " " + this.getVoltage() + "V (" + this.getLogicLevel().toLowerCase() + ")" + (showDebugMessages ? ' [' + this.debugMessages.join(', ') + ']' : '');
+  return this.label + " " + this.getVoltage() + "V (" + this.getLogicLevel().toLowerCase() + ")";
 };
 Hole.prototype.toString = function () {
   return ['connector', this.connector.type, this.index, 'board', this.connector.board ? this.connector.board.number : -1].join(':');
-};
-Hole.prototype.clearDebugMessages = function () {
-  this.debugMessages = [];
-};
-Hole.prototype.addDebugMessage = function (message) {
-  this.debugMessages.push(message);
 };
 
 module.exports = Hole;

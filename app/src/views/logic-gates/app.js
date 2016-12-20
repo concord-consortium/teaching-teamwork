@@ -170,12 +170,12 @@ module.exports = React.createClass({
   run: function (start) {
     var self = this,
         simulate = function () {
-          self.circuitResolver.resolve(false, function (changed) {
-            if (changed || self.state.circuitNotStable) {
-              self.setState({circuitNotStable: changed});
+          self.circuitResolver.resolve(false, function (stable) {
+            if (stable || self.state.circuitNotStable) {
+              self.setState({circuitNotStable: !stable});
             }
 
-            if (changed) {
+            if (stable) {
               self.forceUpdate();
             }
             else {

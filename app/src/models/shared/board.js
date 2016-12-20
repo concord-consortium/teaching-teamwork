@@ -206,7 +206,7 @@ Board.prototype.removeWire = function (source, dest) {
       }
       this.wires.splice(i, 1);
       this.resolver.rewire();
-      this.resolver.resolve();
+      this.resolver.resolve(true);
       return true;
     }
   }
