@@ -504,8 +504,6 @@ module.exports = React.createClass({
     // used to find wire click position
     this.svgOffset = $(this.refs.svg).offset();
 
-    this.props.board.resolver.resolveCircuitInputVoltages();
-
     // calculate the position so the wires can be updated
     $.each(['input', 'output', 'bus'], function (index, connectorName) {
       var connector = self.props.board.connectors[connectorName];

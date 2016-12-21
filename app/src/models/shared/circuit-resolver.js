@@ -29,6 +29,7 @@ var CircuitResolver = function (options) {
     this.outputIndices.push(i);
   }
 };
+
 CircuitResolver.prototype.rewire = function (includeGlobalIO) {
   var graph = {},
       isBusHole, addToGraph, addToCircuit, addBusWire;
@@ -128,14 +129,16 @@ CircuitResolver.prototype.rewire = function (includeGlobalIO) {
   });
 
   // resolve all the circuits
-  this.resolve();
+  this.resolve(true);
 };
+
 CircuitResolver.prototype.forEach = function(list, fn) {
   var i;
   for (i = 0; i < list.length; i++) {
     fn.call(this, list[i], i);
   }
 };
+
 CircuitResolver.prototype.updateComponents = function () {
   this.components = [];
   this.forEach(this.boards, function (board) {
@@ -144,58 +147,63 @@ CircuitResolver.prototype.updateComponents = function () {
     });
   });
 };
-CircuitResolver.prototype.resolveCircuitInputVoltages = function (debugMessage) {
-  this.forEach(this.circuits, function (circuit) {
-    circuit.resolveInputVoltages(debugMessage);
-  });
-};
-CircuitResolver.prototype.resolveComponentOutputVoltages = function () {
+
+CircuitResolver.prototype.resolveComponentOutputVoltages = function (inputState) {
   this.forEach(this.components, function (component) {
-    component.resolveOutputVoltages();
+    component.resolveOutputVoltages(inputState);
   });
 };
-CircuitResolver.prototype.resolveCircuitOutputVoltages = function (debugMessage) {
+
+CircuitResolver.prototype.getCircuitInputVoltages = function () {
+  var inputVoltages = {};
   this.forEach(this.circuits, function (circuit) {
-    circuit.resolveOutputVoltages(debugMessage);
+    circuit.getInputVoltages(inputVoltages);
   });
+  return inputVoltages;
 };
-CircuitResolver.prototype.getCircuitOutputState = function () {
-  var outputStates = [];
+
+CircuitResolver.prototype.getCircuitOutputVoltages = function () {
+  var outputVoltages = {};
   this.forEach(this.circuits, function (circuit) {
-    outputStates.push(circuit.getOutputState());
+    circuit.getOutputVoltages(outputVoltages);
   });
-  return outputStates.join(';');
+  return outputVoltages;
 };
-CircuitResolver.prototype.clearCircuitDebugMessages = function () {
-  this.forEach(this.circuits, function (circuit) {
-    circuit.clearDebugMessages();
-  });
+
+CircuitResolver.prototype.resolveCircuitOutput = function (circuit) {
+  circuit.resolveOutputVoltages();
 };
+
+CircuitResolver.prototype.resolveCircuitInput = function (circuit) {
+  circuit.resolveInputVoltages();
+};
+
 CircuitResolver.prototype.resolve = function (resolveUntilStable, callback) {
-  var checkIfStable = !!resolveUntilStable || !!callback,
-      initialState = checkIfStable ? this.getCircuitOutputState() : null,
-      maxLoops = Math.max(1, resolveUntilStable ? this.numWires : 1),
-      stable, i;
+  var initialOutputVoltages = this.getCircuitOutputVoltages(),
+      resolveComponentOutput = function (component) { component.resolveOutputVoltages(inputVoltages); },
+      stable, i, inputVoltages;
 
   // halt the runner
   if (this.runner) {
     this.runner(false);
   }
 
-  for (i = 0; i < maxLoops; i++) {
-    this.forEach(this.components, function () {
-      this.resolveCircuitInputVoltages();
-      this.resolveComponentOutputVoltages();
-      this.resolveCircuitOutputVoltages();
-      this.resolveCircuitInputVoltages(); // this sets the global output
-    });
-    if (checkIfStable) {
-      stable = initialState !== this.getCircuitOutputState();
-      if (stable) {
-        break;
-      }
-    }
+  for (i = 0; i < this.numWires; i++) {
+
+    // resolve each circuits inputs voltage (to set the bus outputs)
+    this.forEach(this.circuits, this.resolveCircuitInput);
+
+    // get the global input voltages to pass to resolveComponentOutput()
+    inputVoltages = this.getCircuitInputVoltages();
+
+    // resolve each component with the global input voltages
+    this.forEach(this.components, resolveComponentOutput);
+
+    // resolve each circuits output voltages
+    this.forEach(this.circuits, this.resolveCircuitOutput);
   }
+
+  stable = JSON.stringify(initialOutputVoltages) === JSON.stringify(this.getCircuitOutputVoltages());
 
   if (callback) {
     callback(stable);

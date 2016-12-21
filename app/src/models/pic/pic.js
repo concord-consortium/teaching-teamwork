@@ -131,7 +131,7 @@ PIC.prototype.getPinListValue = function (list) {
       i;
 
   if (this.hasResolver()) {
-    this.board.resolver.resolveComponentOutputVoltages();
+    this.board.resolver.resolveComponentOutputVoltages();  // TODO: check if this is necessary
   }
   for (i = 0; i < list.length; i++) {
     value = value | ((list[i].inputMode && list[i].isHigh() ? 1 : 0) << i);

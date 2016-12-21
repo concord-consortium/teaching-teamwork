@@ -17,11 +17,16 @@ module.exports = React.createClass({
 
   startDrag: function (e) {
     var self = this;
-    this.props.drawConnection(this.props.hole, e, this.props.hole.color, function (addedWire, moved) {
-      if (!addedWire && !moved) {
-        self.handleToggle();
-      }
-    });
+    if (this.props.connector.type == 'input') {
+      this.handleToggle();
+    }
+    else {
+      this.props.drawConnection(this.props.hole, e, this.props.hole.color, function (addedWire, moved) {
+        if (!addedWire && !moved) {
+          self.handleToggle();
+        }
+      });
+    }
   },
 
   handleToggle: function () {

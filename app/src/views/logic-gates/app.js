@@ -162,7 +162,7 @@ module.exports = React.createClass({
       });
     }
 
-    if (allowAutoWiring && window.location.search.indexOf('autoWire')) {
+    if (allowAutoWiring && window.location.search.indexOf('autoWire') !== -1) {
       this.toggleAllChipsAndWires();
     }
   },
@@ -170,15 +170,13 @@ module.exports = React.createClass({
   run: function (start) {
     var self = this,
         simulate = function () {
-          self.circuitResolver.resolve(false, function (changed) {
-            if (changed || self.state.circuitNotStable) {
-              self.setState({circuitNotStable: changed});
+          self.circuitResolver.resolve(false, function (stable) {
+            if (stable || self.state.circuitNotStable) {
+              self.setState({circuitNotStable: !stable});
             }
 
-            if (changed) {
-              self.forceUpdate();
-            }
-            else {
+            self.forceUpdate();
+            if (!stable) {
               clearInterval(self.simulatorInterval);
             }
           });

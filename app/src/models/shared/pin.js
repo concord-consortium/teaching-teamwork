@@ -1,7 +1,5 @@
 var TTL = require('./ttl');
 
-var showDebugMessages = require('./show-debug-messages');
-
 var Pin = function (options) {
   this.board = options.component.board;
   this.isPin = true; // to allow for easy checks against holes in circuits
@@ -22,7 +20,6 @@ var Pin = function (options) {
   this.connected = options.connected || false;
   this.voltage = options.voltage || 0;
   this.startingVoltage = this.voltage;
-  this.debugMessages = [];
 };
 Pin.prototype.getBezierReflection = function () {
   return this.bezierReflection;
@@ -52,16 +49,10 @@ Pin.prototype.reset = function () {
   this.voltage = this.startingVoltage;
 };
 Pin.prototype.getLabel = function () {
-  return this.getVoltage() + "V " + (this.inputMode ? "input" : "output") + " (" + this.getLogicLevel().toLowerCase() + ")" + (showDebugMessages ? ' [' + this.debugMessages.join(', ') + ']' : '');
+  return this.getVoltage() + "V " + (this.inputMode ? "input" : "output") + " (" + this.getLogicLevel().toLowerCase() + ")";
 };
 Pin.prototype.toString = function () {
   return ['component', this.component.name, this.number, 'board', this.component.board.number].join(':');
-};
-Pin.prototype.clearDebugMessages = function () {
-  this.debugMessages = [];
-};
-Pin.prototype.addDebugMessage = function (message) {
-  this.debugMessages.push(message);
 };
 
 module.exports = Pin;
