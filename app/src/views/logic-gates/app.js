@@ -264,45 +264,76 @@ module.exports = React.createClass({
         allCorrect = true,
         boards = this.state.boards,
         numBoards = boards.length,
-        generateTests, runTest, resetBoards, i, tests;
+        validateAndNormalize, generateTests, runTest, resetBoards, i, tests;
 
-    generateTests = function () {
+    validateAndNormalize = function () {
       var truthTable = self.state.activity.truthTable,
           input = self.circuitResolver.input,
           output = self.circuitResolver.output,
-          defaultTestInput = [],
-          defaultTestOutput = [],
+          error = null,
+          i, j;
+
+      if (truthTable.length === 0) {
+        error = "Empty truth table!";
+      }
+      else {
+        for (i = 0; i < truthTable.length; i++) {
+          if (truthTable[i].length != 2) {
+            error = "Invalid truth table row length for row " + (i + 1) + " - should be 2, saw " + truthTable[i];
+          }
+          else {
+            // normalize input to an array of arrays
+            if (!$.isArray(truthTable[i][0][0])) {
+              truthTable[i][0] = [truthTable[i][0]];
+            }
+
+            for (j = 0; j < truthTable[i][0].length; j++) {
+              if (truthTable[i][0][j].length != input.count) {
+                error = "Invalid truth table input count for test " + (j + 1) + " in row " + (i + 1) + " - should be " + input.count + ", saw " + truthTable[i][0][j].length;
+              }
+              if (error) {
+                break;
+              }
+            }
+
+            if (!error && (truthTable[i][1].length != output.count)) {
+                error = "Invalid truth table output count for test " + (j + 1) + " in row " + (i + 1) + " - should be " + output.count + ", saw " + truthTable[i][1].length;
+            }
+          }
+
+          if (error) {
+            break;
+          }
+        }
+      }
+
+      if (error) {
+        console.error(error);
+        return false;
+      }
+
+      return true;
+    };
+
+    generateTests = function () {
+      var truthTable = self.state.activity.truthTable,
           tests = [],
-          i, j, testInputVoltages, testOutputLevels;
+          i, j, k, testInputVoltages, subtestInputVoltages, testOutputLevels;
 
-      for (i = 0; i < input.count; i++) {
-        defaultTestInput.push('x');
-      }
-      for (i = 0; i < output.count; i++) {
-        defaultTestOutput.push('x');
-      }
-
-      // generate each test
       for (i = 0; i < truthTable.length; i++) {
-        if (truthTable[i].length != 2) {
-          console.error("Invalid truth table row length for row " + (i + 1) + " - should be 2");
-        }
-        else if (truthTable[i][0].length != input.count) {
-          console.error("Invalid truth table input count for row " + (i + 1) + " - should be " + input.count);
-        }
-        else if (truthTable[i][1].length != output.count) {
-          console.error("Invalid truth table output count for row " + (i + 1) + " - should be " + output.count);
-        }
-        else {
-          testInputVoltages = defaultTestInput.slice();
-          testOutputLevels = defaultTestOutput.slice();
 
-          for (j = 0; j < truthTable[i][0].length; j++) {
-            testInputVoltages[j] = TTL.getBooleanVoltage(truthTable[i][0][j]);
+        testInputVoltages = [];
+        for (j = 0; j < truthTable[i][0].length; j++) {
+          subtestInputVoltages = [];
+          for (k = 0; k < truthTable[i][0][j].length; k++) {
+            subtestInputVoltages[k] = TTL.getBooleanVoltage(truthTable[i][0][j][k]);
           }
-          for (j = 0; j < truthTable[i][1].length; j++) {
-            testOutputLevels[j] = TTL.getBooleanLogicLevel(truthTable[i][1][j]);
-          }
+          testInputVoltages.push(subtestInputVoltages);
+        }
+
+        testOutputLevels = [];
+        for (j = 0; j < truthTable[i][1].length; j++) {
+          testOutputLevels[j] = truthTable[i][1][j] !== 'x' ? TTL.getBooleanLogicLevel(truthTable[i][1][j]) : 'x';
         }
 
         tests.push({
@@ -326,8 +357,10 @@ module.exports = React.createClass({
           i, output, outputVoltages, outputLevel, correct, dontCare;
 
       resetBoards();
-      self.circuitResolver.input.setHoleVoltages(test.inputVoltages, true);
-      self.circuitResolver.resolve(true);
+      for (i = 0; i < test.inputVoltages.length; i++) {
+        self.circuitResolver.input.setHoleVoltages(test.inputVoltages[i], true);
+        self.circuitResolver.resolve(false);
+      }
 
       outputVoltages = self.circuitResolver.output.getHoleVoltages();
       output = [];
@@ -350,7 +383,13 @@ module.exports = React.createClass({
     // rewire the board to include global i/o
     this.circuitResolver.rewire(true);
 
-    // generate and check each test
+    // validate the truth table and normalize the inputs to be an array of arrays
+    if (!validateAndNormalize()) {
+      callback(null, truthTable);
+      return;
+    }
+
+    // generate each test
     tests = generateTests();
     for (i = 0; i < tests.length; i++) {
       allCorrect = runTest(tests[i], truthTable) && allCorrect;
