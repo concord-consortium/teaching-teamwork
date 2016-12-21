@@ -162,7 +162,7 @@ module.exports = React.createClass({
       });
     }
 
-    if (allowAutoWiring && window.location.search.indexOf('autoWire')) {
+    if (allowAutoWiring && window.location.search.indexOf('autoWire') !== -1) {
       this.toggleAllChipsAndWires();
     }
   },
