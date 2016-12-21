@@ -175,10 +175,8 @@ module.exports = React.createClass({
               self.setState({circuitNotStable: !stable});
             }
 
-            if (stable) {
-              self.forceUpdate();
-            }
-            else {
+            self.forceUpdate();
+            if (!stable) {
               clearInterval(self.simulatorInterval);
             }
           });
