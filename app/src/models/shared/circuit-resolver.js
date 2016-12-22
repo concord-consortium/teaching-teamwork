@@ -179,31 +179,51 @@ CircuitResolver.prototype.resolveCircuitInput = function (circuit) {
 };
 
 CircuitResolver.prototype.resolve = function (resolveUntilStable, callback) {
-  var initialOutputVoltages = this.getCircuitOutputVoltages(),
-      resolveComponentOutput = function (component) { component.resolveOutputVoltages(inputVoltages); },
-      stable, i, inputVoltages;
+  var resolveComponentOutput = function (component) { component.resolveOutputVoltages(initialInputVoltages); },
+      stable = false,
+      i, initialOutputVoltages, initialInputVoltages, finalOutputVoltages, finalInputVoltages;
 
   // halt the runner
   if (this.runner) {
     this.runner(false);
   }
 
+  // the numWires max is just a hueristic before giving up looping in the UI thread
+  // and moving to a setTimeout resolution loop so we don't lock up the UI
   for (i = 0; i < this.numWires; i++) {
 
-    // resolve each circuits inputs voltage (to set the bus outputs)
+    // resolve each circuits inputs voltage
     this.forEach(this.circuits, this.resolveCircuitInput);
 
-    // get the global input voltages to pass to resolveComponentOutput()
-    inputVoltages = this.getCircuitInputVoltages();
+    // get the initial output voltages to test is the circuits changed
+    initialOutputVoltages = this.getCircuitOutputVoltages();
 
-    // resolve each component with the global input voltages
+    // get the initial input voltages to pass to resolveComponentOutput()
+    initialInputVoltages = this.getCircuitInputVoltages();
+
+    // resolve each component with the initial input voltages
     this.forEach(this.components, resolveComponentOutput);
 
     // resolve each circuits output voltages
     this.forEach(this.circuits, this.resolveCircuitOutput);
-  }
 
-  stable = JSON.stringify(initialOutputVoltages) === JSON.stringify(this.getCircuitOutputVoltages());
+    // get the final output voltages
+    finalOutputVoltages = this.getCircuitOutputVoltages();
+
+    // resolve each circuits inputs voltage
+    this.forEach(this.circuits, this.resolveCircuitInput);
+
+    // get the final input voltages to test for stablity
+    finalInputVoltages = this.getCircuitInputVoltages();
+
+    // check if the circuit changed
+    stable = (JSON.stringify(initialInputVoltages) === JSON.stringify(finalInputVoltages)) && (JSON.stringify(initialOutputVoltages) === JSON.stringify(finalOutputVoltages));
+
+    // break out if we aren't waiting for it to be stablized or it has stablized
+    if (!resolveUntilStable || stable) {
+      break;
+    }
+  }
 
   if (callback) {
     callback(stable);

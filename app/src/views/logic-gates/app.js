@@ -359,7 +359,7 @@ module.exports = React.createClass({
       resetBoards();
       for (i = 0; i < test.inputVoltages.length; i++) {
         self.circuitResolver.input.setHoleVoltages(test.inputVoltages[i], true);
-        self.circuitResolver.resolve(false);
+        self.circuitResolver.resolve(true);
       }
 
       outputVoltages = self.circuitResolver.output.getHoleVoltages();
