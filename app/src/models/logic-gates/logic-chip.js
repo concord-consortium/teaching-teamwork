@@ -3,7 +3,7 @@ var LogicChipView = React.createFactory(require('../../views/logic-gates/logic-c
     TTL = require('../shared/ttl');
 
 var LogicChip = function (options) {
-  var i, pin, outputPins;
+  var i, pin, outputPins, inputMode;
 
   this.name = 'logic-chip';
   this.view = LogicChipView;
@@ -37,10 +37,11 @@ var LogicChip = function (options) {
   this.pins = [];
   this.pinMap = {};
   for (i = 0; i < 14; i++) {
+    inputMode = outputPins.indexOf(i) === -1;
     pin = {
       number: i,
-      voltage: i == 13 ? TTL.HIGH_VOLTAGE : TTL.LOW_VOLTAGE,
-      inputMode: outputPins.indexOf(i) === -1,
+      voltage: inputMode || (i == 13) ? TTL.HIGH_VOLTAGE : TTL.LOW_VOLTAGE,
+      inputMode: inputMode,
       placement: i < 7 ? 'bottom' : 'top',
       x: 0,
       y: 0,

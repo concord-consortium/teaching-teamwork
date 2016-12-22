@@ -260,10 +260,12 @@ Board.prototype.addComponent = function (name, component) {
   component.setBoard(this);
   this.components[name] = component;
   this.updateComponentList();
+  this.resolver.resolve(true);
 };
 Board.prototype.removeComponent = function (component) {
   delete this.components[component.name];
   this.updateComponentList();
+  this.resolver.resolve(true);
 };
 Board.prototype.setConnectors = function (connectors) {
   this.connectors = connectors;
