@@ -49,7 +49,7 @@ Pin.prototype.reset = function () {
   this.voltage = this.startingVoltage;
 };
 Pin.prototype.getLabel = function () {
-  return this.getVoltage() + "V " + (this.inputMode && this.connected ? "" : "floating ") + (this.inputMode ? "input" : "output") + " (" + this.getLogicLevel().toLowerCase() + ")";
+  return this.getVoltage() + "V " + (!this.inputMode || this.connected ? "" : "floating ") + (this.inputMode ? "input" : "output") + " (" + this.getLogicLevel().toLowerCase() + ")";
 };
 Pin.prototype.toString = function () {
   return ['component', this.component.name, this.number, 'board', this.component.board.number].join(':');
