@@ -1,7 +1,8 @@
 var Hole = require('./hole'),
     Pin = require('./pin'),
     Wire = require('./wire'),
-    LogicChip =  require('../logic-gates/logic-chip');
+    LogicChip =  require('../logic-gates/logic-chip'),
+    colors = require('../../views/shared/colors');
 
 var Board = function (options) {
   this.number = options.number;
@@ -244,7 +245,7 @@ Board.prototype.addWire = function (source, dest, color, skipResolver) {
   wire = new Wire({
     source: source,
     dest: dest,
-    color: '#ffa500' // color used to be settable but is now forced
+    color: colors.wire
   });
   this.wires.push(wire);
   if (!skipResolver) {
