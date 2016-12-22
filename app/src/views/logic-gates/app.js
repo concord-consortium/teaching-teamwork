@@ -318,22 +318,24 @@ module.exports = React.createClass({
     generateTests = function () {
       var truthTable = self.state.activity.truthTable,
           tests = [],
-          i, j, k, testInputVoltages, subtestInputVoltages, testOutputLevels;
+          i, j, k, testInputVoltages, subtestInputVoltages, testOutputLevels, inputs, outputs;
 
       for (i = 0; i < truthTable.length; i++) {
+        inputs = truthTable[i][0];
+        outputs = truthTable[i][1];
 
         testInputVoltages = [];
-        for (j = 0; j < truthTable[i][0].length; j++) {
+        for (j = 0; j < inputs.length; j++) {
           subtestInputVoltages = [];
-          for (k = 0; k < truthTable[i][0][j].length; k++) {
-            subtestInputVoltages[k] = TTL.getBooleanVoltage(truthTable[i][0][j][k]);
+          for (k = 0; k < inputs[j].length; k++) {
+            subtestInputVoltages[k] = TTL.getBooleanVoltage(inputs[j][k]);
           }
           testInputVoltages.push(subtestInputVoltages);
         }
 
         testOutputLevels = [];
-        for (j = 0; j < truthTable[i][1].length; j++) {
-          testOutputLevels[j] = truthTable[i][1][j] !== 'x' ? TTL.getBooleanLogicLevel(truthTable[i][1][j]) : 'x';
+        for (j = 0; j < outputs.length; j++) {
+          testOutputLevels.push(outputs[j] !== 'x' ? TTL.getBooleanLogicLevel(outputs[j]) : 'x');
         }
 
         tests.push({
@@ -357,6 +359,7 @@ module.exports = React.createClass({
           i, output, outputVoltages, outputLevel, correct, dontCare;
 
       resetBoards();
+
       for (i = 0; i < test.inputVoltages.length; i++) {
         self.circuitResolver.input.setHoleVoltages(test.inputVoltages[i], true);
         self.circuitResolver.resolve(true);
@@ -394,6 +397,8 @@ module.exports = React.createClass({
     for (i = 0; i < tests.length; i++) {
       allCorrect = runTest(tests[i], truthTable) && allCorrect;
     }
+
+    console.log(JSON.stringify(truthTable, null, 2));
 
     // rewire to remove global i/o
     this.circuitResolver.rewire();
