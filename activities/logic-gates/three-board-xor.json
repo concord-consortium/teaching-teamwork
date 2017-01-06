@@ -1,6 +1,6 @@
 {
   "name": "Three Board XOR",
-  "notes": "Your goal is to create an XOR gate that takes bus ports and B and outputs to bus port G.",
+  "notes": "Create a circuit inputs from bus ports A and B and outputs A XOR B to bus port G.",
   "interface": {
     "showPinColors": true,
     "showBusColors": true,
