@@ -2,11 +2,10 @@
   "name": "teaching-teamwork",
   "version": "0.0.1",
   "dependencies": {
-    "breadboard": "0.0.8",
-    "codemirror": "5.0.0",
+    "breadboard": "0.0.9",
     "jsonlint": "1.6.0",
     "mathjs": "1.4.0",
     "jquery.cookie": "1.4.1",
-    "react": "15.0.1"
+    "react": "15.4.1"
   }
 }

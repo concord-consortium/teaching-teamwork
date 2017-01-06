@@ -17,17 +17,22 @@ module.exports = React.createClass({
 
   startDrag: function (e) {
     var self = this;
-    this.props.drawConnection(this.props.hole, e, this.props.hole.color, function (addedWire, moved) {
-      if (!addedWire && !moved) {
-        self.handleToggle();
-      }
-    });
+    if (this.props.connector.type == 'input') {
+      this.handleToggle();
+    }
+    else {
+      this.props.drawConnection(this.props.hole, e, this.props.hole.color, function (addedWire, moved) {
+        if (!addedWire && !moved) {
+          self.handleToggle();
+        }
+      });
+    }
   },
 
   handleToggle: function () {
     if (this.props.hole.toggleable) {
       var newVoltage = this.props.hole.toggleForcedVoltage();
-      this.props.hole.connector.board.resolver.resolve();
+      this.props.hole.connector.board.resolver.resolve(true);
       this.props.forceRerender();
       events.logEvent(events.TOGGLED_SWITCH_EVENT, newVoltage, {board: this.props.hole.connector.board, hole: this.props.hole});
     }

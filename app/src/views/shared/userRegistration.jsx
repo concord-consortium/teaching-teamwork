@@ -1,5 +1,5 @@
 var userController, UserRegistrationView, UserRegistrationViewFactory,
-    groups = require('../../data/shared/group-names');
+    groups = require('../../data/shared/group-names')();
 
 // add a global UserRegistrationView variable because its statics are called in other modules
 module.exports = window.UserRegistrationView = UserRegistrationView = React.createClass({
@@ -35,7 +35,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
   },
   getInitialState: function() {
     return {
-      groupName: this.props.groupName || ""
+      groupName: this.props.groupName || (groups.length === 1 ? groups[0].name : "")
     };
   },
   handleGroupNameChange: function(event) {

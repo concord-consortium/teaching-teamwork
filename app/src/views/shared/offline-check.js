@@ -14,10 +14,8 @@ module.exports = React.createClass({
   },
 
   componentWillMount: function() {
-    var self = this,
-        fb = new Firebase('https://teaching-teamwork.firebaseio.com');
-
-    fb.child('.info/connected').on('value', function(connectedSnap) {
+    var self = this;
+    firebase.database().ref(".info/connected").on('value', function(connectedSnap) {
       self.statusChange(connectedSnap.val(), true);
     });
   },
