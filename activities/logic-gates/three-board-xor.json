@@ -1,11 +1,11 @@
 {
   "name": "Three Board XOR",
-  "notes": "Set bus port 6 to be A XOR B",
+  "notes": "Your goal is to create an XOR gate that takes bus ports and B and outputs to bus port G.",
   "interface": {
     "showPinColors": true,
     "showBusColors": true,
     "showBusLabels": true,
-    "allowAutoWiring": true,
+    "allowAutoWiring": false,
     "showPinouts": true,
     "showProbe": "edit",
     "showInputAutoToggles": true,
