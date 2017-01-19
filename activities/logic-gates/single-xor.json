@@ -43,7 +43,7 @@
     {
       "logicChipDrawer": {
         "chips": {
-          "7432": {"max": 2}
+          "7432": {"max": 1}
         }
       },
       "input": ["C", "D"],
