@@ -2,7 +2,7 @@
   "name": "Single XOR",
   "interface": {
     "showPinColors": true,
-    "allowAutoWiring": true,
+    "allowAutoWiring": false,
     "showPinouts": true
   },
   "boards": [
