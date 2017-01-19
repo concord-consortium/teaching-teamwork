@@ -18,8 +18,8 @@
     {
       "logicChipDrawer": {
         "chips": {
-          "7408": {"max": 2},
-          "7404": {"max": 5}
+          "7408": {"max": 1},
+          "7404": {"max": 1}
         }
       },
       "localInputSize": 4,
@@ -52,7 +52,7 @@
     {
       "logicChipDrawer": {
         "chips": {
-          "7432": {"max": 2}
+          "7432": {"max": 1}
         }
       },
       "localInputSize": 4,
