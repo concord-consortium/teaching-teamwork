@@ -1,10 +1,10 @@
 {
   "name": "Single XOR",
-  "notes": "Set bus port 5 to be A <em>XOR</em> B",
+  "notes": "This is a test... Set bus port 5 to be A <em>XOR</em> B",
   "interface": {
     "showPinColors": true,
     "allowAutoWiring": false,
-    "showPinouts": true
+    "showPinouts": true,
     "showBusColors": true,
     "showBusLabels": true,
     "showProbe": "edit",
