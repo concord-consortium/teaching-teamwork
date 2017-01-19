@@ -1,6 +1,7 @@
 var logManagerUrl  = '//teaching-teamwork-log-manager.herokuapp.com/api/logs',
     xhrObserver    = require('../../data/shared/xhrObserver'),
     laraController = require('./lara'),
+    logToConsole = window.location.search.indexOf('logToConsole') !== -1,
     laraLoggerReady,
     activityName,
     session,
@@ -62,6 +63,16 @@ var logManagerUrl  = '//teaching-teamwork-log-manager.herokuapp.com/api/logs',
         parameters: parameters
       },
       i;
+
+      if (logToConsole && console && console.log) {
+        console.log("LOG: " + eventName);
+        if ((value !== undefined) && (value !== null)) {
+          console.log("  VALUE: " + value);
+        }
+        if (parameters !== undefined) {
+          console.log("  PARMS: " + JSON.stringify(parameters));
+        }
+      }
 
       // signal the listeners we are logging
       for (i=0; i < logEventListeners.length; i++) {
@@ -154,7 +165,7 @@ LogController.prototype = {
   startListeningToCircuitEvents: function() {
     var self = this;
     sparks.logController.addListener(function(evt) {
-      if (evt.name === "Changed circuit") {
+      if (wa && (evt.name === "Changed circuit")) {
         self.updateIfCurrentFlowing(wa.getClientCircuit());
       }
       logEvent(evt.name, null, evt.value);

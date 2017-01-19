@@ -1,6 +1,7 @@
 var Connector = require('../../models/shared/connector'),
     Board = require('../../models/shared/board'),
     TTL = require('../../models/shared/ttl'),
+    CircuitResolver = require('../../models/shared/circuit-resolver'),
     LogicChip =  require('../../models/logic-gates/logic-chip'),
     //LogicChip =  require('../../models/logic-gates/logic-chip'),
     boardWatcher = require('../../controllers/pic/board-watcher'),
@@ -11,7 +12,10 @@ var Connector = require('../../models/shared/connector'),
     WorkspaceView = React.createFactory(require('./workspace')),
     OfflineCheckView = React.createFactory(require('../shared/offline-check')),
     AutoWiringView = React.createFactory(require('./auto-wiring')),
+    VersionView = React.createFactory(require('../shared/version')),
+    ReportView = React.createFactory(require('../shared/report')),
     constants = require('./constants'),
+    colors = require('../shared/colors'),
     inIframe = require('../../data/shared/in-iframe'),
     div = React.DOM.div,
     h1 = React.DOM.h1,
@@ -30,79 +34,44 @@ module.exports = React.createClass({
       currentGroup: null,
       activity: null,
       interface: {},
-      inIframe: inIframe()
+      inIframe: inIframe(),
+      circuitNotStable: false,
+      soloMode: window.location.search.indexOf('soloMode') !== -1,
+      showReport: window.location.search.indexOf('report') !== -1
     };
   },
 
   componentDidMount: function() {
-    this.loadActivity(window.location.hash.substring(1) || 'single-xor');
+    if (!this.state.showReport) {
+      this.loadActivity(window.location.hash.substring(1) || 'single-xor');
+    }
   },
 
   forceRerender: function () {
-    this.setState({boards: this.state.boards});
+    this.forceUpdate();
   },
 
   loadActivity: function(activityName) {
     var self = this,
-        matches = activityName.match(/^((local):(.+)|(remote):([^/]+)\/(.+))$/),
-        setStateAndParseAndStartActivity = function (jsonData) {
-          if (jsonData) {
-            editorState.text = jsonData;
-            self.setState({editorState: editorState});
-            var parsedData = self.parseActivity(activityName, jsonData);
-            if (parsedData) {
-              self.startActivity(activityName, parsedData);
-            }
-          }
-        },
-        editorState;
+        activityUrl = '../activities/logic-gates/' + activityName + ".json",
+        request = new XMLHttpRequest();
 
-    if (matches && (matches[2] == 'local')) {
-      editorState = {via: 'local', filename: matches[3]};
-
-      var rawData = localStorage.getItem(activityName);
-      if (rawData) {
-        setStateAndParseAndStartActivity(rawData);
-      }
-      else {
-        alert("Could not find LOCAL activity at " + activityName);
-      }
-    }
-    else if (matches && (matches[4] == 'remote')) {
-      editorState = {via: 'user ' + matches[5], filename: matches[6], username: matches[5]};
-
-      var url = editorState.username + '/' + editorState.filename,
-          firebase = new Firebase('https://teaching-teamwork.firebaseio.com/dev/activities/' + url);
-      firebase.once('value', function (snapshot) {
-        var jsonData = snapshot.val();
+    request.open('GET', activityUrl, true);
+    request.onload = function() {
+      var jsonData = request.responseText;
+      if (request.status >= 200 && request.status < 400) {
         if (jsonData) {
-          setStateAndParseAndStartActivity(jsonData);
+          var parsedData = self.parseActivity(activityName, jsonData);
+          if (parsedData) {
+            self.startActivity(activityName, parsedData);
+          }
         }
-        else {
-          alert("No data found for REMOTE activity at " + url);
-        }
-      }, function () {
-        alert("Could not find REMOTE activity at " + url);
-      });
-    }
-    else {
-      editorState = {via: 'server', filename: activityName};
+      } else {
+        alert("Could not find activity at "+activityUrl);
+      }
+    };
 
-      var activityUrl = '../activities/logic-gates/' + activityName + ".json";
-
-      var request = new XMLHttpRequest();
-      request.open('GET', activityUrl, true);
-
-      request.onload = function() {
-        if (request.status >= 200 && request.status < 400) {
-          setStateAndParseAndStartActivity(request.responseText);
-        } else {
-          alert("Could not find activity at "+activityUrl);
-        }
-      };
-
-      request.send();
-    }
+    request.send();
   },
 
   parseAndStartActivity: function (activityName, rawData) {
@@ -126,7 +95,7 @@ module.exports = React.createClass({
     var self = this,
         hasAutoWiringData = false,
         interface = activity.interface || {},
-        i;
+        i, allowAutoWiring;
 
     // create the boards
     this.setupBoards(activity);
@@ -138,86 +107,126 @@ module.exports = React.createClass({
       }
     }
 
+    allowAutoWiring = !!interface.allowAutoWiring && hasAutoWiringData;
+
     this.setState({
       activity: activity,
-      allowAutoWiring: !!interface.allowAutoWiring && hasAutoWiringData,
+      allowAutoWiring: allowAutoWiring,
       showPinColors: !!interface.showPinColors,
-      showPinouts: !!interface.showPinouts
+      showBusColors: !!interface.showBusColors,
+      showPinouts: !!interface.showPinouts,
+      notes: activity.notes || false
     });
 
     logController.init(activityName);
-    userController.init(activity.boards.length, activityName, function(userBoardNumber) {
-      var users = self.state.users,
-          currentUser = userController.getUsername();
 
-      userBoardNumber = parseInt(userBoardNumber, 10);
-      users[userBoardNumber] = {
-        name: currentUser
-      };
-
-      self.setState({
-        userBoardNumber: userBoardNumber,
-        users: users,
-        currentUser: currentUser,
-        currentGroup: userController.getGroupname(),
-        currentBoard: userBoardNumber
+    if (this.state.soloMode) {
+      logController.setClientNumber(0);
+      this.setState({
+        userBoardNumber: 0
       });
+    }
+    else {
+      userController.init(activity.boards.length, activityName, function(userBoardNumber) {
+        var users = self.state.users,
+            currentUser = userController.getUsername();
 
-      userController.onGroupRefCreation(function() {
-        boardWatcher.startListeners();
-        userController.getFirebaseGroupRef().child('users').on("value", function(snapshot) {
-          var fbUsers = snapshot.val(),
-              users = {};
-          $.each(fbUsers, function (user) {
-            users[parseInt(fbUsers[user].client)] = {
-              name: user
-            };
+        userBoardNumber = parseInt(userBoardNumber, 10);
+        users[userBoardNumber] = {
+          name: currentUser
+        };
+
+        logController.setClientNumber(userBoardNumber);
+
+        self.setState({
+          userBoardNumber: userBoardNumber,
+          users: users,
+          currentUser: currentUser,
+          currentGroup: userController.getGroupname(),
+          currentBoard: userBoardNumber
+        });
+
+        userController.onGroupRefCreation(function() {
+          boardWatcher.startListeners(activity.boards.length);
+          userController.getFirebaseGroupRef().child('users').on("value", function(snapshot) {
+            var fbUsers = snapshot.val(),
+                users = {};
+            $.each(fbUsers, function (user) {
+              users[parseInt(fbUsers[user].client)] = {
+                name: user
+              };
+            });
+            self.setState({users: users});
           });
-          self.setState({users: users});
         });
       });
-    });
-
-    // start the simulator without the event logged if set to run at startup
-    if (this.state.running) {
-      this.run(true, true);
     }
+
+    if (allowAutoWiring && window.location.search.indexOf('autoWire') !== -1) {
+      this.toggleAllChipsAndWires();
+    }
+  },
+
+  run: function (start) {
+    var self = this,
+        simulate = function () {
+          self.circuitResolver.resolve(false, function (stable) {
+            if (stable || self.state.circuitNotStable) {
+              self.setState({circuitNotStable: !stable});
+            }
+
+            self.forceUpdate();
+            if (!stable) {
+              clearInterval(self.simulatorInterval);
+            }
+          });
+        };
+
+    clearInterval(this.simulatorInterval);
+    if (start) {
+      this.simulatorInterval = setInterval(simulate, 10);
+    }
+    this.setState({circuitNotStable: !!start});
   },
 
   setupBoards: function (activity) {
     var boards = [],
-        inputs = [],
-        outputs = [],
-        boardSettings, board, i, input, output;
+        busInputSize = activity.busInputSize || 0,
+        busOutputSize = activity.busOutputSize || 0,
+        busSize = Math.max((activity.busSize || 0), (busInputSize + busOutputSize)),
+        boardSettings, board, i, input, output, bus;
+
+    this.circuitResolver = new CircuitResolver({busSize: busSize, busInputSize: busInputSize, busOutputSize: busOutputSize, runner: this.run});
 
     for (i = 0; i < activity.boards.length; i++) {
       boardSettings = activity.boards[i];
-      input = new Connector({type: 'input', count: boardSettings.input.length, labels: boardSettings.input});
-      output = new Connector({type: 'output', count: boardSettings.output.length, labels: boardSettings.output});
+      input = new Connector({type: 'input', count: boardSettings.localInputSize});
+      output = new Connector({type: 'output', count: boardSettings.localOutputSize});
+      bus = busSize > 0 ? new Connector({type: 'bus', count: busSize, busInputSize: busInputSize, busOutputSize: busOutputSize}) : null;
       board = new Board({
         number: i,
         bezierReflectionModifier: -0.5,
         components: {},
         connectors: {
           input: input,
-          output: output
-        }
+          output: output,
+          bus: bus
+        },
+        resolver: this.circuitResolver
       });
       input.board = board;
       output.board = board;
-      boardWatcher.addListener(board, this.updateWatchedBoard);
+      if (bus) {
+        bus.board = board;
+      }
+      if (!this.state.soloMode) {
+        boardWatcher.addListener(board, this.updateWatchedBoard);
+      }
       boards.push(board);
-      inputs.push(input);
-      outputs.push(output);
     }
 
-    for (i = 0; i < activity.boards.length; i++) {
-      boards[i].allBoards = boards;
-      if (i > 0) {
-        inputs[i].setConnectsTo(outputs[i-1]);
-        outputs[i-1].setConnectsTo(inputs[i]);
-      }
-    }
+    this.circuitResolver.boards = boards;
+    this.circuitResolver.updateComponents();
 
     this.setState({boards: boards});
   },
@@ -230,7 +239,7 @@ module.exports = React.createClass({
   },
 
   updateWatchedBoard: function (board, boardInfo) {
-    var wires, components;
+    var wires, components, inputs;
 
     // update the components
     components = (boardInfo && boardInfo.layout ? boardInfo.layout.components : null) || [];
@@ -240,7 +249,11 @@ module.exports = React.createClass({
     wires = (boardInfo && boardInfo.layout ? boardInfo.layout.wires : null) || [];
     board.updateWires(wires);
 
-    board.resolveIOVoltages();
+    // update the inputs
+    inputs = (boardInfo && boardInfo.layout ? boardInfo.layout.inputs : null) || [];
+    board.updateInputs(inputs);
+
+    this.circuitResolver.resolve(true);  // TODO
 
     this.setState({boards: this.state.boards});
   },
@@ -251,43 +264,78 @@ module.exports = React.createClass({
         allCorrect = true,
         boards = this.state.boards,
         numBoards = boards.length,
-        generateTests, runTest, resetBoards, resolveBoards, i, tests;
+        validateAndNormalize, generateTests, runTest, resetBoards, i, tests;
+
+    validateAndNormalize = function () {
+      var truthTable = self.state.activity.truthTable,
+          input = self.circuitResolver.input,
+          output = self.circuitResolver.output,
+          error = null,
+          i, j;
+
+      if (truthTable.length === 0) {
+        error = "Empty truth table!";
+      }
+      else {
+        for (i = 0; i < truthTable.length; i++) {
+          if (truthTable[i].length != 2) {
+            error = "Invalid truth table row length for row " + (i + 1) + " - should be 2, saw " + truthTable[i];
+          }
+          else {
+            // normalize input to an array of arrays
+            if (!$.isArray(truthTable[i][0][0])) {
+              truthTable[i][0] = [truthTable[i][0]];
+            }
+
+            for (j = 0; j < truthTable[i][0].length; j++) {
+              if (truthTable[i][0][j].length != input.count) {
+                error = "Invalid truth table input count for test " + (j + 1) + " in row " + (i + 1) + " - should be " + input.count + ", saw " + truthTable[i][0][j].length;
+              }
+              if (error) {
+                break;
+              }
+            }
+
+            if (!error && (truthTable[i][1].length != output.count)) {
+                error = "Invalid truth table output count for test " + (j + 1) + " in row " + (i + 1) + " - should be " + output.count + ", saw " + truthTable[i][1].length;
+            }
+          }
+
+          if (error) {
+            break;
+          }
+        }
+      }
+
+      if (error) {
+        console.error(error);
+        return false;
+      }
+
+      return true;
+    };
 
     generateTests = function () {
       var truthTable = self.state.activity.truthTable,
-          header = truthTable[0],
-          input = self.state.activity.boards[0].input,
-          output = self.state.activity.boards[numBoards-1].output,
-          defaultTestInput = [],
-          defaultTestOutput = [],
           tests = [],
-          i, j, testInputVoltages, testOutputLevels, headerPair, holeIndex;
+          i, j, k, testInputVoltages, subtestInputVoltages, testOutputLevels, inputs, outputs;
 
-      for (i = 0; i < input.length; i++) {
-        defaultTestInput.push('x');
-      }
-      for (i = 0; i < output.length; i++) {
-        defaultTestOutput.push('x');
-      }
+      for (i = 0; i < truthTable.length; i++) {
+        inputs = truthTable[i][0];
+        outputs = truthTable[i][1];
 
-      // skip the header and generate each test
-      for (i = 1; i < truthTable.length; i++) {
-        testInputVoltages = defaultTestInput.slice();
-        testOutputLevels = defaultTestOutput.slice();
-
-        for (j = 0; j < header.length; j++) {
-          headerPair = header[j].split(':');
-          if (headerPair[0] == 'input') {
-            holeIndex = input.indexOf(headerPair[1]);
-            if (holeIndex !== -1) {
-              testInputVoltages[holeIndex] = TTL.getBooleanVoltage(truthTable[i][j]);
-            }
-          } else if (headerPair[0] == 'output') {
-            holeIndex = output.indexOf(headerPair[1]);
-            if (holeIndex !== -1) {
-              testOutputLevels[holeIndex] = TTL.getBooleanLogicLevel(truthTable[i][j]);
-            }
+        testInputVoltages = [];
+        for (j = 0; j < inputs.length; j++) {
+          subtestInputVoltages = [];
+          for (k = 0; k < inputs[j].length; k++) {
+            subtestInputVoltages[k] = TTL.getBooleanVoltage(inputs[j][k]);
           }
+          testInputVoltages.push(subtestInputVoltages);
+        }
+
+        testOutputLevels = [];
+        for (j = 0; j < outputs.length; j++) {
+          testOutputLevels.push(outputs[j] !== 'x' ? TTL.getBooleanLogicLevel(outputs[j]) : 'x');
         }
 
         tests.push({
@@ -306,29 +354,23 @@ module.exports = React.createClass({
       }
     };
 
-    resolveBoards = function () {
-      var i, j;
-      // evaluate all the logic-chips in all the boards so the values propogate
-      for (i = 0; i < numBoards; i++) {
-        for (j = 0; j < boards[i].numComponents; j++) {
-          boards[i].resolveIOVoltages();
-        }
-      }
-    };
-
     runTest = function (test, truthTable) {
       var allCorrect = true,
-          i, output, outputVoltages, correct, dontCare;
+          i, output, outputVoltages, outputLevel, correct, dontCare;
 
       resetBoards();
-      boards[0].connectors.input.setHoleVoltages(test.inputVoltages);
-      resolveBoards();
 
-      outputVoltages = boards[numBoards-1].connectors.output.getHoleVoltages();
+      for (i = 0; i < test.inputVoltages.length; i++) {
+        self.circuitResolver.input.setHoleVoltages(test.inputVoltages[i], true);
+        self.circuitResolver.resolve(true);
+      }
+
+      outputVoltages = self.circuitResolver.output.getHoleVoltages();
       output = [];
       for (i = 0; i < test.outputLevels.length; i++) {
         dontCare = test.outputLevels[i] == 'x';
-        correct = dontCare || (test.outputLevels[i] == TTL.getVoltageLogicLevel(outputVoltages[i]));
+        outputLevel = TTL.getVoltageLogicLevel(outputVoltages[i]);
+        correct = dontCare || (test.outputLevels[i] == outputLevel);
         output.push(dontCare ? 'x' : outputVoltages[i]);
         allCorrect = allCorrect && correct;
       }
@@ -341,16 +383,29 @@ module.exports = React.createClass({
       return allCorrect;
     };
 
-    // generate and check each test
+    // rewire the board to include global i/o
+    this.circuitResolver.rewire(true);
+
+    // validate the truth table and normalize the inputs to be an array of arrays
+    if (!validateAndNormalize()) {
+      callback(null, truthTable);
+      return;
+    }
+
+    // generate each test
     tests = generateTests();
     for (i = 0; i < tests.length; i++) {
       allCorrect = runTest(tests[i], truthTable) && allCorrect;
     }
 
+    console.log(JSON.stringify(truthTable, null, 2));
+
+    // rewire to remove global i/o
+    this.circuitResolver.rewire();
+
     // reset to 0 inputs
     resetBoards();
-    boards[0].connectors.input.clearHoleVoltages();
-    resolveBoards();
+    this.circuitResolver.resolve(true);
 
     callback(allCorrect, truthTable);
   },
@@ -372,11 +427,10 @@ module.exports = React.createClass({
     };
 
     getEndpoint = function (name, stringIndex) {
-      var item = chipMap[name] || (name == "input" ? board.connectors.input : (name == "output" ? board.connectors.output : null)),
+      var item = chipMap[name] || board.connectors[name] || null,
           intIndex = parseInt(stringIndex, 10),
           list = null,
           endPoint = null;
-
 
       if (item) {
         if (item instanceof Connector) {
@@ -407,9 +461,13 @@ module.exports = React.createClass({
       return endPoint;
     };
 
+    hasWires = false;
+    for (i = 0; i < this.state.boards.length; i++) {
+      hasWires = hasWires || (this.state.boards[i].wires.length > 0);
+    }
+
     for (i = 0; i < this.state.boards.length; i++) {
       board = this.state.boards[i];
-      hasWires = this.state.boards[i].wires.length > 0;
       board.clear();
       if (!hasWires && this.state.activity.boards[i].autoWiring) {
         autoWiring = this.state.activity.boards[i].autoWiring;
@@ -434,11 +492,14 @@ module.exports = React.createClass({
             dest = getEndpoint($.trim(destParts[0]), $.trim(destParts[1]));
 
             if (source && dest) {
-              board.addWire(source, dest, '#00f');
+              board.addWire(source, dest, colors.wire, true);
             }
           }
         }
       }
+
+      this.circuitResolver.rewire();
+
       board.updateComponentList();
       boardWatcher.circuitChanged(board);
     }
@@ -449,16 +510,34 @@ module.exports = React.createClass({
   render: function () {
     var sidebarTop = this.state.allowAutoWiring ? 75 : 0;
 
-    return div({},
-      this.state.inIframe ? null : h1({}, "Teaching Teamwork" + (this.state.activity ? ": " + this.state.activity.name : "")),
-      this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
-      OfflineCheckView({}),
-      WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect}),
-      div({id: 'logicapp'},
-        WorkspaceView({constants: constants, boards: this.state.boards, showPinColors: this.state.showPinColors, showPinouts: this.state.showPinouts, users: this.state.users, userBoardNumber: this.state.userBoardNumber, activity: this.state.activity, forceRerender: this.forceRerender}),
-        this.state.allowAutoWiring ? AutoWiringView({top: 0, toggleAllChipsAndWires: this.toggleAllChipsAndWires}) : null,
-        SidebarChatView({numClients: 2, top: sidebarTop})
-      )
-    );
+    if (this.state.showReport) {
+      return ReportView({});
+    }
+    else {
+      return div({},
+        this.state.inIframe ? null : h1({}, "Teaching Teamwork" + (this.state.activity ? ": " + this.state.activity.name : "")),
+        this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
+        OfflineCheckView({}),
+        this.state.notes ? div({className: 'activity-notes', dangerouslySetInnerHTML: {__html: this.state.notes}}) : null,
+        this.state.activity && this.state.activity.truthTable ? WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect, soloMode: this.state.soloMode, disabled: this.state.circuitNotStable}) : null,
+        div({id: 'logicapp'},
+          WorkspaceView({
+            constants: constants,
+            boards: this.state.boards,
+            users: this.state.users,
+            userBoardNumber: this.state.userBoardNumber,
+            activity: this.state.activity,
+            forceRerender: this.forceRerender,
+            soloMode: this.state.soloMode,
+            showPinColors: this.state.showPinColors,
+            showPinouts: this.state.showPinouts,
+            showBusColors: this.state.showBusColors
+          }),
+          this.state.allowAutoWiring ? AutoWiringView({top: 0, toggleAllChipsAndWires: this.toggleAllChipsAndWires}) : null,
+          this.state.soloMode ? null : SidebarChatView({numClients: 2, top: sidebarTop})
+        ),
+        VersionView({})
+      );
+    }
   }
 });

@@ -1,5 +1,6 @@
 var userController = require('../../controllers/shared/user'),
     logController = require('../../controllers/shared/log'),
+    AlertView = React.createFactory(require('../shared/alert')),
     div = React.DOM.div,
     p = React.DOM.p,
     strong = React.DOM.strong,
@@ -20,7 +21,8 @@ module.exports = React.createClass({
       RUnit: '',
       pluralize: this.props.activity.enterUnknowns.E && this.props.activity.enterUnknowns.R,
       eCorrect: false,
-      rCorrect: false
+      rCorrect: false,
+      alert: null
     };
   },
 
@@ -56,23 +58,25 @@ module.exports = React.createClass({
         haveR = this.state.R.length > 0,
         haveRUnit = this.state.RUnit.length > 0,
         eCorrect = false,
-        rCorrect = false;
+        rCorrect = false,
+        alert = null;
 
     eCorrect = this.state.eCorrect || ((this.state.E == this.props.model.E) && (this.state.EUnit == 'volts'));
     rCorrect = this.state.rCorrect || ((this.state.R == this.props.model.R) && (this.state.RUnit== 'ohms'));
     if ((needE && !eCorrect) && (needR && !rCorrect)) {
-      alert("Sorry, both of your E and R values or units are incorrect");
+      alert = "Sorry, both of your E and R values or units are incorrect";
     }
     else if (needE && !eCorrect) {
-      alert("Sorry, your E value or unit is incorrect");
+      alert = "Sorry, your E value or unit is incorrect";
     }
     else if (needR && !rCorrect) {
-      alert("Sorry, your R value or unit is incorrect");
+      alert = "Sorry, your R value or unit is incorrect";
     }
 
     this.setState({
       eCorrect: eCorrect,
-      rCorrect: rCorrect
+      rCorrect: rCorrect,
+      alert: alert
     });
 
     userController.setUnknownValues({
@@ -90,16 +94,26 @@ module.exports = React.createClass({
       'E: Need': needE,
       'E: Have Value': needE && haveE,
       'E: Have Unit': needE && haveEUnit,
+      'E: Value': this.state.E,
+      'E: Unit': this.state.EUnit,
+      'E: Correct Value': this.props.model.E,
       'E: Correct': eCorrect,
       'R: Need': needR,
       'R: Have Value': needR && haveR,
       'R: Have Unit': needR && haveRUnit,
+      'R: Value': this.state.R,
+      'R: Unit': this.state.RUnit,
+      'R: Correct Value': this.props.model.R,
       'R: Correct': rCorrect
     });
   },
 
   pluralize: function (text) {
     return this.state.pluralize ? text + 's' : text;
+  },
+
+  closeAlert: function () {
+    this.setState({alert: null});
   },
 
   renderUnknown: function (component, correct, onValueChange, onUnitChange) {
@@ -120,7 +134,8 @@ module.exports = React.createClass({
       p({}, strong({}, "Enter Unknown " + this.pluralize("Value"))),
       this.props.activity.enterUnknowns.E ? this.renderUnknown('E', this.state.eCorrect, this.eChanged, this.eUnitChanged) : null,
       this.props.activity.enterUnknowns.R ? this.renderUnknown('R', this.state.rCorrect, this.rChanged, this.rUnitChanged) : null,
-      showMessage ? p({}, "You have entered the correct " + this.pluralize("value") + " and " + this.pluralize("unit") + ".") : button({onClick: this.submit}, "Submit Unknown " + this.pluralize("Value"))
+      showMessage ? p({}, "You have entered the correct " + this.pluralize("value") + " and " + this.pluralize("unit") + ".") : button({onClick: this.submit}, "Submit Unknown " + this.pluralize("Value")),
+      this.state.alert ? AlertView({message: this.state.alert, onClose: this.closeAlert}) : null
     );
   }
 });

@@ -1,10 +1,19 @@
 {
   "name": "Single XOR",
+  "notes": "Set bus port 5 to be A <em>XOR</em> B",
   "interface": {
     "showPinColors": true,
     "allowAutoWiring": false,
     "showPinouts": true
+    "showBusColors": true,
+    "showBusLabels": true,
+    "showProbe": "edit",
+    "showInputAutoToggles": true,
+    "showGlobalIOWires": true
   },
+  "busSize": 5,
+  "busInputSize": 2,
+  "busOutputSize": 1,
   "boards": [
     {
       "logicChipDrawer": {
@@ -13,30 +22,30 @@
           "7404": {"max": 1}
         }
       },
-      "input": ["A", "B"],
-      "output": ["C", "D"],
+      "localInputSize": 4,
+      "localOutputSize": 4,
       "autoWiring": {
         "chips": {
           "not": {
             "type": "7404",
-            "x": 150,
-            "y": 150
+            "x": 290,
+            "y": 80
           },
           "and": {
             "type": "7408",
-            "x": 425,
-            "y": 150
+            "x": 290,
+            "y": 220
           }
         },
         "wires": [
-          "input:A,not:13",   "// create NOT A on not pin 12",
-          "input:B,not:9",    "// create NOT B on not pin 8",
+          "bus:1,not:13",   "// create NOT A on not pin 12",
+          "bus:2,not:9",    "// create NOT B on not pin 8",
           "not:12,and:13", "// NOT A to and pin 13",
-          "input:B,and:12",   "// B to and pin 12",
-          "and:11,output:C",  "// (NOT A AND B) to output hole 1",
+          "bus:2,and:12",   "// B to and pin 12",
+          "and:11,bus:3",  "// (NOT A AND B) to bus hole 1",
           "not:8,and:10",  "// NOT B to and pin 10",
-          "input:A,and:9",    "// A to and pin 9",
-          "and:8,output:D",   "// (NOT B AND A) to output hole 2"
+          "bus:1,and:9",    "// A to and pin 9",
+          "and:8,bus:4",   "// (NOT B AND A) to bus hole 2"
         ]
       }
     },
@@ -46,29 +55,28 @@
           "7432": {"max": 1}
         }
       },
-      "input": ["C", "D"],
-      "output": ["XOR"],
+      "localInputSize": 4,
+      "localOutputSize": 4,
       "autoWiring": {
         "chips": {
           "or": {
             "type": "7432",
-            "x": 300,
+            "x": 290,
             "y": 150
           }
         },
         "wires": [
-          "input:C,or:13",  "// C = (NOT A AND B) from input hole 1",
-          "input:D,or:12",  "// D = (NOT B AND A) from input hole 2",
-          "or:11,output:XOR", "// (C OR D) to output hole 1"
+          "bus:3,or:13",  "// C = (NOT A AND B) from bus hole 1",
+          "bus:4,or:12",  "// D = (NOT B AND A) from bus hole 2",
+          "or:11,bus:5", "// (C OR D) to bus hole 1"
         ]
       }
     }
   ],
   "truthTable": [
-    ["input:A", "input:B", "output:XOR"],
-    [0, 0, 0],
-    [0, 1, 1],
-    [1, 0, 1],
-    [1, 1, 0]
+    [[0, 0], [0]],
+    [[0, 1], [1]],
+    [[1, 0], [1]],
+    [[1, 1], [0]]
   ]
 }

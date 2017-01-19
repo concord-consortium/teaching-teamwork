@@ -3,6 +3,7 @@ var Connector = require('../../models/shared/connector'),
     Keypad = require('../../models/pic/keypad'),
     PIC = require('../../models/pic/pic'),
     LED = require('../../models/pic/led'),
+    CircuitResolver = require('../../models/shared/circuit-resolver'),
     picCode = require('../../data/pic/pic-code'),
     boardWatcher = require('../../controllers/pic/board-watcher'),
     userController = require('../../controllers/shared/user'),
@@ -14,8 +15,11 @@ var Connector = require('../../models/shared/connector'),
     SidebarChatView = React.createFactory(require('../shared/sidebar-chat')),
     WireControlsView = React.createFactory(require('../shared/wire-controls')),
     OfflineCheckView = React.createFactory(require('../shared/offline-check')),
+    VersionView = React.createFactory(require('../shared/version')),
+    ReportView = React.createFactory(require('../shared/report')),
     events = require('../shared/events'),
     constants = require('./constants'),
+    colors = require('../shared/colors'),
     inIframe = require('../../data/shared/in-iframe'),
     div = React.DOM.div,
     h1 = React.DOM.h1,
@@ -24,45 +28,92 @@ var Connector = require('../../models/shared/connector'),
 module.exports = React.createClass({
   displayName: 'AppView',
 
+  hasUrlOption: function (option) {
+    return window.location.search.indexOf(option) !== -1;
+  },
+
   getInitialState: function () {
-    var board0Output = new Connector({type: 'output', count: 4}),
-        board1Input = new Connector({type: 'input', count: 4}),
-        board1Output = new Connector({type: 'output', count: 4}),
-        board2Input = new Connector({type: 'input', count: 4}),
-        boards = [
-          new Board({number: 0, bezierReflectionModifier: 1, components: {keypad: new Keypad(), pic: new PIC({code: picCode[0]})}, connectors: {output: board0Output}, fixedComponents: true}),
-          new Board({number: 1, bezierReflectionModifier: -0.5, components: {pic: new PIC({code: picCode[1]})}, connectors: {input: board1Input, output: board1Output}, fixedComponents: true}),
-          new Board({number: 2, bezierReflectionModifier: 0.75, components: {pic: new PIC({code: picCode[2]}), led: new LED()}, connectors: {input: board2Input}, fixedComponents: true})
-        ];
+    var numBoards = 3,
+        busSize = 8,
+        bezierReflectionModifiers = [1, -0.5, 0.75],
+        components = [],
+        connectors = [],
+        boards = [],
+        i, setBoard;
 
-    board0Output.setConnectsTo(board1Input);
-    board1Input.setConnectsTo(board0Output);
-    board1Output.setConnectsTo(board2Input);
-    board2Input.setConnectsTo(board1Output);
+    this.circuitResolver = new CircuitResolver({busSize: busSize, busInputSize: 0, busOutputSize: 0});
 
-    board0Output.board = boards[0];
-    board1Input.board = boards[1];
-    board1Output.board = boards[1];
-    board2Input.board = boards[2];
+    setBoard = function (hash, board) {
+      var keys = Object.keys(hash),
+          i;
+      for (i = 0; i < keys.length; i++) {
+        hash[keys[i]].board = board;
+      }
+    };
 
-    boards[0].allBoards = boards;
-    boards[1].allBoards = boards;
-    boards[2].allBoards = boards;
+    for (i = 0; i < numBoards; i++) {
+      connectors.push({
+        bus: new Connector({type: 'bus', count: busSize}),
+        input: new Connector({type: 'input', count: 8}),
+        output: new Connector({type: 'output', count: 8})
+      });
+
+      switch (i) {
+        case 0:
+          components.push({
+            keypad: new Keypad(),
+            pic: new PIC({code: picCode[0]})
+          });
+          break;
+        case 1:
+          components.push({
+            pic: new PIC({code: picCode[1]})
+          });
+          break;
+        case 2:
+          components.push({
+            pic: new PIC({code: picCode[2]}),
+            led: new LED()
+          });
+          break;
+      }
+
+      boards.push(new Board({
+        number: i,
+        bezierReflectionModifier: bezierReflectionModifiers[i],
+        components: components[i],
+        connectors: connectors[i],
+        fixedComponents: true,
+        resolver: this.circuitResolver
+      }));
+
+      setBoard(components[i], boards[i]);
+      setBoard(connectors[i], boards[i]);
+    }
+
+    this.circuitResolver.boards = boards;
+    this.circuitResolver.updateComponents();
 
     return {
       boards: boards,
       running: true,
-      showPinColors: window.location.search.indexOf('showPinColors') !== -1,
-      showAutoWiring: window.location.search.indexOf('allowAutoWiring') !== -1,
-      showSimulator: window.location.search.indexOf('showSimulator') !== -1,
-      showWireControls: window.location.search.indexOf('wireSettings') !== -1,
+      showPinColors: this.hasUrlOption('showPinColors'),
+      showBusColors: this.hasUrlOption('showBusColors'),
+      showAutoWiring: this.hasUrlOption('allowAutoWiring'),
+      showSimulator: this.hasUrlOption('showSimulator'),
+      showWireControls: this.hasUrlOption('wireSettings'),
+      soloMode: this.hasUrlOption('soloMode'),
+      showBusLabels: this.hasUrlOption('showBusLabels'),
+      showProbe: this.hasUrlOption('showProbeInEdit') ? 'edit' : this.hasUrlOption('hideProbe') ? false : 'all',
+      showInputAutoToggles: !this.hasUrlOption('hideInputAutoToggles'),
       userBoardNumber: -1,
       users: {},
       currentBoard: 0,
       currentUser: null,
       currentGroup: null,
-      wireSettings: {color: '#00f', curvyness: 0.25},
-      inIframe: inIframe()
+      wireSettings: {color: colors.wire, curvyness: 0.25},
+      inIframe: inIframe(),
+      showReport: this.hasUrlOption('report')
     };
   },
 
@@ -70,44 +121,54 @@ module.exports = React.createClass({
     var activityName = 'pic',
         self = this;
 
-    boardWatcher.addListener(this.state.boards[0], this.updateWatchedBoard);
-    boardWatcher.addListener(this.state.boards[1], this.updateWatchedBoard);
-    boardWatcher.addListener(this.state.boards[2], this.updateWatchedBoard);
+    if (this.state.showReport) {
+      return;
+    }
 
     logController.init(activityName);
-    userController.init(3, activityName, function(userBoardNumber) {
-      var users = self.state.users,
-          currentUser = userController.getUsername();
 
-      userBoardNumber = parseInt(userBoardNumber, 10);
-      users[userBoardNumber] = {
-        name: currentUser
-      };
+    if (this.state.soloMode) {
+      logController.setClientNumber(0);
+    }
+    else {
+      boardWatcher.addListener(this.state.boards[0], this.updateWatchedBoard);
+      boardWatcher.addListener(this.state.boards[1], this.updateWatchedBoard);
+      boardWatcher.addListener(this.state.boards[2], this.updateWatchedBoard);
 
-      logController.setClientNumber(userBoardNumber);
+      userController.init(3, activityName, function(userBoardNumber) {
+        var users = self.state.users,
+            currentUser = userController.getUsername();
 
-      self.setState({
-        userBoardNumber: userBoardNumber,
-        users: users,
-        currentUser: currentUser,
-        currentGroup: userController.getGroupname(),
-        currentBoard: userBoardNumber
-      });
+        userBoardNumber = parseInt(userBoardNumber, 10);
+        users[userBoardNumber] = {
+          name: currentUser
+        };
 
-      userController.onGroupRefCreation(function() {
-        boardWatcher.startListeners();
-        userController.getFirebaseGroupRef().child('users').on("value", function(snapshot) {
-          var fbUsers = snapshot.val(),
-              users = {};
-          $.each(fbUsers, function (user) {
-            users[parseInt(fbUsers[user].client)] = {
-              name: user
-            };
+        logController.setClientNumber(userBoardNumber);
+
+        self.setState({
+          userBoardNumber: userBoardNumber,
+          users: users,
+          currentUser: currentUser,
+          currentGroup: userController.getGroupname(),
+          currentBoard: userBoardNumber
+        });
+
+        userController.onGroupRefCreation(function() {
+          boardWatcher.startListeners(3);
+          userController.getFirebaseGroupRef().child('users').on("value", function(snapshot) {
+            var fbUsers = snapshot.val(),
+                users = {};
+            $.each(fbUsers, function (user) {
+              users[parseInt(fbUsers[user].client)] = {
+                name: user
+              };
+            });
+            self.setState({users: users});
           });
-          self.setState({users: users});
         });
       });
-    });
+    }
 
     // start the simulator without the event logged if set to run at startup
     if (this.state.running) {
@@ -126,7 +187,7 @@ module.exports = React.createClass({
   },
 
   updateWatchedBoard: function (board, boardInfo) {
-    var wires;
+    var wires, inputs;
 
     if (boardInfo && board.components.keypad) {
       board.components.keypad.selectButtonValue(boardInfo.button);
@@ -135,6 +196,10 @@ module.exports = React.createClass({
     // update the wires
     wires = (boardInfo && boardInfo.layout ? boardInfo.layout.wires : null) || [];
     board.updateWires(wires);
+
+    // update the inputs
+    inputs = (boardInfo && boardInfo.layout ? boardInfo.layout.inputs : null) || [];
+    board.updateInputs(inputs);
   },
 
   checkIfCircuitIsCorrect: function (callback) {
@@ -173,7 +238,7 @@ module.exports = React.createClass({
       // evaluate all the boards so the keypad input propogates to the led
       for (i = 0; i < numBoards; i++) {
         for (j = 0; j < numBoards; j++) {
-          boards[i].components.pic.evaluateRemainingPICInstructions();
+          boards[j].components.pic.evaluateRemainingPICInstructions();
         }
       }
     };
@@ -242,22 +307,21 @@ module.exports = React.createClass({
   },
 
   toggleAllWires: function () {
-    var defaultColor = '#00f',
+    var defaultColor = colors.wire,
 
         b0 = this.state.boards[0],
         b0Keypad = b0.components.keypad.pinMap,
         b0PIC = b0.components.pic.pinMap,
-        b0o = b0.connectors.output.holes,
+        b0Bus = b0.connectors.bus.holes,
 
         b1 = this.state.boards[1],
         b1PIC = b1.components.pic.pinMap,
-        b1o = b1.connectors.output.holes,
-        b1i = b1.connectors.input.holes,
+        b1Bus = b1.connectors.bus.holes,
 
         b2 = this.state.boards[2],
         b2PIC = b2.components.pic.pinMap,
         b2LED = b2.components.led.pinMap,
-        b2i = b2.connectors.input.holes,
+        b2Bus = b2.connectors.bus.holes,
         wire, boardWires, i, j, hasWires;
 
     boardWires = [
@@ -269,26 +333,26 @@ module.exports = React.createClass({
         {source: b0Keypad.ROW1, dest: b0PIC.RB4, color: defaultColor},
         {source: b0Keypad.ROW2, dest: b0PIC.RB5, color: defaultColor},
         {source: b0Keypad.ROW3, dest: b0PIC.RB6, color: defaultColor},
-        {source: b0PIC.RA0, dest: b0o[0], color: b0o[0].color},
-        {source: b0PIC.RA1, dest: b0o[1], color: b0o[1].color},
-        {source: b0PIC.RA2, dest: b0o[2], color: b0o[2].color},
-        {source: b0PIC.RA3, dest: b0o[3], color: b0o[3].color}
+        {source: b0PIC.RA0, dest: b0Bus[0], color: b0Bus[0].color},
+        {source: b0PIC.RA1, dest: b0Bus[1], color: b0Bus[1].color},
+        {source: b0PIC.RA2, dest: b0Bus[2], color: b0Bus[2].color},
+        {source: b0PIC.RA3, dest: b0Bus[3], color: b0Bus[3].color}
       ],
       [
-        {source: b1i[0], dest: b1PIC.RB0, color: b1i[0].color},
-        {source: b1i[1], dest: b1PIC.RB1, color: b1i[1].color},
-        {source: b1i[2], dest: b1PIC.RB2, color: b1i[2].color},
-        {source: b1i[3], dest: b1PIC.RB3, color: b1i[3].color},
-        {source: b1PIC.RA0, dest: b1o[0], color: b1o[0].color},
-        {source: b1PIC.RA1, dest: b1o[1], color: b1o[1].color},
-        {source: b1PIC.RA2, dest: b1o[2], color: b1o[2].color},
-        {source: b1PIC.RA3, dest: b1o[3], color: b1o[3].color}
+        {source: b1Bus[0], dest: b1PIC.RB0, color: b1Bus[0].color},
+        {source: b1Bus[1], dest: b1PIC.RB1, color: b1Bus[1].color},
+        {source: b1Bus[2], dest: b1PIC.RB2, color: b1Bus[2].color},
+        {source: b1Bus[3], dest: b1PIC.RB3, color: b1Bus[3].color},
+        {source: b1PIC.RA0, dest: b1Bus[4], color: b1Bus[4].color},
+        {source: b1PIC.RA1, dest: b1Bus[5], color: b1Bus[5].color},
+        {source: b1PIC.RA2, dest: b1Bus[6], color: b1Bus[6].color},
+        {source: b1PIC.RA3, dest: b1Bus[7], color: b1Bus[7].color}
       ],
       [
-        {source: b2i[0], dest: b2PIC.RA0, color: b2i[0].color},
-        {source: b2i[1], dest: b2PIC.RA1, color: b2i[1].color},
-        {source: b2i[2], dest: b2PIC.RA2, color: b2i[2].color},
-        {source: b2i[3], dest: b2PIC.RA3, color: b2i[3].color},
+        {source: b2Bus[4], dest: b2PIC.RA0, color: b2Bus[4].color},
+        {source: b2Bus[5], dest: b2PIC.RA1, color: b2Bus[5].color},
+        {source: b2Bus[6], dest: b2PIC.RA2, color: b2Bus[6].color},
+        {source: b2Bus[7], dest: b2PIC.RA3, color: b2Bus[7].color},
         {source: b2PIC.RB0, dest: b2LED.a, color: defaultColor},
         {source: b2PIC.RB1, dest: b2LED.b, color: defaultColor},
         {source: b2PIC.RB2, dest: b2LED.c, color: defaultColor},
@@ -299,17 +363,26 @@ module.exports = React.createClass({
       ]
     ];
 
+    // check if any have wires
+    hasWires = false;
     for (i = 0; i < this.state.boards.length; i++) {
-      hasWires = this.state.boards[i].wires.length > 0;
+      hasWires = hasWires || (this.state.boards[i].wires.length > 0);
+    }
+
+    for (i = 0; i < this.state.boards.length; i++) {
       this.state.boards[i].clear();
       if (!hasWires) {
         for (j = 0; j < boardWires[i].length; j++) {
           wire = boardWires[i][j];
-          this.state.boards[i].addWire(wire.source, wire.dest, wire.color);
+          // add the wire without resolving the circuits
+          this.state.boards[i].addWire(wire.source, wire.dest, wire.color, true);
         }
       }
       boardWatcher.circuitChanged(this.state.boards[i]);
     }
+
+    // rewire and resolve
+    this.circuitResolver.rewire();
 
     this.setState({boards: this.state.boards});
   },
@@ -322,18 +395,38 @@ module.exports = React.createClass({
     var autoWiringTop = this.state.showSimulator ? 75 : 0,
         sidebarTop = autoWiringTop + (this.state.showAutoWiring ? 75 : 0);
 
-    return div({},
-      this.state.showWireControls ? WireControlsView({wireSettings: this.state.wireSettings, updateWireSettings: this.updateWireSettings}) : null,
-      this.state.inIframe ? null : h1({}, "Teaching Teamwork PIC Activity"),
-      this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
-      OfflineCheckView({}),
-      WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect}),
-      div({id: 'picapp'},
-        WorkspaceView({constants: constants, boards: this.state.boards, stepping: !this.state.running, showPinColors: this.state.showPinColors, users: this.state.users, userBoardNumber: this.state.userBoardNumber, wireSettings: this.state.wireSettings, forceRerender: this.forceRerender}),
-        this.state.showSimulator ? SimulatorControlView({running: this.state.running, run: this.run, step: this.step, reset: this.reset}) : null,
-        this.state.showAutoWiring ? AutoWiringView({top: autoWiringTop, running: this.state.running, toggleAllWires: this.toggleAllWires}) : null,
-        SidebarChatView({numClients: 3, top: sidebarTop})
-      )
-    );
+    if (this.state.showReport) {
+      return ReportView({});
+    }
+    else {
+      return div({},
+        this.state.showWireControls ? WireControlsView({wireSettings: this.state.wireSettings, updateWireSettings: this.updateWireSettings}) : null,
+        this.state.inIframe ? null : h1({}, "Teaching Teamwork PIC Activity"),
+        this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
+        OfflineCheckView({}),
+        WeGotItView({currentUser: this.state.currentUser, checkIfCircuitIsCorrect: this.checkIfCircuitIsCorrect, soloMode: this.state.soloMode}),
+        div({id: 'picapp'},
+          WorkspaceView({
+            constants: constants,
+            boards: this.state.boards,
+            stepping: !this.state.running,
+            users: this.state.users,
+            userBoardNumber: this.state.userBoardNumber,
+            wireSettings: this.state.wireSettings,
+            forceRerender: this.forceRerender,
+            soloMode: this.state.soloMode,
+            showPinColors: this.state.showPinColors,
+            showBusLabels: this.state.showBusLabels,
+            showProbe: this.state.showProbe,
+            showBusColors: this.state.showBusColors,
+            showInputAutoToggles: this.state.showInputAutoToggles
+          }),
+          this.state.showSimulator ? SimulatorControlView({running: this.state.running, run: this.run, step: this.step, reset: this.reset}) : null,
+          this.state.showAutoWiring ? AutoWiringView({top: autoWiringTop, running: this.state.running, toggleAllWires: this.toggleAllWires}) : null,
+          this.state.soloMode ? null : SidebarChatView({numClients: 3, top: sidebarTop})
+        ),
+        VersionView({})
+      );
+    }
   }
 });

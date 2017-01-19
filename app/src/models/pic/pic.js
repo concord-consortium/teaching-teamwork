@@ -9,6 +9,7 @@ var PIC = function (options) {
   this.name = 'pic';
   this.view = PICView;
   this.board = options.board;
+  this.resolver = options.resolver;
 
   this.pins = [];
   this.pinMap = {};
@@ -129,29 +130,44 @@ PIC.prototype.getPinListValue = function (list) {
   var value = 0,
       i;
 
-  // each get causes the board to resolve so that we have the most current value
-  this.board.resolveComponentOutputVoltages();
-
+  if (this.hasResolver()) {
+    this.board.resolver.resolveComponentOutputVoltages();  // TODO: check if this is necessary
+  }
   for (i = 0; i < list.length; i++) {
     value = value | ((list[i].inputMode && list[i].isHigh() ? 1 : 0) << i);
   }
   return value;
 };
 PIC.prototype.setPinListValue = function (list, value) {
-  var i, outputMode;
+  var i;
   for (i = 0; i < list.length; i++) {
-    outputMode = !list[i].inputMode;
-    list[i].setVoltage(TTL.getBooleanVoltage(outputMode && (value & (1 << i))));
+    if (!list[i].inputMode) {
+      list[i].setVoltage(TTL.getBooleanVoltage(value & (1 << i)));
+    }
   }
-  // each set causes the circuit to be resolved
-  this.board.resolveIOVoltages();
+  this.resolve(true);
 };
 PIC.prototype.setPinListInputMode = function (list, mask) {
   var i;
   for (i = 0; i < list.length; i++) {
     list[i].inputMode = !!(mask & (1 << i));
   }
-  this.board.resolveIOVoltages();
+  this.resolve(true);
+};
+PIC.prototype.hasResolver = function () {
+  return this.board && this.board.resolver;
+};
+PIC.prototype.resolve = function () {
+  if (this.hasResolver()) {
+    this.board.resolver.resolve(true);
+  }
+};
+PIC.prototype.setBoard = function (board) {
+  var i;
+  this.board = board;
+  for (i = 0; i < this.pins.length; i++) {
+    this.pins[i].board = board;
+  }
 };
 
 module.exports = PIC;

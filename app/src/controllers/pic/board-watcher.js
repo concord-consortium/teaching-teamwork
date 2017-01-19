@@ -4,7 +4,7 @@ var BoardWatcher = function () {
   this.firebase = null;
   this.listeners = {};
 };
-BoardWatcher.prototype.startListeners = function () {
+BoardWatcher.prototype.startListeners = function (numBoards) {
   var self = this,
       listenerCallbackFn = function (boardNumber) {
         return function (snapshot) {
@@ -15,24 +15,35 @@ BoardWatcher.prototype.startListeners = function () {
             }
           }
         };
-      };
+      }, i;
 
   this.firebase = userController.getFirebaseGroupRef().child('clients');
-  this.firebase.child(0).on('value', listenerCallbackFn(0));
-  this.firebase.child(1).on('value', listenerCallbackFn(1));
-  this.firebase.child(2).on('value', listenerCallbackFn(2));
+
+  for (i = 0; i < numBoards; i++) {
+    this.firebase.child(i).on('value', listenerCallbackFn(i));
+  }
 };
+
+// NOTE: the if (this.firebase) conditionals are needed below because startListeners is not called in the PIC solo mode
+
 BoardWatcher.prototype.movedProbe = function (board, probeInfo) {
-  this.firebase.child(board.number).child('probe').set(probeInfo);
+  if (this.firebase) {
+    this.firebase.child(board.number).child('probe').set(probeInfo);
+  }
 };
 BoardWatcher.prototype.pushedButton = function (board, buttonValue) {
-  this.firebase.child(board.number).child('button').set(buttonValue);
+  if (this.firebase) {
+    this.firebase.child(board.number).child('button').set(buttonValue);
+  }
 };
 BoardWatcher.prototype.circuitChanged = function (board) {
-  this.firebase.child(board.number).child('layout').set({
-    wires: board.serializeWiresToArray(),
-    components: board.serializeComponents()
-  });
+  if (this.firebase) {
+    this.firebase.child(board.number).child('layout').set({
+      wires: board.serializeWiresToArray(),
+      components: board.serializeComponents(),
+      inputs: board.serializeInputs()
+    });
+  }
 };
 BoardWatcher.prototype.addListener = function (board, listener) {
   this.listeners[board.number] = this.listeners[board.number] || [];

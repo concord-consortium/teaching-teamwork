@@ -1,5 +1,6 @@
 var BoardView = React.createFactory(require('../shared/board')),
-    RibbonView = React.createFactory(require('../shared/ribbon')),
+    SpacerView = React.createFactory(require('../shared/spacer')),
+    BusView = React.createFactory(require('../shared/bus')),
     events = require('../shared/events'),
     div = React.DOM.div;
 
@@ -30,14 +31,22 @@ module.exports = React.createClass({
     if (this.state.userBoardNumber != nextProps.userBoardNumber) {
       this.setState({
         userBoardNumber: nextProps.userBoardNumber,
-        selectedBoard: nextProps.boards[nextProps.userBoardNumber]
+        selectedBoard: this.props.soloMode ? null : nextProps.boards[nextProps.userBoardNumber]
       });
     }
   },
 
+  interfaceOption: function (name) {
+    return this.props.activity && this.props.activity.interface ? this.props.activity.interface[name] : false;
+  },
+
   render: function () {
-    var selectedConstants,
-        ribbonsAndBoards, i;
+    var showBusLabels = this.interfaceOption('showBusLabels'),
+        showProbe = this.interfaceOption('showProbe'),
+        showInputAutoToggles = this.interfaceOption('showInputAutoToggles'),
+        showGlobalIOWires = this.interfaceOption('showGlobalIOWires'),
+        selectedConstants,
+        spacersAndBoards, i, height;
 
     if (this.props.userBoardNumber == -1) {
       return div({id: 'workspace', style: {width: this.props.constants.WORKSPACE_WIDTH}});
@@ -45,55 +54,77 @@ module.exports = React.createClass({
     else if (this.state.selectedBoard) {
       selectedConstants = this.props.constants.selectedConstants(true);
       return div({id: 'workspace', style: {width: this.props.constants.WORKSPACE_WIDTH, top: (this.props.constants.WORKSPACE_HEIGHT - selectedConstants.BOARD_HEIGHT) / 2}},
-        RibbonView({
-          constants: this.props.constants,
-          connector: this.state.selectedBoard.connectors.input,
-          selected: true
-        }),
         BoardView({
           constants: this.props.constants,
           board: this.state.selectedBoard,
-          editable: this.props.userBoardNumber === this.state.selectedBoard.number,
+          editable: this.props.soloMode || (this.props.userBoardNumber === this.state.selectedBoard.number),
           selected: true,
           user: this.props.users[this.state.selectedBoard.number],
           logicChipDrawer: this.props.activity ? this.props.activity.boards[this.props.userBoardNumber].logicChipDrawer : null,
-          toggleBoard: this.props.userBoardNumber === this.state.selectedBoard.number ? this.toggleBoard : null,
+          toggleBoard: this.props.soloMode || (this.props.userBoardNumber === this.state.selectedBoard.number) ? this.toggleBoard : null,
           toggleBoardButtonStyle: {marginTop: -35},
-          showProbe: true,
+          showProbe: (showProbe == 'edit') || (showProbe == 'all'),
           showPinColors: this.props.showPinColors,
           showPinouts: this.props.showPinouts,
+          showBusColors: this.props.showBusColors,
           stepping: true,
-          forceRerender: this.props.forceRerender
-        }),
-        RibbonView({
-          constants: this.props.constants,
-          connector: this.state.selectedBoard.connectors.output,
-          selected: true
+          forceRerender: this.props.forceRerender,
+          soloMode: this.props.soloMode,
+          showBusLabels: showBusLabels,
+          showInputAutoToggles: showInputAutoToggles
         })
       );
     }
     else {
       selectedConstants = this.props.constants.selectedConstants(false);
-      ribbonsAndBoards = [];
+      height = (this.props.boards.length * selectedConstants.BOARD_HEIGHT) + ((this.props.boards.length - 1) * this.props.constants.SPACER_HEIGHT);
+
+      spacersAndBoards = [];
       for (i = 0; i < this.props.boards.length; i++) {
-        ribbonsAndBoards.push(RibbonView({
-          constants: this.props.constants,
-          connector: this.props.boards[i].connectors.input
-        }));
-        ribbonsAndBoards.push(BoardView({
+        if (i > 0) {
+          spacersAndBoards.push(SpacerView({
+            key: 'spacer' + i,
+            constants: this.props.constants,
+            connector: this.props.boards[i].connectors.input
+          }));
+        }
+        spacersAndBoards.push(BoardView({
+          key: 'board' + i,
           constants: this.props.constants,
           board: this.props.boards[i],
-          editable: this.props.userBoardNumber === i,
+          editable: this.props.soloMode || (this.props.userBoardNumber === i),
           user: this.props.users[i],
           logicChipDrawer: this.props.activity ? this.props.activity.boards[i].logicChipDrawer : null,
-          toggleBoard: this.props.userBoardNumber === i ? this.toggleBoard : null,
+          toggleBoard: this.props.soloMode || (this.props.userBoardNumber === i) ? this.toggleBoard : null,
           showPinColors: this.props.showPinColors,
           showPinouts: this.props.showPinouts,
+          showBusColors: this.props.showBusColors,
+          showProbe: showProbe == 'all',
           stepping: true,
-          forceRerender: this.props.forceRerender
+          forceRerender: this.props.forceRerender,
+          soloMode: this.props.soloMode,
+          showBusLabels: showBusLabels,
+          showInputAutoToggles: showInputAutoToggles
         }));
       }
-      return div({id: 'workspace', style: {width: this.props.constants.WORKSPACE_WIDTH, height: (this.props.boards.length * (selectedConstants.BOARD_HEIGHT + this.props.constants.RIBBON_HEIGHT)) + 20}}, ribbonsAndBoards);
+      spacersAndBoards.push(BusView({
+        key: 'bus' + i,
+        constants: this.props.constants,
+        boards: this.props.boards,
+        height: height,
+        inputSize: this.props.activity.busInputSize,
+        outputSize: this.props.activity.busOutputSize,
+        showGlobalIOWires: showGlobalIOWires
+      }));
+
+      return div({
+        id: 'workspace',
+        style: {
+          width: this.props.constants.WORKSPACE_WIDTH,
+          height: height + this.props.constants.RIBBON_HEIGHT
+        }},
+        spacersAndBoards
+      );
     }
   }
 });

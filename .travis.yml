@@ -1,0 +1,15 @@
+language: ruby
+rvm:
+- 2.2.0
+install:
+- travis_retry gem install s3_website -v 2.12.3
+- travis_retry npm install
+- travis_retry npm install -g bower
+- travis_retry bower install
+before_script: node_modules/gulp/bin/gulp.js build-all
+script: ./s3_deploy.sh
+cache:
+  bundler: true
+  directories:
+    - node_modules
+    - bower_components

@@ -1,8 +1,8 @@
 var Hole = require('./hole'),
     Pin = require('./pin'),
     Wire = require('./wire'),
-    Circuit = require('./circuit'),
-    LogicChip =  require('../logic-gates/logic-chip');
+    LogicChip =  require('../logic-gates/logic-chip'),
+    colors = require('../../views/shared/colors');
 
 var Board = function (options) {
   this.number = options.number;
@@ -11,10 +11,13 @@ var Board = function (options) {
   this.bezierReflectionModifier = options.bezierReflectionModifier;
   this.logicDrawer = options.logicDrawer;
   this.wires = [];
-  this.circuits = [];
-  this.allBoards = [];
   this.fixedComponents = options.fixedComponents || false;
   this.updateComponentList();
+
+  this.resolver = options.resolver;
+  if (this.resolver) {
+    this.resolver.updateComponents();
+  }
 
   // reset the pic so the pin output is set
   if (this.components.pic) {
@@ -40,15 +43,20 @@ Board.prototype.updateComponentList = function () {
     }
   }
   $.each(this.connectors, function (name, connector) {
-    for (var i = 0; i < connector.holes.length; i++) {
-      self.pinsAndHoles.push(connector.holes[i]);
+    if (connector) {
+      for (var i = 0; i < connector.holes.length; i++) {
+        self.pinsAndHoles.push(connector.holes[i]);
+      }
     }
   });
+
+  if (this.resolver) {
+    this.resolver.updateComponents();
+  }
 };
 Board.prototype.clear = function () {
   var i;
   this.wires = [];
-  this.circuits = [];
   if (!this.fixedComponents) {
     this.components = {};
     this.updateComponentList();
@@ -65,6 +73,14 @@ Board.prototype.reset = function () {
   }
   for (i = 0; i < this.componentList.length; i++) {
     this.componentList[i].reset();
+  }
+};
+Board.prototype.updateInputs = function (newInputs) {
+  var input = this.connectors.input,
+      length = Math.min(newInputs.length, input.count),
+      i;
+  for (i = 0; i < length; i++) {
+    input.holes[i].setForcedVoltage(newInputs[i]);
   }
 };
 Board.prototype.updateWires = function (newSerializedWires) {
@@ -190,13 +206,14 @@ Board.prototype.removeWire = function (source, dest) {
         this.wires[i].dest.reset();
       }
       this.wires.splice(i, 1);
-      this.resolveCircuitsAcrossAllBoards();
+      this.resolver.rewire();
+      this.resolver.resolve(true);
       return true;
     }
   }
   return false;
 };
-Board.prototype.addWire = function (source, dest, color) {
+Board.prototype.addWire = function (source, dest, color, skipResolver) {
   var i, id, wire;
 
   if (!source || !dest) {
@@ -228,87 +245,27 @@ Board.prototype.addWire = function (source, dest, color) {
   wire = new Wire({
     source: source,
     dest: dest,
-    color: '#00f' // color used to be settable but is now forced to blue
+    color: colors.wire
   });
   this.wires.push(wire);
-  if (!this.resolveCircuits()) {
-    this.wires.pop();
-    return null;
+  if (!skipResolver) {
+    this.resolver.rewire();
   }
   source.connected = true;
   dest.connected = true;
   return wire;
 };
-Board.prototype.resolveCircuits = function() {
-  var newCircuits;
-
-  if (this.wires.length === 0) {
-    this.circuits = [];
-    return true;
-  }
-
-  newCircuits = Circuit.ResolveWires(this.wires);
-  if (newCircuits) {
-    this.circuits = newCircuits;
-    return true;
-  }
-
-  return false;
-};
-Board.prototype.resolveCircuitsAcrossAllBoards = function() {
-  var i;
-  // reset and resolve all the circuits first
-  for (i = 0; i < this.allBoards.length; i++) {
-    this.allBoards[i].reset();
-    this.allBoards[i].resolveCircuits();
-  }
-  // and then resolve all the io values
-  for (i = 0; i < this.allBoards.length; i++) {
-    this.allBoards[i].resolveIOVoltages();
-  }
-};
-Board.prototype.resolveCircuitInputVoltages = function () {
-  var i;
-  if (this.connectors.input) {
-    this.connectors.input.updateFromConnectedBoard();
-  }
-  for (i = 0; i < this.circuits.length; i++) {
-    this.circuits[i].resolveInputVoltages();
-  }
-};
-Board.prototype.resolveComponentOutputVoltages = function () {
-  var i;
-  for (i = 0; i < this.componentList.length; i++) {
-    this.componentList[i].resolveOutputVoltages();
-  }
-};
-Board.prototype.resolveCircuitOutputVoltages = function () {
-  var i;
-  for (i = 0; i < this.circuits.length; i++) {
-    this.circuits[i].resolveOutputVoltages();
-  }
-};
-Board.prototype.resolveIOVoltagesAcrossAllBoards = function() {
-  var i;
-  for (i = 0; i < this.allBoards.length; i++) {
-    this.allBoards[i].resolveIOVoltages();
-  }
-};
-Board.prototype.resolveIOVoltages = function () {
-  this.resolveCircuitInputVoltages();
-  this.resolveComponentOutputVoltages();
-  this.resolveCircuitOutputVoltages();
-  // this final call is to set the output connector values
-  this.resolveCircuitInputVoltages();
-};
 Board.prototype.addComponent = function (name, component) {
   component.name = name;
+  component.setBoard(this);
   this.components[name] = component;
   this.updateComponentList();
+  this.resolver.resolve(true);
 };
 Board.prototype.removeComponent = function (component) {
   delete this.components[component.name];
   this.updateComponentList();
+  this.resolver.resolve(true);
 };
 Board.prototype.setConnectors = function (connectors) {
   this.connectors = connectors;
@@ -377,6 +334,13 @@ Board.prototype.updateComponents = function (newSerializedComponents) {
   });
 
   this.updateComponentList();
+};
+Board.prototype.serializeInputs = function () {
+  var serialized = [];
+  $.each(this.connectors.input.holes, function (index, hole) {
+    serialized.push(hole.getVoltage());
+  });
+  return serialized;
 };
 
 module.exports = Board;

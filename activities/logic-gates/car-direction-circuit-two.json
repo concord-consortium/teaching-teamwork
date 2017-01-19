@@ -1,0 +1,38 @@
+{
+    "name": "Car direction for two",
+    "notes": "Design a circuit that reports the direction of travel of the car.",
+    "interface": {
+        "showPinColors": true,
+        "showBusColors": true,
+        "showBusLabels": true,
+        "allowAutoWiring": true,
+        "showPinouts": true,
+        "showProbe": "edit",
+        "showInputAutoToggles": true,
+        "showGlobalIOWires": true
+    },
+    "busSize": 10,
+    "busInputSize": 2,
+    "busOutputSize": 2,
+    "boards": [{
+        "logicChipDrawer": {
+            "chips": {
+                "7400": {
+                    "max": 2
+                }
+            }
+        },
+        "localInputSize": 2,
+        "localOutputSize": 2
+    }, {
+        "logicChipDrawer": {
+            "chips": {
+                "7400": {
+                    "max": 2
+                }
+            }
+        },
+        "localInputSize": 2,
+        "localOutputSize": 2
+    }]
+}

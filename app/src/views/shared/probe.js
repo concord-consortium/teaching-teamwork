@@ -1,4 +1,5 @@
 var events = require('../shared/events'),
+    TTL = require('../../models/shared/ttl'),
     g = React.DOM.g,
     path = React.DOM.path,
     circle = React.DOM.circle,
@@ -10,7 +11,10 @@ module.exports = React.createClass({
 
   getInitialState: function () {
     return {
-      dragging: false
+      dragging: false,
+      lowColor: TTL.getColor(TTL.LOW_VOLTAGE),
+      highColor: TTL.getColor(TTL.HIGH_VOLTAGE),
+      invalidColor: TTL.getColor(TTL.INVALID_VOLTAGE)
     };
   },
 
@@ -40,9 +44,6 @@ module.exports = React.createClass({
       e.preventDefault();
       $window.off('mousemove', drag);
       $window.off('mouseup', stopDrag);
-      if (self.props.hoverSource) {
-        self.props.hoverSource.pulseProbeDuration = 0;
-      }
       self.props.setProbe({source: self.props.hoverSource, pos: null});
       events.logEvent(events.MOVED_PROBE_EVENT, self.props.hoverSource, {board: self.props.board});
     };
@@ -59,7 +60,7 @@ module.exports = React.createClass({
   getCurrentPos: function () {
     var selectedConstants = this.props.constants.selectedConstants(this.props.selected);
     return {
-      x: this.props.probeSource ? this.props.probeSource.cx : (this.props.pos ? this.props.pos.x : this.props.constants.WORKSPACE_WIDTH - selectedConstants.PROBE_WIDTH - selectedConstants.PROBE_MARGIN),
+      x: this.props.probeSource ? this.props.probeSource.cx : (this.props.pos ? this.props.pos.x : selectedConstants.BOARD_WIDTH - selectedConstants.PROBE_WIDTH - selectedConstants.PROBE_MARGIN),
       y: this.props.probeSource ? this.props.probeSource.cy - (selectedConstants.PROBE_HEIGHT / 2) : (this.props.pos ? this.props.pos.y : selectedConstants.BOARD_HEIGHT - selectedConstants.PROBE_HEIGHT - selectedConstants.PROBE_MARGIN)
     };
   },
@@ -131,24 +132,8 @@ module.exports = React.createClass({
       else if (this.props.probeSource.isLow()) {
         greenFill = 1;
       }
-
-      if (this.props.probeSource.pulseProbeDuration) {
+      else {
         amberFill = 1;
-
-        if (this.props.stepping) {
-          // show for only 1 step
-          this.props.probeSource.pulseProbeDuration = 0;
-        }
-        else {
-          // show for 3 renders (300ms) and then hide for 3 renders (300ms)
-          this.props.probeSource.pulseProbeDuration++;
-          if (this.props.probeSource.pulseProbeDuration > 3) {
-            amberFill = defaultFill;
-          }
-          if (this.props.probeSource.pulseProbeDuration > 6) {
-            this.props.probeSource.pulseProbeDuration = 0;
-          }
-        }
       }
     }
 
@@ -178,9 +163,10 @@ module.exports = React.createClass({
       path({d: handlePath, fill: '#eee', stroke: '#777'}), // '#FDCA6E'
       rect({x: x + (2 * height), y: y + (0.15 * height), width: (2 * height), height: (0.7 * height), stroke: '#555', fill: '#ddd'}),
       text({x: x + (3 * height), y: middleY + 1, fontSize: selectedConstants.PROBE_HEIGHT * 0.6, fill: '#000', style: {textAnchor: 'middle'}, dominantBaseline: 'middle'}, voltage),
-      circle({cx: x + (4.75 * height), cy: middleY, r: height / 4, fill: 'red', stroke: '#ccc', fillOpacity: redFill}),
-      circle({cx: x + (5.75 * height), cy: middleY, r: height / 4, fill: 'green', stroke: '#ccc', fillOpacity: greenFill}),
-      circle({cx: x + (6.75 * height), cy: middleY, r: height / 4, fill: '#ffbf00', stroke: '#ccc', fillOpacity: amberFill})
+      circle({cx: x + (4.75 * height), cy: middleY, r: height / 4, fill: this.state.highColor, stroke: '#ccc', fillOpacity: redFill}),
+      circle({cx: x + (5.75 * height), cy: middleY, r: height / 4, fill: this.state.lowColor, stroke: '#ccc', fillOpacity: greenFill}),
+      circle({cx: x + (6.75 * height), cy: middleY, r: height / 4, fill: this.state.invalidColor, stroke: '#ccc', fillOpacity: amberFill})
     );
   }
 });
+

@@ -49,8 +49,6 @@ XHRObserver.prototype = {
       }
     };
 
-
-
     return request;
   },
 

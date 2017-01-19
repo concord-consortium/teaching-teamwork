@@ -1,0 +1,75 @@
+{
+    "name": "Car Direction Solo with auto-wiring",
+    "notes": "Version 1.1",
+
+    "interface": {
+        "showPinColors": true,
+        "showBusColors": true,
+        "showBusLabels": true,
+        "allowAutoWiring": true,
+        "showPinouts": true,
+        "showProbe": "false",
+        "showInputAutoToggles": true,
+        "showGlobalIOWires": true
+    },
+    "busSize": 10,
+    "busInputSize": 2,
+    "busOutputSize": 2,
+    "boards": [{
+        "logicChipDrawer": {
+            "chips": {
+                "7400": {
+                    "max": 3
+                }
+            }
+        },
+        "localInputSize": 2,
+        "localOutputSize": 2,
+        "autoWiring": {
+            "chips": {
+                "4nand1": {
+                    "type": "7400",
+                    "x": 150,
+                    "y": 90
+                },
+                "4nand2": {
+                    "type": "7400",
+                    "x": 415,
+                    "y": 90
+                },
+                "4nand3": {
+                    "type": "7400",
+                    "x": 280,
+                    "y": 220
+                }
+            },
+            "wires": [
+                "bus:1,4nand1:13",
+                "bus:1,4nand2:10",
+                "bus:2,4nand1:1",
+                "bus:2,4nand3:1",
+                "bus:2,4nand1:10",
+                "4nand1:13,4nand1:12",
+                "4nand1:11,4nand1:4",
+                "4nand1:1,4nand1:2",
+                "4nand1:11,4nand1:4",
+                "4nand1:3,4nand1:5",
+                "4nand1:11,4nand1:4",
+                "4nand1:11,4nand1:9",
+                "4nand1:8,4nand2:13",
+                "4nand1:6,4nand2:1",
+                "4nand2:11,4nand2:2",
+                "4nand2:12,4nand2:3",
+                "4nand2:11,4nand2:9",
+                "4nand2:8,4nand3:13",
+                "4nand3:2,4nand3:11",
+                "4nand3:3,4nand3:12",
+                "4nand3:11,bus:10"
+            ]
+        }
+    }],
+    "truthTable": [
+        [ [[1, 1], [0, 1], [0, 0], [1, 0], [1, 1]],  ["x", 0] ],
+        [ [[1, 1], [1, 0], [0, 0], [0, 1], [1, 1]],  ["x", 1] ]
+    ]
+}

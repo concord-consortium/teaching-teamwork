@@ -5,6 +5,7 @@ var PageView              = React.createFactory(require('./page.jsx')),
     userController        = require('../../controllers/shared/user'),
     eventsController      = require('../../controllers/shared/events'),
     config                = require('../../config'),
+    ReportView            = React.createFactory(require('../shared/report')),
     OtherCircuitView      = React.createFactory(require('./view-other-circuit')),
     viewOtherCircuit      = !!window.location.search.match(/view-other-circuit!/);
 
@@ -17,19 +18,22 @@ module.exports = React.createClass({
       circuit: 0,
       breadboard: null,
       client: null,
-      editorState: null,
       showEditor: !!window.location.search.match(/editor/),
       showSubmit: false,
       goals: null,
       nextActivity: null,
       activityName: null,
       ttWorkbench: null,
-      model: null
+      model: null,
+      showReport: !!window.location.search.match(/report/)
     };
   },
 
   render: function () {
-    if (viewOtherCircuit) {
+    if (this.state.showReport) {
+      return ReportView({});
+    }
+    else if (viewOtherCircuit) {
       return OtherCircuitView({});
     }
     else {
@@ -39,7 +43,6 @@ module.exports = React.createClass({
         breadboard: this.state.breadboard,
         client: this.state.client,
         parseAndStartActivity: this.parseAndStartActivity,
-        editorState: this.state.editorState,
         showEditor: this.state.showEditor,
         showSubmit: this.state.showSubmit,
         goals: this.state.goals,
@@ -52,7 +55,11 @@ module.exports = React.createClass({
   },
 
   componentDidMount: function () {
-    var activityName = window.location.hash.substring(1);
+    var activityName = window.location.hash.substring(1) || "three-resistors-level1";
+
+    if (this.state.showReport) {
+      return;
+    }
 
     if (!viewOtherCircuit) {
       // load blank workbench
@@ -67,66 +74,27 @@ module.exports = React.createClass({
 
   loadActivity: function(activityName) {
     var self = this,
-        matches = activityName.match(/^((local):(.+)|(remote):([^/]+)\/(.+))$/),
-        setStateAndParseAndStartActivity = function (jsonData) {
-          if (jsonData) {
-            editorState.text = jsonData;
-            self.setState({editorState: editorState});
-            var parsedData = self.parseActivity(activityName, jsonData);
-            if (parsedData) {
-              self.startActivity(activityName, parsedData);
-            }
-          }
-        },
-        editorState;
+        activityUrl = config.modelsBase + activityName + ".json",
+        request = new XMLHttpRequest();
 
-    if (matches && (matches[2] == 'local')) {
-      editorState = {via: 'local', filename: matches[3]};
-
-      var rawData = localStorage.getItem(activityName);
-      if (rawData) {
-        setStateAndParseAndStartActivity(rawData);
-      }
-      else {
-        alert("Could not find LOCAL activity at " + activityName);
-      }
-    }
-    else if (matches && (matches[4] == 'remote')) {
-      editorState = {via: 'user ' + matches[5], filename: matches[6], username: matches[5]};
-
-      var url = editorState.username + '/' + editorState.filename,
-          firebase = new Firebase('https://teaching-teamwork.firebaseio.com/dev/activities/' + url);
-      firebase.once('value', function (snapshot) {
-        var jsonData = snapshot.val();
+    request.open('GET', activityUrl, true);
+    request.onload = function() {
+      var jsonData = request.responseText;
+      if (request.status >= 200 && request.status < 400) {
         if (jsonData) {
-          setStateAndParseAndStartActivity(jsonData);
+          var parsedData = self.parseActivity(activityName, jsonData);
+          if (parsedData) {
+            self.startActivity(activityName, parsedData);
+          }
         }
-        else {
-          alert("No data found for REMOTE activity at " + url);
-        }
-      }, function () {
-        alert("Could not find REMOTE activity at " + url);
-      });
-    }
-    else {
-      editorState = {via: 'server', filename: activityName};
+      } else {
+        alert("Could not find activity at "+activityUrl);
+      }
+    };
 
-      var activityUrl = config.modelsBase + activityName + ".json";
-
-      var request = new XMLHttpRequest();
-      request.open('GET', activityUrl, true);
-
-      request.onload = function() {
-        if (request.status >= 200 && request.status < 400) {
-          setStateAndParseAndStartActivity(request.responseText);
-        } else {
-          alert("Could not find activity at "+activityUrl);
-        }
-      };
-
-      request.send();
-    }
+    request.send();
   },
+
 
   parseAndStartActivity: function (activityName, rawData) {
     var parsedData = this.parseActivity(activityName, rawData);
@@ -359,7 +327,7 @@ module.exports = React.createClass({
         GoalR3 = this.uniformResistor(100, 1000, [R1, R2, R3, GoalR, GoalR1, GoalR2]),
 
         model = {
-          E: 6 + Math.round(Math.random() * (20 - 6)), // from 6 to 20 volts
+          E: 6 + Math.round(Math.random() * (19 - 6)), // from 6 to 19 volts
           R: 0,
           R1: R1,
           R2: R2,

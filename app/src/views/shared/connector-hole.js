@@ -1,6 +1,8 @@
 var g = React.DOM.g,
     circle = React.DOM.circle,
-    title = React.DOM.title;
+    rect = React.DOM.rect,
+    title = React.DOM.title,
+    events = require('../shared/events');
 
 module.exports = React.createClass({
   displayName: 'ConnectorHoleView',
@@ -15,25 +17,59 @@ module.exports = React.createClass({
 
   startDrag: function (e) {
     var self = this;
-    this.props.drawConnection(this.props.hole, e, this.props.hole.color, function (addedWire, moved) {
-      if (!addedWire && !moved) {
-        self.handleToggle();
-      }
-    });
-  },
-
-  handleToggle: function () {
-    if (!this.props.hole.inputMode) {
-      this.props.hole.toggleForcedVoltage();
-      this.props.hole.connector.board.resolveIOVoltagesAcrossAllBoards();
-      this.props.forceRerender();
+    if (this.props.connector.type == 'input') {
+      this.handleToggle();
+    }
+    else {
+      this.props.drawConnection(this.props.hole, e, this.props.hole.color, function (addedWire, moved) {
+        if (!addedWire && !moved) {
+          self.handleToggle();
+        }
+      });
     }
   },
 
+  handleToggle: function () {
+    if (this.props.hole.toggleable) {
+      var newVoltage = this.props.hole.toggleForcedVoltage();
+      this.props.hole.connector.board.resolver.resolve(true);
+      this.props.forceRerender();
+      events.logEvent(events.TOGGLED_SWITCH_EVENT, newVoltage, {board: this.props.hole.connector.board, hole: this.props.hole});
+    }
+  },
+
+  renderInput: function (hole, enableHandlers) {
+    var radius = hole.radius,
+        layout = {x: hole.cx - radius, y: hole.cy - radius, width: radius * 2, height: radius},
+        isLow = hole.isLow(),
+        backgroundColor = '#777';
+    return g({onClick: !enableHandlers && this.props.editable ? this.handleToggle : null, onMouseDown: enableHandlers ? this.startDrag : null, onMouseOver: enableHandlers ? this.mouseOver : null, onMouseOut: enableHandlers ? this.mouseOut : null},
+      rect({x: layout.x, y: layout.y, width: layout.width, height: layout.height, fill: !isLow ? hole.getColor() : backgroundColor},
+        title({}, hole.getLabel())
+      ),
+      rect({x: layout.x, y: layout.y + layout.height, width: layout.width, height: layout.height, fill: isLow ? hole.getColor() : backgroundColor},
+        title({}, hole.getLabel())
+      )
+    );
+  },
+
+  renderOutput: function (hole, enableHandlers) {
+    return circle({cx: hole.cx, cy: hole.cy, r: hole.radius, fill: hole.getColor(), onMouseDown: enableHandlers ? this.startDrag : null, onMouseOver: enableHandlers ? this.mouseOver : null, onMouseOut: enableHandlers ? this.mouseOut : null},
+      title({}, hole.getLabel())
+    );
+  },
+
+  renderBus: function (hole, enableHandlers) {
+    var radius = hole.radius;
+    return rect({x: hole.cx - radius, y: hole.cy - radius, width: radius * 2, height: radius * 2, fill: hole.getColor(this.props.showBusColors), onMouseDown: enableHandlers ? this.startDrag : null, onMouseOver: enableHandlers ? this.mouseOver : null, onMouseOut: enableHandlers ? this.mouseOut : null},
+      title({}, hole.getLabel())
+    );
+  },
+
   render: function () {
-    var enableHandlers = this.props.selected && this.props.editable;
-    return g({}, circle({cx: this.props.hole.cx, cy: this.props.hole.cy, r: this.props.hole.radius, fill: this.props.hole.getColor(), onClick: !enableHandlers && this.props.editable ? this.handleToggle : null, onMouseDown: enableHandlers ? this.startDrag : null, onMouseOver: enableHandlers ? this.mouseOver : null, onMouseOut: enableHandlers ? this.mouseOut : null},
-      title({}, this.props.hole.label)
-    ));
+    var enableHandlers = this.props.selected && this.props.editable,
+        hole = this.props.hole,
+        symbol = hole.type == 'input' ? this.renderInput(hole, enableHandlers) : (hole.type == 'output' ? this.renderOutput(hole, enableHandlers) : this.renderBus(hole, enableHandlers));
+    return g({}, symbol);
   }
 });

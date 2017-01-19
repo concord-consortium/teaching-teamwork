@@ -1,9 +1,87 @@
 # Teaching Teamwork
 
 Teaching Teamwork was built by [The Concord Consortium](http://concord.org/) for the
-[Teaching Teamworks Project](http://concord.org/projects/teaching-teamwork).
+[Teaching Teamwork Project](http://concord.org/projects/teaching-teamwork).
 
-See [the app here](http://concord-consortium.github.io/teaching-teamwork/#two-resistors).
+## Environments
+
+## Breadboard
+
+This was the initial Teaching Teamwork environment and builds upon the [Breadboard library](https://github.com/concord-consortium/breadboard).
+It enables either one or three players to solve analog electronic problems defined using an authorable JSON file.
+
+### Activities
+
+All activities are defined in JSON files contained the `activities/breadboard` folder.  Once an activity is defined and published it can be
+used by specifying the activity name after the hash mark in the URL.
+
+For example, the `activities/breadboard/three-resistors-level1.json` activity can be used via
+[http://concord-consortium.github.io/teaching-teamwork/#three-resistors-level1](http://concord-consortium.github.io/teaching-teamwork/#three-resistors-level1).
+
+### URL Options
+
+The following are the options that can be specified in the URL query string.  It only needs to be present - it does not need a value assigned to it.
+
+* logToConsole - prints all log messages to the console in a compact form
+* researcherMode - changes the groups to a disjoint researcher group to avoid polluting the research log data
+
+Example: [http://concord-consortium.github.io/teaching-teamwork/?logToConsole#three-resistors-level1](http://concord-consortium.github.io/teaching-teamwork/?logToConsole#three-resistors-level1)
+
+### JSON File Format
+
+A description of the JSON file format can be found in the [json-file-formats.md](json-file-formats.md) file.
+
+## PIC
+
+This is the second Teaching Teamwork environment.  It enables either one or three players to build a keypad to led circuit using three
+pre-programmed PICs.  The activity is fixed and cannot be authored in a JSON file.
+
+### URL Options
+
+There are many options that can be specified in the URL query string.  These options only need to be present in the query string, they do not
+need to have values assigned to them and they can be combined in any order.
+
+* logToConsole - prints all log messages to the console in a compact form
+* showPinColors - shows low/high value of the component pins
+* allowAutoWiring - enables a "Toggle Wires" button that adds all the wires to the activity, useful for debugging
+* showSimulator - enables the PIC simulator buttons to allow for stopping and stepping through the PIC code
+* soloMode - enables single user mode, this skips all Firebase login and board selection
+* showBusLabels - enables labels next to bus connector holes
+* showBusColors - shows low/high value of the bus connector holes
+* showProbeInEdit - enables display of probe only when editing a circuit
+* hideProbe - hides probe in edit and "all" view
+* hideInputAutoToggles - hides the increment and decrement controls next to the local board input switches
+* researcherMode - changes the groups to a disjoint researcher group to avoid polluting the research log data
+
+Example: [http://concord-consortium.github.io/teaching-teamwork/pic/?logToConsole&soloMode](http://concord-consortium.github.io/teaching-teamwork/pic/?logToConsole&soloMode)
+
+## Logic Gates
+
+This is the third Teaching Teamwork environment.  It enables one or more players to build 74xx based circuits using a set of chips defined
+in an authorable JSON file.
+
+### Activities
+
+All activities are defined in JSON files contained the `activities/logic-gates` folder.  Once an activity is defined and published it can be
+used by specifying the activity name after the hash mark in the URL.
+
+For example, the `activities/logic-gates/all-chips.json` activity can be used via
+[http://concord-consortium.github.io/teaching-teamwork/logic-gates/#all-chips](http://concord-consortium.github.io/teaching-teamwork/logic-gates/#all-chips).
+
+### URL Options
+
+The following are the options that can be specified in the URL query string.  An option only needs to be present - it does not need a value assigned to it.
+
+* logToConsole - prints all log messages to the console in a compact form
+* soloMode - enables single user mode, this skips all Firebase login and board selection
+* researcherMode - changes the groups to a disjoint researcher group to avoid polluting the research log data
+* autoWire - performs the autowiring as soon as the activity loads if the json allows auto wiring
+
+Example: [http://concord-consortium.github.io/teaching-teamwork/logic-gates/?logToConsole#all-chips](http://concord-consortium.github.io/teaching-teamwork/logic-gates/?logToConsole#all-chips)
+
+### JSON File Format
+
+A description of the JSON file format can be found [here](json-file-formats.md).
 
 ## Building and Running Locally
 
@@ -50,11 +128,16 @@ http://localhost:8080/
 
 In combination with Gulp above, this will reload your pages any time any source file is saved.
 
-### Deploying
+### Deploying to production
 
-gh-pages releases are based on the contents of the /dist folder.
+Production releases to S3 are based on the contents of the /dist folder and are built automatically by Travis
+for each branch pushed to GitHub and each merge into master.
 
-To deploy to gh-pages, simply run `npm run deploy`.
+Merges into master are deployed to http://teaching-teamwork.concord.org.
+
+Other branches are deployed to http://teaching-teamwork.concord.org/branch/<name>.
+
+You can view the status of all the branch deploys [here](https://travis-ci.org/concord-consortium/teaching-teamwork/branches).
 
 ### Testing
 

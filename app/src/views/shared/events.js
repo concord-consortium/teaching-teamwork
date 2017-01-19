@@ -16,6 +16,8 @@ module.exports = events = {
   ADD_LOGIC_CHIP_EVENT: 'Add Logic Chip',
   REMOVE_LOGIC_CHIP_EVENT: 'Remove Logic Chip',
   MOVE_LOGIC_CHIP_EVENT: 'Move Logic Chip',
+  TOGGLED_SWITCH_EVENT: 'Toggled Switch',
+  AUTO_TOGGLED_SWITCHES_EVENT: 'Auto Toggled Switches',
 
   logEvent: function (eventName, value, parameters) {
     var loggedValue = null,
@@ -32,6 +34,21 @@ module.exports = events = {
       };
       boardWatcher.pushedButton(parameters.board, value.value);
     }
+    else if (eventName == events.TOGGLED_SWITCH_EVENT) {
+      loggedValue = value;
+      loggedParameters = {
+        switch: parameters.hole.index,
+        board: parameters.board.number
+      };
+      boardWatcher.circuitChanged(parameters.board);
+    }
+    else if (eventName == events.AUTO_TOGGLED_SWITCHES_EVENT) {
+      loggedValue = value;
+      loggedParameters = {
+        board: parameters.board.number
+      };
+      boardWatcher.circuitChanged(parameters.board);
+    }
     else if (eventName == events.ADD_WIRE_EVENT) {
       loggedParameters = {
         source: parameters.board.serializeEndpoint(parameters.source, 'type'),
@@ -41,25 +58,17 @@ module.exports = events = {
     }
     else if (eventName == events.REMOVE_WIRE_EVENT) {
       loggedParameters = {
-        source: parameters.board.serializeEndpoint(parameters.source, 'type')
+        source: parameters.board.serializeEndpoint(parameters.source, 'type'),
+        dest: parameters.board.serializeEndpoint(parameters.dest, 'type')
       };
       boardWatcher.circuitChanged(parameters.board);
     }
-    else if (eventName == events.ADD_LOGIC_CHIP_EVENT) {
-      // TODO
+    else if ((eventName == events.ADD_LOGIC_CHIP_EVENT) || (eventName == events.REMOVE_LOGIC_CHIP_EVENT) || (eventName == events.MOVE_LOGIC_CHIP_EVENT)) {
       loggedParameters = {
-      };
-      boardWatcher.circuitChanged(parameters.board);
-    }
-    else if (eventName == events.REMOVE_LOGIC_CHIP_EVENT) {
-      // TODO
-      loggedParameters = {
-      };
-      boardWatcher.circuitChanged(parameters.board);
-    }
-    else if (eventName == events.MOVE_LOGIC_CHIP_EVENT) {
-      // TODO
-      loggedParameters = {
+        name: parameters.chip.name,
+        type: parameters.chip.type,
+        x: parameters.chip.position.x,
+        y: parameters.chip.position.y
       };
       boardWatcher.circuitChanged(parameters.board);
     }

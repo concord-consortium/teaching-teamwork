@@ -5,7 +5,7 @@ var TTL = module.exports = {
 
   LOW_VOLTAGE: 0,
   INVALID_VOLTAGE: 1.5,
-  HIGH_VOLTAGE: 5,
+  HIGH_VOLTAGE: 3,
 
   getVoltageLogicLevel: function (voltage) {
     return voltage <= 0.8 ? TTL.LOW : (voltage < 2 ? TTL.INVALID : TTL.HIGH);
@@ -45,7 +45,7 @@ var TTL = module.exports = {
   getColor: function (voltage) {
     if (!TTL.COLOR_MAP) {
       TTL.COLOR_MAP = {
-        'LOW': 'green',
+        'LOW': 'blue',
         'INVALID': '#ffbf00',
         'HIGH': 'red'
       };

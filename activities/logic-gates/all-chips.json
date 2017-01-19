@@ -1,0 +1,63 @@
+{
+  "name": "All Chips",
+  "interface": {
+    "showPinColors": true,
+    "showBusColors": true,
+    "showBusLabels": true,
+    "allowAutoWiring": true,
+    "showPinouts": true,
+    "showProbe": "false",
+    "showInputAutoToggles": true,
+    "showGlobalIOWires": true
+  },
+  "busSize": 14,
+  "busInputSize": 4,
+  "busOutputSize": 4,
+  "boards": [
+    {
+      "logicChipDrawer": {
+        "chips": {
+          "7400": {"max": 5},
+          "7402": {"max": 5},
+          "7404": {"max": 5},
+          "7408": {"max": 5},
+          "7411": {"max": 5},
+          "7432": {"max": 5},
+          "7486": {"max": 5}
+        }
+      },
+      "localInputSize": 4,
+      "localOutputSize": 4
+    },
+    {
+      "logicChipDrawer": {
+        "chips": {
+          "7400": {"max": 5},
+          "7402": {"max": 5},
+          "7404": {"max": 5},
+          "7408": {"max": 5},
+          "7411": {"max": 5},
+          "7432": {"max": 5},
+          "7486": {"max": 5}
+        }
+      },
+      "localInputSize": 4,
+      "localOutputSize": 4
+    },
+    {
+      "logicChipDrawer": {
+        "chips": {
+          "7400": {"max": 5},
+          "7402": {"max": 5},
+          "7404": {"max": 5},
+          "7408": {"max": 5},
+          "7411": {"max": 5},
+          "7432": {"max": 5},
+          "7486": {"max": 5}
+        }
+      },
+      "localInputSize": 4,
+      "localOutputSize": 4
+    }
+  ]
+}

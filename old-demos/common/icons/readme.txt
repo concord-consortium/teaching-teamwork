@@ -1,1 +1,0 @@
-these icons are from the crystal icon set.

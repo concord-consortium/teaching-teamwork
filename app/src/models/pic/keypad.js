@@ -25,7 +25,7 @@ var Keypad = function () {
       width: 0,
       labelSize: 0,
       component: this,
-      bezierReflection: i < 3 ? -1 : 1 // the top pins should arc the opposite
+      bezierReflection: 1
     };
     pin.label = {
       x: 0,
@@ -172,16 +172,16 @@ Keypad.prototype.resolveOutputVoltages = function () {
     intValue = this.pushedButton.intValue;
     bottomButtonIndex = this.bottomButtonValues.indexOf(this.pushedButton.value);
 
-    if (this.pinMap.ROW0.isLow() && ((intValue >= 1) && (intValue <= 3))) {
+    if (this.pinMap.ROW0.connected && this.pinMap.ROW0.isLow() && ((intValue >= 1) && (intValue <= 3))) {
       colValue = colValue & ~(1 << (intValue - 1));
     }
-    else if (this.pinMap.ROW1.isLow() && ((intValue >= 4) && (intValue <= 6))) {
+    else if (this.pinMap.ROW1.connected && this.pinMap.ROW1.isLow() && ((intValue >= 4) && (intValue <= 6))) {
       colValue = colValue & ~(1 << (intValue - 4));
     }
-    else if (this.pinMap.ROW2.isLow() && ((intValue >= 7) && (intValue <= 9))) {
+    else if (this.pinMap.ROW2.connected && this.pinMap.ROW2.isLow() && ((intValue >= 7) && (intValue <= 9))) {
       colValue = colValue & ~(1 << (intValue - 7));
     }
-    else if (this.pinMap.ROW3.isLow() && (bottomButtonIndex !== -1)) {
+    else if (this.pinMap.ROW3.connected && this.pinMap.ROW3.isLow() && (bottomButtonIndex !== -1)) {
       colValue = colValue & ~(1 << bottomButtonIndex);
     }
   }
