@@ -1,6 +1,6 @@
 {
   "name": "Single XOR",
-  "notes": "Set bus port 5 to be A <em>XOR</em> B",
+  "notes": "Set bus port 6 to be A <em>XOR</em> B",
   "interface": {
     "showPinColors": true,
     "allowAutoWiring": false,
