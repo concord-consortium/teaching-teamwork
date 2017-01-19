@@ -4,7 +4,7 @@
   "interface": {
     "showPinColors": true,
     "allowAutoWiring": false,
-    "showPinouts": true
+    "showPinouts": true,
     "showBusColors": true,
     "showBusLabels": true,
     "showProbe": "edit",
