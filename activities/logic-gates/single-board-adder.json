@@ -1,6 +1,6 @@
 {
-  "name": "Adder",
-  "notes": "Set bus ports 11 and 12 to be the sum and carry of A + B",
+  "name": "Two board adder",
+  "notes": "Make an adder that takes inputs from bus ports A, B, and C and returns A + B + C to K and L",
   "interface": {
     "showPinColors": false,
     "showBusColors": false,
@@ -19,22 +19,13 @@
       "logicChipDrawer": {
         "chips": {
           "7404": {"max": 1},
-          "7411": {"max": 1},
-          "7408": {"max": 1}
+          "7408": {"max": 1},
+          "7411": {"max": 2},
+          "7432": {"max": 2}
         }
       },
-      "localInputSize": 4,
-      "localOutputSize": 4
-    },
-    {
-      "logicChipDrawer": {
-        "chips": {
-          "7432": {"max": 1},
-          "7411": {"max": 1}
-        }
-      },
-      "localInputSize": 4,
-      "localOutputSize": 4
+      "localInputSize": 3,
+      "localOutputSize": 2
     }
   ],
   "truthTable": [
