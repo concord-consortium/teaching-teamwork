@@ -1,82 +1,84 @@
 {
-  "name": "Single XOR",
-  "notes": "Set bus port E to be A <em>XOR</em> B",
-  "interface": {
-    "showPinColors": true,
-    "showBusColors": true,
-    "allowAutoWiring": true,
-    "showPinouts": true,
-    "showBusLabels": true,
-    "showProbe": "edit",
-    "showInputAutoToggles": true,
-    "showGlobalIOWires": true
-  },
-  "busSize": 5,
-  "busInputSize": 2,
-  "busOutputSize": 1,
-  "boards": [
-    {
-      "logicChipDrawer": {
-        "chips": {
-          "7408": {"max": 2},
-          "7404": {"max": 5}
-        }
-      },
-      "localInputSize": 4,
-      "localOutputSize": 4,
-      "autoWiring": {
-        "chips": {
-          "not": {
-            "type": "7404",
-            "x": 290,
-            "y": 80
-          },
-          "and": {
-            "type": "7408",
-            "x": 290,
-            "y": 220
-          }
-        },
-        "wires": [
-          "bus:1,not:13",   "// create NOT A on not pin 12",
-          "bus:2,not:9",    "// create NOT B on not pin 8",
-          "not:12,and:13", "// NOT A to and pin 13",
-          "bus:2,and:12",   "// B to and pin 12",
-          "and:11,bus:3",  "// (NOT A AND B) to bus hole 1",
-          "not:8,and:10",  "// NOT B to and pin 10",
-          "bus:1,and:9",    "// A to and pin 9",
-          "and:8,bus:4",   "// (NOT B AND A) to bus hole 2"
-        ]
-      }
+    "name": "Single XOR",
+    "notes": "Single board XOR, v 1.1",
+    "interface": {
+        "showPinColors": true,
+        "allowAutoWiring": true,
+        "showPinouts": true,
+        "showBusColors": true,
+        "showBusLabels": true,
+        "showProbe": "false",
+        "showInputAutoToggles": true,
+        "showGlobalIOWires": true
     },
-    {
-      "logicChipDrawer": {
-        "chips": {
-          "7432": {"max": 2}
-        }
-      },
-      "localInputSize": 4,
-      "localOutputSize": 4,
-      "autoWiring": {
-        "chips": {
-          "or": {
-            "type": "7432",
-            "x": 290,
-            "y": 150
-          }
+    "busSize": 5,
+    "busInputSize": 2,
+    "busOutputSize": 1,
+    "boards": [{
+        "logicChipDrawer": {
+            "chips": {
+                "7408": {
+                    "max": 1
+                },
+                "7404": {
+                    "max": 1
+                },
+                "7432": {
+                    "max": 1
+                }
+            }
         },
-        "wires": [
-          "bus:3,or:13",  "// C = (NOT A AND B) from bus hole 1",
-          "bus:4,or:12",  "// D = (NOT B AND A) from bus hole 2",
-          "or:11,bus:5", "// (C OR D) to bus hole 1"
+        "localInputSize": 2,
+        "localOutputSize": 1,
+        "autowiring": {
+            "chips": {
+                "not": {
+                    "type": "7404",
+                    "x": 100,
+                    "y": 150
+                },
+                "and": {
+                    "type": "7408",
+                    "x": 300,
+                    "y": 150
+                },
+                "or": {
+                    "type": "7432",
+                    "x": 275,
+                    "y": 250
+                }
+            },
+            "wires": [
+                "bus:1, not:13",
+                "bus:2, not:11",
+                "not:12, bus:3",
+                "not:10, bus:4",
+                "bus:1, and:13",
+                "bus:4, and:12",
+                "and:11, or:13",
+                "bus:2, and:10",
+                "bus:3, and:9",
+                "and:8, or:12",
+                "or:11, bus:5"
+            ]
+        }
+    }],
+    "truthTable": [
+        [
+            [0, 0],
+            [0]
+        ],
+        [
+            [0, 1],
+            [1]
+        ],
+        [
+            [1, 0],
+            [1]
+        ],
+        [
+            [1, 1],
+            [0]
         ]
-      }
-    }
-  ],
-  "truthTable": [
-    [[0, 0], [0]],
-    [[0, 1], [1]],
-    [[1, 0], [1]],
-    [[1, 1], [0]]
-  ]
+    ]
 }
