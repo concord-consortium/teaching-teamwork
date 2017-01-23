@@ -165,7 +165,7 @@ LogController.prototype = {
   startListeningToCircuitEvents: function() {
     var self = this;
     sparks.logController.addListener(function(evt) {
-      if (evt.name === "Changed circuit") {
+      if (wa && (evt.name === "Changed circuit")) {
         self.updateIfCurrentFlowing(wa.getClientCircuit());
       }
       logEvent(evt.name, null, evt.value);

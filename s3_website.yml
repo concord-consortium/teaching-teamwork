@@ -22,3 +22,9 @@ max_age:
   teaching-teamwork/*": 600 # 10 minutes
   "teaching-teamwork/version/*": 31536000 # 1 year
   "teaching-teamwork/branch/*": 0
+
+cloudfront_distribution_config:
+  aliases:
+    quantity: 1
+    items:
+      CNAME0: teaching-teamwork.concord.org

@@ -29,7 +29,6 @@ module.exports = React.createClass({
         color = this.props.wireSettings ? this.props.wireSettings.color: wire.color;
 
     return path({
-      key: this.props.key,
       className: 'wire',
       d: layout.getBezierPath({x1: wire.source.cx, y1: wire.source.cy, x2: wire.dest.cx, y2: wire.dest.cy, reflection: wire.getBezierReflection() * this.props.board.bezierReflectionModifier, wireSettings: this.props.wireSettings}),
       strokeWidth: this.props.width,

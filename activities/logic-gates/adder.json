@@ -1,6 +1,6 @@
 {
   "name": "Adder",
-  "notes": "Make an adder",
+  "notes": "Set bus ports 11 and 12 to be the sum and carry of A + B",
   "interface": {
     "showPinColors": false,
     "showBusColors": false,

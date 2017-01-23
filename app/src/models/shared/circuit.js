@@ -1,6 +1,9 @@
+var circuitId = 1;
+
 var Circuit = function (options) {
   this.inputs = options.inputs;
   this.outputs = options.outputs;
+  this.id = options.id || circuitId++;
 };
 
 Circuit.prototype.resolveInputVoltages = function () {
@@ -14,11 +17,12 @@ Circuit.prototype.resolveOutputVoltages = function () {
 Circuit.prototype.setAverageOutputVoltage = function (list) {
   var totalOutputVoltage = 0,
       averageVoltage = 0,
-      i;
+      i, voltage;
 
   if (this.outputs.length > 0) {
     for (i = 0; i < this.outputs.length; i++) {
-      totalOutputVoltage += this.outputs[i].getVoltage();
+      voltage = this.outputs[i].getVoltage();
+      totalOutputVoltage += voltage;
     }
     averageVoltage = totalOutputVoltage / this.outputs.length;
   }
@@ -40,6 +44,20 @@ Circuit.prototype.toString = function () {
     outputs.push(this.outputs[i].toString() + ' = ' + this.outputs[i].getVoltage());
   }
   return JSON.stringify({inputs: inputs, outputs: outputs});
+};
+
+Circuit.prototype.getInputVoltages = function (inputVoltages) {
+  var i;
+  for (i = 0; i < this.inputs.length; i++) {
+    inputVoltages[this.inputs[i].toString()] = this.inputs[i].getVoltage();
+  }
+};
+
+Circuit.prototype.getOutputVoltages = function (outputVoltages) {
+  var i;
+  for (i = 0; i < this.outputs.length; i++) {
+    outputVoltages[this.outputs[i].toString()] = this.outputs[i].getVoltage();
+  }
 };
 
 module.exports = Circuit;

@@ -22,14 +22,13 @@ Hole.prototype.getBezierReflection = function () {
   return this.connector.type === 'input' ? 1 : -1;
 };
 Hole.prototype.setVoltage = function (newVoltage) {
-  this.pulseProbeDuration = this.pulseProbeDuration || (newVoltage != this.voltage ? 1 : 0);
   this.voltage = newVoltage;
 };
-Hole.prototype.getVoltage = function () {
-  return this.hasForcedVoltage ? this.forcedVoltage : this.voltage;
+Hole.prototype.getVoltage = function (ignoreForcedVoltage) {
+  return this.hasForcedVoltage && !ignoreForcedVoltage ? this.forcedVoltage : this.voltage;
 };
-Hole.prototype.getLogicLevel = function () {
-  return TTL.getVoltageLogicLevel(this.getVoltage());
+Hole.prototype.getLogicLevel = function (ignoreForcedVoltage) {
+  return TTL.getVoltageLogicLevel(this.getVoltage(ignoreForcedVoltage));
 };
 Hole.prototype.isLow = function () {
   return TTL.isLow(this.getLogicLevel());
@@ -42,7 +41,6 @@ Hole.prototype.isHigh = function () {
 };
 Hole.prototype.reset = function () {
   this.voltage = this.startingVoltage;
-  this.pulseProbeDuration = 0;
 };
 Hole.prototype.getColor = function (showVoltageColor) {
   showVoltageColor = showVoltageColor || (this.connected && (this.type == 'output'));
@@ -61,7 +59,7 @@ Hole.prototype.setForcedVoltage = function (voltage) {
   this.forcedVoltage = voltage;
 };
 Hole.prototype.getLabel = function () {
-  return this.label + " " + this.getVoltage() + "V (" + this.getLogicLevel().toLowerCase() + ")";
+  return this.label + " " + this.getVoltage(true) + "V (" + this.getLogicLevel(true).toLowerCase() + ")";
 };
 Hole.prototype.toString = function () {
   return ['connector', this.connector.type, this.index, 'board', this.connector.board ? this.connector.board.number : -1].join(':');
