@@ -1,0 +1,41 @@
+{
+  "name": "Two board adder",
+  "notes": "Make an adder that takes inputs from bus ports A, B, and C and returns A + B + C to K and L",
+  "interface": {
+    "showPinColors": false,
+    "showBusColors": false,
+    "showBusLabels": true,
+    "allowAutoWiring": true,
+    "showPinouts": true,
+    "showProbe": "edit",
+    "showInputAutoToggles": true,
+    "showGlobalIOWires": true
+  },
+  "busSize": 12,
+  "busInputSize": 3,
+  "busOutputSize": 2,
+  "boards": [
+    {
+      "logicChipDrawer": {
+        "chips": {
+          "7404": {"max": 1},
+          "7408": {"max": 1},
+          "7411": {"max": 2},
+          "7432": {"max": 2}
+        }
+      },
+      "localInputSize": 3,
+      "localOutputSize": 2
+    }
+  ],
+  "truthTable": [
+    [[0, 0, 0], [0, 0]],
+    [[0, 0, 1], [1, 0]],
+    [[0, 1, 0], [1, 0]],
+    [[0, 1, 1], [0, 1]],
+    [[1, 0, 0], [1, 0]],
+    [[1, 0, 1], [0, 1]],
+    [[1, 1, 0], [0, 1]],
+    [[1, 1, 1], [1, 1]]
+  ]
+}
