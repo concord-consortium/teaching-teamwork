@@ -2,7 +2,7 @@
     "name": "Two board adder",
     "notes": "Make an adder that takes two bits and a carry bit and returns their sum and carry",
     "interface": {
-        "showPinColors": false,
+        "showPinColors": true,
         "showBusColors": false,
         "showBusLabels": true,
         "allowAutoWiring": true,
