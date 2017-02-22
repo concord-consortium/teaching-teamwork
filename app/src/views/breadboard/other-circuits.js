@@ -32,6 +32,7 @@ module.exports = OtherCircuits = React.createClass({
         circuit: props.circuit,
         activityName: props.activityName,
         groupName: props.groupName,
+        classInfoUrl: props.classInfoUrl,
         numClients: props.numClients,
         buttonClicked: closePopup,
         ttWorkbench: props.ttWorkbench
@@ -82,6 +83,7 @@ PopupIFrame = React.createFactory(React.createClass({
           circuit: this.props.circuit,
           activityName: this.props.activityName,
           groupName: this.props.groupName,
+          classInfoUrl: this.props.classInfoUrl,
           ttWorkbench: this.props.ttWorkbench
         };
     iframe.onload = function () {
@@ -108,6 +110,7 @@ ScaledIFrame = React.createFactory(React.createClass({
           circuit: this.props.circuit,
           activityName: this.props.activityName,
           groupName: this.props.groupName,
+          classInfoUrl: this.props.classInfoUrl,
           ttWorkbench: this.props.ttWorkbench,
           loadMessage: loadMessage
         },
@@ -236,7 +239,7 @@ CircuitImage = React.createFactory(React.createClass({
         top: breadboard.y,
         left: breadboard.x
       };
-      iframes.push(React.DOM.div({key: i, style: iframeStyle}, ScaledIFrame({scale: breadboard.width / 740, circuit: i + 1, activityName: this.props.activityName, groupName: this.props.groupName, ttWorkbench: this.props.ttWorkbench})));
+      iframes.push(React.DOM.div({key: i, style: iframeStyle}, ScaledIFrame({scale: breadboard.width / 740, circuit: i + 1, activityName: this.props.activityName, groupName: this.props.groupName, classInfoUrl: this.props.classInfoUrl, ttWorkbench: this.props.ttWorkbench})));
     }
 
     return React.DOM.div({style: {position: 'relative', margin: 10, width: this.imageInfo.width, height: this.imageInfo.height}},
@@ -282,13 +285,13 @@ Popup = React.createFactory(React.createClass({
       if (!haveImage) {
         links.push(CircuitLink({key: circuit, clicked: this.selectedCircuit, circuit: circuit, selected: selected}));
       }
-      iframes.push(React.DOM.div({key: circuit, style: {display: selected ? 'block' : 'none'}}, PopupIFrame({circuit: circuit, activityName: this.props.activityName, groupName: this.props.groupName, ttWorkbench: this.props.ttWorkbench})));
+      iframes.push(React.DOM.div({key: circuit, style: {display: selected ? 'block' : 'none'}}, PopupIFrame({circuit: circuit, activityName: this.props.activityName, groupName: this.props.groupName, classInfoUrl: this.props.classInfoUrl, ttWorkbench: this.props.ttWorkbench})));
     }
 
     return React.DOM.div({className: 'other-circuits-button-popup'},
       React.DOM.button({style: {'float': 'right'}, onClick: this.props.buttonClicked}, 'X'),
       React.DOM.h1({}, 'All Circuits'),
-      (haveImage ? CircuitImage({selectedCircuit: this.state.selectedCircuit, clicked: this.selectedCircuit, activityName: this.props.activityName, groupName: this.props.groupName, ttWorkbench: this.props.ttWorkbench}) : null),
+      (haveImage ? CircuitImage({selectedCircuit: this.state.selectedCircuit, clicked: this.selectedCircuit, activityName: this.props.activityName, groupName: this.props.groupName, classInfoUrl: this.props.classInfoUrl, ttWorkbench: this.props.ttWorkbench}) : null),
       (links.length > 0 ? React.DOM.div({className: 'links'}, links) : null),
       React.DOM.div({className: 'iframes'}, iframes)
     );

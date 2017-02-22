@@ -8,6 +8,7 @@ var UserRegistrationView = require('../../views/shared/userRegistration.jsx'),
     activityName,
     userName,
     groupName,
+    classInfoUrl,
     firebaseGroupRef,
     firebaseUsersRef,
     groupUsersListener,
@@ -86,9 +87,10 @@ module.exports = userController = {
   getIdentityFromLara: function (callback) {
     if (laraController.loadedFromLara) {
       UserRegistrationView.open(this, {form: "gettingGlobalState"});
-      laraController.waitForGlobalState(function (state) {
+      laraController.waitForInitInteractive(function (globalState, _classInfoUrl) {
         UserRegistrationView.close();
-        callback(state && state.identity ? state.identity : null);
+        classInfoUrl = _classInfoUrl;
+        callback(globalState && globalState.identity ? globalState.identity : null);
       });
     }
     else {
@@ -109,7 +111,7 @@ module.exports = userController = {
 
     members = group.members;
 
-    this.createFirebaseGroupRef(activityName, groupName);
+    this.createFirebaseGroupRef(activityName, groupName, classInfoUrl);
 
     firebaseUsersRef = firebaseGroupRef.child('users');
     groupUsersListener = firebaseUsersRef.on("value", function(snapshot) {
@@ -247,6 +249,10 @@ module.exports = userController = {
     return groupName;
   },
 
+  getClassInfoUrl: function() {
+    return classInfoUrl;
+  },
+
   getClient: function () {
     return client;
   },
@@ -280,8 +286,9 @@ module.exports = userController = {
     }
   },
 
-  createFirebaseGroupRef: function (activityName, groupName) {
-    var refName = getDatePrefix() + "-" + groupName + "/activities/" + activityName + "/";
+  createFirebaseGroupRef: function (activityName, groupName, classInfoUrl) {
+    var classId = classInfoUrl ? "class-" + classInfoUrl.split("/").pop() : "no-class-id";
+    var refName = getDatePrefix() + "/" + classId + "/" + groupName + "/activities/" + activityName + "/";
     firebaseGroupRef = firebase.database().ref(refName);
     return firebaseGroupRef;
   }
