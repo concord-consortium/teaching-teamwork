@@ -322,6 +322,10 @@ Board.prototype.updateComponents = function (newSerializedComponents) {
       this.removeWire(wire.source, wire.dest);
     }
 
+    if (component instanceof LogicChip) {
+      self.removeComponent(component);
+    }
+
     delete this.components[name];
   }
   $.each(newSerializedComponents, function (name, serializeComponent) {
