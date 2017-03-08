@@ -153,5 +153,7 @@ var studyGroups = [
 ].sort(sortByName);
 
 module.exports = function () {
-  return window.location.search.indexOf('researcherMode') !== -1 ? researcherGroups : studyGroups;
+  var forceInUrl = window.location.search.indexOf('researcherMode') !== -1,
+      forceInLocalStorage = window.localStorage && window.localStorage.getItem("forceResearcherMode") === "true";
+  return forceInUrl || forceInLocalStorage ? researcherGroups : studyGroups;
 };

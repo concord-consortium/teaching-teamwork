@@ -1,0 +1,57 @@
+<html>
+  <head>
+    <title>Teaching Teamwork: Toggle Researcher Mode</title>
+    <link href='css/tt.css' rel='stylesheet' type='text/css' />
+    <style>
+      div, button {
+        margin: 10px 0;
+      }
+      .on {
+        color: darkgreen;
+        font-weight: bold;
+      }
+      .off {
+        color: red;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body class="homepage">
+    <div><strong>Teaching Teamwork: Toggle Researcher Mode</strong></div>
+
+    <div>
+      <div id="status">Loading...</div>
+      <button id="toggle" onclick="toggleMode()">Toggle</button>
+    </div>
+
+    <div>
+      Use the button above to toggle a local storage variable that when ON will force all the activities to use the Researcher group (just like if you passed <code>?researcherMode</code> in the url).
+    </div>
+    <div>
+      Why use this?  To prevent the accidental pollution of the research data when testing the activities.
+    </div>
+    <div>
+      This setting will remain in place across power cycles with all your sessions and windows of the same browser type.
+    </div>
+
+    <script>
+      var key = "forceResearcherMode",
+          forceResearcherMode = window.localStorage.getItem(key) === "true",
+          toggleButton = document.getElementById("toggle"),
+          statusDiv = document.getElementById("status");
+
+      function showStatus() {
+        var mode = forceResearcherMode ? "ON" : "OFF"
+        statusDiv.innerHTML = "Forced researcher mode is <span class='" + mode + "'>" + mode + "</span>";
+      }
+
+      function toggleMode() {
+        forceResearcherMode = !forceResearcherMode;
+        window.localStorage.setItem(key, forceResearcherMode);
+        showStatus();
+      }
+
+      showStatus();
+    </script>
+  </body>
+</html>
