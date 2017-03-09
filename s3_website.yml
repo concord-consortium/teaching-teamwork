@@ -19,7 +19,7 @@ ignore_on_server: ^teaching-teamwork/(version/|branch/)
 ignore_on_server: ^(?!teaching-teamwork/<%= Regexp.escape(ENV['DEPLOY_DIR']) %>/)
 <% end %>
 max_age:
-  teaching-teamwork/*": 600 # 10 minutes
+  "teaching-teamwork/*": 600 # 10 minutes
   "teaching-teamwork/version/*": 31536000 # 1 year
   "teaching-teamwork/branch/*": 0
 
