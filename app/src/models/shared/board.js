@@ -12,6 +12,7 @@ var Board = function (options) {
   this.logicDrawer = options.logicDrawer;
   this.wires = [];
   this.fixedComponents = options.fixedComponents || false;
+  this.nextComponentNumber = 0;
   this.updateComponentList();
 
   this.resolver = options.resolver;
@@ -256,6 +257,19 @@ Board.prototype.addWire = function (source, dest, color, skipResolver) {
   return wire;
 };
 Board.prototype.addComponent = function (name, component) {
+
+  var nextMatch = name.match(/(.+)-next$/);
+  if (nextMatch) {
+    name = nextMatch[1] + this.nextComponentNumber++;
+  }
+  else {
+    var digitMatch = name.match(/(\d+)$/)
+    if (digitMatch) {
+      var componentNumber = parseInt(digitMatch[1], 10)
+      this.nextComponentNumber = componentNumber >= this.nextComponentNumber ? componentNumber + 1 : this.nextComponentNumber;
+    }
+  }
+
   component.name = name;
   component.setBoard(this);
   this.components[name] = component;

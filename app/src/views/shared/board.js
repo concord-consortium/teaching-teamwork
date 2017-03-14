@@ -32,8 +32,7 @@ module.exports = React.createClass({
       selectedComponents: [],
       drawBox: null,
       draggingProbe: false,
-      draggingChip: null,
-      nextChipNumber: 0
+      draggingChip: null
     };
   },
 
@@ -430,14 +429,9 @@ module.exports = React.createClass({
     }
   },
 
-  addLogicChip: function (chip, name) {
-    name = name || "lc" + this.state.nextChipNumber;
-    this.props.board.addComponent(name, chip);
+  addLogicChip: function (chip) {
+    this.props.board.addComponent("lc-next", chip);
     events.logEvent(events.ADD_LOGIC_CHIP_EVENT, null, {board: this.props.board, chip: chip});
-
-    this.setState({
-      nextChipNumber: this.state.nextChipNumber + 1
-    });
   },
 
   removeLogicChip: function (chip) {
