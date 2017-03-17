@@ -1,6 +1,6 @@
 {
     "name": "Not gate bug",
-    "notes": "Chained inverters don't function properly",
+    "notes": "I am using this as a test of my ability to deploy stuffs",
     "interface": {
         "showPinColors": true,
         "showBusColors": true,
