@@ -18,9 +18,9 @@ module.exports = constants = {
       return {
         WIRE_WIDTH: 3,
         FOO_WIRE_WIDTH: 1,
-        CONNECTOR_HOLE_DIAMETER: 15,
-        CONNECTOR_HOLE_MARGIN: 4,
-        CONNECTOR_SPACING: 20,
+        CONNECTOR_HOLE_DIAMETER: 10,
+        CONNECTOR_HOLE_MARGIN: 3,
+        CONNECTOR_SPACING: 15,
         BOARD_WIDTH: workspaceWidth,
         BOARD_HEIGHT: boardHeight,
         BOARD_LEFT: 0,
