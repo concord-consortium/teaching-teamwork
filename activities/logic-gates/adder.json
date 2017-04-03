@@ -1,11 +1,11 @@
 {
   "name": "Adder",
-  "notes": "Set bus ports 11 and 12 to be the sum and carry of A + B",
+  "notes": "Set the output to be the sum and carry of the input.",
   "interface": {
     "showPinColors": false,
     "showBusColors": false,
     "showBusLabels": true,
-    "allowAutoWiring": true,
+    "allowAutoWiring": false,
     "showPinouts": true,
     "showProbe": "edit",
     "showInputAutoToggles": true,
@@ -23,8 +23,8 @@
           "7408": {"max": 1}
         }
       },
-      "localInputSize": 4,
-      "localOutputSize": 4
+      "localInputSize": 3,
+      "localOutputSize": 2
     },
     {
       "logicChipDrawer": {
@@ -33,8 +33,8 @@
           "7411": {"max": 1}
         }
       },
-      "localInputSize": 4,
-      "localOutputSize": 4
+      "localInputSize": 3,
+      "localOutputSize": 2
     }
   ],
   "truthTable": [
