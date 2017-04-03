@@ -76,7 +76,7 @@ Keypad.prototype.calculatePosition = function (constants, selected, index, count
 
   this.position.pad = {
     x: this.position.x + ((this.position.width - padWidth) / 2),
-    y: this.position.y + ((this.position.height - padHeight) / 2),
+    y: this.position.y + ((this.position.height - padHeight) / 2) + 5,
     width: padWidth,
     height: padHeight
   };
