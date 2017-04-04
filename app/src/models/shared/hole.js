@@ -59,7 +59,7 @@ Hole.prototype.setForcedVoltage = function (voltage) {
   this.forcedVoltage = voltage;
 };
 Hole.prototype.getLabel = function () {
-  return this.label + " " + this.getVoltage(true) + "V (" + this.getLogicLevel(true).toLowerCase() + ")";
+  return this.label + " " + this.getVoltage(this.connected) + "V (" + this.getLogicLevel(this.connected).toLowerCase() + ")";
 };
 Hole.prototype.toString = function () {
   return ['connector', this.connector.type, this.index, 'board', this.connector.board ? this.connector.board.number : -1].join(':');
