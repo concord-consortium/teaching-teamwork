@@ -3,9 +3,9 @@
     "notes": "Make an adder that takes two bits and a carry bit and returns their sum and carry",
     "interface": {
         "showPinColors": true,
-        "showBusColors": false,
+        "showBusColors": true,
         "showBusLabels": true,
-        "allowAutoWiring": true,
+        "allowAutoWiring": false,
         "showPinouts": true,
         "showProbe": "edit",
         "showInputAutoToggles": true,
@@ -20,11 +20,8 @@
                 "7404": {
                     "max": 1
                 },
-                "7411": {
-                    "max": 2
-                },
                 "7432": {
-                    "max": 1
+                    "max": 2
                 }
             }
         },
@@ -36,13 +33,11 @@
                 "7408": {
                     "max": 1
                 },
-                "7432": {
-                    "max": 1
+                "7411": {
+                    "max": 2
                 }
             }
-        },
-        "localInputSize": 3,
-        "localOutputSize": 2
+        }
     }],
     "truthTable": [
         [
