@@ -39,34 +39,23 @@ module.exports = React.createClass({
     //console.log(this.props.component.name, x, y);
   },
 
-  pinWire: function (pin, dx) {
-    var s;
-    dx = dx || 1;
-    s = {x1: pin.x + (pin.width * dx), y1: pin.y + (pin.height / 2), x2: pin.x + pin.width + (2 * pin.width * dx), y2: pin.y + (pin.height / 2)};
-    s.line = this.wireSegment(s).line;
-    return s;
-  },
-
   wireSegment: function (s, key) {
     var selectedConstants = this.props.constants.selectedConstants(this.props.selected),
-        segment = {x1: s.x1, y1: s.y1, x2: s.x2, y2: s.y2, strokeWidth: selectedConstants.FOO_WIRE_WIDTH, stroke: '#333'};
-    if (key) {
-      segment.key = key;
-    }
+        segment = {key: key, x1: s.x1, y1: s.y1, x2: s.x2, y2: s.y2, strokeWidth: selectedConstants.FOO_WIRE_WIDTH, stroke: '#333'};
     segment.line = line(segment);
     return segment;
   },
 
   renderGround: function (pin, p) {
     var p2 = {x: p.x, y: p.y + (1.5 * pin.height)},
-        segments = [this.wireSegment({key: pin.name + 'down', x1: p.x, y1: p.y, x2: p2.x, y2: p2.y}).line],
+        segments = [this.wireSegment({x1: p.x, y1: p.y, x2: p2.x, y2: p2.y}, pin.name + 'down').line],
         s, width, height, i;
 
     for (i = 0; i < 3; i++) {
       width = pin.width - (pin.width * (0.33 * i));
       height = i * (pin.height / 4);
       s = {x1: p2.x - (width / 2), y1: p2.y + height, x2: p2.x + (width / 2), y2: p2.y + height};
-      segments.push(this.wireSegment(s, pin.name + i).line);
+      segments.push(this.wireSegment(s, pin.name + 'line' + i).line);
     }
 
     return g({}, segments);

@@ -3,6 +3,7 @@ var g = React.DOM.g,
     text = React.DOM.text,
     title = React.DOM.title,
     path = React.DOM.path,
+    LogicChip =  require('../../models/logic-gates/logic-chip'),
     chipNames = require('../../data/logic-gates/chip-names'),
     ChipView;
 
@@ -33,7 +34,7 @@ ChipView = React.createFactory(React.createClass({
       pinX = i === 0 ? this.props.x - pinWidth : this.props.x + this.props.width;
       for (j = 0; j < 7; j++) {
         pinY = this.props.y + pinDY + (j * (pinWidth + pinDY));
-        pins.push(rect({x: pinX, y: pinY, width: pinWidth, height: pinWidth, fill: '#777'}));
+        pins.push(rect({key: 'pin' + (i + ':' + j), x: pinX, y: pinY, width: pinWidth, height: pinWidth, fill: '#777'}));
       }
     }
 
@@ -53,7 +54,7 @@ module.exports = React.createClass({
   getInitialState: function () {
     return {
       scrollSteps: 0,
-      maxScrollSteps: Object.keys(this.props.chips).length - 3
+      maxScrollSteps: Object.keys(this.props.drawer.chips).length - 3
     };
   },
 
@@ -93,7 +94,7 @@ module.exports = React.createClass({
         chipWidth = this.props.layout.width * 0.6,
         chipHeight = chipWidth * 1.5,
         chipMargin = (this.props.layout.width - chipWidth) / 2,
-        numChips = Object.keys(this.props.chips).length,
+        numChips = Object.keys(this.props.drawer.chips).length,
         totalHeight = (numChips * chipHeight) + ((numChips - 1) * chipMargin),
         needsScroller = totalHeight > this.props.layout.height,
         chipX = this.props.layout.x + chipMargin,
@@ -104,6 +105,7 @@ module.exports = React.createClass({
         triangleWidth = scrollButtonHeight / 2,
         triangleHeight = scrollButtonHeight / 2,
         triangleX = this.props.layout.x + ((this.props.layout.width - triangleWidth) / 2),
+        chipCounts = {},
         triangleY, trianglePath, i;
 
     if (needsScroller) {
@@ -127,9 +129,16 @@ module.exports = React.createClass({
       chipY = this.props.layout.y + ((this.props.layout.height - ((numChips * chipHeight) + ((numChips - 1) * chipMargin))) / 2);
     }
 
+    $.each(this.props.board.componentList, function (index, component) {
+      if (component instanceof LogicChip) {
+        chipCounts[component.type] = (chipCounts[component.type] || 0) + 1;
+      }
+    });
+
     i = 0;
-    $.each(this.props.chips, function (type, chip) {
-      chips.push(ChipView({type: type, chip: chip, x: chipX, y: chipY + (i * (chipHeight + chipMargin)), width: chipWidth, height: chipHeight, selected: self.props.selected, editable: self.props.editable, startDrag: self.props.startDrag, onWheel: self.onWheel}));
+    $.each(this.props.drawer.chips, function (type, chipInfo) {
+      var chip = {count: chipCounts[type] || 0, max: chipInfo.max};
+      chips.push(ChipView({key: 'chip' + i, type: type, chip: chip, x: chipX, y: chipY + (i * (chipHeight + chipMargin)), width: chipWidth, height: chipHeight, selected: self.props.selected, editable: self.props.editable, startDrag: self.props.startDrag, onWheel: self.onWheel}));
       i++;
     });
     return g({},

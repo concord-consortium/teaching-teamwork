@@ -3,7 +3,7 @@ var LogicChipView = React.createFactory(require('../../views/logic-gates/logic-c
     TTL = require('../shared/ttl');
 
 var LogicChip = function (options) {
-  var i, pin, outputPins;
+  var i, pin, outputPins, inputMode;
 
   this.name = 'logic-chip';
   this.view = LogicChipView;
@@ -37,10 +37,11 @@ var LogicChip = function (options) {
   this.pins = [];
   this.pinMap = {};
   for (i = 0; i < 14; i++) {
+    inputMode = outputPins.indexOf(i) === -1;
     pin = {
       number: i,
-      voltage: i == 13 ? TTL.HIGH_VOLTAGE : TTL.LOW_VOLTAGE,
-      inputMode: outputPins.indexOf(i) === -1,
+      voltage: inputMode || (i == 13) ? TTL.HIGH_VOLTAGE : TTL.LOW_VOLTAGE,
+      inputMode: inputMode,
       placement: i < 7 ? 'bottom' : 'top',
       x: 0,
       y: 0,
@@ -108,15 +109,24 @@ LogicChip.prototype.calculatePosition = function (constants, selected) {
     }
   }
 };
-LogicChip.prototype.mapAndSetPins = function (pinConnections, fn) {
-  var logicLevels, i, j, inputPinNumbers, outputPinNumber;
+LogicChip.prototype.mapAndSetPins = function (pinConnections, inputVoltages, fn) {
+  var inputLogicLevels = {},
+      pinVoltage, logicLevels, i, j, inputPinNumbers, outputPinNumber;
+
+  for (i = 0; i < pinConnections.length; i++) {
+    inputPinNumbers = pinConnections[i][0];
+    for (j = 0; j < inputPinNumbers.length; j++) {
+      pinVoltage = inputVoltages[this.pins[inputPinNumbers[j] - 1].toString()];
+      inputLogicLevels[inputPinNumbers[j]] = TTL.getVoltageLogicLevel(pinVoltage);
+    }
+  }
 
   for (i = 0; i < pinConnections.length; i++) {
     inputPinNumbers = pinConnections[i][0];
     outputPinNumber = pinConnections[i][1];
     logicLevels = [];
     for (j = 0; j < inputPinNumbers.length; j++) {
-      logicLevels.push(TTL.getVoltageLogicLevel(this.pins[inputPinNumbers[j] - 1].getVoltage()));
+      logicLevels.push(inputLogicLevels[inputPinNumbers[j]]);
     }
     this.pins[outputPinNumber - 1].setVoltage(TTL.getVoltage(fn.apply(this, logicLevels)));
   }
@@ -127,13 +137,13 @@ LogicChip.prototype.standardPinConnections = [
   [[10, 9], 8],
   [[13, 12], 11]
 ];
-LogicChip.prototype.resolveOutputVoltages = function () {
+LogicChip.prototype.resolveOutputVoltages = function (inputVoltages) {  // TODO: use input voltages
 
   // NOTE: all pin indexes are 1 based below to make it easier to verify against 1-based pinout diagrams
   switch (this.type) {
     // Quad 2-Input NAND
     case '7400':
-      this.mapAndSetPins(this.standardPinConnections, function (a, b) {
+      this.mapAndSetPins(this.standardPinConnections, inputVoltages, function (a, b) {
         if (TTL.isInvalid(a) || TTL.isInvalid(b)) {
           return TTL.INVALID;
         }
@@ -148,7 +158,7 @@ LogicChip.prototype.resolveOutputVoltages = function () {
         [[5, 6], 4],
         [[9, 8], 10],
         [[12, 11], 13]
-      ], function (a, b) {
+      ], inputVoltages, function (a, b) {
         return TTL.getBooleanLogicLevel(!(TTL.isHigh(a) || TTL.isHigh(b)));
       });
       break;
@@ -162,7 +172,7 @@ LogicChip.prototype.resolveOutputVoltages = function () {
         [[9], 8],
         [[11], 10],
         [[13], 12],
-      ], function (a) {
+      ], inputVoltages, function (a) {
         if (TTL.isInvalid(a)) {
           return TTL.INVALID;
         }
@@ -172,7 +182,7 @@ LogicChip.prototype.resolveOutputVoltages = function () {
 
     // Quad 2-input AND
     case '7408':
-      this.mapAndSetPins(this.standardPinConnections, function (a, b) {
+      this.mapAndSetPins(this.standardPinConnections, inputVoltages, function (a, b) {
         if (TTL.isInvalid(a) || TTL.isInvalid(b)) {
           return TTL.INVALID;
         }
@@ -186,7 +196,7 @@ LogicChip.prototype.resolveOutputVoltages = function () {
         [[1, 2, 13], 12],
         [[3, 4, 5], 6],
         [[9, 10, 11], 8]
-      ], function (a, b, c) {
+      ], inputVoltages, function (a, b, c) {
         if (TTL.isInvalid(a) || TTL.isInvalid(b) || TTL.isInvalid(c)) {
           return TTL.INVALID;
         }
@@ -196,14 +206,14 @@ LogicChip.prototype.resolveOutputVoltages = function () {
 
     // Quad 2-input OR
     case '7432':
-      this.mapAndSetPins(this.standardPinConnections, function (a, b) {
+      this.mapAndSetPins(this.standardPinConnections, inputVoltages, function (a, b) {
         return TTL.getBooleanLogicLevel(TTL.isHigh(a) || TTL.isHigh(b));
       });
       break;
 
     // Quad 2-Input XOR
     case '7486':
-      this.mapAndSetPins(this.standardPinConnections, function (a, b) {
+      this.mapAndSetPins(this.standardPinConnections, inputVoltages, function (a, b) {
         return TTL.getBooleanLogicLevel((TTL.isHigh(a) || TTL.isHigh(b)) && !(TTL.isHigh(a) && TTL.isHigh(b)));
       });
       break;

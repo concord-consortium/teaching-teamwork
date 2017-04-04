@@ -1,5 +1,5 @@
 var UserRegistrationView = require('../../views/shared/userRegistration.jsx'),
-    groups = require('../../data/shared/group-names'),
+    groups = require('../../data/shared/group-names')(),
     logController = require('./log'),
     laraController = require('./lara'),
     userController,
@@ -8,23 +8,27 @@ var UserRegistrationView = require('../../views/shared/userRegistration.jsx'),
     activityName,
     userName,
     groupName,
+    classInfoUrl,
     firebaseGroupRef,
     firebaseUsersRef,
-    fbUrl,
     groupUsersListener,
     boardsSelectionListener,
     groupRefCreationListeners,
     client,
     callback,
     serverSkew,
-    onDisconnectRef;
+    onDisconnectRef,
+    firebaseConfig = {
+      apiKey: "AIzaSyBBodQ91rke-1Th07mQU-YgwvIx079BB8k",
+      authDomain: "teaching-teamwork-c9ac4.firebaseapp.com",
+      databaseURL: "https://teaching-teamwork-c9ac4.firebaseio.com",
+      storageBucket: "teaching-teamwork-c9ac4.appspot.com",
+      messagingSenderId: "835296818835"
+    };
 
-// scratch
-var fbUrlDomain = 'https://teaching-teamwork.firebaseio.com/';
-var fbUrlDir = (localStorage ? localStorage.getItem('fbUrlDir') || null : null) || '2016/';  // to make local dev testing easier
-var fbUrlBase = fbUrlDomain + fbUrlDir;
+firebase.initializeApp(firebaseConfig);
 
-var getDate = function() {
+var getDatePrefix = function() {
   var today = new Date(),
       dd = today.getDate(),
       mm = today.getMonth()+1,
@@ -38,7 +42,7 @@ var getDate = function() {
       mm='0'+mm;
   }
 
-  return yyyy+'-'+mm+'-'+dd;
+  return today.getFullYear() + '/' + yyyy+'-'+mm+'-'+dd;
 };
 
 var notifyGroupRefCreation = function() {
@@ -51,7 +55,7 @@ var notifyGroupRefCreation = function() {
 
 // listen for timestamp skews
 serverSkew = 0;
-var offsetRef = new Firebase(fbUrlDomain + '.info/serverTimeOffset');
+var offsetRef = firebase.database().ref('.info/serverTimeOffset');
 offsetRef.on("value", function(snap) {
   serverSkew = snap.val();
 });
@@ -59,6 +63,7 @@ offsetRef.on("value", function(snap) {
 module.exports = userController = {
 
   init: function(_numClients, _activityName, _callback) {
+
     numClients = _numClients;
     activityName = _activityName;
     callback = _callback;
@@ -82,9 +87,10 @@ module.exports = userController = {
   getIdentityFromLara: function (callback) {
     if (laraController.loadedFromLara) {
       UserRegistrationView.open(this, {form: "gettingGlobalState"});
-      laraController.waitForGlobalState(function (state) {
+      laraController.waitForInitInteractive(function (globalState, _classInfoUrl) {
         UserRegistrationView.close();
-        callback(state && state.identity ? state.identity : null);
+        classInfoUrl = _classInfoUrl;
+        callback(globalState && globalState.identity ? globalState.identity : null);
       });
     }
     else {
@@ -105,7 +111,7 @@ module.exports = userController = {
 
     members = group.members;
 
-    this.createFirebaseGroupRef(activityName, groupName);
+    this.createFirebaseGroupRef(activityName, groupName, classInfoUrl);
 
     firebaseUsersRef = firebaseGroupRef.child('users');
     groupUsersListener = firebaseUsersRef.on("value", function(snapshot) {
@@ -207,7 +213,9 @@ module.exports = userController = {
   },
 
   setUnknownValues: function (unknownValues) {
-    firebaseUsersRef.child(userName).set({client: client, unknownValues: unknownValues});
+    if (firebaseUsersRef) {
+      firebaseUsersRef.child(userName).set({client: client, unknownValues: unknownValues});
+    }
   },
 
   selectedClient: function() {
@@ -221,14 +229,14 @@ module.exports = userController = {
       user: "System",
       message: message,
       type: "joined",
-      time: Firebase.ServerValue.TIMESTAMP
+      time: firebase.database.ServerValue.TIMESTAMP
     });
     var disconnectMessageRef = chatRef.push();
     disconnectMessageRef.onDisconnect().set({
       user: "System",
       message: userName + " has left",
       type: "left",
-      time: Firebase.ServerValue.TIMESTAMP
+      time: firebase.database.ServerValue.TIMESTAMP
     });
     callback(client);
   },
@@ -239,6 +247,10 @@ module.exports = userController = {
 
   getGroupname: function() {
     return groupName;
+  },
+
+  getClassInfoUrl: function() {
+    return classInfoUrl;
   },
 
   getClient: function () {
@@ -274,9 +286,10 @@ module.exports = userController = {
     }
   },
 
-  createFirebaseGroupRef: function (activityName, groupName) {
-    fbUrl = fbUrlBase + getDate() + "-" + groupName + "/activities/" + activityName + "/";
-    firebaseGroupRef = new Firebase(fbUrl);
+  createFirebaseGroupRef: function (activityName, groupName, classInfoUrl) {
+    var classId = classInfoUrl ? "class-" + classInfoUrl.split("/").pop() : "no-class-id";
+    var refName = getDatePrefix() + "/" + classId + "/" + groupName + "/activities/" + activityName + "/";
+    firebaseGroupRef = firebase.database().ref(refName);
     return firebaseGroupRef;
   }
 };

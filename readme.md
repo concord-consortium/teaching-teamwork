@@ -20,15 +20,16 @@ For example, the `activities/breadboard/three-resistors-level1.json` activity ca
 
 ### URL Options
 
-There is only one option that can be specified in the URL query string.  It only needs to be present - it does not need a value assigned to it.
+The following are the options that can be specified in the URL query string.  It only needs to be present - it does not need a value assigned to it.
 
 * logToConsole - prints all log messages to the console in a compact form
+* researcherMode - changes the groups to a disjoint researcher group to avoid polluting the research log data
 
 Example: [http://concord-consortium.github.io/teaching-teamwork/?logToConsole#three-resistors-level1](http://concord-consortium.github.io/teaching-teamwork/?logToConsole#three-resistors-level1)
 
 ### JSON File Format
 
-A description of the JSON file format can be found [json-file-formats.md](here).
+A description of the JSON file format can be found in the [json-file-formats.md](json-file-formats.md) file.
 
 ## PIC
 
@@ -50,6 +51,7 @@ need to have values assigned to them and they can be combined in any order.
 * showProbeInEdit - enables display of probe only when editing a circuit
 * hideProbe - hides probe in edit and "all" view
 * hideInputAutoToggles - hides the increment and decrement controls next to the local board input switches
+* researcherMode - changes the groups to a disjoint researcher group to avoid polluting the research log data
 
 Example: [http://concord-consortium.github.io/teaching-teamwork/pic/?logToConsole&soloMode](http://concord-consortium.github.io/teaching-teamwork/pic/?logToConsole&soloMode)
 
@@ -68,10 +70,12 @@ For example, the `activities/logic-gates/all-chips.json` activity can be used vi
 
 ### URL Options
 
-There are two options that can be specified in the URL query string.  An option only needs to be present - it does not need a value assigned to it.
+The following are the options that can be specified in the URL query string.  An option only needs to be present - it does not need a value assigned to it.
 
 * logToConsole - prints all log messages to the console in a compact form
 * soloMode - enables single user mode, this skips all Firebase login and board selection
+* researcherMode - changes the groups to a disjoint researcher group to avoid polluting the research log data
+* autoWire - performs the autowiring as soon as the activity loads if the json allows auto wiring
 
 Example: [http://concord-consortium.github.io/teaching-teamwork/logic-gates/?logToConsole#all-chips](http://concord-consortium.github.io/teaching-teamwork/logic-gates/?logToConsole#all-chips)
 

@@ -34,7 +34,7 @@ module.exports = React.createClass({
     this.firebaseRef.push({
       user: userController.getUsername(),
       message: this.state.text,
-      time: Firebase.ServerValue.TIMESTAMP
+      time: firebase.database.ServerValue.TIMESTAMP
     });
     logController.logEvent("Sent message", this.state.text);
     this.setState({text: ""});
@@ -49,7 +49,7 @@ module.exports = React.createClass({
       message: val+" "+units,
       val: val,
       units: units,
-      time: Firebase.ServerValue.TIMESTAMP
+      time: firebase.database.ServerValue.TIMESTAMP
     });
     logController.logEvent("Sent value", val+" "+units);
   },
