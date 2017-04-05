@@ -3,7 +3,7 @@
     "notes": "Make an adder that takes two bits and a carry bit and returns their sum and carry",
     "interface": {
         "showPinColors": true,
-        "showBusColors": true,
+        "showBusColors": false,
         "showBusLabels": true,
         "allowAutoWiring": false,
         "showPinouts": true,
@@ -11,7 +11,7 @@
         "showInputAutoToggles": true,
         "showGlobalIOWires": true
     },
-    "busSize": 12,
+    "busSize": 15,
     "busInputSize": 3,
     "busOutputSize": 2,
     "boards": [{
