@@ -7,7 +7,7 @@ module.exports = React.createClass({
 
   handleClick: function () {
     this.props.connector.autoToggleSwitches(this.props.direction);
-    this.props.connector.board.resolver.resolve();
+    this.props.connector.board.resolver.resolve(true);
     this.props.forceRerender();
     events.logEvent(events.AUTO_TOGGLED_SWITCHES_EVENT, this.props.direction, {board: this.props.connector.board});
   },

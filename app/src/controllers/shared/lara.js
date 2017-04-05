@@ -6,9 +6,10 @@ function LaraController() {
 LaraController.prototype = {
   laraPhone: null,
   loadedFromLara: false,
-  loadedGlobalState: false,
+  gotInitInteractive: false,
+  gotInitInteractiveCallback: null,
   globalState: null,
-  loadedGlobalStateCallback: null,
+  classInfoUrl: null,
   connected: false,
   connectionCallback: null,
 
@@ -29,13 +30,24 @@ LaraController.prototype = {
         if (self.connectionCallback) {
           self.connectionCallback();
         }
+        self.laraPhone.post('interactiveState', {
+          lara_options: {
+            reporting_url: window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port : '') + window.location.pathname + '?report'
+          }
+        });
       });
-      this.laraPhone.addListener("loadInteractiveGlobal", function(state) {
-        self._globalStateLoaded(state);
-      });
-      // this message is not in the production lara
-      this.laraPhone.addListener("loadInteractiveNullGlobal", function() {
-        //self._globalStateLoaded(null);
+      this.laraPhone.addListener("initInteractive", function(options) {
+        if (options) {
+          // the classInfoUrl is only present when LARA is invoked via the portal
+          if (options.classInfoUrl && (options.classInfoUrl.length > 0)) {
+            self.classInfoUrl = options.classInfoUrl;
+          }
+        }
+        self.globalState = options && options.globalInteractiveState || {};
+        self.gotInitInteractive = true;
+        if (self.gotInitInteractiveCallback) {
+          self.gotInitInteractiveCallback(self.globalState, self.classInfoUrl);
+        }
       });
       this.laraPhone.initialize();
     }
@@ -50,17 +62,17 @@ LaraController.prototype = {
     }
   },
 
-  waitForGlobalState: function (callback) {
+  waitForInitInteractive: function (callback) {
     var self = this;
-    if (this.loadedGlobalState) {
-      callback(this.globalState);
+    if (this.gotInitInteractive) {
+      callback(this.globalState, this.classInfoUrl);
     }
     else {
-      this.loadedGlobalStateCallback = callback;
+      this.gotInitInteractiveCallback = callback;
       setTimeout(function () {
-        if (!self.loadedGlobalState) {
-          this.loadedGlobalStateCallback = null;
-          callback(null);
+        if (!self.gotInitInteractive) {
+          self.gotInitInteractiveCallback = null;
+          callback(this.globalState, self.classInfoUrl);
         }
       }, 5000);
     }
@@ -73,14 +85,6 @@ LaraController.prototype = {
   setGlobalState: function (state) {
     if (this.loadedFromLara) {
       this.laraPhone.post('interactiveStateGlobal', state);
-    }
-  },
-
-  _globalStateLoaded: function (state) {
-    this.loadedGlobalState = true;
-    this.globalState = state;
-    if (this.loadedGlobalStateCallback) {
-      this.loadedGlobalStateCallback(state);
     }
   }
 };

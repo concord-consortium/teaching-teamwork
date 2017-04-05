@@ -5,10 +5,13 @@ var letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 var Connector = function (options) {
   var self = this,
+      isBus = options.type === 'bus',
+      startingLetter = options.type === 'input' ? 0 : (letters.length - options.count),
       i;
 
   this.type = options.type;
   this.count = options.count;
+  this.start = options.start || 0;
   this.position = {};
   this.busInputSize = options.busInputSize || 0;
   this.busOutputSize = options.busOutputSize || 0;
@@ -22,7 +25,7 @@ var Connector = function (options) {
       radius: 0,
       color: '#555', // ['blue', '#0f0', 'purple', '#cccc00'][i],
       connector: self,
-      label: letters[i],
+      label: isBus ? (i + 1) : letters[startingLetter + i],
       inputMode: this.type != 'input', // seems weird but output connector holes have values set so their holes are in "inputMode" like the pins
       toggleable: this.type == 'input',
       type: options.type
@@ -34,7 +37,7 @@ Connector.prototype.calculatePosition = function (constants, selected, allConnec
       holeWidth = selectedConstants.CONNECTOR_HOLE_DIAMETER + (selectedConstants.CONNECTOR_HOLE_MARGIN * 2),
       radius = selectedConstants.CONNECTOR_HOLE_DIAMETER / 2,
       vertical = this.type == 'bus',
-      dx = vertical ? 0 : -holeWidth,
+      dx = vertical ? 0 : holeWidth,
       dy = vertical ? holeWidth : 0,
       selectorWidth,
       inputWidth, outputWidth, totalWidth, i, cx, cy, hole, holeX, holeY;
@@ -62,16 +65,15 @@ Connector.prototype.calculatePosition = function (constants, selected, allConnec
     totalWidth += outputWidth;
 
     this.position.width = this.type == 'input' ? inputWidth : outputWidth;
-    this.position.height = holeWidth;
+    this.position.height = holeWidth * 1.25;
     this.position.x = ((constants.WORKSPACE_WIDTH - totalWidth) / 2) + (this.type == 'output' ? (inputWidth + selectorWidth + selectedConstants.CONNECTOR_SPACING) : 0);
-    this.position.y = 0;
+    this.position.y = holeWidth;
 
     holeY = cy = this.position.y + selectedConstants.CONNECTOR_HOLE_MARGIN + radius;
-    cx = this.position.x + (holeWidth / 2);
-    holeX = cx + this.position.width - holeWidth;
+    holeX = cx = this.position.x + (holeWidth / 2);
 
     this.position.selectorBackgroundWidth = selectorWidth;
-    this.position.negativeSelectorCX = holeX + selectedConstants.AUTO_TOGGLE_SELECTOR_MARGIN + (selectedConstants.AUTO_TOGGLE_SELECTOR_WIDTH / 2);
+    this.position.negativeSelectorCX = holeX + this.position.width - holeWidth + selectedConstants.AUTO_TOGGLE_SELECTOR_MARGIN + (selectedConstants.AUTO_TOGGLE_SELECTOR_WIDTH / 2);
     this.position.positiveSelectorCX = this.position.negativeSelectorCX + selectedConstants.AUTO_TOGGLE_SELECTOR_MARGIN + selectedConstants.AUTO_TOGGLE_SELECTOR_WIDTH;
     this.position.selectorWidth = selectedConstants.AUTO_TOGGLE_SELECTOR_WIDTH;
     this.position.selectorHeight = selectedConstants.AUTO_TOGGLE_SELECTOR_HEIGHT;
@@ -123,7 +125,7 @@ Connector.prototype.autoToggleSwitches = function(direction) {
   }
 
   if (direction == 'positive') {
-    currentValue = (currentValue + 1) % maxValue;
+    currentValue = (currentValue + 1) % (maxValue + 1);
   }
   else {
     currentValue = currentValue > 0 ? currentValue - 1 : maxValue;

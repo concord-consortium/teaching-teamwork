@@ -1,11 +1,12 @@
 {
-  "name": "Two board adder",
-  "notes": "Make an adder that takes inputs from bus ports A, B, and C and returns A + B + C to K and L",
+  "name": "Single board adder ",
+  "notes": "Make a full adder that takes three inputs, A, B, and C, and returns their sum as two bits.",
+
   "interface": {
     "showPinColors": false,
     "showBusColors": false,
     "showBusLabels": true,
-    "allowAutoWiring": true,
+    "allowAutoWiring": false,
     "showPinouts": true,
     "showProbe": "edit",
     "showInputAutoToggles": true,

@@ -8,7 +8,16 @@ var sortByName = function (a, b) {
   return 0;
 };
 
-module.exports = [
+var researcherGroups = [
+  {
+    name: "Research Group",
+    members: [
+      "Researcher A", "Researcher B", "Researcher C"
+    ]
+  }
+];
+
+var studyGroups = [
   {
     name: "Animals",
     members: [
@@ -142,3 +151,9 @@ module.exports = [
     ]
   }
 ].sort(sortByName);
+
+module.exports = function () {
+  var forceInUrl = window.location.search.indexOf('researcherMode') !== -1,
+      forceInLocalStorage = window.localStorage && window.localStorage.getItem("forceResearcherMode") === "true";
+  return forceInUrl || forceInLocalStorage ? researcherGroups : studyGroups;
+};

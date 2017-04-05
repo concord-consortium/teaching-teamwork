@@ -83,11 +83,13 @@ module.exports = React.createClass({
       for (i = 0; i < this.props.boards.length; i++) {
         if (i > 0) {
           spacersAndBoards.push(SpacerView({
+            key: 'spacer' + i,
             constants: this.props.constants,
             connector: this.props.boards[i].connectors.input
           }));
         }
         spacersAndBoards.push(BoardView({
+          key: 'board' + i,
           constants: this.props.constants,
           board: this.props.boards[i],
           editable: this.props.soloMode || (this.props.userBoardNumber === i),
@@ -106,6 +108,7 @@ module.exports = React.createClass({
         }));
       }
       spacersAndBoards.push(BusView({
+        key: 'bus' + i,
         constants: this.props.constants,
         boards: this.props.boards,
         height: height,

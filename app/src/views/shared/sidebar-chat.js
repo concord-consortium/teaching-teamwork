@@ -91,7 +91,7 @@ module.exports = React.createClass({
       this.firebaseRef.push({
         user: userController.getUsername(),
         message: message,
-        time: Firebase.ServerValue.TIMESTAMP
+        time: firebase.database.ServerValue.TIMESTAMP
       });
       input.value = '';
       input.focus();
