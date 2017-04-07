@@ -1,6 +1,7 @@
 {
   "name": "Single board adder ",
   "notes": "Make a full adder that takes three inputs, A, B, and C, and returns their sum as two bits.",
+
   "interface": {
     "showPinColors": false,
     "showBusColors": false,

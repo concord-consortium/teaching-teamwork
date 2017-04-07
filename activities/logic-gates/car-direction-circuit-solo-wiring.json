@@ -8,7 +8,7 @@
         "showBusLabels": true,
         "allowAutoWiring": true,
         "showPinouts": true,
-        "showProbe": "false",
+        "showProbe": "true",
         "showInputAutoToggles": true,
         "showGlobalIOWires": true
     },

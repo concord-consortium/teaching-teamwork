@@ -1,9 +1,9 @@
 {
     "name": "Two board adder",
-    "notes": "Make an adder that takes two bits and a carry bit and returns their sum and carry",
+    "notes": "Make a circuit that adds three bits and returns their sum and carry (carry bit to the left).",
     "interface": {
         "showPinColors": true,
-        "showBusColors": true,
+        "showBusColors": false,
         "showBusLabels": true,
         "allowAutoWiring": false,
         "showPinouts": true,
@@ -11,17 +11,17 @@
         "showInputAutoToggles": true,
         "showGlobalIOWires": true
     },
-    "busSize": 12,
-    "busInputSize": 3,
-    "busOutputSize": 2,
+    "busSize": 15,
+    "busInputSize": 1,
+    "busOutputSize": 1,
     "boards": [{
         "logicChipDrawer": {
             "chips": {
                 "7404": {
-                    "max": 1
+                    "max": 3
                 },
                 "7432": {
-                    "max": 2
+                    "max": 3
                 }
             }
         },
@@ -31,46 +31,22 @@
         "logicChipDrawer": {
             "chips": {
                 "7408": {
-                    "max": 1
+                    "max": 3
                 },
                 "7411": {
-                    "max": 2
+                    "max": 3
                 }
             }
         }
     }],
-    "truthTable": [
-        [
-            [0, 0, 0],
-            [0, 0]
-        ],
-        [
-            [0, 0, 1],
-            [1, 0]
-        ],
-        [
-            [0, 1, 0],
-            [1, 0]
-        ],
-        [
-            [0, 1, 1],
-            [0, 1]
-        ],
-        [
-            [1, 0, 0],
-            [1, 0]
-        ],
-        [
-            [1, 0, 1],
-            [0, 1]
-        ],
-        [
-            [1, 1, 0],
-            [0, 1]
-        ],
-        [
-            [1, 1, 1],
-            [1, 1]
-        ]
-    ]
+  "truthTable": [
+    [[0, 0, 0], [0, 0]],
+    [[0, 0, 1], [0, 1]],
+    [[0, 1, 0], [0, 1]],
+    [[0, 1, 1], [1, 0]],
+    [[1, 0, 0], [0, 1]],
+    [[1, 0, 1], [1, 0]],
+    [[1, 1, 0], [1, 0]],
+    [[1, 1, 1], [1, 1]]
+  ]
 }
