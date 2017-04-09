@@ -1,7 +1,6 @@
 {
   "name": "Single board adder ",
-  "notes": "Make a full adder that takes three inputs, A, B, and C, and returns their sum as two bits.",
-
+  "notes": "Make a full adder that takes three inputs and returns their sum as two bits (carry bit on the left).",
   "interface": {
     "showPinColors": false,
     "showBusColors": false,
@@ -12,9 +11,9 @@
     "showInputAutoToggles": true,
     "showGlobalIOWires": true
   },
-  "busSize": 12,
-  "busInputSize": 3,
-  "busOutputSize": 2,
+    "busSize": 15,
+    "busInputSize": 1,
+    "busOutputSize": 1,
   "boards": [
     {
       "logicChipDrawer": {
@@ -31,12 +30,12 @@
   ],
   "truthTable": [
     [[0, 0, 0], [0, 0]],
-    [[0, 0, 1], [1, 0]],
-    [[0, 1, 0], [1, 0]],
-    [[0, 1, 1], [0, 1]],
-    [[1, 0, 0], [1, 0]],
-    [[1, 0, 1], [0, 1]],
-    [[1, 1, 0], [0, 1]],
+    [[0, 0, 1], [0, 1]],
+    [[0, 1, 0], [0, 1]],
+    [[0, 1, 1], [1, 0]],
+    [[1, 0, 0], [0, 1]],
+    [[1, 0, 1], [1, 0]],
+    [[1, 1, 0], [1, 0]],
     [[1, 1, 1], [1, 1]]
   ]
 }
