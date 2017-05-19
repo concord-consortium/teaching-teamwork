@@ -10,6 +10,7 @@ var logManagerUrl  = '//teaching-teamwork-log-manager.herokuapp.com/api/logs',
     client,
     logEventListeners,
     wa,
+    getServerSkew,
     currentFlowing = true,
     queue = [],
 
@@ -49,20 +50,22 @@ var logManagerUrl  = '//teaching-teamwork-log-manager.herokuapp.com/api/logs',
     // value: simple value (string, boolean, number)
     // parameters: object
     logEvent = function(eventName, value, parameters) {
-      var data = {
-        application: "Teaching Teamwork",
-        activity: activityName,
-        username: username,
-        groupname: groupname,
-        board: client,
-        currentFlowing: currentFlowing,
-        session: session,
-        time: Date.now(),
-        event: eventName,
-        event_value: value,
-        parameters: parameters
-      },
-      i;
+      var now = Date.now(),
+          serverSkew = getServerSkew ? getServerSkew() : 0,
+          data = {
+            application: "Teaching Teamwork",
+            activity: activityName,
+            username: username,
+            groupname: groupname,
+            board: client,
+            currentFlowing: currentFlowing,
+            session: session,
+            time: now + serverSkew,
+            event: eventName,
+            event_value: value,
+            parameters: parameters
+         },
+         i;
 
       if (logToConsole && console && console.log) {
         console.log("LOG: " + eventName);
@@ -198,6 +201,10 @@ LogController.prototype = {
         }
       }
     }
+  },
+
+  setGetServerSkew: function(_getServerSkew) {
+    getServerSkew = _getServerSkew;
   }
 };
 
