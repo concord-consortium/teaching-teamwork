@@ -96,15 +96,14 @@ module.exports = React.createClass({
     };
 
     stopDrag = function (e) {
-      var pos = self.props.snapToGrid(self.props.component.position);
       e.stopPropagation();
       e.preventDefault();
-      self.setPosition(pos.x, pos.y);
       self.setState({dragging: false});
       if (self.props.stopLogicChipDrawerDrag) {
         self.props.stopLogicChipDrawerDrag({type: self.props.component.type, x: position.x, y: position.y});
       }
       else if (moved) {
+        self.props.component.board.placeChip(self.props.component);
         events.logEvent(events.MOVE_LOGIC_CHIP_EVENT, null, {board: self.props.component.board, chip: self.props.component});
       }
       self.props.layoutChanged();

@@ -109,6 +109,16 @@ LogicChip.prototype.calculatePosition = function (constants, selected) {
     }
   }
 };
+LogicChip.prototype.getTopLeftPinOffset = function(constants, selected) {
+  var selectedConstants = constants.selectedConstants(selected),
+      position = this.position,
+      pinDX = (position.width - (selectedConstants.PIN_WIDTH * 7)) / 8;
+  return {
+    x: pinDX,
+    y: 0 - selectedConstants.PIN_HEIGHT
+  };
+
+};
 LogicChip.prototype.mapAndSetPins = function (pinConnections, inputVoltages, fn) {
   var inputLogicLevels = {},
       pinVoltage, logicLevels, i, j, inputPinNumbers, outputPinNumber;
