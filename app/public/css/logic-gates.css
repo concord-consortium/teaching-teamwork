@@ -127,6 +127,7 @@ button {
 }
 .editable-board {
   background-color: #fefefe !important;
+  background: url(../images/breadboard.png) 65px 36px / 516px no-repeat;
 }
 
 .board-area {

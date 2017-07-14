@@ -3,6 +3,7 @@ var boardWatcher = require('../../controllers/pic/board-watcher'),
     WireView = React.createFactory(require('./wire')),
     ProbeView = React.createFactory(require('./probe')),
     LogicChipDrawerView = React.createFactory(require('./logic-chip-drawer')),
+    BreadboardView = React.createFactory(require('../logic-gates/breadboard')),
     events = require('../shared/events'),
     layout = require('./layout'),
     LogicChip =  require('../../models/logic-gates/logic-chip'),
@@ -497,9 +498,15 @@ module.exports = React.createClass({
       wires.push(WireView({key: i, constants: this.props.constants, wire: wire, board: this.props.board, editable: this.props.editable, enablePointerEvents: enableWirePointerEvents, width: selectedConstants.WIRE_WIDTH, wireSelected: this.wireSelected, selected: this.state.selectedWires.indexOf(wire) !== -1, wireSettings: this.props.wireSettings}));
     }
 
+    var breadboardView = null;
+    if (this.props.board.breadboard) {
+      breadboardView = BreadboardView({breadboard: this.props.board.breadboard});
+    }
+
     return div({className: this.props.editable ? 'board editable-board' : 'board', style: style},
       span({className: this.props.editable ? 'board-user editable-board-user' : 'board-user'}, ('Circuit ' + (this.props.board.number + 1)) + (this.props.user ? ': ' + this.props.user.name : (this.props.soloMode ? '' : ': (unclaimed)'))),
       svg({className: 'board-area', onMouseDown: this.props.selected && this.props.editable ? this.backgroundMouseDown : null, ref: 'svg'},
+        breadboardView,
         connectors,
         components,
         wires,

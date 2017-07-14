@@ -2,6 +2,7 @@ var Hole = require('./hole'),
     Pin = require('./pin'),
     Wire = require('./wire'),
     LogicChip = require('../logic-gates/logic-chip'),
+    Breadboard = require('../logic-gates/breadboard'),
     colors = require('../../views/shared/colors');
 
 var Board = function(options) {
@@ -23,6 +24,10 @@ var Board = function(options) {
     // reset the pic so the pin output is set
     if (this.components.pic) {
         this.components.pic.reset();
+    }
+
+    if (options.useBreadboard) {
+        this.breadboard = new Breadboard(options.constants);
     }
 };
 Board.prototype.updateComponentList = function() {
