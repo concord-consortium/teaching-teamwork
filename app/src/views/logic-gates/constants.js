@@ -38,7 +38,7 @@ module.exports = constants = {
       CHIP_LABEL_SIZE: 16,
       BUTTON_FONT_SIZE: 16,
       BUS_FONT_SIZE: 14,
-      PIN_WIDTH: 13.72,
+      PIN_WIDTH: 7,
       PIN_HEIGHT: 13.72,
       PROBE_WIDTH: 150,
       PROBE_NEEDLE_HEIGHT: 5,

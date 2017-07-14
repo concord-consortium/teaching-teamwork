@@ -15,8 +15,8 @@ var LogicChip = function (options) {
   this.position = {
     x: this.layout.x,
     y: this.layout.y,
-    width: 150,
-    height: 75
+    width: 120,
+    height: 76
   };
 
   switch (this.type) {
