@@ -1,16 +1,20 @@
 var BBStrip = function(name) {
   this.name = name;
-  this.voltage = 1.5;
-  if (name.indexOf("pos") > -1) {
-    this.voltage = 3;
-  } else if (name.indexOf("neg") > -1) {
-    this.voltage = 0;
-  }
+  this.setInitialVoltage();
 };
 
 BBStrip.prototype.setVoltage = function(v) {
   if (this.name.indexOf("pos") === -1 && this.name.indexOf("neg") === -1) {
     this.voltage = v;
+  }
+};
+
+BBStrip.prototype.setInitialVoltage = function() {
+  this.voltage = 1.5;
+  if (this.name.indexOf("pos") > -1) {
+    this.voltage = 3;
+  } else if (this.name.indexOf("neg") > -1) {
+    this.voltage = 0;
   }
 };
 
@@ -29,6 +33,10 @@ BBHole.prototype.setVoltage = function(v) {
 
 BBHole.prototype.getVoltage = function() {
   return this.strip.voltage;
+};
+
+BBHole.prototype.resetStrip = function() {
+  this.strip.setInitialVoltage();
 };
 
 BBHole.prototype.toString = function() {
@@ -76,7 +84,7 @@ var Breadboard = function(constants) {
   var topPosRail = this.createStrip("pos-rail-top"),
       topNegRail = this.createStrip("neg-rail-top"),
       bottomPosRail = this.createStrip("pos-rail-bottom"),
-      bottomNegRail = this.createStrip("pos-rail-bottom");
+      bottomNegRail = this.createStrip("neg-rail-bottom");
 
   var d = this.dimensions,
       x, topY, bottomY, gaps;

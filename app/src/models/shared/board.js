@@ -204,8 +204,14 @@ Board.prototype.removeWire = function(source, dest) {
             if (this.wires[i].source.inputMode) {
                 this.wires[i].source.reset();
             }
+            if (this.wires[i].source.resetStrip) {
+                this.wires[i].source.resetStrip();
+            }
             if (this.wires[i].dest.inputMode) {
                 this.wires[i].dest.reset();
+            }
+            if (this.wires[i].dest.resetStrip) {
+                this.wires[i].dest.resetStrip();
             }
             this.wires.splice(i, 1);
             this.resolver.rewire();

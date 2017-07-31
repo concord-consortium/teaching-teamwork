@@ -40,7 +40,7 @@ var LogicChip = function (options) {
     inputMode = outputPins.indexOf(i) === -1;
     pin = {
       number: i,
-      voltage: inputMode || (i == 13) ? TTL.HIGH_VOLTAGE : TTL.LOW_VOLTAGE,
+      voltage: 1.5,
       inputMode: inputMode,
       placement: i < 7 ? 'bottom' : 'top',
       column: i < 7 ? i : 13 - i,
@@ -120,18 +120,20 @@ LogicChip.prototype.getTopLeftPinOffset = function(constants, selected) {
   };
 
 };
+LogicChip.prototype.isEnergized = function() {
+  return this.pins[13].getVoltage() > TTL.INVALID_VOLTAGE &&
+    this.pins[6].getVoltage() < TTL.INVALID_VOLTAGE;
+};
 LogicChip.prototype.mapAndSetPins = function (pinConnections, inputVoltages, fn) {
   var inputLogicLevels = {},
+      isEnergized = this.isEnergized(),
       pin, pinVoltage, logicLevels, i, j, inputPinNumbers, outputPinNumber;
 
   for (i = 0; i < pinConnections.length; i++) {
     inputPinNumbers = pinConnections[i][0];
     for (j = 0; j < inputPinNumbers.length; j++) {
       pin = this.pins[inputPinNumbers[j] - 1];
-      pinVoltage = inputVoltages[pin.toString()];
-      if (pinVoltage === undefined) {
-        pinVoltage = pin.getVoltage();
-      }
+      pinVoltage = pin.getVoltage();
       inputLogicLevels[inputPinNumbers[j]] = TTL.getVoltageLogicLevel(pinVoltage);
     }
   }
@@ -143,7 +145,8 @@ LogicChip.prototype.mapAndSetPins = function (pinConnections, inputVoltages, fn)
     for (j = 0; j < inputPinNumbers.length; j++) {
       logicLevels.push(inputLogicLevels[inputPinNumbers[j]]);
     }
-    this.pins[outputPinNumber - 1].setVoltage(TTL.getVoltage(fn.apply(this, logicLevels)));
+    pinVoltage = isEnergized ? TTL.getVoltage(fn.apply(this, logicLevels)) : TTL.INVALID_VOLTAGE;
+    this.pins[outputPinNumber - 1].setVoltage(pinVoltage);
   }
 };
 LogicChip.prototype.standardPinConnections = [
