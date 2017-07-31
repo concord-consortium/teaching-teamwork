@@ -205,7 +205,7 @@ module.exports = React.createClass({
       bus = busSize > 0 ? new Connector({type: 'bus', count: busSize, busInputSize: busInputSize, busOutputSize: busOutputSize}) : null;
       board = new Board({
         number: i,
-        bezierReflectionModifier: -0.5,
+        bezierReflectionModifier: 0,
         components: {},
         connectors: {
           input: input,

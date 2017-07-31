@@ -170,6 +170,7 @@ module.exports = React.createClass({
     var $window = $(window),
         self = this,
         moved = false,
+        bezierReflection = source.getBezierReflection ? source.getBezierReflection() : 1,
         drag, stopDrag;
 
     e.preventDefault();
@@ -189,7 +190,7 @@ module.exports = React.createClass({
             y2: source.cy,
             strokeWidth: self.props.constants.selectedConstants(self.props.selected).WIRE_WIDTH,
             stroke: '#f00',
-            reflection: source.getBezierReflection() * self.props.board.bezierReflectionModifier
+            reflection: bezierReflection * self.props.board.bezierReflectionModifier
           }
         });
       }
@@ -500,7 +501,7 @@ module.exports = React.createClass({
 
     var breadboardView = null;
     if (this.props.board.breadboard) {
-      breadboardView = BreadboardView({breadboard: this.props.board.breadboard});
+      breadboardView = BreadboardView({breadboard: this.props.board.breadboard, drawConnection: this.drawConnection, reportHover: this.reportHover});
     }
 
     return div({className: this.props.editable ? 'board editable-board' : 'board', style: style},

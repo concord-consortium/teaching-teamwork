@@ -1,5 +1,5 @@
 var g = React.DOM.g,
-    circle = React.DOM.circle;
+    BreadboardHoleView = React.createFactory(require('./breadboard-hole'));
 
 module.exports = React.createClass({
   displayName: 'BreadboardView',
@@ -8,11 +8,8 @@ module.exports = React.createClass({
     var holes = this.props.breadboard.holes,
         holeViews = [];
     for (var i = 0; i < holes.length; i++) {
-      var hole = holes[i],
-          props = {cx: hole.dimensions.x, cy: hole.dimensions.y, r: hole.dimensions.size};
-      props.visibility = 'hidden';
-      props.key = "bb-hole-"+i;
-      holeViews.push(circle(props));
+      holeViews.push(BreadboardHoleView({hole: holes[i], drawConnection: this.props.drawConnection,
+        reportHover: this.props.reportHover, key: "breadboard-hole-"+i}));
     }
 
     return g({id: "breadboard"},

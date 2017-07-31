@@ -1,6 +1,8 @@
 var Hole = function(stripName, dimensions, column) {
   this.stripName = stripName;
-  this.dimensions = dimensions;
+  this.cx = dimensions.cx;
+  this.cy = dimensions.cy;
+  this.size = dimensions.size;
   this.isTopBody = this.stripName.indexOf("top-body") > -1;
   this.column = column || 0;
 };
@@ -49,10 +51,10 @@ var Breadboard = function(constants) {
     gaps = Math.floor(i/5);
     x = d.powerRail.x + ((i+gaps) * d.holeSpaceX);
     this.holes.push(
-      new Hole("top-pos-rail", {x: x, y: d.powerRail.top.pos.y, size: d.holeSize}),
-      new Hole("top-neg-rail", {x: x, y: d.powerRail.top.neg.y, size: d.holeSize}),
-      new Hole("bottom-pos-rail", {x: x, y: d.powerRail.bottom.pos.y, size: d.holeSize}),
-      new Hole("bottom-neg-rail", {x: x, y: d.powerRail.bottom.neg.y,  size: d.holeSize})
+      new Hole("top-pos-rail", {cx: x, cy: d.powerRail.top.pos.y, size: d.holeSize}),
+      new Hole("top-neg-rail", {cx: x, cy: d.powerRail.top.neg.y, size: d.holeSize}),
+      new Hole("bottom-pos-rail", {cx: x, cy: d.powerRail.bottom.pos.y, size: d.holeSize}),
+      new Hole("bottom-neg-rail", {cx: x, cy: d.powerRail.bottom.neg.y,  size: d.holeSize})
     );
   }
 
@@ -62,8 +64,8 @@ var Breadboard = function(constants) {
       topY = d.body.top.y + (j * d.holeSpaceY);
       bottomY = d.body.bottom.y + (j * d.holeSpaceY);
       this.holes.push(
-        new Hole("top-body-"+i, {x: x, y: topY, size: d.holeSize}, i),
-        new Hole("bottom-body-"+i, {x: x, y: bottomY, size: d.holeSize}, i)
+        new Hole("top-body-"+i, {cx: x, cy: topY, size: d.holeSize}, i),
+        new Hole("bottom-body-"+i, {cx: x, cy: bottomY, size: d.holeSize}, i)
       );
     }
   }
