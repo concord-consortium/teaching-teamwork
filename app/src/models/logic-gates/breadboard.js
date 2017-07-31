@@ -1,6 +1,17 @@
 var BBStrip = function(name) {
   this.name = name;
-  this.voltage = 0;
+  this.voltage = 1.5;
+  if (name.indexOf("pos") > -1) {
+    this.voltage = 3;
+  } else if (name.indexOf("neg") > -1) {
+    this.voltage = 0;
+  }
+};
+
+BBStrip.prototype.setVoltage = function(v) {
+  if (this.name.indexOf("pos") === -1 && this.name.indexOf("neg") === -1) {
+    this.voltage = v;
+  }
 };
 
 var BBHole = function(strip, dimensions, column) {
@@ -8,12 +19,12 @@ var BBHole = function(strip, dimensions, column) {
   this.cx = dimensions.cx;
   this.cy = dimensions.cy;
   this.size = dimensions.size;
-  this.isTopBody = this.strip.name.indexOf("top-body") > -1;
+  this.isTopBody = this.strip.name.indexOf("top-") > -1;
   this.column = column || 0;
 };
 
 BBHole.prototype.setVoltage = function(v) {
-  this.strip.voltage = v;
+  this.strip.setVoltage(v);
 };
 
 BBHole.prototype.getVoltage = function() {
@@ -27,6 +38,7 @@ BBHole.prototype.toString = function() {
 var Breadboard = function(constants) {
   this.constants = constants;
   this.holes = [];
+  this.strips = {};
   this.dimensions = {
     holeSize: 8,
     holeSpaceX: 15.95,
@@ -61,10 +73,10 @@ var Breadboard = function(constants) {
     }
   };
 
-  var topPosRail = new BBStrip("top-pos-rail"),
-      topNegRail = new BBStrip("top-neg-rail"),
-      bottomPosRail = new BBStrip("bottom-pos-rail"),
-      bottomNegRail = new BBStrip("bottom-pos-rail");
+  var topPosRail = this.createStrip("pos-rail-top"),
+      topNegRail = this.createStrip("neg-rail-top"),
+      bottomPosRail = this.createStrip("pos-rail-bottom"),
+      bottomNegRail = this.createStrip("pos-rail-bottom");
 
   var d = this.dimensions,
       x, topY, bottomY, gaps;
@@ -81,8 +93,9 @@ var Breadboard = function(constants) {
   }
 
   for (i = 0; i < 30; i++) {
-    var topStrip = new BBStrip("top-body-"+i),
-        bottomStrip = new BBStrip("bottom-body-"+i);
+    var topStrip = this.createStrip("top-"+i),
+        bottomStrip = this.createStrip("bottom-"+i);
+
     x = d.body.x + (i * d.holeSpaceX);
     for (var j = 0; j < 5; j++) {
       topY = d.body.top.y + (j * d.holeSpaceY);
@@ -95,6 +108,12 @@ var Breadboard = function(constants) {
   }
 };
 
+Breadboard.prototype.createStrip = function(name) {
+  var strip = new BBStrip(name);
+  this.strips[name] = strip;
+  return strip;
+};
+
 Breadboard.prototype.placeComponent = function(component) {
   var offset = component.getTopLeftPinOffset(this.constants, true),
       constants = this.constants.selectedConstants(true),
@@ -102,6 +121,16 @@ Breadboard.prototype.placeComponent = function(component) {
       hole = this.getNearestHole(pinPos, true);
   component.position.x = hole.cx - offset.x - (constants.PIN_WIDTH/2);
   component.position.y = hole.cy - offset.y;
+
+  var firstColumn = hole.column;
+  for (var i = 0, ii = component.pins.length; i < ii; i++) {
+    var pin = component.pins[i],
+        placement = pin.placement,
+        colOffset = pin.column,
+        column = firstColumn + colOffset,
+        stripName = placement + "-" + column;
+    pin.setBBStrip(this.strips[stripName]);
+  }
 };
 
 Breadboard.prototype.getNearestHole = function(pos, restrictToFitChip) {

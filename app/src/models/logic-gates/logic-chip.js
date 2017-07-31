@@ -43,6 +43,7 @@ var LogicChip = function (options) {
       voltage: inputMode || (i == 13) ? TTL.HIGH_VOLTAGE : TTL.LOW_VOLTAGE,
       inputMode: inputMode,
       placement: i < 7 ? 'bottom' : 'top',
+      column: i < 7 ? i : 13 - i,
       x: 0,
       y: 0,
       height: 0,
@@ -121,12 +122,16 @@ LogicChip.prototype.getTopLeftPinOffset = function(constants, selected) {
 };
 LogicChip.prototype.mapAndSetPins = function (pinConnections, inputVoltages, fn) {
   var inputLogicLevels = {},
-      pinVoltage, logicLevels, i, j, inputPinNumbers, outputPinNumber;
+      pin, pinVoltage, logicLevels, i, j, inputPinNumbers, outputPinNumber;
 
   for (i = 0; i < pinConnections.length; i++) {
     inputPinNumbers = pinConnections[i][0];
     for (j = 0; j < inputPinNumbers.length; j++) {
-      pinVoltage = inputVoltages[this.pins[inputPinNumbers[j] - 1].toString()];
+      pin = this.pins[inputPinNumbers[j] - 1];
+      pinVoltage = inputVoltages[pin.toString()];
+      if (pinVoltage === undefined) {
+        pinVoltage = pin.getVoltage();
+      }
       inputLogicLevels[inputPinNumbers[j]] = TTL.getVoltageLogicLevel(pinVoltage);
     }
   }
@@ -148,7 +153,6 @@ LogicChip.prototype.standardPinConnections = [
   [[13, 12], 11]
 ];
 LogicChip.prototype.resolveOutputVoltages = function (inputVoltages) {  // TODO: use input voltages
-
   // NOTE: all pin indexes are 1 based below to make it easier to verify against 1-based pinout diagrams
   switch (this.type) {
     // Quad 2-Input NAND
