@@ -1,3 +1,5 @@
+var TTL = require('../shared/ttl');
+
 var BBStrip = function(name) {
   this.name = name;
   this.setInitialVoltage();
@@ -31,11 +33,21 @@ var BBHole = function(strip, dimensions, column) {
 BBHole.prototype.setVoltage = function(v) {
   this.strip.setVoltage(v);
 };
-
 BBHole.prototype.getVoltage = function() {
   return this.strip.voltage;
 };
-
+BBHole.prototype.getLogicLevel = function (ignoreForcedVoltage) {
+  return TTL.getVoltageLogicLevel(this.getVoltage(ignoreForcedVoltage));
+};
+BBHole.prototype.isLow = function () {
+  return TTL.isLow(this.getLogicLevel());
+};
+BBHole.prototype.isInvalid = function () {
+  return TTL.isInvalid(this.getLogicLevel());
+};
+BBHole.prototype.isHigh = function () {
+  return TTL.isHigh(this.getLogicLevel());
+};
 BBHole.prototype.resetStrip = function() {
   this.strip.setInitialVoltage();
 };
