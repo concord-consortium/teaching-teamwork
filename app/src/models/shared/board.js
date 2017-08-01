@@ -145,6 +145,8 @@ Board.prototype.findSerializedWireEndpoints = function(serializedWire) {
                 endpoint = self.connectors[instance].holes[index];
             } else if ((type == 'component') && self.components[instance]) {
                 endpoint = self.components[instance].pins[index];
+            } else if ((type == 'bbhole')) {
+                endpoint = self.breadboard.findHole(instance);
             }
             return endpoint;
         };

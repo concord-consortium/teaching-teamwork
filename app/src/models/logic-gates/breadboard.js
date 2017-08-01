@@ -22,6 +22,7 @@ var BBHole = function(strip, dimensions, column) {
   this.strip = strip;
   this.cx = dimensions.cx;
   this.cy = dimensions.cy;
+  this.coords = this.cx+"-"+this.cy;
   this.size = dimensions.size;
   this.isTopBody = this.strip.name.indexOf("top-") > -1;
   this.column = column || 0;
@@ -40,7 +41,7 @@ BBHole.prototype.resetStrip = function() {
 };
 
 BBHole.prototype.toString = function() {
-  return "bbhole-"+this.cx+"-"+this.cy;
+  return "bbhole:"+this.coords;
 };
 
 var Breadboard = function(constants) {
@@ -112,6 +113,14 @@ var Breadboard = function(constants) {
         new BBHole(topStrip, {cx: x, cy: topY, size: d.holeSize}, i),
         new BBHole(bottomStrip, {cx: x, cy: bottomY, size: d.holeSize}, i)
       );
+    }
+  }
+};
+
+Breadboard.prototype.findHole = function(coords) {
+  for (var i = 0, ii = this.holes.length; i < ii; i++) {
+    if (this.holes[i].coords == coords) {
+      return this.holes[i];
     }
   }
 };
