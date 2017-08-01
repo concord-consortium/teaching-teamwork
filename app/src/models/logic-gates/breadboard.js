@@ -40,6 +40,12 @@ BBHole.prototype.resetStrip = function() {
   this.strip.setInitialVoltage();
 };
 
+BBHole.prototype.serialize = function(label) {
+  var serialized = {connector: "breadboard", strip: this.strip.name};
+  serialized[label] = "hole";
+  return serialized;
+};
+
 BBHole.prototype.toString = function() {
   return "bbhole:"+this.coords;
 };
