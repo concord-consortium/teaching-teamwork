@@ -20,14 +20,14 @@ BBStrip.prototype.setInitialVoltage = function() {
   }
 };
 
-var BBHole = function(strip, dimensions, column) {
+var BBHole = function(strip, dimensions, column, row) {
   this.strip = strip;
   this.cx = dimensions.cx;
   this.cy = dimensions.cy;
   this.coords = this.cx+"-"+this.cy;
   this.size = dimensions.size;
-  this.isTopBody = this.strip.name.indexOf("top-") > -1;
   this.column = column || 0;
+  this.row = row || 0;
 };
 
 BBHole.prototype.setVoltage = function(v) {
@@ -128,8 +128,8 @@ var Breadboard = function(constants) {
       topY = d.body.top.y + (j * d.holeSpaceY);
       bottomY = d.body.bottom.y + (j * d.holeSpaceY);
       this.holes.push(
-        new BBHole(topStrip, {cx: x, cy: topY, size: d.holeSize}, i),
-        new BBHole(bottomStrip, {cx: x, cy: bottomY, size: d.holeSize}, i)
+        new BBHole(topStrip, {cx: x, cy: topY, size: d.holeSize}, i, j),
+        new BBHole(bottomStrip, {cx: x, cy: bottomY, size: d.holeSize}, i, + 5)
       );
     }
   }
@@ -174,7 +174,7 @@ Breadboard.prototype.getNearestHole = function(pos, restrictToFitChip) {
       hole;
   for (var i = 0, ii = this.holes.length; i < ii; i++) {
     hole = this.holes[i];
-    if (restrictToFitChip && (!hole.isTopBody || hole.column > 23)) {
+    if (restrictToFitChip && (hole.row < 2 || hole.row > 4 || hole.column > 23)) {
       continue;
     }
 

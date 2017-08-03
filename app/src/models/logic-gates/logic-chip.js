@@ -16,7 +16,7 @@ var LogicChip = function (options) {
     x: this.layout.x,
     y: this.layout.y,
     width: 120,
-    height: 76
+    height: 50
   };
 
   switch (this.type) {
@@ -89,7 +89,7 @@ LogicChip.prototype.calculatePosition = function (constants, selected) {
 
   for (i = 0; i < 2; i++) {
     y = i === 0 ? position.y + position.height : position.y - selectedConstants.PIN_HEIGHT;
-    pinDY = i === 0 ? -(selectedConstants.PIN_HEIGHT / 2) : 2 * selectedConstants.PIN_HEIGHT;
+    pinDY = i === 0 ? -(selectedConstants.PIN_HEIGHT / 2) : 2.4 * selectedConstants.PIN_HEIGHT;
 
     for (j = 0; j < 7; j++) {
       pinNumber = (i * 7) + j;
