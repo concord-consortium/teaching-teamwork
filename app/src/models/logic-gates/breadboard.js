@@ -162,7 +162,7 @@ Breadboard.prototype.placeComponent = function(component) {
       constants = this.constants.selectedConstants(true),
       pinPos = {x: component.position.x + offset.x, y: component.position.y + offset.y},
       hole = this.getNearestHole(pinPos, true),
-      oldHoles;
+      oldHoles, i, ii, j, jj;
 
   // we have to uplug component before move so we don't block our own holes, but
   // we keep a ref to those holes in case we need to plug the component back to its
@@ -173,19 +173,19 @@ Breadboard.prototype.placeComponent = function(component) {
   component.position.y = hole.cy - offset.y;
 
   var firstColumn = hole.column,
-      firstRow = hole.row;
+      firstRow = hole.row,
+      pin, placement, colOffset, column, row, stripName;
 
   // first we have to loop through all the holes and see if it's a valid location
-  for (var i = 0, ii = component.pins.length; i < ii; i++) {
-    var pin = component.pins[i],
-        colOffset = pin.column,
-        column = firstColumn + colOffset,
-        row;
-    for (var j = 0, jj = 4; j < jj; j++) {
+  for (i = 0, ii = component.pins.length; i < ii; i++) {
+    pin = component.pins[i];
+    colOffset = pin.column;
+    column = firstColumn + colOffset;
+    for (j = 0, jj = 4; j < jj; j++) {
       row = firstRow + j;
       if (this.bodyHolesMap[column][row].connected) {
         // reset any old holes
-        for (var i = 0, ii = oldHoles.length; i<ii; i++) {
+        for (i = 0, ii = oldHoles.length; i<ii; i++) {
           oldHoles[i].connected = true;
         }
         return false;
@@ -195,15 +195,14 @@ Breadboard.prototype.placeComponent = function(component) {
 
   // now add the chip
   component.holes = [];
-  for (var i = 0, ii = component.pins.length; i < ii; i++) {
-    var pin = component.pins[i],
-        placement = pin.placement,
-        colOffset = pin.column,
-        column = firstColumn + colOffset,
-        stripName = placement + "-" + column,
-        row;
+  for (i = 0, ii = component.pins.length; i < ii; i++) {
+    pin = component.pins[i];
+    placement = pin.placement;
+    colOffset = pin.column;
+    column = firstColumn + colOffset;
+    stripName = placement + "-" + column;
     pin.setBBStrip(this.strips[stripName]);
-    for (var j = 0, jj = 4; j < jj; j++) {
+    for (j = 0, jj = 4; j < jj; j++) {
       row = firstRow + j;
       this.bodyHolesMap[column][row].connected = true;
       component.holes.push(this.bodyHolesMap[column][row]);
@@ -241,6 +240,6 @@ Breadboard.prototype.unplugComponent = function(component) {
     component.holes[i].connected = false;
   }
   return component.holes;
-}
+};
 
 module.exports = Breadboard;

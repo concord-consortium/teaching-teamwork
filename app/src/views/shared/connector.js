@@ -54,7 +54,6 @@ module.exports = React.createClass({
 
     return svg({},
       backgroundRect,
-      dipBank,
       ledBank,
       inputRect,
       outputRect,
@@ -62,6 +61,7 @@ module.exports = React.createClass({
       negativeSelector,
       positiveSelector,
       holes,
+      dipBank,
       labels
     );
   }

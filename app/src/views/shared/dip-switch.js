@@ -1,5 +1,6 @@
 var g = React.DOM.g,
-    rect = React.DOM.rect,
+    circle = React.DOM.circle,
+    path = React.DOM.path,
     events = require('../shared/events');
 
 module.exports = React.createClass({
@@ -17,12 +18,21 @@ module.exports = React.createClass({
         radius = hole.radius,
         position = this.props.connector.position,
         layout = {x: hole.cx - radius, y: (position.height - (radius * 2))/2, width: radius * 2, height: radius},
-        isLow = hole.isLow(),
-        backgroundColor = '#777';
+        cx = layout.x + radius,
+        cy = layout.y + radius,
+        endX  = layout.x + (radius * 2),
+        endY = hole.isLow() ? (layout.y-radius) : (layout.y+(radius*3)),
+        controlY = hole.isLow() ? (cy+3) : (cy-3),
+        dSwitch = "m"+layout.x+","+endY+"L"+(cx-2)+","+cy+"C"+(cx-2)+","+controlY+","+(cx+2)+","+controlY+","+(cx+2)+","+cy+"L"+endX+","+endY,
+        dShine = "m"+(cx+1)+","+cy+"L"+(endX-1)+","+endY;
 
     return g({onClick: this.props.editable ? this.handleToggle : null},
-      rect({x: layout.x, y: layout.y, width: layout.width, height: layout.height, fill: !isLow ? hole.getColor() : backgroundColor}),
-      rect({x: layout.x, y: layout.y + layout.height, width: layout.width, height: layout.height, fill: isLow ? hole.getColor() : backgroundColor})
+      circle({cx: cx, cy: cy, r: radius, fill: "#444"}),
+      circle({cx: cx-1, cy: cy-1, r: radius-1, fill: "#777"}),
+      path({d: dSwitch, fill: "#BEBEBE"}),
+      path({d: dShine, stroke: "#DDD"}),
+      circle({cx: cx, cy: endY, r: radius, fill: "#EEE"}),
+      circle({cx: cx-1, cy: endY-1, r: radius-0.7, fill: "#CECECE"})
     );
   }
 });
