@@ -4,10 +4,16 @@ module.exports = React.createClass({
   displayName: 'ConnectorHoleView',
 
   startDrag: function (e) {
+    if (this.props.hole.connected) {
+      return;
+    }
     this.props.drawConnection(this.props.hole, e);
   },
 
   mouseOver: function () {
+    if (this.props.hole.connected) {
+      return;
+    }
     this.props.reportHover(this.props.hole);
   },
 

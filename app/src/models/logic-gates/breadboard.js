@@ -28,6 +28,7 @@ var BBHole = function(strip, dimensions, column, row) {
   this.size = dimensions.size;
   this.column = column || 0;
   this.row = row || 0;
+  this.connected = false;
 };
 
 BBHole.prototype.setVoltage = function(v) {
@@ -65,6 +66,7 @@ BBHole.prototype.toString = function() {
 var Breadboard = function(constants) {
   this.constants = constants;
   this.holes = [];
+  this.bodyHolesMap = [];
   this.strips = {};
   this.dimensions = {
     holeSize: 8,
@@ -121,16 +123,22 @@ var Breadboard = function(constants) {
 
   for (i = 0; i < 30; i++) {
     var topStrip = this.createStrip("top-"+i),
-        bottomStrip = this.createStrip("bottom-"+i);
+        bottomStrip = this.createStrip("bottom-"+i),
+        topHole, bottomHole;
+    this.bodyHolesMap[i] = [];
 
     x = d.body.x + (i * d.holeSpaceX);
     for (var j = 0; j < 5; j++) {
       topY = d.body.top.y + (j * d.holeSpaceY);
       bottomY = d.body.bottom.y + (j * d.holeSpaceY);
+      topHole = new BBHole(topStrip, {cx: x, cy: topY, size: d.holeSize}, i, j);
+      bottomHole = new BBHole(bottomStrip, {cx: x, cy: bottomY, size: d.holeSize}, i, + 5);
       this.holes.push(
-        new BBHole(topStrip, {cx: x, cy: topY, size: d.holeSize}, i, j),
-        new BBHole(bottomStrip, {cx: x, cy: bottomY, size: d.holeSize}, i, + 5)
+        topHole,
+        bottomHole
       );
+      this.bodyHolesMap[i][j] = topHole;
+      this.bodyHolesMap[i][j+5] = bottomHole;
     }
   }
 };
@@ -153,19 +161,55 @@ Breadboard.prototype.placeComponent = function(component) {
   var offset = component.getTopLeftPinOffset(this.constants, true),
       constants = this.constants.selectedConstants(true),
       pinPos = {x: component.position.x + offset.x, y: component.position.y + offset.y},
-      hole = this.getNearestHole(pinPos, true);
+      hole = this.getNearestHole(pinPos, true),
+      oldHoles;
+
+  // we have to uplug component before move so we don't block our own holes, but
+  // we keep a ref to those holes in case we need to plug the component back to its
+  // old location
+  oldHoles = this.unplugComponent(component);
+
   component.position.x = hole.cx - offset.x - (constants.PIN_WIDTH/2);
   component.position.y = hole.cy - offset.y;
 
-  var firstColumn = hole.column;
+  var firstColumn = hole.column,
+      firstRow = hole.row;
+
+  // first we have to loop through all the holes and see if it's a valid location
+  for (var i = 0, ii = component.pins.length; i < ii; i++) {
+    var pin = component.pins[i],
+        colOffset = pin.column,
+        column = firstColumn + colOffset,
+        row;
+    for (var j = 0, jj = 4; j < jj; j++) {
+      row = firstRow + j;
+      if (this.bodyHolesMap[column][row].connected) {
+        // reset any old holes
+        for (var i = 0, ii = oldHoles.length; i<ii; i++) {
+          oldHoles[i].connected = true;
+        }
+        return false;
+      }
+    }
+  }
+
+  // now add the chip
+  component.holes = [];
   for (var i = 0, ii = component.pins.length; i < ii; i++) {
     var pin = component.pins[i],
         placement = pin.placement,
         colOffset = pin.column,
         column = firstColumn + colOffset,
-        stripName = placement + "-" + column;
+        stripName = placement + "-" + column,
+        row;
     pin.setBBStrip(this.strips[stripName]);
+    for (var j = 0, jj = 4; j < jj; j++) {
+      row = firstRow + j;
+      this.bodyHolesMap[column][row].connected = true;
+      component.holes.push(this.bodyHolesMap[column][row]);
+    }
   }
+  return true;
 };
 
 Breadboard.prototype.getNearestHole = function(pos, restrictToFitChip) {
@@ -188,5 +232,15 @@ Breadboard.prototype.getNearestHole = function(pos, restrictToFitChip) {
   }
   return nearestHole;
 };
+
+Breadboard.prototype.unplugComponent = function(component) {
+  if (!component.holes) {
+    component.holes = [];
+  }
+  for (var i = 0, ii = component.holes.length; i<ii; i++) {
+    component.holes[i].connected = false;
+  }
+  return component.holes;
+}
 
 module.exports = Breadboard;

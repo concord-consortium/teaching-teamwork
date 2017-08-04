@@ -73,6 +73,8 @@ var LogicChip = function (options) {
     anchor: 'middle',
     text: this.type
   };
+
+  this.holes = [];    // bb holes this is currently occupying
 };
 LogicChip.prototype.reset = function () {
   var i;
