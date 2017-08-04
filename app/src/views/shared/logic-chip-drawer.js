@@ -115,14 +115,14 @@ module.exports = React.createClass({
       trianglePath = ["M", triangleX, " ", triangleY, " l", (triangleWidth / 2), " -", triangleHeight, " l", (triangleWidth / 2), " ", triangleHeight, " Z"].join("");
       upButton = this.state.scrollSteps === 0 ? null : g({},
         rect({x: this.props.layout.x, y: this.props.layout.y, width: this.props.layout.width, height: scrollButtonHeight, fill: '#eee', onMouseDown: this.scrollUp}),
-        path({d: trianglePath, fill: '#333', stroke: '#333', strokeWidth: 1})
+        path({d: trianglePath, fill: '#333', stroke: '#333', strokeWidth: 1, onMouseDown: this.scrollUp})
       );
 
       triangleY = this.props.layout.y + this.props.layout.height - (scrollButtonHeight / 2) - (triangleHeight / 2);
       trianglePath = ["M", triangleX, " ", triangleY, " l", (triangleWidth / 2), " ", triangleHeight, " l", (triangleWidth / 2), " -", triangleHeight, " Z"].join("");
       downButton = this.state.scrollSteps === this.state.maxScrollSteps ? null : g({},
         rect({x: this.props.layout.x, y: this.props.layout.y + this.props.layout.height - scrollButtonHeight, width: this.props.layout.width, height: scrollButtonHeight, fill: '#eee', onMouseDown: this.scrollDown}),
-        path({d: trianglePath, fill: '#333', stroke: '#333', strokeWidth: 1})
+        path({d: trianglePath, fill: '#333', stroke: '#333', strokeWidth: 1, onMouseDown: this.scrollDown})
       );
     }
     else {

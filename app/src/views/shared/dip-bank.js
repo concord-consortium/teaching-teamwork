@@ -21,8 +21,8 @@ module.exports = React.createClass({
     backgroundRect = rect({x: position.x, y: 0, width: position.width, height: position.height, fill: '#aaa'});
 
     fontSize = position.height / 2.5;
-    zero = text({key: 'zero', x: position.x - fontSize, y: fontSize, fontSize: fontSize, fill: '#000', style: {textAnchor: 'start'}}, '0');
-    one = text({key: 'one', x: position.x - fontSize, y: position.height - (fontSize / 2), fontSize: fontSize, fill: '#000', style: {textAnchor: 'start'}}, '1');
+    zero = text({key: 'zero', x: position.x - fontSize, y: fontSize-1, fontSize: fontSize, fill: '#000', style: {textAnchor: 'start'}}, '0');
+    one = text({key: 'one', x: position.x - fontSize, y: position.height, fontSize: fontSize, fill: '#000', style: {textAnchor: 'start'}}, '1');
 
     return svg({},
       backgroundRect,

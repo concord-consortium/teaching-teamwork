@@ -24,11 +24,12 @@ module.exports = React.createClass({
         endY = hole.isLow() ? (layout.y-radius) : (layout.y+(radius*3)),
         controlY = hole.isLow() ? (cy+3) : (cy-3),
         dSwitch = "m"+layout.x+","+endY+"L"+(cx-2)+","+cy+"C"+(cx-2)+","+controlY+","+(cx+2)+","+controlY+","+(cx+2)+","+cy+"L"+endX+","+endY,
-        dShine = "m"+(cx+1)+","+cy+"L"+(endX-1)+","+endY;
+        dShine = "m"+(cx+1)+","+cy+"L"+(endX-1)+","+endY,
+        baseColor = hole.isLow() ? "blue" : "red";
 
-    return g({onClick: this.props.editable ? this.handleToggle : null},
-      circle({cx: cx, cy: cy, r: radius, fill: "#444"}),
-      circle({cx: cx-1, cy: cy-1, r: radius-1, fill: "#777"}),
+    return g({onClick: this.props.editable ? this.handleToggle : null, style: { cursor: "pointer" }},
+      circle({cx: cx, cy: cy, r: radius, fill: baseColor}),
+      circle({cx: cx, cy: cy, r: radius-1, fill: "#777"}),
       path({d: dSwitch, fill: "#BEBEBE"}),
       path({d: dShine, stroke: "#DDD"}),
       circle({cx: cx, cy: endY, r: radius, fill: "#EEE"}),
