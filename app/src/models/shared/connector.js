@@ -120,7 +120,7 @@ Connector.prototype.autoToggleSwitches = function(direction) {
       i, bitValue;
 
   for (i = 0; i < this.holes.length; i++) {
-    bitValue = this.holes[i].isHigh() ? 1 : 0;
+    bitValue = this.holes[(this.holes.length-1)-i].isHigh() ? 1 : 0;
     currentValue += (bitValue << i);
   }
 
@@ -133,7 +133,7 @@ Connector.prototype.autoToggleSwitches = function(direction) {
 
   for (i = 0; i < this.holes.length; i++) {
     bitValue = currentValue & (1 << i);
-    this.holes[i].setForcedVoltage(bitValue ? TTL.HIGH_VOLTAGE : TTL.LOW_VOLTAGE);
+    this.holes[(this.holes.length-1)-i].setForcedVoltage(bitValue ? TTL.HIGH_VOLTAGE : TTL.LOW_VOLTAGE);
   }
 
   return currentValue;
