@@ -13,6 +13,10 @@ module.exports = React.createClass({
         numHoles = this.props.connector.holes.length,
         backgroundRect, hole, i, one, zero, fontSize;
 
+    if (numHoles === 0) {
+      return null;
+    }
+
     for (i = 0; i < numHoles; i++) {
       hole = this.props.connector.holes[i];
       switches.push(DIPSwitchView({key: i, connector: this.props.connector, hole: hole, selected: this.props.selected, editable: this.props.editable, forceRerender: this.props.forceRerender}));
