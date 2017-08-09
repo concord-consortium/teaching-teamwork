@@ -257,7 +257,7 @@ Board.prototype.addWire = function(source, dest, color, skipResolver) {
     wire = new Wire({
         source: source,
         dest: dest,
-        color: colors.wire
+        color: colors.mixedWires[Math.floor(Math.random() * colors.mixedWires.length)]
     });
     this.wires.push(wire);
     if (!skipResolver) {

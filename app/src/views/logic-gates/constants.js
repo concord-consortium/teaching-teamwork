@@ -23,7 +23,7 @@ module.exports = constants = {
         };
 
     return {
-      WIRE_WIDTH: selected ? 3 : 2,
+      WIRE_WIDTH: selected ? 3.5 : 2.5,
       FOO_WIRE_WIDTH: 1,
       CONNECTOR_HOLE_DIAMETER: 10,
       CONNECTOR_HOLE_MARGIN: 4,
