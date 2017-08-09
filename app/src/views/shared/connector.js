@@ -31,11 +31,11 @@ module.exports = React.createClass({
     if (this.props.connector.type == 'input') {
       dipBank = DIPBankView({key: 'dipbank', connector: this.props.connector, selected: this.props.selected, editable: this.props.editable, forceRerender: this.props.forceRerender});
       if (this.props.showInputAutoToggles) {
-        selectorRect = rect({x: position.x + position.width, y: 0, width: position.selectorBackgroundWidth, height: position.height, fill: colors.inputSelectorBackground},
+        selectorRect = rect({x: position.x + position.width, y: 6, width: position.selectorBackgroundWidth, height: position.height, fill: colors.inputSelectorBackground},
           title({}, "Cycles the switches in forward or reverse binary order")
         );
-        negativeSelector = ConnectorSelectorView({key: 'negative', direction: 'negative', connector: this.props.connector, selected: this.props.selected, editable: this.props.editable, cx: position.negativeSelectorCX, cy: position.height / 2, width: position.selectorWidth, height: position.selectorHeight, forceRerender: this.props.forceRerender});
-        positiveSelector = ConnectorSelectorView({key: 'positive', direction: 'positive', connector: this.props.connector, selected: this.props.selected, editable: this.props.editable, cx: position.positiveSelectorCX, cy: position.height / 2, width: position.selectorWidth, height: position.selectorHeight, forceRerender: this.props.forceRerender});
+        negativeSelector = ConnectorSelectorView({key: 'negative', direction: 'negative', connector: this.props.connector, selected: this.props.selected, editable: this.props.editable, cx: position.negativeSelectorCX, cy: 6 + (position.height / 2), width: position.selectorWidth, height: position.selectorHeight, forceRerender: this.props.forceRerender});
+        positiveSelector = ConnectorSelectorView({key: 'positive', direction: 'positive', connector: this.props.connector, selected: this.props.selected, editable: this.props.editable, cx: position.positiveSelectorCX, cy: 6 + (position.height / 2), width: position.selectorWidth, height: position.selectorHeight, forceRerender: this.props.forceRerender});
       }
     }
     else if (this.props.connector.type == 'output') {

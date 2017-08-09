@@ -67,7 +67,7 @@ Connector.prototype.calculatePosition = function (constants, selected, allConnec
     this.position.width = this.type == 'input' ? inputWidth : outputWidth;
     this.position.height = holeWidth * 1.25;
     this.position.x = ((constants.WORKSPACE_WIDTH - totalWidth) / 2) + (this.type == 'output' ? (inputWidth + selectorWidth + selectedConstants.CONNECTOR_SPACING) : 0);
-    this.position.y = holeWidth;
+    this.position.y = holeWidth + 6;
 
     holeY = cy = this.position.y + selectedConstants.CONNECTOR_HOLE_MARGIN + radius;
     holeX = cx = this.position.x + (holeWidth / 2);

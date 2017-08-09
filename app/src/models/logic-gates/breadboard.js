@@ -76,28 +76,28 @@ var Breadboard = function(constants) {
       x: 98,
       top: {
         pos: {
-          y: 58
+          y: 64
         },
         neg: {
-          y: 74
+          y: 80
         }
       },
       bottom: {
         pos: {
-          y: 328
+          y: 334
         },
         neg: {
-          y: 344
+          y: 350
         }
       }
     },
     body: {
       x: 90,
       top: {
-        y: 114
+        y: 120
       },
       bottom: {
-        y: 217
+        y: 223
       }
     }
   };

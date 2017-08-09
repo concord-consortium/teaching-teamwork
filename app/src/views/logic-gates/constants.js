@@ -3,7 +3,7 @@ var workspaceWidth = 936 - 200,
     constants;
 
 module.exports = constants = {
-  WORKSPACE_HEIGHT: 768,
+  WORKSPACE_HEIGHT: 790,
   WORKSPACE_WIDTH: workspaceWidth,
   RIBBON_HEIGHT: 21,
   SPACER_HEIGHT: 21,
