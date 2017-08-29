@@ -5,6 +5,7 @@ var Pin = function (options) {
   this.isPin = true; // to allow for easy checks against holes in circuits
   this.inputMode = options.inputMode;
   this.placement = options.placement;
+  this.column = options.column;
   this.number = options.number;
   this.x = options.x;
   this.y = options.y;
@@ -24,11 +25,22 @@ var Pin = function (options) {
 Pin.prototype.getBezierReflection = function () {
   return this.bezierReflection;
 };
+Pin.prototype.setBBStrip = function (bbStrip) {
+  this.bbStrip = bbStrip;
+};
 Pin.prototype.setVoltage = function (newVoltage) {
-  this.voltage = newVoltage;
+  if (this.bbStrip) {
+    this.bbStrip.setVoltage(newVoltage);
+  } else {
+    this.voltage = newVoltage;
+  }
 };
 Pin.prototype.getVoltage = function () {
-  return this.voltage;
+  if (this.bbStrip) {
+    return this.bbStrip.voltage;
+  } else {
+    return this.voltage;
+  }
 };
 Pin.prototype.getLogicLevel = function () {
   return TTL.getVoltageLogicLevel(this.voltage);
@@ -43,7 +55,7 @@ Pin.prototype.isHigh = function () {
   return TTL.isHigh(this.getLogicLevel());
 };
 Pin.prototype.getColor = function () {
-  return TTL.getColor(this.voltage);
+  return TTL.getColor(this.getVoltage());
 };
 Pin.prototype.reset = function () {
   this.voltage = this.startingVoltage;
@@ -52,7 +64,7 @@ Pin.prototype.getLabel = function () {
   return this.getVoltage() + "V " + (!this.inputMode || this.connected ? "" : "floating ") + (this.inputMode ? "input" : "output") + " (" + this.getLogicLevel().toLowerCase() + ")";
 };
 Pin.prototype.toString = function () {
-  return ['component', this.component.name, this.number, 'board', this.component.board.number].join(':');
+  return ['component', this.component.name, this.number, 'board', this.component.board ? this.component.board.number : "none"].join(':');
 };
 
 module.exports = Pin;

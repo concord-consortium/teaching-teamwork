@@ -3,6 +3,7 @@ var boardWatcher = require('../../controllers/pic/board-watcher'),
     WireView = React.createFactory(require('./wire')),
     ProbeView = React.createFactory(require('./probe')),
     LogicChipDrawerView = React.createFactory(require('./logic-chip-drawer')),
+    BreadboardView = React.createFactory(require('../logic-gates/breadboard')),
     events = require('../shared/events'),
     layout = require('./layout'),
     LogicChip =  require('../../models/logic-gates/logic-chip'),
@@ -169,6 +170,7 @@ module.exports = React.createClass({
     var $window = $(window),
         self = this,
         moved = false,
+        bezierReflection = source.getBezierReflection ? source.getBezierReflection() : 1,
         drag, stopDrag;
 
     e.preventDefault();
@@ -187,8 +189,8 @@ module.exports = React.createClass({
             x2: source.cx,
             y2: source.cy,
             strokeWidth: self.props.constants.selectedConstants(self.props.selected).WIRE_WIDTH,
-            stroke: '#f00',
-            reflection: source.getBezierReflection() * self.props.board.bezierReflectionModifier
+            stroke: '#2eadab',
+            reflection: bezierReflection * self.props.board.bezierReflectionModifier
           }
         });
       }
@@ -223,7 +225,7 @@ module.exports = React.createClass({
         wire = self.props.board.addWire(source, dest, (source.color || dest.color || color));
         self.setState({
           wires: self.props.board.wires,
-          selectedWires: [wire],
+          selectedWires: [],
           selectedComponents: []
         });
         events.logEvent(events.ADD_WIRE_EVENT, null, {board: self.props.board, source: source, dest: dest});
@@ -497,9 +499,15 @@ module.exports = React.createClass({
       wires.push(WireView({key: i, constants: this.props.constants, wire: wire, board: this.props.board, editable: this.props.editable, enablePointerEvents: enableWirePointerEvents, width: selectedConstants.WIRE_WIDTH, wireSelected: this.wireSelected, selected: this.state.selectedWires.indexOf(wire) !== -1, wireSettings: this.props.wireSettings}));
     }
 
+    var breadboardView = null;
+    if (this.props.board.breadboard) {
+      breadboardView = BreadboardView({breadboard: this.props.board.breadboard, drawConnection: this.drawConnection, reportHover: this.reportHover});
+    }
+
     return div({className: this.props.editable ? 'board editable-board' : 'board', style: style},
       span({className: this.props.editable ? 'board-user editable-board-user' : 'board-user'}, ('Circuit ' + (this.props.board.number + 1)) + (this.props.user ? ': ' + this.props.user.name : (this.props.soloMode ? '' : ': (unclaimed)'))),
       svg({className: 'board-area', onMouseDown: this.props.selected && this.props.editable ? this.backgroundMouseDown : null, ref: 'svg'},
+        breadboardView,
         connectors,
         components,
         wires,

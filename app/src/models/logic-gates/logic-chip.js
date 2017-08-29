@@ -15,8 +15,8 @@ var LogicChip = function (options) {
   this.position = {
     x: this.layout.x,
     y: this.layout.y,
-    width: 150,
-    height: 75
+    width: 120,
+    height: 50
   };
 
   switch (this.type) {
@@ -40,9 +40,10 @@ var LogicChip = function (options) {
     inputMode = outputPins.indexOf(i) === -1;
     pin = {
       number: i,
-      voltage: inputMode || (i == 13) ? TTL.HIGH_VOLTAGE : TTL.LOW_VOLTAGE,
+      voltage: 1.5,
       inputMode: inputMode,
       placement: i < 7 ? 'bottom' : 'top',
+      column: i < 7 ? i : 13 - i,
       x: 0,
       y: 0,
       height: 0,
@@ -72,6 +73,8 @@ var LogicChip = function (options) {
     anchor: 'middle',
     text: this.type
   };
+
+  this.holes = [];    // bb holes this is currently occupying
 };
 LogicChip.prototype.reset = function () {
   var i;
@@ -88,7 +91,7 @@ LogicChip.prototype.calculatePosition = function (constants, selected) {
 
   for (i = 0; i < 2; i++) {
     y = i === 0 ? position.y + position.height : position.y - selectedConstants.PIN_HEIGHT;
-    pinDY = i === 0 ? -(selectedConstants.PIN_HEIGHT / 2) : 2 * selectedConstants.PIN_HEIGHT;
+    pinDY = i === 0 ? -(selectedConstants.PIN_HEIGHT / 2) : 2.4 * selectedConstants.PIN_HEIGHT;
 
     for (j = 0; j < 7; j++) {
       pinNumber = (i * 7) + j;
@@ -109,14 +112,30 @@ LogicChip.prototype.calculatePosition = function (constants, selected) {
     }
   }
 };
+LogicChip.prototype.getTopLeftPinOffset = function(constants, selected) {
+  var selectedConstants = constants.selectedConstants(selected),
+      position = this.position,
+      pinDX = (position.width - (selectedConstants.PIN_WIDTH * 7)) / 8;
+  return {
+    x: pinDX,
+    y: 0 - selectedConstants.PIN_HEIGHT
+  };
+
+};
+LogicChip.prototype.isEnergized = function() {
+  return this.pins[13].getVoltage() > TTL.INVALID_VOLTAGE &&
+    this.pins[6].getVoltage() < TTL.INVALID_VOLTAGE;
+};
 LogicChip.prototype.mapAndSetPins = function (pinConnections, inputVoltages, fn) {
   var inputLogicLevels = {},
-      pinVoltage, logicLevels, i, j, inputPinNumbers, outputPinNumber;
+      isEnergized = this.isEnergized(),
+      pin, pinVoltage, logicLevels, i, j, inputPinNumbers, outputPinNumber;
 
   for (i = 0; i < pinConnections.length; i++) {
     inputPinNumbers = pinConnections[i][0];
     for (j = 0; j < inputPinNumbers.length; j++) {
-      pinVoltage = inputVoltages[this.pins[inputPinNumbers[j] - 1].toString()];
+      pin = this.pins[inputPinNumbers[j] - 1];
+      pinVoltage = pin.getVoltage();
       inputLogicLevels[inputPinNumbers[j]] = TTL.getVoltageLogicLevel(pinVoltage);
     }
   }
@@ -128,7 +147,8 @@ LogicChip.prototype.mapAndSetPins = function (pinConnections, inputVoltages, fn)
     for (j = 0; j < inputPinNumbers.length; j++) {
       logicLevels.push(inputLogicLevels[inputPinNumbers[j]]);
     }
-    this.pins[outputPinNumber - 1].setVoltage(TTL.getVoltage(fn.apply(this, logicLevels)));
+    pinVoltage = isEnergized ? TTL.getVoltage(fn.apply(this, logicLevels)) : TTL.INVALID_VOLTAGE;
+    this.pins[outputPinNumber - 1].setVoltage(pinVoltage);
   }
 };
 LogicChip.prototype.standardPinConnections = [
@@ -138,7 +158,6 @@ LogicChip.prototype.standardPinConnections = [
   [[13, 12], 11]
 ];
 LogicChip.prototype.resolveOutputVoltages = function (inputVoltages) {  // TODO: use input voltages
-
   // NOTE: all pin indexes are 1 based below to make it easier to verify against 1-based pinout diagrams
   switch (this.type) {
     // Quad 2-Input NAND

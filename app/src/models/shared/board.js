@@ -2,6 +2,7 @@ var Hole = require('./hole'),
     Pin = require('./pin'),
     Wire = require('./wire'),
     LogicChip = require('../logic-gates/logic-chip'),
+    Breadboard = require('../logic-gates/breadboard'),
     colors = require('../../views/shared/colors');
 
 var Board = function(options) {
@@ -23,6 +24,10 @@ var Board = function(options) {
     // reset the pic so the pin output is set
     if (this.components.pic) {
         this.components.pic.reset();
+    }
+
+    if (options.useBreadboard) {
+        this.breadboard = new Breadboard(options.constants);
     }
 };
 Board.prototype.updateComponentList = function() {
@@ -140,6 +145,8 @@ Board.prototype.findSerializedWireEndpoints = function(serializedWire) {
                 endpoint = self.connectors[instance].holes[index];
             } else if ((type == 'component') && self.components[instance]) {
                 endpoint = self.components[instance].pins[index];
+            } else if ((type == 'bbhole')) {
+                endpoint = self.breadboard.findHole(instance);
             }
             return endpoint;
         };
@@ -170,6 +177,8 @@ Board.prototype.serializeEndpoint = function(endPoint, label) {
             }
         };
         serialized[label] = 'pin';
+    } else if (endPoint.serialize) {
+        serialized = endPoint.serialize(label);
     } else {
         serialized = {};
     }
@@ -199,8 +208,14 @@ Board.prototype.removeWire = function(source, dest) {
             if (this.wires[i].source.inputMode) {
                 this.wires[i].source.reset();
             }
+            if (this.wires[i].source.resetStrip) {
+                this.wires[i].source.resetStrip();
+            }
             if (this.wires[i].dest.inputMode) {
                 this.wires[i].dest.reset();
+            }
+            if (this.wires[i].dest.resetStrip) {
+                this.wires[i].dest.resetStrip();
             }
             this.wires.splice(i, 1);
             this.resolver.rewire();
@@ -242,7 +257,7 @@ Board.prototype.addWire = function(source, dest, color, skipResolver) {
     wire = new Wire({
         source: source,
         dest: dest,
-        color: colors.wire
+        color: colors.mixedWires[Math.floor(Math.random() * colors.mixedWires.length)]
     });
     this.wires.push(wire);
     if (!skipResolver) {
@@ -265,13 +280,25 @@ Board.prototype.addComponent = function(name, component) {
         }
     }
 
-    component.name = name;
-    component.setBoard(this);
-    this.components[name] = component;
-    this.updateComponentList();
-    this.resolver.resolve(true);
+    var valid = this.placeChip(component);
+    if (valid){
+        component.name = name;
+        component.setBoard(this);
+        this.components[name] = component;
+        this.updateComponentList();
+        this.resolver.resolve(true);
+    }
+};
+Board.prototype.placeChip = function(component) {
+    if (this.breadboard) {
+        return this.breadboard.placeComponent(component);
+    }
+    return true;
 };
 Board.prototype.removeComponent = function(component) {
+    if (this.breadboard) {
+        this.breadboard.unplugComponent(component);
+    }
     delete this.components[component.name];
     this.updateComponentList();
     this.resolver.resolve(true);

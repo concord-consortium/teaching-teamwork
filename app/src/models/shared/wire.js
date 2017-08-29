@@ -9,9 +9,9 @@ Wire.prototype.connects = function (source, dest) {
 };
 Wire.prototype.getBezierReflection = function () {
   if (this.dest.connector) {
-    return this.dest.getBezierReflection();
+    return this.dest.getBezierReflection ? this.dest.getBezierReflection() : 0;
   }
-  return this.source.getBezierReflection();
+  return this.source.getBezierReflection ? this.source.getBezierReflection() : 0;
 };
 Wire.GenerateId = function (source, dest, color) {
   var sourceId = source.toString(),

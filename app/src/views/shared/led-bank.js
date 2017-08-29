@@ -14,11 +14,11 @@ module.exports = React.createClass({
 
     for (i = 0; i < numHoles; i++) {
       hole = this.props.connector.holes[i];
-      leds.push(circle({key: i, cx: hole.cx, cy: position.height / 2, r: hole.radius, fill: hole.getColor()}));
+      leds.push(circle({key: i, cx: hole.cx, cy: 6 + (position.height / 2), r: hole.radius, fill: hole.getColor()}));
     }
 
     return svg({},
-      rect({x: position.x, y: 0, width: position.width, height: position.height, fill: '#aaa'}),
+      rect({x: position.x, y: 6, width: position.width, height: position.height, fill: '#aaa'}),
       leds,
       title({}, "LED lights for output testing")
     );

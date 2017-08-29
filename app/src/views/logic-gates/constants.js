@@ -3,7 +3,7 @@ var workspaceWidth = 936 - 200,
     constants;
 
 module.exports = constants = {
-  WORKSPACE_HEIGHT: 768,
+  WORKSPACE_HEIGHT: 790,
   WORKSPACE_WIDTH: workspaceWidth,
   RIBBON_HEIGHT: 21,
   SPACER_HEIGHT: 21,
@@ -23,7 +23,7 @@ module.exports = constants = {
         };
 
     return {
-      WIRE_WIDTH: selected ? 3 : 2,
+      WIRE_WIDTH: selected ? 3.5 : 2.5,
       FOO_WIRE_WIDTH: 1,
       CONNECTOR_HOLE_DIAMETER: 10,
       CONNECTOR_HOLE_MARGIN: 4,
@@ -34,12 +34,12 @@ module.exports = constants = {
       COMPONENT_WIDTH: boardHeight * 0.5,
       COMPONENT_HEIGHT: boardHeight * 0.5,
       COMPONENT_SPACING: boardHeight * 0.5,
-      PIC_FONT_SIZE: 12,
-      CHIP_LABEL_SIZE: 16,
+      PIC_FONT_SIZE: 11,
+      CHIP_LABEL_SIZE: 14,
       BUTTON_FONT_SIZE: 16,
       BUS_FONT_SIZE: 14,
-      PIN_WIDTH: 13.72,
-      PIN_HEIGHT: 13.72,
+      PIN_WIDTH: 7,
+      PIN_HEIGHT: 8,
       PROBE_WIDTH: 150,
       PROBE_NEEDLE_HEIGHT: 5,
       PROBE_HEIGHT: 20,

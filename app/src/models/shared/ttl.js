@@ -46,7 +46,7 @@ var TTL = module.exports = {
     if (!TTL.COLOR_MAP) {
       TTL.COLOR_MAP = {
         'LOW': 'blue',
-        'INVALID': '#ffbf00',
+        'INVALID': '#777',
         'HIGH': 'red'
       };
     }

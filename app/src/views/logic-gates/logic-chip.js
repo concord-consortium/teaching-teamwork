@@ -41,13 +41,13 @@ module.exports = React.createClass({
 
   wireSegment: function (s, key) {
     var selectedConstants = this.props.constants.selectedConstants(this.props.selected),
-        segment = {key: key, x1: s.x1, y1: s.y1, x2: s.x2, y2: s.y2, strokeWidth: selectedConstants.FOO_WIRE_WIDTH, stroke: '#333'};
+        segment = {key: key, x1: s.x1, y1: s.y1, x2: s.x2, y2: s.y2, strokeWidth: selectedConstants.FOO_WIRE_WIDTH, stroke: '#FFF'};
     segment.line = line(segment);
     return segment;
   },
 
   renderGround: function (pin, p) {
-    var p2 = {x: p.x, y: p.y + (1.5 * pin.height)},
+    var p2 = {x: p.x, y: p.y + (pin.height*0.9)},
         segments = [this.wireSegment({x1: p.x, y1: p.y, x2: p2.x, y2: p2.y}, pin.name + 'down').line],
         s, width, height, i;
 
@@ -96,16 +96,19 @@ module.exports = React.createClass({
     };
 
     stopDrag = function (e) {
-      var pos = self.props.snapToGrid(self.props.component.position);
       e.stopPropagation();
       e.preventDefault();
-      self.setPosition(pos.x, pos.y);
       self.setState({dragging: false});
       if (self.props.stopLogicChipDrawerDrag) {
         self.props.stopLogicChipDrawerDrag({type: self.props.component.type, x: position.x, y: position.y});
       }
       else if (moved) {
-        events.logEvent(events.MOVE_LOGIC_CHIP_EVENT, null, {board: self.props.component.board, chip: self.props.component});
+        var valid = self.props.component.board.placeChip(self.props.component);
+        if (valid) {
+          events.logEvent(events.MOVE_LOGIC_CHIP_EVENT, null, {board: self.props.component.board, chip: self.props.component});
+        } else {
+          self.setPosition(startX, startY);
+        }
       }
       self.props.layoutChanged();
       $window.off('mousemove', drag);
@@ -136,16 +139,16 @@ module.exports = React.createClass({
     return chipNames[this.props.component.type] || 'Unknown';
   },
 
-  renderQuad: function (source1PinIndex, source2PinIndex, destPinIndex, renderConnectorFn) {
+  renderQuad: function (source1PinIndex, source2PinIndex, destPinIndex, renderConnectorFn, smallerWidth) {
     var source1Pin = this.props.component.pins[source1PinIndex],
         source2Pin = this.props.component.pins[source2PinIndex],
         destPin = this.props.component.pins[destPinIndex],
-        width = 18,
-        height = 18,
+        width = smallerWidth ? 12 : 22,
+        height = 12,
         dy = source1Pin.placement == 'bottom' ? -1 : 1,
         edgeY = source1Pin.placement == 'bottom' ? source1Pin.y : source1Pin.y + source1Pin.height,
-        x = source1Pin.cx + ((destPin.cx - source1Pin.cx - width) / 2),
-        y = edgeY + ((source1Pin.height * 1.25) * dy),
+        x = source1Pin.cx + ((destPin.cx - source1Pin.cx - width) / 1.5),
+        y = edgeY + ((source1Pin.height * 1.5) * dy),
         oneThirdsY = y + ((height * dy) * (1/3)),
         twoThirdsY = y + ((height * dy) * (2/3)),
         turnX = source1Pin.cx + ((x - source1Pin.cx) / 2),
@@ -173,11 +176,11 @@ module.exports = React.createClass({
         source2Pin = this.props.component.pins[source2PinIndex],
         destPin = this.props.component.pins[destPinIndex],
         width = 18,
-        height = 18,
+        height = 12,
         dy = source1Pin.placement == 'bottom' ? -1 : 1,
         edgeY = source1Pin.placement == 'bottom' ? source1Pin.y : source1Pin.y + source1Pin.height,
         x = source1Pin.cx - ((source1Pin.cx - destPin.cx - width) / 2),
-        y = edgeY + ((source1Pin.height * 1.25) * dy),
+        y = edgeY + ((source1Pin.height * 1.5) * dy),
         oneThirdsY = y + ((height * dy) * (1/3)),
         twoThirdsY = y + ((height * dy) * (2/3)),
         turnX = source1Pin.cx + ((x - source1Pin.cx) / 2),
@@ -211,11 +214,11 @@ module.exports = React.createClass({
         dy = -1,
         edgeY = source1Pin.y,
         destY = destPin.y + destPin.height,
-        x = source1Pin.cx + ((destPin.cx - source1Pin.cx - width) / 2),
+        x = source1Pin.cx + ((destPin.cx - source1Pin.cx - width) / 1.2),
         y = edgeY + ((source1Pin.height * 2) * dy),
         oneQuarterY = y + ((height * dy) * (1/4)),
         threeQuartersY = y + ((height * dy) * (3/4)),
-        turnX = source1Pin.cx + ((x - source1Pin.cx) / 2),
+        turnX = source1Pin.cx + ((x - source1Pin.cx) / 1.5),
         turnY = edgeY + ((height / 2) * dy),
         destTurnY = destY + (height / 2),
         midY = y + ((height / 2) * dy);
@@ -248,11 +251,11 @@ module.exports = React.createClass({
         source3Pin = this.props.component.pins[source3PinIndex],
         destPin = this.props.component.pins[destPinIndex],
         width = 18,
-        height = 18,
+        height = 12,
         dy = source1Pin.placement == 'bottom' ? -1 : 1,
         edgeY = source1Pin.placement == 'bottom' ? source1Pin.y : source1Pin.y + source1Pin.height,
-        x = destPin.cx - (2 * destPin.width),
-        y = edgeY + ((source1Pin.height * 1.25) * dy),
+        x = destPin.cx - (2.6 * destPin.width),
+        y = edgeY + ((source1Pin.height * 1.2) * dy),
         oneQuarterY = y + ((height * dy) * (1/4)),
         threeQuartersY = y + ((height * dy) * (3/4)),
         turnX = source1Pin.cx + ((x - source1Pin.cx) * (7/8)),
@@ -281,13 +284,12 @@ module.exports = React.createClass({
   renderInverter: function (sourcePinIndex, destPinIndex) {
     var sourcePin = this.props.component.pins[sourcePinIndex],
         destPin = this.props.component.pins[destPinIndex],
-        width = 12,
+        width = 14,
         height = 12,
-        radius = 2,
         dy = sourcePin.placement == 'bottom' ? -1 : 1,
         edgeY = sourcePin.placement == 'bottom' ? sourcePin.y : sourcePin.y + sourcePin.height,
         x = sourcePin.cx + ((destPin.cx - sourcePin.cx - width) / 2),
-        y = edgeY + ((sourcePin.height * 1.25) * dy),
+        y = edgeY + ((sourcePin.height * 1.5) * dy),
         midY = y + ((height / 2) * dy);
 
     return g({},
@@ -298,7 +300,6 @@ module.exports = React.createClass({
       //* line({x1: x + width, y1: midY, x2: x, y2: y + (height * dy), strokeWidth: 1, stroke: '#fff'}),
       //* line({x1: x, y1: y + (height * dy), x2: x, y2: y, strokeWidth: 1, stroke: '#fff'}),
       line({x1: x + width, y1: midY, x2: destPin.cx, y2: midY, strokeWidth: 1, stroke: '#fff'}),
-      line({x1: x + width + (2 * radius), y1: midY, x2: destPin.cx, y2: midY, strokeWidth: 1, stroke: '#fff'}),
       line({x1: destPin.cx, y1: midY, x2: destPin.cx, y2: edgeY, strokeWidth: 1, stroke: '#fff'}),
       //* circle({cx: x + width + radius, cy: midY, r: radius, fill: 'none', stroke: '#fff'}),
       this.renderText(x, y, width, height, dy, 'NOT')
@@ -363,7 +364,19 @@ module.exports = React.createClass({
   },
 
   renderPinOut: function () {
-    var pinOut = null;
+    var pinOut = null,
+        selectedConstants = constants.selectedConstants(this.props.selected),
+        gndPin = this.props.component.pins[6],
+        vccPin = this.props.component.pins[13],
+        groundComponent, vccPos, vccComponents, powerSymbols;
+
+    groundComponent = this.renderGround(gndPin, {x: gndPin.cx, y: gndPin.cy - (gndPin.height * 2.2)});
+    vccPos = {x1: vccPin.cx, y1: vccPin.cy + vccPin.height*2.2 + vccPin.width/4, x2: vccPin.cx, y2: vccPin.cy + vccPin.height*1.3 + vccPin.width/4};
+    vccComponents = g({},
+      line({x1: vccPos.x1, y1: vccPos.y1, x2: vccPos.x2, y2: vccPos.y2, strokeWidth: selectedConstants.FOO_WIRE_WIDTH, stroke: '#FFF'}),
+      circle({cx: vccPos.x2, cy: vccPos.y2 - (vccPin.width / 2), r: vccPin.width / 2.2, fill: 'none', stroke: '#FFF'})
+    );
+    powerSymbols = g({style: {pointerEvents: 'none'}}, groundComponent, vccComponents);
 
     switch (this.props.component.type) {
       case '7400':
@@ -372,7 +385,8 @@ module.exports = React.createClass({
           this.renderQuad(0, 1, 2, this.renderNand),
           this.renderQuad(3, 4, 5, this.renderNand),
           this.renderQuad(9, 8, 7, this.renderNand),
-          this.renderQuad(12, 11, 10, this.renderNand)
+          this.renderQuad(12, 11, 10, this.renderNand),
+          powerSymbols
         );
         break;
       case '7402':
@@ -381,7 +395,8 @@ module.exports = React.createClass({
           this.renderReversedQuad(2, 1, 0, this.renderNor),
           this.renderReversedQuad(5, 4, 3, this.renderNor),
           this.renderReversedQuad(7, 8, 9, this.renderNor),
-          this.renderReversedQuad(10, 11, 12, this.renderNor)
+          this.renderReversedQuad(10, 11, 12, this.renderNor),
+          powerSymbols
         );
         break;
       case '7404':
@@ -392,7 +407,8 @@ module.exports = React.createClass({
           this.renderInverter(4, 5),
           this.renderInverter(8, 7),
           this.renderInverter(10, 9),
-          this.renderInverter(12, 11)
+          this.renderInverter(12, 11),
+          powerSymbols
         );
         break;
       case '7408':
@@ -401,7 +417,8 @@ module.exports = React.createClass({
           this.renderQuad(0, 1, 2, this.renderAnd),
           this.renderQuad(3, 4, 5, this.renderAnd),
           this.renderQuad(9, 8, 7, this.renderAnd),
-          this.renderQuad(12, 11, 10, this.renderAnd)
+          this.renderQuad(12, 11, 10, this.renderAnd),
+          powerSymbols
         );
         break;
       case '7411':
@@ -409,16 +426,18 @@ module.exports = React.createClass({
         pinOut = g({style: {pointerEvents: 'none'}},
           this.renderFirstTriple(this.renderAnd),
           this.renderMirroredTriple(2, 3, 4, 5, this.renderAnd),
-          this.renderMirroredTriple(10, 9, 8, 7, this.renderAnd)
+          this.renderMirroredTriple(10, 9, 8, 7, this.renderAnd),
+          powerSymbols
         );
         break;
       case '7432':
         // Quad 2-Input OR
         pinOut = g({style: {pointerEvents: 'none'}},
-          this.renderQuad(0, 1, 2, this.renderOr),
-          this.renderQuad(3, 4, 5, this.renderOr),
-          this.renderQuad(9, 8, 7, this.renderOr),
-          this.renderQuad(12, 11, 10, this.renderOr)
+          this.renderQuad(0, 1, 2, this.renderOr, true),
+          this.renderQuad(3, 4, 5, this.renderOr, true),
+          this.renderQuad(9, 8, 7, this.renderOr, true),
+          this.renderQuad(12, 11, 10, this.renderOr, true),
+          powerSymbols
         );
         break;
       case '7486':
@@ -427,19 +446,20 @@ module.exports = React.createClass({
           this.renderQuad(0, 1, 2, this.renderXor),
           this.renderQuad(3, 4, 5, this.renderXor),
           this.renderQuad(9, 8, 7, this.renderXor),
-          this.renderQuad(12, 11, 10, this.renderXor)
+          this.renderQuad(12, 11, 10, this.renderXor),
+          powerSymbols
         );
         break;
     }
+
     return pinOut;
   },
 
   render: function () {
     var pins = [],
-        selectedConstants = constants.selectedConstants(this.props.selected),
         position = this.props.component.position,
         showPinOut = this.props.showPinouts && (this.state.hovering || (this.props.editable && this.props.selected && this.props.componentSelected)),
-        pin, i, groundComponent, vccComponents, vccPos, label, labelText, rectParams, pinOut;
+        pin, i, label, labelText, rectParams, pinOut;
 
     this.layout();
 
@@ -451,20 +471,10 @@ module.exports = React.createClass({
       }
     }
 
-    pin = this.props.component.pins[6];
-    groundComponent = this.renderGround(pin, {x: pin.cx, y: pin.cy});
-
-    pin = this.props.component.pins[13];
-    vccPos = {x1: pin.cx, y1: pin.cy, x2: pin.cx, y2: pin.cy - (1.25 * pin.width)};
-    vccComponents = g({},
-      line({x1: vccPos.x1, y1: vccPos.y1, x2: vccPos.x2, y2: vccPos.y2, strokeWidth: selectedConstants.FOO_WIRE_WIDTH, stroke: '#333'}),
-      circle({cx: vccPos.x2, cy: vccPos.y2 - (pin.width / 2), r: pin.width / 2, fill: 'none', stroke: '#333'})
-    );
-
     label = this.props.component.label;
     labelText = showPinOut ? null : text({key: 'label', x: label.x, y: label.y, fontSize: label.labelSize, fill: '#fff', style: {textAnchor: label.anchor}}, label.text);
 
-    rectParams = {x: position.x, y: position.y, width: position.width, height: position.height, fill: '#333'};
+    rectParams = {x: position.x+5, y: position.y, width: position.width-10, height: position.height, fill: '#333'};
     if (this.props.editable && this.props.selected && this.props.componentSelected) {
       rectParams.stroke = '#f00';
       rectParams.strokeWidth = 2;
@@ -475,8 +485,6 @@ module.exports = React.createClass({
     return g({onMouseDown: this.props.selected && this.props.editable ? this.mouseDown : null, onMouseOver: this.mouseOver, onMouseOut: this.mouseOut},
       rect(rectParams),
       pins,
-      groundComponent,
-      vccComponents,
       labelText,
       pinOut,
       title({}, this.getTitle())

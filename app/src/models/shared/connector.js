@@ -67,7 +67,7 @@ Connector.prototype.calculatePosition = function (constants, selected, allConnec
     this.position.width = this.type == 'input' ? inputWidth : outputWidth;
     this.position.height = holeWidth * 1.25;
     this.position.x = ((constants.WORKSPACE_WIDTH - totalWidth) / 2) + (this.type == 'output' ? (inputWidth + selectorWidth + selectedConstants.CONNECTOR_SPACING) : 0);
-    this.position.y = holeWidth;
+    this.position.y = holeWidth + 6;
 
     holeY = cy = this.position.y + selectedConstants.CONNECTOR_HOLE_MARGIN + radius;
     holeX = cx = this.position.x + (holeWidth / 2);
@@ -120,7 +120,7 @@ Connector.prototype.autoToggleSwitches = function(direction) {
       i, bitValue;
 
   for (i = 0; i < this.holes.length; i++) {
-    bitValue = this.holes[i].isHigh() ? 1 : 0;
+    bitValue = this.holes[(this.holes.length-1)-i].isHigh() ? 1 : 0;
     currentValue += (bitValue << i);
   }
 
@@ -133,7 +133,7 @@ Connector.prototype.autoToggleSwitches = function(direction) {
 
   for (i = 0; i < this.holes.length; i++) {
     bitValue = currentValue & (1 << i);
-    this.holes[i].setForcedVoltage(bitValue ? TTL.HIGH_VOLTAGE : TTL.LOW_VOLTAGE);
+    this.holes[(this.holes.length-1)-i].setForcedVoltage(bitValue ? TTL.HIGH_VOLTAGE : TTL.LOW_VOLTAGE);
   }
 
   return currentValue;
