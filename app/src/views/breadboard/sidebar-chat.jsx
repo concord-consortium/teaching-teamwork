@@ -8,6 +8,7 @@ module.exports = React.createClass({
 
   getInitialState: function() {
     var items = [];
+    var interface = this.props.interface || {};
 
     if (this.props.initialChatMessage) {
       items.push({
@@ -19,7 +20,8 @@ module.exports = React.createClass({
     return {
       items: items,
       numExistingUsers: 0,
-      chatType: "unselected"
+      chatType: "unselected",
+      enableChatType: !!interface.enableChatType
     };
   },
 
@@ -81,9 +83,10 @@ module.exports = React.createClass({
   handleSubmit: function(e) {
     var input = this.refs.text,
         type = this.refs.chatType,
-        message = input.value.replace(/^\s+|\s+$/, '');
+        message = input.value.replace(/^\s+|\s+$/, ''),
+        haveType = !this.state.enableChatType || (this.state.chatType !== "unselected");
     e.preventDefault();
-    if ((message.length > 0) && (this.state.chatType !== "unselected")) {
+    if ((message.length > 0) && haveType) {
       this.firebaseRef.push({
         user: userController.getUsername(),
         message: message,
@@ -91,7 +94,7 @@ module.exports = React.createClass({
         time: firebase.database.ServerValue.TIMESTAMP
       });
       input.value = '';
-      type.focus();
+      type ? type.focus() : input.focus();
       logController.logEvent("Sent message", null, {message: message, type: this.state.chatType});
       this.setState({chatType: "unselected"});
     }
@@ -110,22 +113,31 @@ module.exports = React.createClass({
     }
   },
 
+  renderChatType: function () {
+    if (!this.state.enableChatType) {
+      return null;
+    }
+    return (
+      <select ref="chatType" className="sidebar-chat-type" value={this.state.chatType} onChange={this.typeChanged}>
+        <option value="unselected">Select message type...</option>
+        <option value="suggestion">Make Suggestion</option>
+        <option value="question">Ask Question</option>
+        <option value="inform">Inform Teammates</option>
+        <option value="emotion">Express Emotion</option>
+        <option value="agree">Agree</option>
+        <option value="disagree">Disagree</option>
+      </select>
+    );
+  },
+
   render: function() {
-    var disabled = this.state.chatType === "unselected";
+    var disabled = this.state.enableChatType && (this.state.chatType === "unselected");
     return (
       <div className="sidebar-chat">
         <ChatItems items={ this.state.items } />
         <div className="sidebar-chat-input">
           <form onSubmit={ this.handleSubmit }>
-            <select ref="chatType" className="sidebar-chat-type" value={this.state.chatType} onChange={this.typeChanged}>
-              <option value="unselected">Select message type...</option>
-              <option value="suggestion">Make Suggestion</option>
-              <option value="question">Ask Question</option>
-              <option value="inform">Inform Teammates</option>
-              <option value="emotion">Express Emotion</option>
-              <option value="agree">Agree</option>
-              <option value="disagree">Disagree</option>
-            </select>
+            { this.renderChatType() }
             <textarea ref="text" placeholder="Enter chat message here..." onKeyDown={this.listenForEnter} disabled={disabled} />
             <br/>
             <button onClick={ this.handleSubmit } disabled={disabled}>Send Chat Message</button>

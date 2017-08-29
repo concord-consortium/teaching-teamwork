@@ -19,6 +19,9 @@ Within the Breadboard JSON you can use several predefined variables that are gen
 ```
 {
   "name": "Three Resistors - Level 2",                        # this is displayed at the top of the page
+  "interface": {
+    "enableChatType": true                                    # if true a dropdown is shown where the user must select the type of message
+  },
   "image": "images/three-resistors-circuit.v2.png",           # if present this is displayed at the bottom of the page
   "otherCircuits": {                                          # specifies the image and breadboard locations for the "View All" dialog
     "image": "images/three-resistors-breadboards.v2.png",
