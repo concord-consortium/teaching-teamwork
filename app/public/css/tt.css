@@ -506,6 +506,9 @@ form button:disabled {
   color: #666;
   line-height: 16px;
 }
+.sidebar-chat .sidebar-chat-type {
+  margin: 0 0 5px 0;
+}
 .sidebar-chat .sidebar-chat-input {
   padding: 10px;
   background-color: #fff;

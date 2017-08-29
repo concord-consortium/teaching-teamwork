@@ -18,7 +18,8 @@ module.exports = React.createClass({
 
     return {
       items: items,
-      numExistingUsers: 0
+      numExistingUsers: 0,
+      chatType: "unselected"
     };
   },
 
@@ -79,17 +80,20 @@ module.exports = React.createClass({
 
   handleSubmit: function(e) {
     var input = this.refs.text,
+        type = this.refs.chatType,
         message = input.value.replace(/^\s+|\s+$/, '');
     e.preventDefault();
-    if (message.length > 0) {
+    if ((message.length > 0) && (this.state.chatType !== "unselected")) {
       this.firebaseRef.push({
         user: userController.getUsername(),
         message: message,
+        type: this.state.chatType,
         time: firebase.database.ServerValue.TIMESTAMP
       });
       input.value = '';
-      input.focus();
-      logController.logEvent("Sent message", message);
+      type.focus();
+      logController.logEvent("Sent message", null, {message: message, type: this.state.chatType});
+      this.setState({chatType: "unselected"});
     }
   },
 
@@ -99,15 +103,32 @@ module.exports = React.createClass({
     }
   },
 
+  typeChanged: function (e) {
+    this.setState({chatType: e.target.value});
+    if (e.target.value !== "unselected") {
+      this.refs.text.focus();
+    }
+  },
+
   render: function() {
+    var disabled = this.state.chatType === "unselected";
     return (
       <div className="sidebar-chat">
         <ChatItems items={ this.state.items } />
         <div className="sidebar-chat-input">
           <form onSubmit={ this.handleSubmit }>
-            <textarea ref="text" placeholder="Enter chat message here..." onKeyDown={this.listenForEnter} />
+            <select ref="chatType" className="sidebar-chat-type" value={this.state.chatType} onChange={this.typeChanged}>
+              <option value="unselected">Select message type...</option>
+              <option value="suggestion">Make Suggestion</option>
+              <option value="question">Ask Question</option>
+              <option value="inform">Inform Teammates</option>
+              <option value="emotion">Express Emotion</option>
+              <option value="agree">Agree</option>
+              <option value="disagree">Disagree</option>
+            </select>
+            <textarea ref="text" placeholder="Enter chat message here..." onKeyDown={this.listenForEnter} disabled={disabled} />
             <br/>
-            <button onClick={ this.handleSubmit }>Send Chat Message</button>
+            <button onClick={ this.handleSubmit } disabled={disabled}>Send Chat Message</button>
           </form>
         </div>
       </div>
@@ -142,8 +163,17 @@ ChatItem = React.createClass({
 
   render: function () {
     var className = 'chat-item chat-item-'+this.props.owner;
+    var typePrefix = "";
+    switch (this.props.item.type) {
+      case "suggestion": typePrefix = "Suggestion from "; break;
+      case "question": typePrefix = "Question from "; break;
+      case "inform": typePrefix = "Information from "; break;
+      case "emotion": typePrefix = "Emotion from "; break;
+      case "agree": typePrefix = "Agreement from "; break;
+      case "disagree": typePrefix = "Disagreement from "; break;
+    }
     return <div className={ className }>
-        <b>{ this.props.item.prefix || (this.props.item.user + ':') }</b> { this.props.item.message }
+        <b>{ this.props.item.prefix || (typePrefix + this.props.item.user + ':') }</b> { this.props.item.message }
       </div>;
   }
 });
