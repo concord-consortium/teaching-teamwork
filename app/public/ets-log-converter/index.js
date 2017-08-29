@@ -201,7 +201,16 @@ var eventMap = {
   "Sent message": {
     code: 5000,
     desc: "sent [chat]",
-    data01: "event_value"
+    // sent message changed from event_value to {message, type}
+    data01Fn: function (type, obj) {
+      if (obj.hasOwnProperty('message')) {
+        return obj.message;
+      }
+      return obj.event_value;
+    },
+    data02Fn: function (type, obj) {
+      return obj.type; // will return undefined which is ok for old event_value messages
+    }
   },
   "Submit clicked": {
     code: 6000,
@@ -414,7 +423,7 @@ var App = component({
                     field;
 
                 if (event.hasOwnProperty(prefixFn)) {
-                  field = event[prefixFn](p.type);
+                  field = event[prefixFn](p.type, obj);
                 }
                 else if (event.hasOwnProperty(prefix)) {
                   field = event[prefix];
