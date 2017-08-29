@@ -94,7 +94,7 @@ module.exports = React.createClass({
         time: firebase.database.ServerValue.TIMESTAMP
       });
       input.value = '';
-      type ? type.focus() : input.focus();
+      if (type) { type.focus(); } else { input.focus(); }
       logController.logEvent("Sent message", null, {message: message, type: this.state.chatType});
       this.setState({chatType: "unselected"});
     }

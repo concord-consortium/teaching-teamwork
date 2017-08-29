@@ -7,7 +7,8 @@ var PageView              = React.createFactory(require('./page.jsx')),
     config                = require('../../config'),
     ReportView            = React.createFactory(require('../shared/report')),
     OtherCircuitView      = React.createFactory(require('./view-other-circuit')),
-    viewOtherCircuit      = !!window.location.search.match(/view-other-circuit!/);
+    viewOtherCircuit      = !!window.location.search.match(/view-other-circuit!/),
+    hideZoomDetails       = !!window.location.search.match(/hide-zoom-details!/);
 
 module.exports = React.createClass({
   displayName: 'App',
@@ -34,7 +35,7 @@ module.exports = React.createClass({
       return ReportView({});
     }
     else if (viewOtherCircuit) {
-      return OtherCircuitView({});
+      return OtherCircuitView({hideZoomDetails: hideZoomDetails});
     }
     else {
       return PageView({
