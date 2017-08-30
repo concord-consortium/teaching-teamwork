@@ -21,6 +21,7 @@ module.exports = React.createClass({
   },
 
   componentDidMount: function () {
+    var interface = this.props.hideZoomDetails ? {hideResistorBands: true, hideDMMResult: true} : {};
 
     // listen for workbench load requests
     window.addEventListener("message", function (event) {
@@ -47,6 +48,7 @@ module.exports = React.createClass({
         workbenchAdaptor = new WorkbenchAdaptor(clientNumber);
         workbenchFBConnector = new WorkbenchFBConnector(userController, clientNumber, workbenchAdaptor);
         workbench = workbenchAdaptor.processTTWorkbench(payload.ttWorkbench);
+        workbench.interface = interface;
         try {
           sparks.createWorkbench(workbench, "breadboard-wrapper");
         }

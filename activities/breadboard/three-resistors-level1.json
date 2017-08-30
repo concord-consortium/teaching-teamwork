@@ -2,7 +2,8 @@
   "name": "Three Resistors - Level 1",
   "image": "images/three-resistors-circuit.v2.png",
   "interface": {
-    "enableChatType": false
+    "enableChatType": true,
+    "hideZoomDetails": true
   },
   "otherCircuits": {
     "image": "images/three-resistors-breadboards.v2.png",
