@@ -60,6 +60,10 @@ offsetRef.on("value", function(snap) {
   serverSkew = snap.val();
 });
 
+logController.setGetServerSkew(function () {
+  return serverSkew;
+});
+
 module.exports = userController = {
 
   init: function(_numClients, _activityName, _callback) {
