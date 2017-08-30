@@ -2,13 +2,13 @@ var logManagerUrl  = '//teaching-teamwork-log-manager.herokuapp.com/api/logs',
     xhrObserver    = require('../../data/shared/xhrObserver'),
     laraController = require('./lara'),
     logToConsole = window.location.search.indexOf('logToConsole') !== -1,
+    logEventListeners = [],
     laraLoggerReady,
     activityName,
     session,
     username,
     groupname,
     client,
-    logEventListeners,
     wa,
     getServerSkew,
     currentFlowing = true,
@@ -138,7 +138,6 @@ LogController.prototype = {
 
   init: function(_activityName) {
     activityName = _activityName;
-    logEventListeners = [];
     startSession();
   },
 

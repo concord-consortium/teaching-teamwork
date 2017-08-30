@@ -9,6 +9,7 @@ var userController = require('../../controllers/shared/user'),
     EnterUnknownsView = require('./enter-unknowns'),
     VersionView = require('../shared/version'),
     OfflineCheckView = require('../shared/offline-check'),
+    TutorialView = require('./tutorial.jsx'),
     config = require('../../config');
 
 module.exports = React.createClass({
@@ -55,6 +56,7 @@ module.exports = React.createClass({
         { image }
         { calculator }
         <VersionView/>
+        <TutorialView ttWorkbench={ this.props.ttWorkbench } />
       </div>
     );
   }
