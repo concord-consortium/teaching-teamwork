@@ -3,7 +3,9 @@
   "image": "images/three-resistors-circuit.v2.png",
   "interface": {
     "enableChatType": true,
-    "hideZoomDetails": true
+    "hideZoomDetails": true,
+    "showTutorial": true,
+    "tutorialFreePlayDuration": 10
   },
   "otherCircuits": {
     "image": "images/three-resistors-breadboards.v2.png",
