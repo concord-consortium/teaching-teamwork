@@ -1,9 +1,10 @@
 var logController = require('../../controllers/shared/log');
 
 var steps = [
-  {title: "Change the resistor", text: "Double click on the resistor above and use the drop down to select a new resistance value."},
-  {title: "Use the multimeter", text: "Move the black and red probes to the leads on either side of the resistor and then look at the measurement in the red multimeter."},
-  {title: "View all the circuits", text: "Click the \"View All Circuits\" button near the top of the page to see everyones circuits."},
+  {title: "Change the resistor", text: "Double-click on the resistor above and use the drop down to select a new resistance value."},
+  {title: "Use the multimeter to measure voltage", text: "Move the black and red probes to the leads on either side of the resistor and then look at the measurement in the red multimeter."},
+  {title: "Change the mode on the multimeter", text: "Turn the dial on the multimeter to change the scale or measure current or resistance."},
+  {title: "View all the circuits", text: "Click the \"View All Circuits\" button near the top of the page to see everyone's circuits."},
   {title: "Send a chat message", text: "Use the chat area in the right sidebar to send a message."},
   {title: "Have fun and play around!", text: "Try moving the probes around or selecting a new type of measurement on the multimeter or click the \"We got it!\" button."}
 ];
@@ -53,11 +54,14 @@ module.exports = React.createClass({
             case "DMM measurement":
               nextStepIfCurrentStepIs(1);
               break;
-            case "Closed Zoom View":
+            case "Moved DMM dial":
               nextStepIfCurrentStepIs(2);
               break;
+            case "Closed Zoom View":
+              nextStepIfCurrentStepIs(3);
+              break;
             case "Sent message":
-              nextStepIfCurrentStepIs(3, function () {
+              nextStepIfCurrentStepIs(4, function () {
                 if (interface.tutorialFreePlayDuration > 0) {
                   setTimeout(function () {
                     self.setState({blockFreePlay: true});
@@ -87,7 +91,7 @@ module.exports = React.createClass({
     }
     else {
       info = <div>
-               <div className="tutorial-step">Teaching Teamwork Tutorial</div>
+               <div className="tutorial-step">Tutorial</div>
                <div className="tutorial-step-title">{this.state.completed ? "✔ " : ""}Step {step + 1} of {steps.length}: {steps[step].title}</div>
                <div className="tutorial-step-text">{steps[step].text}</div>
              </div>;
