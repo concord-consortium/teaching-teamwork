@@ -103,7 +103,7 @@ var studyGroups = [
     ]
   },
   {
-    name: "Vegetable",
+    name: "Vegetables",
     members: [
       "Lettuce", "Celery", "Tomato"
     ]
