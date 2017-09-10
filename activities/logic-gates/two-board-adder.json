@@ -1,13 +1,13 @@
 {
     "name": "Two board adder",
-    "notes": "Make a circuit that adds three bits and returns their sum and carry (carry bit to the left).",
+    "notes": "Make a circuit that adds three bits and returns their sum and carry (carry bit to the left)",
     "interface": {
         "showPinColors": true,
-        "showBusColors": false,
+        "showBusColors": true,
         "showBusLabels": true,
         "allowAutoWiring": false,
         "showPinouts": true,
-        "showProbe": "edit",
+        "showProbe": "false",
         "showInputAutoToggles": true,
         "showGlobalIOWires": true
     },

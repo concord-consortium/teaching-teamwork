@@ -1,0 +1,38 @@
+{
+    "name": "Two board test",
+    "notes": "Looking for bugs",
+    "interface": {
+        "showPinColors": true,
+        "showBusColors": true,
+        "showBusLabels": true,
+        "allowAutoWiring": false,
+        "showPinouts": true,
+        "showProbe": "false",
+        "showInputAutoToggles": true,
+        "showGlobalIOWires": true
+    },
+    "busSize": 2,
+    "busInputSize": 1,
+    "busOutputSize": 1,
+    "boards": [{
+        "logicChipDrawer": {
+            "chips": {
+                "7404": {
+                    "max": 1
+                }
+            }
+        },
+        "localInputSize": 1,
+        "localOutputSize": 1
+    },{
+        "logicChipDrawer": {
+            "chips": {
+                "7408": {
+                    "max": 1
+                }
+            }
+        },
+        "localInputSize": 1,
+        "localOutputSize": 1
+    }]
+}
