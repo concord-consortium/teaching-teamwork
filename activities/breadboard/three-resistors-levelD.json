@@ -1,9 +1,25 @@
 {
-  "name": "Three Resistors Solo - Level 5",
+  "name": "Three Resistors - Level D",
+  "interface": {
+    "enableChatType": true,
+    "hideZoomDetails": true,
+    "showTutorial": true,
+    "tutorialFreePlayDuration": 60
+  },
   "image": "images/three-resistors-circuit.v2.png",
   "enterUnknowns": {
     "E": true,
     "R": true
+  },
+  "otherCircuits": {
+    "image": "images/three-resistors-breadboards.v2.png",
+    "width": 740,
+    "height": 250,
+    "breadboards": [
+      {"x": 19, "y": 80, "width": 222, "height": 150},
+      {"x": 260, "y": 80, "width": 222, "height": 150},
+      {"x": 501, "y": 80, "width": 222, "height": 150}
+    ]
   },
   "model": {
     "name": "three-resistors",
@@ -19,13 +35,17 @@
         "value": "$V1",
         "units": "V",
         "tolerance": 0.005
-      },
+      }
+    },
+    {
       "Voltage across R2": {
         "measurement": "component_voltage(r2)",
         "value": "$V2",
         "units": "V",
         "tolerance": 0.005
-      },
+      }
+    },
+    {
       "Voltage across R3": {
         "measurement": "component_voltage(r3)",
         "value": "$V3",
@@ -45,15 +65,25 @@
       "type": "resistor",
       "UID": "rX",
       "resistance": "$R",
-      "connections": "battery_2,0:off_11",
+      "connections": "battery_1,0:off_11",
       "hidden": true
     },
     {
       "type": "wire",
-      "connections": "battery_1,0:off_10",
+      "connections": "0:off_1,1:off_11",
+      "hidden": true
+    },
+    {
+      "type": "wire",
+      "connections": "1:off_1,2:off_11",
+      "hidden": true
+    },
+    {
+      "type": "wire",
+      "connections": "2:off_1,battery_2",
       "hidden": true
     }
-   ],
+  ],
   "logging": {
     "startActivity": {
       "Activity Settings": {
@@ -87,48 +117,76 @@
   },
   "clients": [
     {
-      "showComponentEditor": true,
-      "showComponentDrawer": false,
       "show_multimeter": true,
-      "notes": "E is unknown, R is unknown, your goal is to make V1 = $V1 volts, V2 = $V2 volts, and V3 = $V3 volts.",
+      "showComponentEditor": true,
+      "notes": "E is unknown, R is unknown, your goal is to make your voltage $V1 volts.",
       "circuit": [
+        {
+          "type": "wire",
+          "connections": "off_11,a20",
+          "draggable": false
+        },
         {
           "type": "resistor",
           "UID": "r1",
-          "label": "R1",
-          "connections": "d18,d24",
           "resistance": "$R1",
-          "nominalResistance": "$R1",
+          "connections": "c20,c14",
+          "label": "R1",
+          "draggable": false
+        },
+        {
+          "type": "wire",
+          "connections": "a14,off_1",
+          "draggable": false
+        }
+      ]
+    },
+    {
+      "show_multimeter": true,
+      "showComponentEditor": true,
+      "notes": "E is unknown, R is unknown, your goal is to make your voltage $V2 volts.",
+      "circuit": [
+        {
+          "type": "wire",
+          "connections": "off_11,a20",
           "draggable": false
         },
         {
           "type": "resistor",
           "UID": "r2",
-          "label": "R2",
-          "connections": "c12,c18",
           "resistance": "$R2",
-          "nominalResistance": "$R2",
+          "connections": "c20,c14",
+          "label": "R2",
+          "draggable": false
+        },
+        {
+          "type": "wire",
+          "connections": "a14,off_1",
+          "draggable": false
+        }
+      ]
+    },
+    {
+      "show_multimeter": true,
+      "showComponentEditor": true,
+      "notes": "E is unknown, R is unknown, your goal is to make your voltage $V3 volts.",
+      "circuit": [
+        {
+          "type": "wire",
+          "connections": "off_11,a20",
           "draggable": false
         },
         {
           "type": "resistor",
           "UID": "r3",
-          "label": "R3",
-          "connections": "b6,b12",
           "resistance": "$R3",
-          "nominalResistance": "$R3",
+          "connections": "c20,c14",
+          "label": "R3",
           "draggable": false
         },
         {
           "type": "wire",
-          "UID": "wire",
-          "connections": "off_10,b24",
-          "draggable": false
-        },
-        {
-          "type": "wire",
-          "UID": "wire0",
-          "connections": "off_11,a6",
+          "connections": "a14,off_1",
           "draggable": false
         }
       ]
