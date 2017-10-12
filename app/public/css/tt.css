@@ -721,6 +721,7 @@ table.report td {
   bottom: 0;
   height: 200px;
   overflow: hidden;
+  z-index: 1000000;
 }
 .tutorial-block-free-play {
   position: fixed;

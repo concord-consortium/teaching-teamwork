@@ -4,7 +4,7 @@ var steps = [
   {title: "Change the resistor", text: "Double-click on the resistor above and use the drop down to select a new resistance value."},
   {title: "Use the multimeter to measure voltage", text: "Move the black and red probes to the leads on either side of the resistor and then look at the measurement in the red multimeter."},
   {title: "Change the mode on the multimeter", text: "Turn the dial on the multimeter to change the scale to measure current or resistance."},
-  {title: "View all the circuits", text: "Click the \"View All Circuits\" button near the top of the page to see everyone's circuits."},
+  {title: "View all the circuits", text: "Click the \"View All Circuits\" button near the top of the page to see everyone's circuits.<br>Click the <button>X</button> button at the top of the screen to close the All Circuits pop-up"},
   {title: "Send a chat message", text: "Use the chat area in the right sidebar to send a message."},
   {title: "Have fun and play around!", text: "Try selecting a new type of measurement on the multimeter or clicking the \"Calculator\" or the \"We got it!\" buttons."}
 ];
@@ -93,7 +93,7 @@ module.exports = React.createClass({
       info = <div>
                <div className="tutorial-step">Tutorial</div>
                <div className="tutorial-step-title">{this.state.completed ? "✔ " : ""}Step {step + 1} of {steps.length}: {steps[step].title}</div>
-               <div className="tutorial-step-text">{steps[step].text}</div>
+               <div className="tutorial-step-text" dangerouslySetInnerHTML={{__html: steps[step].text}}/>
              </div>;
     }
 
