@@ -52,10 +52,6 @@ th {
   padding-top: 10px;
 }
 
-
-#breadboard-wrapper {
-}
-
 #enter-unknowns {
   float: right;
   padding: 10px;
@@ -211,7 +207,7 @@ form button:disabled {
   font: bold 14px Arial, sans-serif;
 
 	background: #8A8F92;
-	background: linear-gradient(#8A8F92, #5E666B)
+	background: linear-gradient(#8A8F92, #5E666B);
 	border-radius: 11px;
 	box-shadow: 0px 4px #223E4A, 0px 10px 15px rgba(0, 0, 0, 0.2);
 
@@ -591,7 +587,7 @@ form button:disabled {
   overflow-y: auto;
   overflow-x: hidden;
   height: 90%;
-}}
+}
 
 .other-circuits-button-popup  h1 {
   padding: 0;
@@ -625,8 +621,6 @@ form button:disabled {
   background-color: #ddd;
 }
 
-.alert-wrapper {
-}
 .alert-background {
   z-index: 1000;
   position: absolute;
@@ -764,4 +758,7 @@ table.report td {
 .tutorial-step-text {
   font-size: 16px;
   margin: 15px;
+}
+.tutorial-step-text button {
+  font-size: 12px;
 }

@@ -4,15 +4,17 @@ var steps = [
   {title: "Change the resistor", text: "Double-click on the resistor above and use the drop down to select a new resistance value."},
   {title: "Use the multimeter to measure voltage", text: "Move the black and red probes to the leads on either side of the resistor and then look at the measurement in the red multimeter."},
   {title: "Change the mode on the multimeter", text: "Turn the dial on the multimeter to change the scale to measure current or resistance."},
-  {title: "View all the circuits", text: "Click the \"View All Circuits\" button near the top of the page to see everyone's circuits.<br>Click the <button>X</button> button at the top of the screen to close the All Circuits pop-up"},
+  {title: "View all the circuits", text: "Click the \"View All Circuits\" button near the top of the page to see everyone's circuits.<br>Click the <button>X</button> button at the top of the All Circuits pop-up to close it."},
   {title: "Use the calculator", text: "Click the Calculator button and make a quick calculation. Please do not use your own calculator in this activity."},
   {title: "Lift a lead", text: "Lift the lead and place the probe on the loose wire."},
   {title: "Send a chat message", text: "Use the chat area in the right sidebar to send a message."},
-  {title: "Have fun and play around!", text: "Try selecting a new type of measurement on the multimeter or clicking the \"Calculator\" or the \"We got it!\" buttons."}
+  {title: "Have fun and play around!", text: "Try selecting a new type of measurement on the multimeter or the \"We got it!\" button."}
 ];
 
 var UNSTARTED_STEP = -1;
 var STARTING_STEP = 0;
+
+var countdownInterval;
 
 module.exports = React.createClass({
 
@@ -24,30 +26,75 @@ module.exports = React.createClass({
       completed: false,
       blockFreePlay: false,
       liftedLead: false,
-      liftedLeadLocation: null
+      liftedLeadLocation: null,
+      timingOutIn: 0,
+      timedOut: false
     };
   },
 
   componentWillReceiveProps: function(nextProps) {
+    var waitForAnThen = function (seconds, callback) {
+      setTimeout(callback, seconds * 1000);
+    };
+
     if ((this.props.ttWorkbench !== nextProps.ttWorkbench) && (this.state.step === UNSTARTED_STEP)) {
       var self = this,
-          interface = nextProps.ttWorkbench.interface || {};
+          interface = nextProps.ttWorkbench.interface || {},
+          tutorialFreePlayDuration = interface.tutorialFreePlayDuration || 0,
+          tutorialStepPauseDuration = interface.tutorialStepPauseDuration || 2,
+          tutorialAboutToTimeoutDuration = interface.tutorialAboutToTimeoutDuration || 5,
+          tutorialTimeoutDuration = (interface.tutorialTimeoutDuration || 30) - tutorialAboutToTimeoutDuration;
 
       if (interface.showTutorial) {
-        self.setState({step: STARTING_STEP});
-
         var nextStepIfCurrentStepIs = function (testStep, callback) {
+          var nextStep = testStep + 1,
+              moveToNextStep = function () {
+                self.setState({
+                  step: nextStep,
+                  completed: false,
+                  timingOutIn: 0,
+                  timedOut: false
+                });
+              };
+
           if (self.state.step === testStep) {
+            clearInterval(countdownInterval);
             self.setState({completed: true});
-            setTimeout(function () {
-              self.setState({
-                step: testStep + 1,
-                completed: false
+
+            if (nextStep >= steps.length - 1) {
+              moveToNextStep();
+              if (tutorialFreePlayDuration > 0) {
+                waitForAnThen(tutorialFreePlayDuration, function () {
+                  self.setState({blockFreePlay: true});
+                });
+              }
+            }
+            else {
+              waitForAnThen(tutorialStepPauseDuration, function () {
+                moveToNextStep();
+                startStepTimer();
               });
-            }, 2000);
+            }
+
             if (callback) {
               callback();
             }
+          }
+        };
+
+        var startStepTimer = function () {
+          if (tutorialTimeoutDuration > 0) {
+            waitForAnThen(tutorialTimeoutDuration, function () {
+              self.setState({timingOutIn: tutorialAboutToTimeoutDuration});
+
+              countdownInterval = setInterval(function () {
+                self.setState({timingOutIn: self.state.timingOutIn - 1});
+              }, 1000);
+
+              waitForAnThen(tutorialAboutToTimeoutDuration, function () {
+                nextStepIfCurrentStepIs(self.state.step);
+              });
+            });
           }
         };
 
@@ -81,22 +128,19 @@ module.exports = React.createClass({
               nextStepIfCurrentStepIs(4);
               break;
             case "Sent message":
-              nextStepIfCurrentStepIs(6, function () {
-                if (interface.tutorialFreePlayDuration > 0) {
-                  setTimeout(function () {
-                    self.setState({blockFreePlay: true});
-                  }, interface.tutorialFreePlayDuration * 1000);
-                }
-              });
+              nextStepIfCurrentStepIs(6);
           }
         });
+
+        self.setState({step: STARTING_STEP});
+        startStepTimer();
       }
     }
   },
 
   render: function () {
     var step = this.state.step,
-        info;
+        info, timeoutMessage, plural;
 
     if (step === UNSTARTED_STEP) {
       return null;
@@ -109,10 +153,15 @@ module.exports = React.createClass({
              </div>;
     }
     else {
+      if (this.state.timingOutIn > 0) {
+        plural = this.state.timingOutIn === 1 ? "" : "s";
+        timeoutMessage = "This step will time out in " + this.state.timingOutIn + " second" + plural + " and will automatically move to the next step.";
+      }
       info = <div>
                <div className="tutorial-step">Tutorial</div>
                <div className="tutorial-step-title">{this.state.completed ? "✔ " : ""}Step {step + 1} of {steps.length}: {steps[step].title}</div>
                <div className="tutorial-step-text" dangerouslySetInnerHTML={{__html: steps[step].text}}/>
+               {timeoutMessage ? <div className="tutorial-timeout-text">{timeoutMessage}</div> : null}
              </div>;
     }
 
