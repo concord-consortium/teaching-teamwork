@@ -12,7 +12,7 @@ var steps = [
 ];
 
 var UNSTARTED_STEP = -1;
-var STARTING_STEP = 0;
+var STARTING_STEP = 6;
 
 var countdownInterval;
 var tutorialTimeout;
@@ -26,6 +26,7 @@ module.exports = React.createClass({
     return {
       step: UNSTARTED_STEP,
       completed: false,
+      inFreePlay: false,
       blockFreePlay: false,
       liftedLead: false,
       liftedLeadLocation: null,
@@ -72,7 +73,10 @@ module.exports = React.createClass({
 
             if (nextStep >= steps.length - 1) {
               moveToNextStep();
+              self.setState({inFreePlay: true});
               if (tutorialFreePlayDuration > 0) {
+                self.setState({timingOutIn: tutorialFreePlayDuration});
+                startCountdownInterval();
                 waitForAnThen(tutorialFreePlayDuration, function () {
                   self.setState({blockFreePlay: true});
                 });
@@ -91,18 +95,27 @@ module.exports = React.createClass({
           }
         };
 
+        var startCountdownInterval = function () {
+          clearInterval(countdownInterval);
+          countdownInterval = setInterval(function () {
+            if (self.state.timingOutIn > 0) {
+              self.setState({timingOutIn: self.state.timingOutIn - 1});
+            }
+            else {
+              clearInterval(countdownInterval);
+            }
+          }, 1000);
+        };
+
         var startStepTimer = function () {
           resetTimers();
           if (tutorialTimeoutDuration > 0) {
             tutorialTimeout = waitForAnThen(tutorialTimeoutDuration, function () {
               self.setState({timingOutIn: tutorialAboutToTimeoutDuration});
-
-              countdownInterval = setInterval(function () {
-                self.setState({timingOutIn: self.state.timingOutIn - 1});
-              }, 1000);
+              startCountdownInterval();
 
               tutorialAboutToTimeout = waitForAnThen(tutorialAboutToTimeoutDuration, function () {
-                self.setState({timedOut: true})
+                self.setState({timedOut: true});
                 nextStepIfCurrentStepIs(self.state.step);
               });
             });
@@ -166,7 +179,12 @@ module.exports = React.createClass({
     else {
       if (!this.state.completed && (this.state.timingOutIn > 0)) {
         plural = this.state.timingOutIn === 1 ? "" : "s";
-        timeoutMessage = "This step will time out in " + this.state.timingOutIn + " second" + plural + " and will automatically move to the next step.";
+        if (this.state.inFreePlay) {
+          timeoutMessage = "You have " + this.state.timingOutIn + " second" + plural + " to play around.";
+        }
+        else {
+          timeoutMessage = "This step will time out in " + this.state.timingOutIn + " second" + plural + " and will automatically move to the next step.";
+        }
       }
       prefix = this.state.completed ? (this.state.timedOut ? "✗ " : "✔ ") : "";
       info = <div>
