@@ -164,7 +164,8 @@ module.exports = React.createClass({
 
   render: function () {
     var step = this.state.step,
-        info, timeoutMessage, plural, prefix;
+        timeoutMessage = "&nbsp;",
+        info, plural, prefix;
 
     if (step === UNSTARTED_STEP) {
       return null;
@@ -172,8 +173,8 @@ module.exports = React.createClass({
 
     if (this.state.blockFreePlay) {
       info = <div>
-               <div className="tutorial-step-title">Play time is over!</div>
-               <div className="tutorial-step-text">Please move on to the next level.</div>
+               <div className="tutorial-step-title">Practice time is over.</div>
+               <div className="tutorial-step-text">Click "Next" to begin the activity.</div>
              </div>;
     }
     else {
@@ -191,7 +192,7 @@ module.exports = React.createClass({
                <div className="tutorial-step">Tutorial</div>
                <div className="tutorial-step-title">{prefix}Step {step + 1} of {steps.length}: {steps[step].title}</div>
                <div className="tutorial-step-text" dangerouslySetInnerHTML={{__html: steps[step].text}}/>
-               {timeoutMessage ? <div className="tutorial-timeout-text">{timeoutMessage}</div> : null}
+               {timeoutMessage ? <div className="tutorial-timeout-text" dangerouslySetInnerHTML={{__html: timeoutMessage}}/> : null}
              </div>;
     }
 

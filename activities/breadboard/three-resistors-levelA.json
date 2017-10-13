@@ -4,10 +4,10 @@
     "enableChatType": true,
     "hideZoomDetails": true,
     "showTutorial": true,
-    "tutorialFreePlayDuration": 60,
+    "tutorialFreePlayDuration": 5,
     "tutorialStepPauseDuration": 2,
     "tutorialAboutToTimeoutDuration": 5,
-    "tutorialTimeoutDuration": 30
+    "tutorialTimeoutDuration": 10
   },
   "image": "images/three-resistors-circuit.v2.png",
   "otherCircuits": {
