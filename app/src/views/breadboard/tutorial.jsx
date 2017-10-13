@@ -12,7 +12,7 @@ var steps = [
 ];
 
 var UNSTARTED_STEP = -1;
-var STARTING_STEP = 6;
+var STARTING_STEP = 0;
 
 var countdownInterval;
 var tutorialTimeout;
