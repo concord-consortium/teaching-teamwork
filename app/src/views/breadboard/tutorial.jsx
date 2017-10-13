@@ -15,6 +15,8 @@ var UNSTARTED_STEP = -1;
 var STARTING_STEP = 0;
 
 var countdownInterval;
+var tutorialTimeout;
+var tutorialAboutToTimeout;
 
 module.exports = React.createClass({
 
@@ -34,7 +36,13 @@ module.exports = React.createClass({
 
   componentWillReceiveProps: function(nextProps) {
     var waitForAnThen = function (seconds, callback) {
-      setTimeout(callback, seconds * 1000);
+      return setTimeout(callback, seconds * 1000);
+    };
+
+    var resetTimers = function () {
+      clearInterval(countdownInterval);
+      clearTimeout(tutorialTimeout);
+      clearTimeout(tutorialAboutToTimeout);
     };
 
     if ((this.props.ttWorkbench !== nextProps.ttWorkbench) && (this.state.step === UNSTARTED_STEP)) {
@@ -49,6 +57,7 @@ module.exports = React.createClass({
         var nextStepIfCurrentStepIs = function (testStep, callback) {
           var nextStep = testStep + 1,
               moveToNextStep = function () {
+                resetTimers();
                 self.setState({
                   step: nextStep,
                   completed: false,
@@ -58,7 +67,7 @@ module.exports = React.createClass({
               };
 
           if (self.state.step === testStep) {
-            clearInterval(countdownInterval);
+            resetTimers();
             self.setState({completed: true});
 
             if (nextStep >= steps.length - 1) {
@@ -83,15 +92,17 @@ module.exports = React.createClass({
         };
 
         var startStepTimer = function () {
+          resetTimers();
           if (tutorialTimeoutDuration > 0) {
-            waitForAnThen(tutorialTimeoutDuration, function () {
+            tutorialTimeout = waitForAnThen(tutorialTimeoutDuration, function () {
               self.setState({timingOutIn: tutorialAboutToTimeoutDuration});
 
               countdownInterval = setInterval(function () {
                 self.setState({timingOutIn: self.state.timingOutIn - 1});
               }, 1000);
 
-              waitForAnThen(tutorialAboutToTimeoutDuration, function () {
+              tutorialAboutToTimeout = waitForAnThen(tutorialAboutToTimeoutDuration, function () {
+                self.setState({timedOut: true})
                 nextStepIfCurrentStepIs(self.state.step);
               });
             });
@@ -140,7 +151,7 @@ module.exports = React.createClass({
 
   render: function () {
     var step = this.state.step,
-        info, timeoutMessage, plural;
+        info, timeoutMessage, plural, prefix;
 
     if (step === UNSTARTED_STEP) {
       return null;
@@ -153,13 +164,14 @@ module.exports = React.createClass({
              </div>;
     }
     else {
-      if (this.state.timingOutIn > 0) {
+      if (!this.state.completed && (this.state.timingOutIn > 0)) {
         plural = this.state.timingOutIn === 1 ? "" : "s";
         timeoutMessage = "This step will time out in " + this.state.timingOutIn + " second" + plural + " and will automatically move to the next step.";
       }
+      prefix = this.state.completed ? (this.state.timedOut ? "✗ " : "✔ ") : "";
       info = <div>
                <div className="tutorial-step">Tutorial</div>
-               <div className="tutorial-step-title">{this.state.completed ? "✔ " : ""}Step {step + 1} of {steps.length}: {steps[step].title}</div>
+               <div className="tutorial-step-title">{prefix}Step {step + 1} of {steps.length}: {steps[step].title}</div>
                <div className="tutorial-step-text" dangerouslySetInnerHTML={{__html: steps[step].text}}/>
                {timeoutMessage ? <div className="tutorial-timeout-text">{timeoutMessage}</div> : null}
              </div>;
