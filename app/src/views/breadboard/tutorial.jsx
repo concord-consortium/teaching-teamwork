@@ -1,5 +1,12 @@
 var logController = require('../../controllers/shared/log');
 
+var chatText = function (interface) {
+  if (interface.enableChatType) {
+    return "Use the chat area in the right sidebar to select a message type and then send a message.";
+  }
+  return "Use the chat area in the right sidebar to send a message.";
+};
+
 var steps = [
   {title: "Change the resistor", text: "Double-click on the resistor above and use the drop down to select a new resistance value."},
   {title: "Use the multimeter to measure voltage", text: "Move the black and red probes to the leads on either side of the resistor and then look at the measurement in the red multimeter."},
@@ -7,7 +14,7 @@ var steps = [
   {title: "View all the circuits", text: "Click the \"View All Circuits\" button near the top of the page to see everyone's circuits.<br>Click the <button>X</button> button at the top of the All Circuits pop-up to close it."},
   {title: "Use the calculator", text: "Click the Calculator button and make a quick calculation. Please do not use your own calculator in this activity."},
   {title: "Lift a lead", text: "Lift the lead and place the probe on the loose wire."},
-  {title: "Send a chat message", text: "Use the chat area in the right sidebar to send a message."},
+  {title: "Send a chat message", textFn: chatText},
   {title: "Have fun and play around!", text: "Try selecting a new type of measurement on the multimeter or the \"We got it!\" button."}
 ];
 
@@ -31,7 +38,8 @@ module.exports = React.createClass({
       liftedLead: false,
       liftedLeadLocation: null,
       timingOutIn: 0,
-      timedOut: false
+      timedOut: false,
+      interface: {}
     };
   },
 
@@ -156,7 +164,7 @@ module.exports = React.createClass({
           }
         });
 
-        self.setState({step: STARTING_STEP});
+        self.setState({step: STARTING_STEP, interface: interface});
         startStepTimer();
       }
     }
@@ -165,7 +173,7 @@ module.exports = React.createClass({
   render: function () {
     var step = this.state.step,
         timeoutMessage = "&nbsp;",
-        info, plural, prefix;
+        info, plural, prefix, stepText;
 
     if (step === UNSTARTED_STEP) {
       return null;
@@ -188,10 +196,11 @@ module.exports = React.createClass({
         }
       }
       prefix = this.state.completed ? (this.state.timedOut ? "✗ " : "✔ ") : "";
+      stepText = steps[step].textFn ? steps[step].textFn(this.state.interface) : steps[step].text;
       info = <div>
                <div className="tutorial-step">Tutorial</div>
                <div className="tutorial-step-title">{prefix}Step {step + 1} of {steps.length}: {steps[step].title}</div>
-               <div className="tutorial-step-text" dangerouslySetInnerHTML={{__html: steps[step].text}}/>
+               <div className="tutorial-step-text" dangerouslySetInnerHTML={{__html: stepText}}/>
                {timeoutMessage ? <div className="tutorial-timeout-text" dangerouslySetInnerHTML={{__html: timeoutMessage}}/> : null}
              </div>;
     }
