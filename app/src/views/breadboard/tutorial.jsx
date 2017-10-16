@@ -63,6 +63,14 @@ module.exports = React.createClass({
 
   startTutorial: function (ttWorkbench) {
 
+    // logged steps are 1-based as that is what is displayed in the UI
+    var logStartedStep = function (step) {
+      logController.logEvent("Started tutorial step", null, {number: step + 1, title: steps[step].title});
+    };
+    var logCompletedStep = function (step, timedOut) {
+      logController.logEvent("Completed tutorial step", null, {number: step + 1, title: steps[step].title, timedOut: timedOut || false});
+    };
+
     var waitForAnThen = function (seconds, callback) {
       return setTimeout(callback, seconds * 1000);
     };
@@ -81,7 +89,7 @@ module.exports = React.createClass({
         tutorialTimeoutDuration = (interface.tutorialTimeoutDuration || 30) - tutorialAboutToTimeoutDuration;
 
     if (interface.showTutorial) {
-      var nextStepIfCurrentStepIs = function (testStep, callback) {
+      var nextStepIfCurrentStepIs = function (testStep, timedOut) {
         var nextStep = testStep + 1,
             moveToNextStep = function () {
               resetTimers();
@@ -91,11 +99,13 @@ module.exports = React.createClass({
                 timingOutIn: 0,
                 timedOut: false
               });
+              logStartedStep(nextStep);
             };
 
         if (self.state.step === testStep) {
           resetTimers();
           self.setState({completed: true});
+          logCompletedStep(testStep, timedOut);
 
           if (nextStep >= steps.length - 1) {
             moveToNextStep();
@@ -105,6 +115,7 @@ module.exports = React.createClass({
               startCountdownInterval();
               waitForAnThen(tutorialFreePlayDuration, function () {
                 self.setState({blockFreePlay: true});
+                logCompletedStep(nextStep, true);
               });
             }
           }
@@ -113,10 +124,6 @@ module.exports = React.createClass({
               moveToNextStep();
               startStepTimer();
             });
-          }
-
-          if (callback) {
-            callback();
           }
         }
       };
@@ -142,7 +149,7 @@ module.exports = React.createClass({
 
             tutorialAboutToTimeout = waitForAnThen(tutorialAboutToTimeoutDuration, function () {
               self.setState({timedOut: true});
-              nextStepIfCurrentStepIs(self.state.step);
+              nextStepIfCurrentStepIs(self.state.step, true);
             });
           });
         }
@@ -192,6 +199,7 @@ module.exports = React.createClass({
 
       self.setState({step: STARTING_STEP, interface: interface});
       startStepTimer();
+      logStartedStep(STARTING_STEP);
     }
   },
 
