@@ -762,3 +762,32 @@ table.report td {
 .tutorial-step-text button {
   font-size: 12px;
 }
+
+.waiting-room {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  text-align: center;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 90000;
+}
+.waiting-room-background {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: #000;
+  opacity: 0.9;
+}
+.waiting-room-message {
+  color: #fff;
+  font-size: 32px;
+  z-index: 90001;
+  margin: 20%;
+}

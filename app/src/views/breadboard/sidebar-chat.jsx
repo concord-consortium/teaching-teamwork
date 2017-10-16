@@ -63,6 +63,8 @@ module.exports = React.createClass({
           numExistingUsers = Math.max(self.state.numExistingUsers - 1, 0);
         }
 
+        self.props.setWaitingRoomInfo(self.props.numClients - numExistingUsers, self.getJoinedMessage(numExistingUsers));
+
         if (numExistingUsers !== self.state.numExistingUsers) {
           self.setState({numExistingUsers: numExistingUsers});
         }

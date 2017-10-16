@@ -31,6 +31,7 @@ module.exports = React.createClass({
 
   getInitialState: function () {
     return {
+      enabled: false,
       step: UNSTARTED_STEP,
       completed: false,
       inFreePlay: false,
@@ -44,6 +45,20 @@ module.exports = React.createClass({
   },
 
   componentWillReceiveProps: function(nextProps) {
+    var enabled = this.state.enabled;
+
+    if (nextProps.enabled && !this.state.enabled) {
+      enabled = true;
+      this.setState({enabled: true});
+    }
+
+    if (enabled && this.nextProps.ttWorkbench && (this.state.step === UNSTARTED_STEP)) {
+      this.startTutorial(nextProps.ttWorkbench);
+    }
+   },
+
+  startTutorial: function (ttWorkbench) {
+
     var waitForAnThen = function (seconds, callback) {
       return setTimeout(callback, seconds * 1000);
     };
@@ -54,119 +69,117 @@ module.exports = React.createClass({
       clearTimeout(tutorialAboutToTimeout);
     };
 
-    if ((this.props.ttWorkbench !== nextProps.ttWorkbench) && (this.state.step === UNSTARTED_STEP)) {
-      var self = this,
-          interface = nextProps.ttWorkbench.interface || {},
-          tutorialFreePlayDuration = interface.tutorialFreePlayDuration || 0,
-          tutorialStepPauseDuration = interface.tutorialStepPauseDuration || 2,
-          tutorialAboutToTimeoutDuration = interface.tutorialAboutToTimeoutDuration || 5,
-          tutorialTimeoutDuration = (interface.tutorialTimeoutDuration || 30) - tutorialAboutToTimeoutDuration;
+    var self = this,
+        interface = ttWorkbench.interface || {},
+        tutorialFreePlayDuration = interface.tutorialFreePlayDuration || 0,
+        tutorialStepPauseDuration = interface.tutorialStepPauseDuration || 2,
+        tutorialAboutToTimeoutDuration = interface.tutorialAboutToTimeoutDuration || 5,
+        tutorialTimeoutDuration = (interface.tutorialTimeoutDuration || 30) - tutorialAboutToTimeoutDuration;
 
-      if (interface.showTutorial) {
-        var nextStepIfCurrentStepIs = function (testStep, callback) {
-          var nextStep = testStep + 1,
-              moveToNextStep = function () {
-                resetTimers();
-                self.setState({
-                  step: nextStep,
-                  completed: false,
-                  timingOutIn: 0,
-                  timedOut: false
-                });
-              };
-
-          if (self.state.step === testStep) {
-            resetTimers();
-            self.setState({completed: true});
-
-            if (nextStep >= steps.length - 1) {
-              moveToNextStep();
-              self.setState({inFreePlay: true});
-              if (tutorialFreePlayDuration > 0) {
-                self.setState({timingOutIn: tutorialFreePlayDuration});
-                startCountdownInterval();
-                waitForAnThen(tutorialFreePlayDuration, function () {
-                  self.setState({blockFreePlay: true});
-                });
-              }
-            }
-            else {
-              waitForAnThen(tutorialStepPauseDuration, function () {
-                moveToNextStep();
-                startStepTimer();
+    if (interface.showTutorial) {
+      var nextStepIfCurrentStepIs = function (testStep, callback) {
+        var nextStep = testStep + 1,
+            moveToNextStep = function () {
+              resetTimers();
+              self.setState({
+                step: nextStep,
+                completed: false,
+                timingOutIn: 0,
+                timedOut: false
               });
-            }
+            };
 
-            if (callback) {
-              callback();
+        if (self.state.step === testStep) {
+          resetTimers();
+          self.setState({completed: true});
+
+          if (nextStep >= steps.length - 1) {
+            moveToNextStep();
+            self.setState({inFreePlay: true});
+            if (tutorialFreePlayDuration > 0) {
+              self.setState({timingOutIn: tutorialFreePlayDuration});
+              startCountdownInterval();
+              waitForAnThen(tutorialFreePlayDuration, function () {
+                self.setState({blockFreePlay: true});
+              });
             }
           }
-        };
-
-        var startCountdownInterval = function () {
-          clearInterval(countdownInterval);
-          countdownInterval = setInterval(function () {
-            if (self.state.timingOutIn > 0) {
-              self.setState({timingOutIn: self.state.timingOutIn - 1});
-            }
-            else {
-              clearInterval(countdownInterval);
-            }
-          }, 1000);
-        };
-
-        var startStepTimer = function () {
-          resetTimers();
-          if (tutorialTimeoutDuration > 0) {
-            tutorialTimeout = waitForAnThen(tutorialTimeoutDuration, function () {
-              self.setState({timingOutIn: tutorialAboutToTimeoutDuration});
-              startCountdownInterval();
-
-              tutorialAboutToTimeout = waitForAnThen(tutorialAboutToTimeoutDuration, function () {
-                self.setState({timedOut: true});
-                nextStepIfCurrentStepIs(self.state.step);
-              });
+          else {
+            waitForAnThen(tutorialStepPauseDuration, function () {
+              moveToNextStep();
+              startStepTimer();
             });
           }
-        };
 
-        logController.addLogEventListener(function (data) {
-          switch (data.event) {
-            case "Changed circuit":
-              if (data.parameters.type === "changed component value") {
-                nextStepIfCurrentStepIs(0);
-              }
-              else if (data.parameters.type === "disconnect lead") {
-                if (self.state.step === 5) {
-                  self.setState({liftedLead: true, liftedLeadLocation: data.parameters.location});
-                }
-              }
-              break;
-            case "Attached probe":
-              if ((self.state.step === 5) && self.state.liftedLead && (data.parameters.location === self.state.liftedLeadLocation)) {
-                nextStepIfCurrentStepIs(5);
-              }
-              break;
-            case "DMM measurement":
-              nextStepIfCurrentStepIs(1);
-              break;
-            case "Moved DMM dial":
-              nextStepIfCurrentStepIs(2);
-              break;
-            case "Closed Zoom View":
-              nextStepIfCurrentStepIs(3);
-              break;
-            case "Calculation performed":
-              nextStepIfCurrentStepIs(4);
-              break;
-            case "Sent message":
-              nextStepIfCurrentStepIs(6);
+          if (callback) {
+            callback();
           }
-        });
+        }
+      };
 
-        self.setState({step: STARTING_STEP, interface: interface});
-        startStepTimer();
-      }
+      var startCountdownInterval = function () {
+        clearInterval(countdownInterval);
+        countdownInterval = setInterval(function () {
+          if (self.state.timingOutIn > 0) {
+            self.setState({timingOutIn: self.state.timingOutIn - 1});
+          }
+          else {
+            clearInterval(countdownInterval);
+          }
+        }, 1000);
+      };
+
+      var startStepTimer = function () {
+        resetTimers();
+        if (tutorialTimeoutDuration > 0) {
+          tutorialTimeout = waitForAnThen(tutorialTimeoutDuration, function () {
+            self.setState({timingOutIn: tutorialAboutToTimeoutDuration});
+            startCountdownInterval();
+
+            tutorialAboutToTimeout = waitForAnThen(tutorialAboutToTimeoutDuration, function () {
+              self.setState({timedOut: true});
+              nextStepIfCurrentStepIs(self.state.step);
+            });
+          });
+        }
+      };
+
+      logController.addLogEventListener(function (data) {
+        switch (data.event) {
+          case "Changed circuit":
+            if (data.parameters.type === "changed component value") {
+              nextStepIfCurrentStepIs(0);
+            }
+            else if (data.parameters.type === "disconnect lead") {
+              if (self.state.step === 5) {
+                self.setState({liftedLead: true, liftedLeadLocation: data.parameters.location});
+              }
+            }
+            break;
+          case "Attached probe":
+            if ((self.state.step === 5) && self.state.liftedLead && (data.parameters.location === self.state.liftedLeadLocation)) {
+              nextStepIfCurrentStepIs(5);
+            }
+            break;
+          case "DMM measurement":
+            nextStepIfCurrentStepIs(1);
+            break;
+          case "Moved DMM dial":
+            nextStepIfCurrentStepIs(2);
+            break;
+          case "Closed Zoom View":
+            nextStepIfCurrentStepIs(3);
+            break;
+          case "Calculation performed":
+            nextStepIfCurrentStepIs(4);
+            break;
+          case "Sent message":
+            nextStepIfCurrentStepIs(6);
+        }
+      });
+
+      self.setState({step: STARTING_STEP, interface: interface});
+      startStepTimer();
     }
   },
 
@@ -175,7 +188,7 @@ module.exports = React.createClass({
         timeoutMessage = "&nbsp;",
         info, plural, prefix, stepText;
 
-    if (step === UNSTARTED_STEP) {
+    if (!this.state.enabled || (step === UNSTARTED_STEP)) {
       return null;
     }
 

@@ -4,6 +4,7 @@
     "enableChatType": true,
     "hideZoomDetails": true,
     "showTutorial": true,
+    "enableWaitingRoom": true,
     "tutorialFreePlayDuration": 60,
     "tutorialStepPauseDuration": 2,
     "tutorialAboutToTimeoutDuration": 5,
