@@ -32,7 +32,7 @@ module.exports = React.createClass({
   },
 
   setWaitingRoomInfo: function (slotsRemaining, waitingRoomMessage) {
-    this.setState({showWaitingRoom: slotsRemaining > 0, waitingRoomMessage: waitingRoomMessage});
+    this.setState({showWaitingRoom: this.waitingRoomEnabled() && (slotsRemaining > 0), waitingRoomMessage: waitingRoomMessage});
   },
 
   renderWaitingRoom: function () {
@@ -79,7 +79,7 @@ module.exports = React.createClass({
         { image }
         { calculator }
         <VersionView/>
-        <TutorialView ttWorkbench={ this.props.ttWorkbench } />
+        <TutorialView ttWorkbench={ this.props.ttWorkbench } enabled={!hasMultipleClients || !this.waitingRoomEnabled() || !this.state.showWaitingRoom} />
         { hasMultipleClients && this.waitingRoomEnabled() && this.state.showWaitingRoom ? this.renderWaitingRoom() : null}
       </div>
     );

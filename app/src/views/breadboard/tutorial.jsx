@@ -25,6 +25,12 @@ var countdownInterval;
 var tutorialTimeout;
 var tutorialAboutToTimeout;
 
+var liftedLead = false;
+var probeLocation = {
+  red: null,
+  black: null
+};
+
 module.exports = React.createClass({
 
   displayName: 'Tutorial',
@@ -36,8 +42,6 @@ module.exports = React.createClass({
       completed: false,
       inFreePlay: false,
       blockFreePlay: false,
-      liftedLead: false,
-      liftedLeadLocation: null,
       timingOutIn: 0,
       timedOut: false,
       interface: {}
@@ -52,7 +56,7 @@ module.exports = React.createClass({
       this.setState({enabled: true});
     }
 
-    if (enabled && this.nextProps.ttWorkbench && (this.state.step === UNSTARTED_STEP)) {
+    if (enabled && nextProps.ttWorkbench && (this.state.step === UNSTARTED_STEP)) {
       this.startTutorial(nextProps.ttWorkbench);
     }
    },
@@ -144,6 +148,16 @@ module.exports = React.createClass({
         }
       };
 
+      var probeIsOnResistorEdge = function (color) {
+        return (probeLocation[color] === "c20") || (probeLocation[color] === "c14");
+      };
+
+      var checkIfLeadLiftedAndProbesSet = function () {
+        if ((self.state.step === 5) && liftedLead && probeIsOnResistorEdge("red") && probeIsOnResistorEdge("black") && (probeLocation.red !== probeLocation.black)) {
+          nextStepIfCurrentStepIs(5);
+        }
+      };
+
       logController.addLogEventListener(function (data) {
         switch (data.event) {
           case "Changed circuit":
@@ -151,15 +165,13 @@ module.exports = React.createClass({
               nextStepIfCurrentStepIs(0);
             }
             else if (data.parameters.type === "disconnect lead") {
-              if (self.state.step === 5) {
-                self.setState({liftedLead: true, liftedLeadLocation: data.parameters.location});
-              }
+              liftedLead = true;
+              checkIfLeadLiftedAndProbesSet();
             }
             break;
           case "Attached probe":
-            if ((self.state.step === 5) && self.state.liftedLead && (data.parameters.location === self.state.liftedLeadLocation)) {
-              nextStepIfCurrentStepIs(5);
-            }
+            probeLocation[data.parameters.color] = data.parameters.location;
+            checkIfLeadLiftedAndProbesSet();
             break;
           case "DMM measurement":
             nextStepIfCurrentStepIs(1);
