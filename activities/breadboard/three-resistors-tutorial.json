@@ -3,7 +3,11 @@
   "interface": {
     "enableChatType": true,
     "hideZoomDetails": true,
-    "enableWaitingRoom": true
+    "showTutorial": true,
+    "tutorialFreePlayDuration": 60,
+    "tutorialStepPauseDuration": 2,
+    "tutorialAboutToTimeoutDuration": 5,
+    "tutorialTimeoutDuration": 30
   },
   "image": "images/three-resistors-circuit.v2.png",
   "otherCircuits": {
