@@ -1,4 +1,5 @@
-var logController = require('../../controllers/shared/log');
+var logController = require('../../controllers/shared/log'),
+    laraController = require('../../controllers/shared/lara');
 
 var chatText = function (interface) {
   if (interface.enableChatType) {
@@ -114,6 +115,7 @@ module.exports = React.createClass({
               waitForAnThen(tutorialFreePlayDuration, function () {
                 self.setState({blockFreePlay: true});
                 logCompletedStep(nextStep, true);
+                laraController.enableForwardNav(true);
               });
             }
           }
@@ -200,6 +202,7 @@ module.exports = React.createClass({
         }
       });
 
+      laraController.enableForwardNav(false, "Please complete the tutorial before moving to the next page.");
       self.setState({step: STARTING_STEP, interface: interface});
       startStepTimer(STARTING_STEP);
       logStartedStep(STARTING_STEP);
