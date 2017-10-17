@@ -7,7 +7,8 @@
     "tutorialFreePlayDuration": 60,
     "tutorialStepPauseDuration": 2,
     "tutorialAboutToTimeoutDuration": 5,
-    "tutorialTimeoutDuration": 30
+    "tutorialTimeoutDuration": 30,
+    "tutorialTimeoutDurationStep7": 45
   },
   "image": "images/three-resistors-circuit.v2.png",
   "otherCircuits": {

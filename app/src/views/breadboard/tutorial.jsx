@@ -84,13 +84,11 @@ module.exports = React.createClass({
     var self = this,
         interface = ttWorkbench.interface || {},
         tutorialFreePlayDuration = interface.tutorialFreePlayDuration || 0,
-        tutorialStepPauseDuration = interface.tutorialStepPauseDuration || 2,
-        tutorialAboutToTimeoutDuration = interface.tutorialAboutToTimeoutDuration || 5,
-        tutorialTimeoutDuration = (interface.tutorialTimeoutDuration || 30) - tutorialAboutToTimeoutDuration;
+        tutorialStepPauseDuration = interface.tutorialStepPauseDuration || 2;
 
     if (interface.showTutorial) {
-      var nextStepIfCurrentStepIs = function (testStep, timedOut) {
-        var nextStep = testStep + 1,
+      var nextStepIfCurrentStepIs = function (currentStep, timedOut) {
+        var nextStep = currentStep + 1,
             moveToNextStep = function () {
               resetTimers();
               self.setState({
@@ -102,10 +100,10 @@ module.exports = React.createClass({
               logStartedStep(nextStep);
             };
 
-        if (self.state.step === testStep) {
+        if (self.state.step === currentStep) {
           resetTimers();
           self.setState({completed: true});
-          logCompletedStep(testStep, timedOut);
+          logCompletedStep(currentStep, timedOut);
 
           if (nextStep >= steps.length - 1) {
             moveToNextStep();
@@ -122,7 +120,7 @@ module.exports = React.createClass({
           else {
             waitForAnThen(tutorialStepPauseDuration, function () {
               moveToNextStep();
-              startStepTimer();
+              startStepTimer(nextStep);
             });
           }
         }
@@ -140,10 +138,15 @@ module.exports = React.createClass({
         }, 1000);
       };
 
-      var startStepTimer = function () {
+      var startStepTimer = function (step) {
+        var tutorialAboutToTimeoutDuration = interface.tutorialAboutToTimeoutDuration || 5,
+            tutorialTimeoutDurationForStepKey = "tutorialTimeoutDurationStep" + (step + 1),
+            tutorialTimeoutDuration = interface[tutorialTimeoutDurationForStepKey] || interface.tutorialTimeoutDuration || 30,
+            tutorialTimeoutDurationMinusAbout = tutorialTimeoutDuration - tutorialAboutToTimeoutDuration;
+
         resetTimers();
-        if (tutorialTimeoutDuration > 0) {
-          tutorialTimeout = waitForAnThen(tutorialTimeoutDuration, function () {
+        if (tutorialTimeoutDurationMinusAbout > 0) {
+          tutorialTimeout = waitForAnThen(tutorialTimeoutDurationMinusAbout, function () {
             self.setState({timingOutIn: tutorialAboutToTimeoutDuration});
             startCountdownInterval();
 
@@ -198,7 +201,7 @@ module.exports = React.createClass({
       });
 
       self.setState({step: STARTING_STEP, interface: interface});
-      startStepTimer();
+      startStepTimer(STARTING_STEP);
       logStartedStep(STARTING_STEP);
     }
   },
