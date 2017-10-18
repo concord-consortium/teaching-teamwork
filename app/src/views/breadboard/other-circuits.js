@@ -50,20 +50,21 @@ module.exports = OtherCircuits = React.createClass({
   },
 
   showClicked: function () {
+    var self = this;
     this.setState({showPopup: true});
+    setTimeout(function () {
+      self.setState({showPopup: false});
+    }, 100);
   },
 
   render: function () {
     var self = this;
 
-    setTimeout(function () {
-      if (self.state.showPopup) {
+    if (self.state.showPopup) {
+      setTimeout(function () {
         OtherCircuits.showPopup(self.props);
-      }
-      else {
-        OtherCircuits.closePopup();
-      }
-    });
+      });
+    }
 
     return React.DOM.button({onClick: this.showClicked}, this.props.label || 'View All Circuits');
   },
