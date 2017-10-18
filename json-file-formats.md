@@ -23,6 +23,8 @@ Within the Breadboard JSON you can use several predefined variables that are gen
     "enableChatType": true,                                    # if true a dropdown is shown where the user must select the type of message
     "hideZoomDetails": true,                                   # if true the DMM result and resistor bands for other clients are hidden
     "enableWaitingRoom": true,                                 # if true a waiting room is shown until all users have joined the group
+    "enablePersistentWaitingRoom", true,                       # if true and enableWaitingRoom is true then the waiting room is shown again after all users have joined
+                                                               # when one or more of the users drop off
     "showTutorial": true,                                      # if true a multi-step tutorial is shown after the circuit is selected
     "tutorialFreePlayDuration": 60                             # if showTutorial is true this is the number of seconds of "free play" after the tutorial, use 0 to disable
     "tutorialStepPauseDuration": 2,                            # if showTutorial is true this is the number of seconds of pause between steps, use 0 to disable

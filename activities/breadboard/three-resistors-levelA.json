@@ -3,7 +3,8 @@
   "interface": {
     "enableChatType": true,
     "hideZoomDetails": true,
-    "enableWaitingRoom": true
+    "enableWaitingRoom": true,
+    "enablePersistentWaitingRoom": false
   },
   "image": "images/three-resistors-circuit.v2.png",
   "otherCircuits": {

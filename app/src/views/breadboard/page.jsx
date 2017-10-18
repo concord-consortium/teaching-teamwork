@@ -21,18 +21,32 @@ module.exports = React.createClass({
     return {
       inIframe: inIframe(),
       showWaitingRoom: true,
-      waitingRoomMessage: null
+      waitingRoomMessage: null,
+      renderedWaitingRoom: false,
+      leftWaitingRoom: false
     };
   },
 
+  getInterface: function () {
+    var activity = this.props.activity ? this.props.activity : {};
+    return activity.interface || {};
+  },
+
   waitingRoomEnabled: function () {
-    var activity = this.props.activity ? this.props.activity : {},
-        interface = activity.interface || {};
-    return !disableWaitingRoomOverride && interface.enableWaitingRoom;
+    return !disableWaitingRoomOverride && this.getInterface().enableWaitingRoom;
   },
 
   setWaitingRoomInfo: function (slotsRemaining, waitingRoomMessage) {
-    this.setState({showWaitingRoom: this.waitingRoomEnabled() && (slotsRemaining > 0), waitingRoomMessage: waitingRoomMessage});
+    var leftWaitingRoom = this.state.leftWaitingRoom || (slotsRemaining === 0),
+        interface = this.getInterface(),
+        showWaitingRoom = this.waitingRoomEnabled() && (slotsRemaining > 0) && (!leftWaitingRoom || interface.enablePersistentWaitingRoom);
+    if (slotsRemaining === 0) {
+      this.setState({leftWaitingRoom: true});
+    }
+    this.setState({
+      showWaitingRoom: showWaitingRoom,
+      waitingRoomMessage: waitingRoomMessage
+    });
   },
 
   renderWaitingRoom: function () {
