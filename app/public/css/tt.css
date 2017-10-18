@@ -721,7 +721,7 @@ table.report td {
   left: 0;
   right: 0;
   bottom: 0;
-  height: 200px;
+  height: 125px;
   overflow: hidden;
   z-index: 1000000;
 }
@@ -755,17 +755,17 @@ table.report td {
   justify-content: center;
 }
 .tutorial-step {
-  font-size: 26px;
-  margin: 10px;
+  font-size: 18px;
+  margin: 5px;
   font-weight: bold;
 }
 .tutorial-step-title {
-  font-size: 28px;
-  margin: 10px;
+  font-size: 18px;
+  margin: 5px;
 }
 .tutorial-step-text {
-  font-size: 16px;
-  margin: 15px;
+  font-size: 14px;
+  margin: 5px;
 }
 .tutorial-step-text button {
   font-size: 12px;
