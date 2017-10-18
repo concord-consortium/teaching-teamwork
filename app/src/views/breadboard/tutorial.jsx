@@ -45,7 +45,8 @@ module.exports = React.createClass({
       blockFreePlay: false,
       timingOutIn: 0,
       timedOut: false,
-      interface: {}
+      interface: {},
+      bottomY: 0
     };
   },
 
@@ -217,6 +218,32 @@ module.exports = React.createClass({
     }
   },
 
+  windowMouseMove: function (e) {
+    var dy = this.startMouseY - e.clientY,
+        newBottomY = Math.max(0, this.startBottomY + dy);
+    e.preventDefault();
+    e.stopPropagation();
+    this.setState({bottomY: newBottomY});
+  },
+
+  windowMouseUp: function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    window.removeEventListener("mousemove", this.windowMouseMove);
+    window.removeEventListener("mouseup", this.windowMouseUp);
+  },
+
+  mouseDown: function (e) {
+    if (!this.state.blockFreePlay) {
+      e.preventDefault();
+      e.stopPropagation();
+      this.startMouseY = e.clientY;
+      this.startBottomY = this.state.bottomY;
+      window.addEventListener("mousemove", this.windowMouseMove);
+      window.addEventListener("mouseup", this.windowMouseUp);
+    }
+  },
+
   render: function () {
     var step = this.state.step,
         timeoutMessage = "&nbsp;",
@@ -253,7 +280,7 @@ module.exports = React.createClass({
     }
 
     return (
-      <div className={this.state.blockFreePlay ? "tutorial-block-free-play" : "tutorial"}>
+      <div className={this.state.blockFreePlay ? "tutorial-block-free-play" : "tutorial"} onMouseDown={this.mouseDown} style={{bottom: this.state.bottomY}}>
         <div className="tutorial-background"></div>
         <div className="tutorial-info">{info}</div>
       </div>
