@@ -82,10 +82,18 @@ module.exports = React.createClass({
       clearTimeout(tutorialAboutToTimeout);
     };
 
+    var interfaceValue = function (setting, defaultValue) {
+      var interface = ttWorkbench.interface || {};
+      if (interface.hasOwnProperty(setting)) {
+        return interface[setting];
+      }
+      return defaultValue;
+    };
+
     var self = this,
         interface = ttWorkbench.interface || {},
-        tutorialFreePlayDuration = interface.tutorialFreePlayDuration || 0,
-        tutorialStepPauseDuration = interface.tutorialStepPauseDuration || 2;
+        tutorialFreePlayDuration = interfaceValue("tutorialFreePlayDuration", 0),
+        tutorialStepPauseDuration = interfaceValue("tutorialStepPauseDuration", 2);
 
     if (interface.showTutorial) {
       var nextStepIfCurrentStepIs = function (currentStep, timedOut) {
@@ -141,9 +149,9 @@ module.exports = React.createClass({
       };
 
       var startStepTimer = function (step) {
-        var tutorialAboutToTimeoutDuration = interface.tutorialAboutToTimeoutDuration || 5,
+        var tutorialAboutToTimeoutDuration = interfaceValue("tutorialAboutToTimeoutDuration", 5),
             tutorialTimeoutDurationForStepKey = "tutorialTimeoutDurationStep" + (step + 1),
-            tutorialTimeoutDuration = interface[tutorialTimeoutDurationForStepKey] || interface.tutorialTimeoutDuration || 30,
+            tutorialTimeoutDuration = interfaceValue(tutorialTimeoutDurationForStepKey, interfaceValue("tutorialTimeoutDuration", 30)),
             tutorialTimeoutDurationMinusAbout = tutorialTimeoutDuration - tutorialAboutToTimeoutDuration;
 
         resetTimers();
