@@ -3,7 +3,7 @@ var logController = require('../../controllers/shared/log'),
 
 var chatText = function (interface) {
   if (interface.enableChatType) {
-    return "Use the chat area in the right sidebar to select a message type and then send a message.";
+    return "Use the chat area in the right sidebar to select a type of message and then send a message.";
   }
   return "Use the chat area in the right sidebar to send a message.";
 };
@@ -20,7 +20,7 @@ var steps = [
 ];
 
 var UNSTARTED_STEP = -1;
-var STARTING_STEP = 4;
+var STARTING_STEP = 0;
 
 var countdownInterval;
 var tutorialTimeout;
