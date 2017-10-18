@@ -13,14 +13,14 @@ var steps = [
   {title: "Use the multimeter to measure voltage", text: "Move the black and red probes to the leads on either side of the resistor and then look at the measurement in the red multimeter."},
   {title: "Change the mode on the multimeter", text: "Turn the dial on the multimeter to change the scale to measure current or resistance."},
   {title: "View all the circuits", text: "Click the \"View All Circuits\" button near the top of the page to see everyone's circuits.<br>Click the <button>X</button> button at the top of the All Circuits pop-up to close it."},
-  {title: "Use the calculator", text: "Click the Calculator button and make a quick calculation. Please do not use your own calculator in this activity."},
+  {title: "Use the calculator", text: "Click the Calculator button and make a quick calculation. Use the <span class='tutorial-calculator-close'>X</span> to close it. Please do not use your own calculator in this activity."},
   {title: "Lift a lead", text: "Lift the lead and place the probe on the loose wire."},
   {title: "Send a chat message", textFn: chatText},
   {title: "Have fun and play around!", text: "Try selecting a new type of measurement on the multimeter or the \"We got it!\" button."}
 ];
 
 var UNSTARTED_STEP = -1;
-var STARTING_STEP = 0;
+var STARTING_STEP = 4;
 
 var countdownInterval;
 var tutorialTimeout;
