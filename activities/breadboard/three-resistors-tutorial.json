@@ -5,6 +5,7 @@
     "hideZoomDetails": true,
     "showTutorial": true,
     "tutorialFreePlayDuration": 60,
+    "tutorialFreePlayAboutToTimeoutDuration": 30,
     "tutorialStepPauseDuration": 2,
     "tutorialAboutToTimeoutDuration": 5,
     "tutorialTimeoutDuration": 30,

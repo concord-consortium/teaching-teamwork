@@ -94,6 +94,8 @@ module.exports = React.createClass({
     var self = this,
         interface = ttWorkbench.interface || {},
         tutorialFreePlayDuration = interfaceValue("tutorialFreePlayDuration", 0),
+        tutorialFreePlayAboutToTimeoutDuration = interfaceValue("tutorialFreePlayAboutToTimeoutDuration", 0),
+        tutorialFreePlayDurationMinusAbout = Math.max(tutorialFreePlayDuration - tutorialFreePlayAboutToTimeoutDuration, 0),
         tutorialStepPauseDuration = interfaceValue("tutorialStepPauseDuration", 2);
 
     if (interface.showTutorial) {
@@ -118,13 +120,15 @@ module.exports = React.createClass({
           if (nextStep >= steps.length - 1) {
             moveToNextStep();
             self.setState({inFreePlay: true});
-            if (tutorialFreePlayDuration > 0) {
-              self.setState({timingOutIn: tutorialFreePlayDuration});
-              startCountdownInterval();
-              waitForAnThen(tutorialFreePlayDuration, function () {
-                self.setState({blockFreePlay: true});
-                logCompletedStep(nextStep, true);
-                laraController.enableForwardNav(true);
+            if (tutorialFreePlayDurationMinusAbout > 0) {
+              waitForAnThen(tutorialFreePlayDurationMinusAbout, function () {
+                self.setState({timingOutIn: tutorialFreePlayAboutToTimeoutDuration});
+                startCountdownInterval();
+                waitForAnThen(tutorialFreePlayAboutToTimeoutDuration, function () {
+                  self.setState({blockFreePlay: true});
+                  logCompletedStep(nextStep, true);
+                  laraController.enableForwardNav(true);
+                });
               });
             }
           }
@@ -238,7 +242,7 @@ module.exports = React.createClass({
       if (!this.state.completed && (this.state.timingOutIn > 0)) {
         plural = this.state.timingOutIn === 1 ? "" : "s";
         if (this.state.inFreePlay) {
-          timeoutMessage = "You have " + this.state.timingOutIn + " second" + plural + " to play around.";
+          timeoutMessage = "You have " + this.state.timingOutIn + " second" + plural + " left to play around.";
         }
         else {
           timeoutMessage = "This step will time out in " + this.state.timingOutIn + " second" + plural + " and will automatically move to the next step.";

@@ -27,6 +27,7 @@ Within the Breadboard JSON you can use several predefined variables that are gen
                                                                # when one or more of the users drop off
     "showTutorial": true,                                      # if true a multi-step tutorial is shown after the circuit is selected
     "tutorialFreePlayDuration": 60                             # if showTutorial is true this is the number of seconds of "free play" after the tutorial, use 0 to disable
+    "tutorialFreePlayAboutToTimeoutDuration": 30,              # if showTutorial is true this is the number of seconds left in the play timeout when the countdown starts, use 0 to disable
     "tutorialStepPauseDuration": 2,                            # if showTutorial is true this is the number of seconds of pause between steps, use 0 to disable
     "tutorialAboutToTimeoutDuration": 5,                       # if showTutorial is true this is the number of seconds left in the timeout when the countdown starts, use 0 to disable
     "tutorialTimeoutDuration": 30                              # if showTutorial is true this is the number of seconds before the step times out, use 0 to disable
