@@ -215,32 +215,7 @@ module.exports = React.createClass({
       self.setState({step: STARTING_STEP, interface: interface});
       startStepTimer(STARTING_STEP);
       logStartedStep(STARTING_STEP);
-    }
-  },
-
-  windowMouseMove: function (e) {
-    var dy = this.startMouseY - e.clientY,
-        newBottomY = Math.max(0, this.startBottomY + dy);
-    e.preventDefault();
-    e.stopPropagation();
-    this.setState({bottomY: newBottomY});
-  },
-
-  windowMouseUp: function (e) {
-    e.preventDefault();
-    e.stopPropagation();
-    window.removeEventListener("mousemove", this.windowMouseMove);
-    window.removeEventListener("mouseup", this.windowMouseUp);
-  },
-
-  mouseDown: function (e) {
-    if (!this.state.blockFreePlay) {
-      e.preventDefault();
-      e.stopPropagation();
-      this.startMouseY = e.clientY;
-      this.startBottomY = this.state.bottomY;
-      window.addEventListener("mousemove", this.windowMouseMove);
-      window.addEventListener("mouseup", this.windowMouseUp);
+      self.props.setTutorialShowing();
     }
   },
 
@@ -280,7 +255,7 @@ module.exports = React.createClass({
     }
 
     return (
-      <div className={this.state.blockFreePlay ? "tutorial-block-free-play" : "tutorial"} onMouseDown={this.mouseDown} style={{bottom: this.state.bottomY}}>
+      <div className={this.state.blockFreePlay ? "tutorial-block-free-play" : "tutorial"}>
         <div className="tutorial-background"></div>
         <div className="tutorial-info">{info}</div>
       </div>

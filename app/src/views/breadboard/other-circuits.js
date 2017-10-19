@@ -18,10 +18,11 @@ module.exports = OtherCircuits = React.createClass({
           closePopup = function (e) {
             e.preventDefault();
             OtherCircuits.closePopup();
-          };
+          },
+          className = "modalDialog" + (props.tutorialShowing ? " other-circuits-popup-with-tutorial" : "");
 
       if (!$anchor.length) {
-        $anchor = $('<div id="other-circuits-popup" class="modalDialog"></div>').appendTo('body');
+        $anchor = $('<div id="other-circuits-popup" class="' + className + '"></div>').appendTo('body');
       }
 
       setTimeout(function() {

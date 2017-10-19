@@ -23,7 +23,8 @@ module.exports = React.createClass({
       showWaitingRoom: true,
       waitingRoomMessage: null,
       renderedWaitingRoom: false,
-      leftWaitingRoom: false
+      leftWaitingRoom: false,
+      tutorialShowing: false
     };
   },
 
@@ -49,6 +50,10 @@ module.exports = React.createClass({
     });
   },
 
+  setTutorialShowing: function () {
+    this.setState({tutorialShowing: true});
+  },
+
   renderWaitingRoom: function () {
     var waiting = this.state.waitingRoomMessage ? "Waiting... " + this.state.waitingRoomMessage : null;
     return <div className="waiting-room">
@@ -72,28 +77,31 @@ module.exports = React.createClass({
         enterUnknowns = activity.enterUnknowns && (activity.enterUnknowns.E || activity.enterUnknowns.R),
         image = activity.image ? (<div id="image-wrapper" className={ wrapperClass }><img src={ /^https?:\/\//.test(activity.image) ? activity.image : config.modelsBase + activity.image } />{enterUnknowns ? <EnterUnknownsView activity={activity} model={this.props.model} /> : null}</div>) : null,
         submitButton = this.props.showSubmit && this.props.circuit ? (<SubmitButtonView label={hasMultipleClients ? 'We got it!' : "I got it!"} goals={ this.props.goals } nextActivity={ this.props.nextActivity } enterUnknowns={activity.enterUnknowns} />) : null,
-        otherCircuitsButton = hasMultipleClients && this.props.circuit ? (<OtherCircuitsView circuit={ this.props.circuit } numClients={ activity.clients.length } activityName={ this.props.activityName } groupName={ userController.getGroupname() } classInfoUrl={ userController.getClassInfoUrl() } ttWorkbench={ this.props.ttWorkbench } />) : null,
+        otherCircuitsButton = hasMultipleClients && this.props.circuit ? (<OtherCircuitsView circuit={ this.props.circuit } numClients={ activity.clients.length } activityName={ this.props.activityName } groupName={ userController.getGroupname() } classInfoUrl={ userController.getClassInfoUrl() } ttWorkbench={ this.props.ttWorkbench } tutorialShowing={this.state.tutorialShowing} />) : null,
         calculator = this.props.circuit ? (<CalculatorView />) : null,
-        chatProps = hasMultipleClients ? $.extend({}, activity, {numClients: activity.clients.length, setWaitingRoomInfo: this.setWaitingRoomInfo}) : null;
+        chatProps = hasMultipleClients ? $.extend({}, activity, {numClients: activity.clients.length, setWaitingRoomInfo: this.setWaitingRoomInfo}) : null,
+        belowTutorialClassname = "below-tutorial" + (this.state.tutorialShowing ? " below-tutorial-showing" : "");
 
     return (
       <div className="tt-page">
-        { title }
-        { circuit }
-        <OfflineCheckView />
-        <div id="top-button-wrapper">
-          { submitButton }
-          { otherCircuitsButton }
+        <TutorialView ttWorkbench={ this.props.ttWorkbench } enabled={!hasMultipleClients || !this.waitingRoomEnabled() || !this.state.showWaitingRoom} setTutorialShowing={this.setTutorialShowing} />
+        <div className={belowTutorialClassname}>
+          { title }
+          { circuit }
+          <OfflineCheckView />
+          <div id="top-button-wrapper">
+            { submitButton }
+            { otherCircuitsButton }
+          </div>
+          <div id="notes-wrapper" className={ wrapperClass }><NotesView text={ notes } className="tt-notes" breadboard={ this.props.breadboard } /></div>
+          <div id="breadboard-and-chat-wrapper" className={ wrapperClass }>
+            <div id="breadboard-wrapper" className={ wrapperClass } />
+            { hasMultipleClients ? (React.DOM.div({id: "sidebar-chat-wrapper", className: wrapperClass}, SidebarChatViewFactory(chatProps))) : null }
+          </div>
+          { image }
+          { calculator }
+          <VersionView/>
         </div>
-        <div id="notes-wrapper" className={ wrapperClass }><NotesView text={ notes } className="tt-notes" breadboard={ this.props.breadboard } /></div>
-        <div id="breadboard-and-chat-wrapper" className={ wrapperClass }>
-          <div id="breadboard-wrapper" className={ wrapperClass } />
-          { hasMultipleClients ? (React.DOM.div({id: "sidebar-chat-wrapper", className: wrapperClass}, SidebarChatViewFactory(chatProps))) : null }
-        </div>
-        { image }
-        { calculator }
-        <VersionView/>
-        <TutorialView ttWorkbench={ this.props.ttWorkbench } enabled={!hasMultipleClients || !this.waitingRoomEnabled() || !this.state.showWaitingRoom} />
         { hasMultipleClients && this.waitingRoomEnabled() && this.state.showWaitingRoom ? this.renderWaitingRoom() : null}
       </div>
     );
