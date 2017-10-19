@@ -23,7 +23,9 @@ module.exports = SubmitButton = React.createClass({
     var self = this;
 
     // don't allow next page advancement
-    laraController.enableForwardNav(false, "Please complete this activity before moving to the next page.");
+    if (this.props.disableForwardNav) {
+      laraController.enableForwardNav(false, "Please complete this activity before moving to the next page.");
+    }
 
     userController.onGroupRefCreation(function() {
       var otherClients, i, updateFromClient;

@@ -3,6 +3,7 @@
   "interface": {
     "enableChatType": true,
     "hideZoomDetails": true,
+    "disableForwardNav": true,
     "showTutorial": true,
     "tutorialFreePlayDuration": 60,
     "tutorialFreePlayAboutToTimeoutDuration": 30,

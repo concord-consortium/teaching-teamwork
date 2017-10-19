@@ -22,6 +22,7 @@ Within the Breadboard JSON you can use several predefined variables that are gen
   "interface": {
     "enableChatType": true,                                    # if true a dropdown is shown where the user must select the type of message
     "hideZoomDetails": true,                                   # if true the DMM result and resistor bands for other clients are hidden
+    "disableForwardNav": true,                                 # if true the forward nav is disabled when run under LARA
     "enableWaitingRoom": true,                                 # if true a waiting room is shown until all users have joined the group
     "enablePersistentWaitingRoom", true,                       # if true and enableWaitingRoom is true then the waiting room is shown again after all users have joined
                                                                # when one or more of the users drop off

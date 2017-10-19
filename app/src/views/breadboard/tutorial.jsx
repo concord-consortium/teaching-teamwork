@@ -215,7 +215,9 @@ module.exports = React.createClass({
         }
       });
 
-      laraController.enableForwardNav(false, "Please complete the tutorial before moving to the next page.");
+      if (interface.disableForwardNav) {
+        laraController.enableForwardNav(false, "Please complete the tutorial before moving to the next page.");
+      }
       self.setState({step: STARTING_STEP, interface: interface});
       startStepTimer(STARTING_STEP);
       logStartedStep(STARTING_STEP);
