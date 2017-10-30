@@ -88,9 +88,9 @@ LaraController.prototype = {
     }
   },
 
-  enableForwardNav: function (enableForwardNav, disabledForwardNavMessage) {
+  enableForwardNav: function (enableForwardNav, message) {
     if (this.loadedFromLara) {
-      this.laraPhone.post('navigation', {enableForwardNav: enableForwardNav, disabledForwardNavMessage: disabledForwardNavMessage});
+      this.laraPhone.post('navigation', {enableForwardNav: enableForwardNav, message: message});
     }
   }
 };
