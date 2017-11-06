@@ -1,5 +1,11 @@
 {
   "name": "Three Resistors - Level D",
+  "interface": {
+    "enableChatType": true,
+    "hideZoomDetails": true, 
+    "showTutorial": true, 
+    "tutorialFreePlayDuration": 60
+  },
   "image": "images/three-resistors-circuit.v2.png",
   "enterUnknowns": {
     "E": true,
