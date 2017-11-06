@@ -1,15 +1,9 @@
 {
-  "name": "Three Resistors - Level D",
-  "interface": {
-    "enableChatType": true,
-    "hideZoomDetails": true, 
-    "showTutorial": true, 
-    "tutorialFreePlayDuration": 60
-  },
+  "name": "Three Resistors - Level C",
   "image": "images/three-resistors-circuit.v2.png",
   "enterUnknowns": {
     "E": true,
-    "R": true
+    "R": false
   },
   "otherCircuits": {
     "image": "images/three-resistors-breadboards.v2.png",
@@ -24,9 +18,10 @@
   "model": {
     "name": "three-resistors",
     "options": {
-      "level": 5
+      "level": 4
     }
   },
+  "nextActivity": "Ok",
   "initialChatMessage": "You can find your goal at the top of the screen. Use this area to chat with your teammates.",
   "goals": [
     {
@@ -119,7 +114,7 @@
     {
       "show_multimeter": true,
       "showComponentEditor": true,
-      "notes": "E is unknown, R is unknown, your goal is to make your voltage $V1 volts.",
+      "notes": "E is unknown, R = $R Ω, your goal is to make your voltage $V1 volts.",
       "circuit": [
         {
           "type": "wire",
@@ -144,7 +139,7 @@
     {
       "show_multimeter": true,
       "showComponentEditor": true,
-      "notes": "E is unknown, R is unknown, your goal is to make your voltage $V2 volts.",
+      "notes": "E is unknown, R = $R Ω, your goal is to make your voltage $V2 volts.",
       "circuit": [
         {
           "type": "wire",
@@ -169,7 +164,7 @@
     {
       "show_multimeter": true,
       "showComponentEditor": true,
-      "notes": "E is unknown, R is unknown, your goal is to make your voltage $V3 volts.",
+      "notes": "E is unknown, R = $R Ω, your goal is to make your voltage $V3 volts.",
       "circuit": [
         {
           "type": "wire",
