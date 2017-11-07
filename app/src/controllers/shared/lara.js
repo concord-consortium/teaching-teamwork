@@ -86,6 +86,12 @@ LaraController.prototype = {
     if (this.loadedFromLara) {
       this.laraPhone.post('interactiveStateGlobal', state);
     }
+  },
+
+  enableForwardNav: function (enableForwardNav, message) {
+    if (this.loadedFromLara) {
+      this.laraPhone.post('navigation', {enableForwardNav: enableForwardNav, message: message});
+    }
   }
 };
 

@@ -223,9 +223,111 @@ var eventMap = {
   "Submit close button clicked": {
     code: 6200,
     desc: "closed submit window"
+  },
+  "Started tutorial step": {
+    code: 7000,
+    desc: "started tutorual step [number] with title '[title]'",
+    data01: "number",
+    data02: "title"
+  },
+  "Completed tutorial step": {
+    code: 7000,
+    desc: "completed tutorual step [number] with title '[title]', timed out it [timedOut]",
+    data01: "number",
+    data02: "title",
+    data03: "timedOut"
+  },
+  "Unknown Values Submitted": {
+    codeFn: function (type, obj) {
+      var p = parseUnknownValuesSubmitted(obj);
+      if (!p.needR && !p.needE) {
+        return 4600;
+      }
+      if (!p.needR && p.needE) {
+        return 4601;
+      }
+      if (p.needR && !p.needE) {
+        return 4602;
+      }
+      return 4603;
+    },
+    descFn: function (type, obj) {
+      var p = parseUnknownValuesSubmitted(obj);
+      if (!p.needR && !p.needE) {
+        return "The user does not need E or R and submitted";
+      }
+      if (!p.needR && p.needE) {
+        return "The user needs E and submitted the [correct/incorrect] value of [e value] [e unit]";
+      }
+      if (p.needR && !p.needE) {
+        return "The user needs R and submitted the [correct/incorrect] value of [r value] [r unit]";
+      }
+      return "The user needs E and R and submitted the [correct/incorrect] values of [e value] [e unit] and [r value] [r unit]";
+    },
+    data01Fn: function (type, obj) {
+      var p = parseUnknownValuesSubmitted(obj),
+          data = [];
+      if (p.needE) {
+        data.push(p.correctE ? "correct E" : "incorrect E");
+      }
+      if (p.needR) {
+        data.push(p.correctR ? "correct R" : "incorrect R");
+      }
+      if (data.length > 0) {
+        p.data01 = data.join(" and ");
+        return "data01";
+      }
+    }
+  },
+  data02Fn: function (type, obj) {
+    var p = parseUnknownValuesSubmitted(obj);
+    if (p.needE) {
+      return p.eValue;
+    }
+    else if (p.needR) {
+      return p.rValue;
+    }
+  },
+  data03Fn: function (type, obj) {
+    var p = parseUnknownValuesSubmitted(obj);
+    if (p.needE) {
+      return p.eUnit;
+    }
+    else if (p.needR) {
+      return p.rUnit;
+    }
+  },
+  data04Fn: function (type, obj) {
+    var p = parseUnknownValuesSubmitted(obj);
+    if (p.needE && p.needR) {
+      return p.rValue;
+    }
+  },
+  data05Fn: function (type, obj) {
+    var p = parseUnknownValuesSubmitted(obj);
+    if (p.needE && p.needR) {
+      return p.rUnit;
+    }
   }
 };
 
+var parseUnknownValuesSubmitted = function (obj) {
+  var p = obj.parameters,
+          needR = !!p["R: Need"],
+          needE = !!p["E: Need"],
+          correctR = !!p["R: Correct"],
+          correctE = !!p["E: Correct"];
+  return {
+    needR: needR,
+    needE: needE,
+    correctR: correctR,
+    correctE: correctE,
+    eValue: ["E: Value"],
+    eUnit: ["E: Unit"],
+    rValue: ["R: Value"],
+    rUnit: ["R: Unit"]
+  };
+};
 
 var App = component({
   getInitialState: function () {
@@ -341,7 +443,7 @@ var App = component({
     var self = this,
         reader = new FileReader();
 
-    reader.onload = function(e) {
+    reader.onload = function() {
       try {
         var input = JSON.parse(reader.result),
             teamPrefix = self.state.teamPrefix,
@@ -472,8 +574,8 @@ var App = component({
             "EventTime": date.toTimeString().split(" ")[0],
             "EventTimestamp": time,
             "TimeSpent": (time - lastTime) / 1000,
-            "DataCode": event.codeFn ? event.codeFn(p.type) : event.code,
-            "DataDesc": event.descFn ? event.descFn(p.type) : event.desc,
+            "DataCode": event.codeFn ? event.codeFn(p.type, obj) : event.code,
+            "DataDesc": event.descFn ? event.descFn(p.type, obj) : event.desc,
             "Data01": data("01"),
             "Data02": data("02"),
             "Data03": data("03"),

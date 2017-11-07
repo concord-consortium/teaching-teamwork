@@ -18,10 +18,11 @@ module.exports = OtherCircuits = React.createClass({
           closePopup = function (e) {
             e.preventDefault();
             OtherCircuits.closePopup();
-          };
+          },
+          className = "modalDialog" + (props.tutorialShowing ? " other-circuits-popup-with-tutorial" : "");
 
       if (!$anchor.length) {
-        $anchor = $('<div id="other-circuits-popup" class="modalDialog"></div>').appendTo('body');
+        $anchor = $('<div id="other-circuits-popup" class="' + className + '"></div>').appendTo('body');
       }
 
       setTimeout(function() {
@@ -50,20 +51,21 @@ module.exports = OtherCircuits = React.createClass({
   },
 
   showClicked: function () {
+    var self = this;
     this.setState({showPopup: true});
+    setTimeout(function () {
+      self.setState({showPopup: false});
+    }, 100);
   },
 
   render: function () {
     var self = this;
 
-    setTimeout(function () {
-      if (self.state.showPopup) {
+    if (self.state.showPopup) {
+      setTimeout(function () {
         OtherCircuits.showPopup(self.props);
-      }
-      else {
-        OtherCircuits.closePopup();
-      }
-    });
+      });
+    }
 
     return React.DOM.button({onClick: this.showClicked}, this.props.label || 'View All Circuits');
   },

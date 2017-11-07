@@ -1,5 +1,6 @@
 var userController = require('../../controllers/shared/user'),
     logController = require('../../controllers/shared/log'),
+    laraController = require('../../controllers/shared/lara'),
     SubmitButton, Popup;
 
 module.exports = SubmitButton = React.createClass({
@@ -20,6 +21,11 @@ module.exports = SubmitButton = React.createClass({
 
   componentWillMount: function () {
     var self = this;
+
+    // don't allow next page advancement
+    if (this.props.disableForwardNav) {
+      laraController.enableForwardNav(false, "Please complete this activity before moving to the next page.");
+    }
 
     userController.onGroupRefCreation(function() {
       var otherClients, i, updateFromClient;
@@ -48,6 +54,9 @@ module.exports = SubmitButton = React.createClass({
             allCorrect: allCorrect,
             closePopup: false
           });
+          if (allCorrect) {
+            laraController.enableForwardNav(true);
+          }
         });
       });
 
@@ -71,6 +80,7 @@ module.exports = SubmitButton = React.createClass({
   },
 
   componentWillUnmount: function() {
+    laraController.enableForwardNav(true);
     this.submitRef.off();
     this.clientListRef.off();
   },

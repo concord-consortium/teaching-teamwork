@@ -22,8 +22,24 @@ Within the Breadboard JSON you can use several predefined variables that are gen
   "interface": {
     "enableChatType": true,                                    # if true a dropdown is shown where the user must select the type of message
     "hideZoomDetails": true,                                   # if true the DMM result and resistor bands for other clients are hidden
+    "disableForwardNav": true,                                 # if true the forward nav is disabled when run under LARA
+    "enableWaitingRoom": true,                                 # if true a waiting room is shown until all users have joined the group
+    "enablePersistentWaitingRoom", true,                       # if true and enableWaitingRoom is true then the waiting room is shown again after all users have joined
+                                                               # when one or more of the users drop off
     "showTutorial": true,                                      # if true a multi-step tutorial is shown after the circuit is selected
-    "tutorialFreePlayDuration": 60                             # if showTutorial is true this is the number of seconds of "free play" after the tutorial
+    "tutorialFreePlayDuration": 60                             # if showTutorial is true this is the number of seconds of "free play" after the tutorial, use 0 to disable
+    "tutorialFreePlayAboutToTimeoutDuration": 30,              # if showTutorial is true this is the number of seconds left in the play timeout when the countdown starts, use 0 to disable
+    "tutorialStepPauseDuration": 2,                            # if showTutorial is true this is the number of seconds of pause between steps, use 0 to disable
+    "tutorialAboutToTimeoutDuration": 5,                       # if showTutorial is true this is the number of seconds left in the timeout when the countdown starts, use 0 to disable
+    "tutorialTimeoutDuration": 30                              # if showTutorial is true this is the number of seconds before the step times out, use 0 to disable
+    "tutorialTimeoutDurationStep1": 10,                        # if showTutorial is true this is the number of seconds before step times 1 out, it overrides the tutorialTimeoutDuration setting
+    "tutorialTimeoutDurationStep2": 10,                        # if showTutorial is true this is the number of seconds before step times 2 out, it overrides the tutorialTimeoutDuration setting
+    "tutorialTimeoutDurationStep3": 10,                        # if showTutorial is true this is the number of seconds before step times 3 out, it overrides the tutorialTimeoutDuration setting
+    "tutorialTimeoutDurationStep4": 10,                        # if showTutorial is true this is the number of seconds before step times 4 out, it overrides the tutorialTimeoutDuration setting
+    "tutorialTimeoutDurationStep5": 10,                        # if showTutorial is true this is the number of seconds before step times 5 out, it overrides the tutorialTimeoutDuration setting
+    "tutorialTimeoutDurationStep6": 10,                        # if showTutorial is true this is the number of seconds before step times 6 out, it overrides the tutorialTimeoutDuration setting
+    "tutorialTimeoutDurationStep7": 10,                        # if showTutorial is true this is the number of seconds before step times 7 out, it overrides the tutorialTimeoutDuration setting
+    "tutorialTimeoutDurationStep8": 10                        # if showTutorial is true this is the number of seconds before step times 8 out, it overrides the tutorialTimeoutDuration setting
   },
   "image": "images/three-resistors-circuit.v2.png",           # if present this is displayed at the bottom of the page
   "otherCircuits": {                                          # specifies the image and breadboard locations for the "View All" dialog

@@ -52,10 +52,6 @@ th {
   padding-top: 10px;
 }
 
-
-#breadboard-wrapper {
-}
-
 #enter-unknowns {
   float: right;
   padding: 10px;
@@ -211,7 +207,7 @@ form button:disabled {
   font: bold 14px Arial, sans-serif;
 
 	background: #8A8F92;
-	background: linear-gradient(#8A8F92, #5E666B)
+	background: linear-gradient(#8A8F92, #5E666B);
 	border-radius: 11px;
 	box-shadow: 0px 4px #223E4A, 0px 10px 15px rgba(0, 0, 0, 0.2);
 
@@ -273,6 +269,14 @@ form button:disabled {
 	transition: all 0.2s ease;
   cursor: pointer;
 }
+.tutorial-calculator-close {
+  padding: 3px 5px;
+	background: #ff9fa8;
+	box-shadow: 0px 3px #ff7c87;
+	color: white;
+	user-select: none;
+}
+
 #calculator .very-top span.close:hover {
 	background: #f68991;
 	box-shadow: 0px 4px #d3545d;
@@ -591,7 +595,7 @@ form button:disabled {
   overflow-y: auto;
   overflow-x: hidden;
   height: 90%;
-}}
+}
 
 .other-circuits-button-popup  h1 {
   padding: 0;
@@ -625,8 +629,6 @@ form button:disabled {
   background-color: #ddd;
 }
 
-.alert-wrapper {
-}
 .alert-background {
   z-index: 1000;
   position: absolute;
@@ -716,11 +718,18 @@ table.report td {
 
 .tutorial {
   position: fixed;
-  left: 0;
+  top: 0;
   right: 0;
-  bottom: 0;
-  height: 200px;
+  left: 0;
+  height: 140px;
   overflow: hidden;
+  z-index: 100000000;
+}
+.other-circuits-popup-with-tutorial {
+  top: 140px !important;
+}
+.below-tutorial-showing {
+  margin-top: 140px !important;
 }
 .tutorial-block-free-play {
   position: fixed;
@@ -728,6 +737,7 @@ table.report td {
   left: 0;
   right: 0;
   bottom: 0;
+  z-index: 10000000;
 }
 .tutorial-background {
   position: absolute;
@@ -736,7 +746,6 @@ table.report td {
   right: 0;
   bottom: 0;
   background-color: #00f;
-  opacity: 0.8;
 }
 .tutorial-info {
   position: absolute;
@@ -752,15 +761,50 @@ table.report td {
   justify-content: center;
 }
 .tutorial-step {
-  font-size: 26px;
-  margin: 10px;
+  font-size: 18px;
+  margin: 5px;
   font-weight: bold;
 }
 .tutorial-step-title {
-  font-size: 28px;
-  margin: 10px;
+  font-size: 18px;
+  margin: 5px;
 }
 .tutorial-step-text {
-  font-size: 16px;
-  margin: 15px;
+  font-size: 14px;
+  margin: 5px;
+}
+.tutorial-step-text button {
+  font-size: 12px;
+}
+.below-tutorial {
+  position: relative;
+}
+
+.waiting-room {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  text-align: center;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 90000;
+}
+.waiting-room-background {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: #000;
+  opacity: 0.7;
+}
+.waiting-room-message {
+  color: #fff;
+  font-size: 32px;
+  z-index: 90001;
+  margin: 20%;
 }
