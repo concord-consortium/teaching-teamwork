@@ -89,7 +89,6 @@ A description of the JSON file format can be found [here](json-file-formats.md).
 
 * [Node](http://nodejs.org/) `brew install node`
 * [Bower](http://bower.io/) `npm install -g bower`
-* [Karma](karma-runner.github.io) `npm install -g karma-cli`
 
 We use npm to install the developer tools, and bower to manage the javascript libraries:
 
@@ -141,7 +140,7 @@ You can view the status of all the branch deploys [here](https://travis-ci.org/c
 
 ### Testing
 
-Tests are written in Jasmine and are run using Karma.
+There are currently no unit tests.
 
 ```
   npm test
