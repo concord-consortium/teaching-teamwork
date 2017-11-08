@@ -1,5 +1,5 @@
 {
-  "name": "Level A with pulldown",
+  "name": "Level A",
   "interface": {
     "enableChatType": true,
     "hideZoomDetails": true,

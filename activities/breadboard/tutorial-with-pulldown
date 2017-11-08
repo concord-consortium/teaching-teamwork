@@ -1,0 +1,8 @@
+  "name": "Tutorial",
+  "interface": {
+    "enableChatType": true,
+    "hideZoomDetails": true,
+    "disableForwardNav": true,
+    "showTutorial": true, 
+    "tutorialFreePlayDuration": 60
+  }

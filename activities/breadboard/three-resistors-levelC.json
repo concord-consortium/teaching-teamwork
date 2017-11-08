@@ -1,9 +1,11 @@
 {
-  "name": "Three Resistors - Level C",
+  "name": "Level C",
   "interface": {
     "enableChatType": true,
     "hideZoomDetails": true,
     "disableForwardNav": true,
+    "showTutorial": true, 
+    "tutorialFreePlayDuration": 60,
     "enableWaitingRoom": true,
     "enablePersistentWaitingRoom": false
   },
