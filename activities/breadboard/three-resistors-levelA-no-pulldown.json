@@ -1,5 +1,9 @@
 {
   "name": "Three Resistors - Level A",
+  "interface": {
+    "showTutorial": true, 
+    "tutorialFreePlayDuration": 60
+  },
   "image": "images/three-resistors-circuit.v2.png",
   "otherCircuits": {
     "image": "images/three-resistors-breadboards.v2.png",
