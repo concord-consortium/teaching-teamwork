@@ -7,7 +7,7 @@
     "showTutorial": true, 
     "tutorialFreePlayDuration": 60,
     "enableWaitingRoom": true,
-    "enablePersistentWaitingRoom": false
+    "enablePersistentWaitingRoom": true
   },
   "image": "images/three-resistors-circuit.v2.png",
   "enterUnknowns": {

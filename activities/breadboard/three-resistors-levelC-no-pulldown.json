@@ -1,8 +1,13 @@
 {
   "name": "Level C",
   "interface": {
-    "showTutorial": true, 
-    "tutorialFreePlayDuration": 60
+    "enableChatType": false,
+    "hideZoomDetails": true,
+    "disableForwardNav": true,
+    "showTutorial": false, 
+    "tutorialFreePlayDuration": 60,
+    "enableWaitingRoom": true,
+    "enablePersistentWaitingRoom": true
   },
   "image": "images/three-resistors-circuit.v2.png",
   "enterUnknowns": {

@@ -4,10 +4,10 @@
     "enableChatType": true,
     "hideZoomDetails": true,
     "disableForwardNav": true,
-    "showTutorial": true, 
+    "showTutorial": false, 
     "tutorialFreePlayDuration": 60,
     "enableWaitingRoom": true,
-    "enablePersistentWaitingRoom": false
+    "enablePersistentWaitingRoom": true
   },
   "image": "images/three-resistors-circuit.v2.png",
   "otherCircuits": {

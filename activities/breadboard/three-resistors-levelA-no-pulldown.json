@@ -1,8 +1,13 @@
 {
   "name": "Three Resistors - Level A",
   "interface": {
+    "enableChatType": false,
+    "hideZoomDetails": true,
+    "disableForwardNav": true,
     "showTutorial": true, 
-    "tutorialFreePlayDuration": 60
+    "tutorialFreePlayDuration": 60,
+    "enableWaitingRoom": true,
+    "enablePersistentWaitingRoom": false
   },
   "image": "images/three-resistors-circuit.v2.png",
   "otherCircuits": {
