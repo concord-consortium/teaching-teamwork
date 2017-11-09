@@ -9,7 +9,7 @@ var chatText = function (interface) {
 };
 
 var steps = [
-  {title: "Change the resistor", text: "Double-click on the resistor above and use the drop down to select a new resistance value."},
+  {title: "Change the resistor", text: "Double-click on the resistor below and use the drop down to select a new resistance value."},
   {title: "Use the multimeter to measure voltage", text: "Move the black and red probes to the leads on either side of the resistor and then look at the measurement in the red multimeter."},
   {title: "Change the mode on the multimeter", text: "Turn the dial on the multimeter to change the scale to measure current or resistance."},
   {title: "View all the circuits", text: "Click the \"View All Circuits\" button near the top of the page to see everyone's circuits.<br>Click the <button>X</button> button at the top of the All Circuits pop-up to close it."},
