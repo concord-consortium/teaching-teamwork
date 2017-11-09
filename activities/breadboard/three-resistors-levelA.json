@@ -23,7 +23,7 @@
   "model": {
     "name": "three-resistors",
     "options": {
-      "level": 3
+      "level": 2
     }
   },
   "nextActivity": "Ok",
