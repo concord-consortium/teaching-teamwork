@@ -1,5 +1,6 @@
 {
   "name": "Level B",
+  "interface": {
   "enableChatType": false,
   "hideZoomDetails": true,
   "disableForwardNav": true,

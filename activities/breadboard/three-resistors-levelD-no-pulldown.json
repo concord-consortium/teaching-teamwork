@@ -1,5 +1,6 @@
 {
   "name": "Level D",
+  "interface": {
   "enableChatType": false,
   "hideZoomDetails": true,
   "disableForwardNav": true,
