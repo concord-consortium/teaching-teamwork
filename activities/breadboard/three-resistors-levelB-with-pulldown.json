@@ -1,15 +1,15 @@
 {
   "name": "Level B",
   "interface": {
-    "enableChatType": true,
-    "hideZoomDetails": true,
-    "disableForwardNav": true,
-    "showTutorial": false, 
-    "tutorialFreePlayDuration": 60,
-    "enableWaitingRoom": true,
-    "enablePersistentWaitingRoom": true
-  },
-  "image": "images/three-resistors-circuit.v2.png",
+  "enableChatType": true,
+  "hideZoomDetails": true,
+  "disableForwardNav": true,
+  "showTutorial": false, 
+  "tutorialFreePlayDuration": 60,
+  "enableWaitingRoom": true,
+  "enablePersistentWaitingRoom": true
+},
+"image": "images/schematic-team.jpg",
   "otherCircuits": {
     "image": "images/schematic-team.jpg",
     "width": 740,
