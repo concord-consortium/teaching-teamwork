@@ -6,7 +6,7 @@
     "showTutorial": true, 
     "tutorialFreePlayDuration": 60
   },
-  "image": "images/three-resistors-circuit.v2.png",
+  "image": "images/schematic-team.jpg",
   "enterUnknowns": {
     "E": true,
     "R": true

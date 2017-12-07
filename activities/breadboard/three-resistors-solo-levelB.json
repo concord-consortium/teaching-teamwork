@@ -9,7 +9,7 @@
   "enableWaitingRoom": false,
   "enablePersistentWaitingRoom": false
 },
-  "image": "images/three-resistors-circuit.v2.png",
+"image": "images/schematic-solo.jpg",
   "model": {
     "name": "three-resistors",
     "options": {
