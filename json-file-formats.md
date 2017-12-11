@@ -58,7 +58,7 @@ Within the Breadboard JSON you can use several predefined variables that are gen
       "level": 2
     }
   },
-  "nextActivity": "Ok",                                       # if present sets the button text when moving to a new activity
+  "nextActivity": "OK",                                       # if present sets the button text when moving to a new activity
   "initialChatMessage": "You can find your goal at the top of the screen. Use this area to chat with your teammates.",
   "goals": [                                                  # used by the submit button to determine if the players have met the activity goals
     {
