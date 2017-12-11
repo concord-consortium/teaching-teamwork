@@ -1,5 +1,5 @@
 {
-  "name": "Three Resistors Solo - Level 4",
+  "name": "Three Resistors Solo - Level 5",
   "image": "images/schematic-solo.jpg",
   "enterUnknowns": {
     "E": true,
@@ -8,7 +8,7 @@
   "model": {
     "name": "three-resistors",
     "options": {
-      "level": 4
+      "level": 5
     }
   },
   "nextActivity": "OK",
