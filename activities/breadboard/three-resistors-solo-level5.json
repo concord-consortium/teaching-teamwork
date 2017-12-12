@@ -3,7 +3,7 @@
   "image": "images/schematic-solo.jpg",
   "enterUnknowns": {
     "E": true,
-    "R": false
+    "R": true
   },
   "model": {
     "name": "three-resistors",
