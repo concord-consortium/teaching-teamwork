@@ -151,7 +151,7 @@ Within the Breadboard JSON you can use several predefined variables that are gen
     {
       "show_multimeter": true,
       "showComponentEditor": true,
-      "notes": "E = $E volts, R = $R Ω, your goal is to make your voltage $V1 volts.",  # if present this is displayed at the top of the page
+      "notes": "E = $E volts, R0 = $R Ω, your goal is to make your voltage $V1 volts.",  # if present this is displayed at the top of the page
       "circuit": [
         {
           "type": "wire",
@@ -176,7 +176,7 @@ Within the Breadboard JSON you can use several predefined variables that are gen
     {
       "show_multimeter": true,
       "showComponentEditor": true,
-      "notes": "E = $E volts, R = $R Ω, your goal is to make your voltage $V2 volts.",
+      "notes": "E = $E volts, R0 = $R Ω, your goal is to make your voltage $V2 volts.",
       "circuit": [
         {
           "type": "wire",
@@ -201,7 +201,7 @@ Within the Breadboard JSON you can use several predefined variables that are gen
     {
       "show_multimeter": true,
       "showComponentEditor": true,
-      "notes": "E = $E volts, R = $R Ω, your goal is to make your voltage $V3 volts.",
+      "notes": "E = $E volts, R0 = $R Ω, your goal is to make your voltage $V3 volts.",
       "circuit": [
         {
           "type": "wire",

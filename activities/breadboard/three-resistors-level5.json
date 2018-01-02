@@ -2,8 +2,8 @@
   "name": "Three Resistors - Level 5",
   "interface": {
     "enableChatType": true,
-    "hideZoomDetails": true, 
-    "showTutorial": true, 
+    "hideZoomDetails": true,
+    "showTutorial": true,
     "tutorialFreePlayDuration": 60
   },
   "image": "images/schematic-team.jpg",
@@ -119,7 +119,7 @@
     {
       "show_multimeter": true,
       "showComponentEditor": true,
-      "notes": "E is unknown, R is unknown, your goal is to make your voltage $V1 volts.",
+      "notes": "E is unknown, R0 is unknown, your goal is to make your voltage $V1 volts.",
       "circuit": [
         {
           "type": "wire",
@@ -144,7 +144,7 @@
     {
       "show_multimeter": true,
       "showComponentEditor": true,
-      "notes": "E is unknown, R is unknown, your goal is to make your voltage $V2 volts.",
+      "notes": "E is unknown, R0 is unknown, your goal is to make your voltage $V2 volts.",
       "circuit": [
         {
           "type": "wire",
@@ -169,7 +169,7 @@
     {
       "show_multimeter": true,
       "showComponentEditor": true,
-      "notes": "E is unknown, R is unknown, your goal is to make your voltage $V3 volts.",
+      "notes": "E is unknown, R0 is unknown, your goal is to make your voltage $V3 volts.",
       "circuit": [
         {
           "type": "wire",

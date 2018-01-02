@@ -4,7 +4,7 @@
   "enableChatType": false,
   "hideZoomDetails": false,
   "disableForwardNav": true,
-  "showTutorial": false, 
+  "showTutorial": false,
   "tutorialFreePlayDuration": 60,
   "enableWaitingRoom": false,
   "enablePersistentWaitingRoom": false
@@ -89,7 +89,7 @@
       "showComponentEditor": true,
       "showComponentDrawer": false,
       "show_multimeter": true,
-      "notes": "E = $E volts, R = 0 Ω, your goal is to make V1 = $V1 volts, V2 = $V2 volts, and V3 = $V3 volts.",
+      "notes": "E = $E volts, R0 = 0 Ω, your goal is to make V1 = $V1 volts, V2 = $V2 volts, and V3 = $V3 volts.",
       "circuit": [
         {
           "type": "resistor",
