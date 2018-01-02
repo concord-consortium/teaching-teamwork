@@ -4,7 +4,7 @@
     "enableChatType": true,
     "hideZoomDetails": true,
     "disableForwardNav": true,
-    "showTutorial": false, 
+    "showTutorial": false,
     "tutorialFreePlayDuration": 60,
     "enableWaitingRoom": true,
     "enablePersistentWaitingRoom": true
@@ -123,7 +123,7 @@
     {
       "show_multimeter": true,
       "showComponentEditor": true,
-      "notes": "E is unknown, R = $R Ω, your goal is to make your voltage $V1 volts.",
+      "notes": "E is unknown, R0 = $R Ω, your goal is to make your voltage $V1 volts.",
       "circuit": [
         {
           "type": "wire",
@@ -148,7 +148,7 @@
     {
       "show_multimeter": true,
       "showComponentEditor": true,
-      "notes": "E is unknown, R = $R Ω, your goal is to make your voltage $V2 volts.",
+      "notes": "E is unknown, R0 = $R Ω, your goal is to make your voltage $V2 volts.",
       "circuit": [
         {
           "type": "wire",
@@ -173,7 +173,7 @@
     {
       "show_multimeter": true,
       "showComponentEditor": true,
-      "notes": "E is unknown, R = $R Ω, your goal is to make your voltage $V3 volts.",
+      "notes": "E is unknown, R0 = $R Ω, your goal is to make your voltage $V3 volts.",
       "circuit": [
         {
           "type": "wire",
