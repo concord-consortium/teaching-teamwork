@@ -136,7 +136,9 @@ th {
   -moz-transition: opacity 1200ms ease-in;
   transition: opacity 1200ms ease-in;
 }
-
+#submit-popup {
+  z-index: 80000;  /* place it under the waiting room message */
+}
 .modalDialog > form {
   width: 400px;
   position: relative;
