@@ -47,23 +47,33 @@ module.exports = React.createClass({
   },
 
   componentWillMount: function() {
-    var self = this;
+    var self = this,
+        allHaveConnected = false;
     userController.onGroupRefCreation(function() {
       self.firebaseRef = userController.getFirebaseGroupRef().child("chat");
       self.firebaseRef.orderByChild('time').on("child_added", function(dataSnapshot) {
         var items = self.state.items.slice(0),
             item = dataSnapshot.val(),
-            numExistingUsers = self.state.numExistingUsers;
+            numExistingUsers = self.state.numExistingUsers,
+            waitingRoomMessage;
 
         if (item.type == "joined") {
           numExistingUsers = Math.min(self.state.numExistingUsers + 1, self.props.numClients);
+          allHaveConnected = numExistingUsers >= self.props.numClients;
+          waitingRoomMessage = "Waiting... " + self.getJoinedMessage(numExistingUsers);
           item.message += self.getJoinedMessage(numExistingUsers);
         }
         else if (item.type == "left") {
           numExistingUsers = Math.max(self.state.numExistingUsers - 1, 0);
+          if (allHaveConnected) {
+            waitingRoomMessage = this.props.allCorrect ? "Please proceed to the next page." : "Oops!  One of your teammates has dropped off.";
+          }
+          else {
+            waitingRoomMessage = "Waiting... " + self.getJoinedMessage(numExistingUsers);
+          }
         }
 
-        self.props.setWaitingRoomInfo(self.props.numClients - numExistingUsers, self.getJoinedMessage(numExistingUsers));
+        self.props.setWaitingRoomInfo(self.props.numClients - numExistingUsers, waitingRoomMessage);
 
         if (numExistingUsers !== self.state.numExistingUsers) {
           self.setState({numExistingUsers: numExistingUsers});

@@ -57,6 +57,9 @@ module.exports = SubmitButton = React.createClass({
           if (allCorrect) {
             laraController.enableForwardNav(true);
           }
+          if (self.props.setAllCorrect) {
+            self.props.setAllCorrect(allCorrect);
+          }
         });
       });
 
