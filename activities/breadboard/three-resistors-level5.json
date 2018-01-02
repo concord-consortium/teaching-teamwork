@@ -4,7 +4,8 @@
     "enableChatType": true,
     "hideZoomDetails": true,
     "showTutorial": true,
-    "tutorialFreePlayDuration": 60
+    "tutorialFreePlayDuration": 60,
+    "tutorialFreePlayAboutToTimeoutDuration": 30
   },
   "image": "images/schematic-team.jpg",
   "enterUnknowns": {

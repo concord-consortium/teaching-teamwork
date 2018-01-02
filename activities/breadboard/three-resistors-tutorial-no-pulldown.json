@@ -6,6 +6,7 @@
     "disableForwardNav": true,
     "showTutorial": true,
     "tutorialFreePlayDuration": 60,
+    "tutorialFreePlayAboutToTimeoutDuration": 30,
     "enableWaitingRoom": false,
     "enablePersistentWaitingRoom": true
   },
