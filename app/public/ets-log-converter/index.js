@@ -1,11 +1,23 @@
-var div = React.DOM.div,
-    strong = React.DOM.strong,
-    form = React.DOM.form,
-    input = React.DOM.input,
-    link = React.DOM.a;
+var isTrue = function (val) {
+  return (val !== "false") && !!val;
+};
 
-var component = function (options) {
-  return React.createFactory(React.createClass(options));
+var parseUnknownValuesSubmitted = function (obj) {
+  var p = obj.parameters,
+          needR = isTrue(p["R: Need"]),
+          needE = isTrue(p["E: Need"]),
+          correctR = isTrue(p["R: Correct"]),
+          correctE = isTrue(p["E: Correct"]);
+  return {
+    needR: needR,
+    needE: needE,
+    correctR: correctR,
+    correctE: correctE,
+    eValue: p["E: Value"],
+    eUnit: p["E: Unit"],
+    rValue: p["R: Value"],
+    rUnit: p["R: Unit"]
+  };
 };
 
 var eventMap = {
@@ -204,12 +216,12 @@ var eventMap = {
     // sent message changed from event_value to {message, type}
     data01Fn: function (type, obj) {
       if (obj.hasOwnProperty('message')) {
-        return obj.message;
+        return "message";
       }
-      return obj.event_value;
+      return "event_value";
     },
     data02Fn: function (type, obj) {
-      return obj.type; // will return undefined which is ok for old event_value messages
+      return obj.type ? "type" : undefined; // will return undefined which is ok for old event_value messages
     }
   },
   "Submit clicked": {
@@ -274,349 +286,366 @@ var eventMap = {
         data.push(p.correctR ? "correct R" : "incorrect R");
       }
       if (data.length > 0) {
-        p.data01 = data.join(" and ");
-        return "data01";
+        obj.parameters._data01 = data.join(" and ");
+        return "_data01";
       }
-    }
-  },
-  data02Fn: function (type, obj) {
-    var p = parseUnknownValuesSubmitted(obj);
-    if (p.needE) {
-      return p.eValue;
-    }
-    else if (p.needR) {
-      return p.rValue;
-    }
-  },
-  data03Fn: function (type, obj) {
-    var p = parseUnknownValuesSubmitted(obj);
-    if (p.needE) {
-      return p.eUnit;
-    }
-    else if (p.needR) {
-      return p.rUnit;
-    }
-  },
-  data04Fn: function (type, obj) {
-    var p = parseUnknownValuesSubmitted(obj);
-    if (p.needE && p.needR) {
-      return p.rValue;
-    }
-  },
-  data05Fn: function (type, obj) {
-    var p = parseUnknownValuesSubmitted(obj);
-    if (p.needE && p.needR) {
-      return p.rUnit;
+    },
+    data02Fn: function (type, obj) {
+      var p = parseUnknownValuesSubmitted(obj);
+      if (p.needE) {
+        obj.parameters._eValue = p.eValue;
+        return "_eValue";
+      }
+      else if (p.needR) {
+        obj.parameters._rValue = p.rValue;
+        return "_rValue";
+      }
+    },
+    data03Fn: function (type, obj) {
+      var p = parseUnknownValuesSubmitted(obj);
+      if (p.needE) {
+        obj.parameters._eUnit = p.eUnit;
+        return "_eUnit";
+      }
+      else if (p.needR) {
+        obj.parameters._rUnit = p.rUnit;
+        return "_rUnit";
+      }
+    },
+    data04Fn: function (type, obj) {
+      var p = parseUnknownValuesSubmitted(obj);
+      if (p.needE && p.needR) {
+        obj.parameters._rValue = p.rValue;
+        return "_rValue";
+      }
+    },
+    data05Fn: function (type, obj) {
+      var p = parseUnknownValuesSubmitted(obj);
+      if (p.needE && p.needR) {
+        obj.parameters._rUnit = p.rUnit;
+        return "_rUnit";
+      }
     }
   }
 };
 
-var parseUnknownValuesSubmitted = function (obj) {
-  var p = obj.parameters,
-          needR = !!p["R: Need"],
-          needE = !!p["E: Need"],
-          correctR = !!p["R: Correct"],
-          correctE = !!p["E: Correct"];
-  return {
-    needR: needR,
-    needE: needE,
-    correctR: correctR,
-    correctE: correctE,
-    eValue: ["E: Value"],
-    eUnit: ["E: Unit"],
-    rValue: ["R: Value"],
-    rUnit: ["R: Unit"]
+var createETSLog = function (input, teamPrefix) {
+  var rows = [],
+      lastObj = null;
+
+  var getLevel = function (p) {
+    return p.levelName.replace(/^.*(\d+)$/, "$1");
   };
-};
 
-var App = component({
-  getInitialState: function () {
-    return {
-      file: null,
-      teamPrefix: null,
-      munging: false,
-      csvOutput: null
-    };
-  },
+  // filter out all but the teaching teamwork events we care about
+  input = input.filter(function (obj) {
+    return obj.parameters && obj.parameters.levelName && !!obj.parameters.levelName.match(/^three-resistors-(solo-)?level(\d+)$/) && eventMap[obj.event];
+  });
 
-  componentDidUpdate: function () {
-    if (this.refs.teamPrefix) {
-      this.refs.teamPrefix.focus();
-    }
-  },
+  // sort by time?
+  input.sort(function (a, b) {
+    var aTime = new Date(a.time),
+        bTime = new Date(b.time);
+    return aTime.getTime() - bTime.getTime();
+  });
 
-  dragHover: function (e) {
-    e.stopPropagation();
-	  e.preventDefault();
-  },
-
-  drop: function (e) {
-    this.dragHover(e);
-
-    var files = e.target.files || e.dataTransfer.files;
-    var file = files[0];
-
-    if (file) {
-      if (file.name.match(/\.json$/i)) {
-        this.setState({file: file});
+  // find the initial model and r values
+  var modelValues = {};
+  var rValues = {};
+  var prevRValues = {};
+  var prevDMMValue = {};
+  var parseValues = function (unparsed) {
+    var parsed = {};
+    Object.keys(unparsed).forEach(function (key) {
+      parsed[key] = parseFloat(unparsed[key]);
+      if (isNaN(parsed[key])) {
+        parsed[key] = unparsed[key];
       }
-      else {
-        alert("The dropped file needs to be a JSON file (ie have a .json extension)");
+    });
+    return parsed;
+  };
+  input.forEach(function (obj) {
+    var p = obj.parameters;
+
+    // fake groupname for solo data
+    if (!p.groupname) {
+      p.groupname = "solo";
+    }
+
+    var level = getLevel(p);
+    if (obj.event === "model values") {
+      if (!modelValues[p.groupname] || !modelValues[p.groupname][level]) {
+        modelValues[p.groupname] = modelValues[p.groupname] || {};
+        modelValues[p.groupname][level] = parseValues(p);
       }
     }
-  },
+    if ((p.hasOwnProperty("r1") && p.hasOwnProperty("r2") && p.hasOwnProperty("r3")) && (!rValues[p.groupname] || !rValues[p.groupname][level] || !rValues[p.groupname][level][p.username])) {
+      rValues[p.groupname] = rValues[p.groupname] || {};
+      rValues[p.groupname][level] = rValues[p.groupname][level] || {};
+      rValues[p.groupname][level][p.username] = parseValues(p);
+    }
 
-  renderDragDrop: function () {
-    return (
-      div({id: "file-drag"}, "Drop an exported JSON log file onto this page")
-    );
-  },
+    if (!prevDMMValue[p.groupname] || !prevDMMValue[p.groupname][level] || !prevDMMValue[p.groupname][level][p.username]) {
+      prevDMMValue[p.groupname] = prevDMMValue[p.groupname] || {};
+      prevDMMValue[p.groupname][level] = prevDMMValue[p.groupname][level] || {};
+      prevDMMValue[p.groupname][level][p.username] = "dcv_20"; // DMM always starts at this setting
 
-  getTeamPrefix: function (e) {
-    e.stopPropagation();
-	  e.preventDefault();
-    this.setState({
-      teamPrefix: this.refs.teamPrefix.value.replace(/^\s+|\s+$/, ""),
-      munging: true
+      prevRValues[p.groupname] = prevRValues[p.groupname] || {};
+      prevRValues[p.groupname][level] = prevRValues[p.groupname][level] || {};
+      prevRValues[p.groupname][level][p.username] = {r1: "n/a", r2: "n/a", r3: "n/a"};
+    }
+  });
+
+  var zeroPad = function (n) {
+    return n < 10 ? "0" + n : n;
+  };
+  var round = function (value) {
+    return Math.round(value * Math.pow(10,2)) / Math.pow(10,2);
+  };
+  var getVoltage = function (r, mv, rv) {
+    var voltage = round((mv.E * r) / (mv.R + rv.r1 + rv.r2 + rv.r3));
+    return isNaN(voltage) ? "" : voltage;
+  };
+
+  input.forEach(function (obj) {
+    var p = obj.parameters,
+        event = eventMap[obj.event],
+        data = function (num) {
+          var prefix = "data" + num,
+              prefixFn = prefix + "Fn",
+              field;
+
+          if (event.hasOwnProperty(prefixFn)) {
+            field = event[prefixFn](p.type, obj);
+          }
+          else if (event.hasOwnProperty(prefix)) {
+            field = event[prefix];
+          }
+
+          if (field !== undefined) {
+            if (field === "event_value") {
+              return obj.event_value;
+            }
+            if (field === "*previous_r*") {
+              var prevRV = prevRValues[p.groupname] && prevRValues[p.groupname][level] && prevRValues[p.groupname][level][p.username] ? prevRValues[p.groupname][level][p.username] : {r1: 0, r2: 0, r3: 0};
+              return prevRV[p.UID] || "n/a";
+            }
+            if (field === "*previous_DMM*") {
+              return prevDMMValue[p.groupname] && prevDMMValue[p.groupname][level] && prevDMMValue[p.groupname][level][p.username] ? prevDMMValue[p.groupname][level][p.username] : "n/a";
+            }
+            return p.hasOwnProperty(field) ? p[field] : "*** UNKNOWN FIELD: '" + field + "' ***";
+          }
+        },
+        level = getLevel(p);
+
+    if (obj.event === "model values") {
+      modelValues[p.groupname][level] = parseValues(obj.parameters);
+    }
+    if (p.hasOwnProperty("r1") && p.hasOwnProperty("r2") && p.hasOwnProperty("r3") && (p.r1 !== "unknown") && (p.r2 !== "unknown") && (p.r3 !== "unknown")) {
+      prevRValues[p.groupname][level][p.username] = rValues[p.groupname][level][p.username];
+      rValues[p.groupname][level][p.username] = parseValues(p);
+    }
+
+    var mv = modelValues[p.groupname] && modelValues[p.groupname][level] ? modelValues[p.groupname][level] : {E: 0, R: 0, GoalR1: 0, GoalR2: 0, GoalR3: 0, V1: 0, V2: 0, V3: 0};
+    var rv = rValues[p.groupname] && rValues[p.groupname][level] && rValues[p.groupname][level][p.username] ? rValues[p.groupname][level][p.username] : {r1: 0, r2: 0, r3: 0};
+
+    var date = new Date(obj.time);
+    var time = date.getTime();
+
+    var lastDate = new Date(lastObj ? lastObj.time : obj.time);
+    var lastTime = lastDate.getTime();
+
+    rows.push({
+      "TeamID": teamPrefix + p.groupname,
+      "StudentID": obj.username.replace(/^(\d+).*$/, "$1"),
+      "TaskLevel": level,
+      "Player": p.username,
+      "Board": parseInt(p.board, 10) + 1,
+      "EventDate": zeroPad(date.getMonth() + 1) + "/" + zeroPad(date.getDate()) + "/" + date.getFullYear(),
+      "EventTime": date.toTimeString().split(" ")[0],
+      "EventTimestamp": time,
+      "TimeSpent": (time - lastTime) / 1000,
+      "DataCode": event.codeFn ? event.codeFn(p.type, obj) : event.code,
+      "DataDesc": event.descFn ? event.descFn(p.type, obj) : event.desc,
+      "Data01": data("01"),
+      "Data02": data("02"),
+      "Data03": data("03"),
+      "Data04": data("04"),
+      "Data05": data("05"),
+      "ContextE": mv.E,
+      "ContextR0": mv.R,
+      "ContextR1": rv.r1,
+      "ContextR2": rv.r2,
+      "ContextR3": rv.r3,
+      "ContextGR1": mv.GoalR1,
+      "ContextGR2": mv.GoalR2,
+      "ContextGR3": mv.GoalR3,
+      "ContextV1": getVoltage(rv.r1, mv, rv),
+      "ContextV2": getVoltage(rv.r2, mv, rv),
+      "ContextV3": getVoltage(rv.r3, mv, rv),
+      "ContextGV1": mv.V1,
+      "ContextGV2": mv.V2,
+      "ContextGV3": mv.V3,
+      "ContextConnected": p.currentFlowing === "true"
     });
 
-    setTimeout(this.mungeFile.bind(this), 1);
-  },
-
-  renderTeamPrefix: function () {
-    return (
-      div({},
-        div({},
-          strong({}, "Please enter a prefix to use for the teams (can be blank):")
-        ),
-        div({},
-          form({onSubmit: this.getTeamPrefix},
-            input({type: "text", ref: "teamPrefix"})
-          )
-        )
-      )
-    );
-  },
-
-  renderMunging: function () {
-    return strong({}, "Creating the CSV...");
-  },
-
-  renderDownloadButton: function () {
-    var blob = new Blob([this.state.csvOutput], {type: "text/csv"}),
-        filename = this.state.file.name.replace(/\.json$/, ".csv");
-    return (
-      div({},
-        link({href: URL.createObjectURL(blob), download: filename},
-          "Click here to download the CSV (" + filename + ")"
-        ),
-        div({style: {marginTop: 20, fontSize: 12, textAlign: "center"}}, "(reload the page to convert another file...)")
-      )
-    );
-  },
-
-  renderStep: function () {
-    if (this.state.file === null) {
-      return this.renderDragDrop();
+    if (obj.event === "Moved DMM dial") {
+      prevDMMValue[p.groupname][level][p.username] = p.value;
     }
-    if (this.state.teamPrefix === null) {
-      return this.renderTeamPrefix();
-    }
-    if (this.state.munging) {
-      return this.renderMunging();
-    }
-    return this.renderDownloadButton();
-  },
 
-  render: function () {
-    return (
-      div({id: "flex-container", onDragOver: this.dragHover, onDragLeave: this.dragHover, onDrop: this.drop},
-        div({id: "flex-item"},
-          this.renderStep()
-        ),
-        div({id: "top-nav"}, "ETS Breadboard Log Converter")
-      )
-    );
-  },
+    lastObj = obj;
+  });
 
-  mungeFile: function () {
-    var self = this,
-        reader = new FileReader();
+  return rows;
+};
 
-    reader.onload = function() {
-      try {
-        var input = JSON.parse(reader.result),
-            teamPrefix = self.state.teamPrefix,
-            lastObj = null,
-            rows = [],
-            getLevel;
+if (typeof exports !== "undefined") {
+  // if being required by the downloader just export the create function
+  exports.createETSLog = createETSLog;
+}
+else {
+  (function () {
+    var div = React.DOM.div,
+        strong = React.DOM.strong,
+        form = React.DOM.form,
+        input = React.DOM.input,
+        link = React.DOM.a;
 
-        getLevel = function (p) {
-          return p.levelName.replace(/^.*(\d+)$/, "$1");
-        };
-
-        // filter out all but the teaching teamwork events we care about
-        input = input.filter(function (obj) {
-          return obj.parameters && obj.parameters.levelName && !!obj.parameters.levelName.match(/^three-resistors-level(\d+)$/) && eventMap[obj.event];
-        });
-
-        // sort by time?
-        input.sort(function (a, b) {
-          var aTime = new Date(a.time),
-              bTime = new Date(b.time);
-          return aTime.getTime() - bTime.getTime();
-        });
-
-        // find the initial model and r values
-        var modelValues = {};
-        var rValues = {};
-        var prevRValues = {};
-        var prevDMMValue = {};
-        var parseValues = function (unparsed) {
-          var parsed = {};
-          Object.keys(unparsed).forEach(function (key) {
-            parsed[key] = parseFloat(unparsed[key]);
-          });
-          return parsed;
-        };
-        input.forEach(function (obj) {
-          var p = obj.parameters;
-          var level = getLevel(p);
-          if (obj.event === "model values") {
-            if (!modelValues[p.groupname] || !modelValues[p.groupname][level]) {
-              modelValues[p.groupname] = modelValues[p.groupname] || {};
-              modelValues[p.groupname][level] = parseValues(p);
-            }
-          }
-          if ((p.hasOwnProperty("r1") && p.hasOwnProperty("r2") && p.hasOwnProperty("r3")) && (!rValues[p.groupname] || !rValues[p.groupname][level] || !rValues[p.groupname][level][p.username])) {
-            rValues[p.groupname] = rValues[p.groupname] || {};
-            rValues[p.groupname][level] = rValues[p.groupname][level] || {};
-            rValues[p.groupname][level][p.username] = parseValues(p);
-
-          }
-
-          if (!prevDMMValue[p.groupname] || !prevDMMValue[p.groupname][level] || !prevDMMValue[p.groupname][level][p.username]) {
-            prevDMMValue[p.groupname] = prevDMMValue[p.groupname] || {};
-            prevDMMValue[p.groupname][level] = prevDMMValue[p.groupname][level] || {};
-            prevDMMValue[p.groupname][level][p.username] = "dcv_20"; // DMM always starts at this setting
-
-            prevRValues[p.groupname] = prevRValues[p.groupname] || {};
-            prevRValues[p.groupname][level] = prevRValues[p.groupname][level] || {};
-            prevRValues[p.groupname][level][p.username] = {r1: "n/a", r2: "n/a", r3: "n/a"};
-          }
-        });
-
-        var zeroPad = function (n) {
-          return n < 10 ? "0" + n : n;
-        };
-        var round = function (value) {
-          return Math.round(value * Math.pow(10,2)) / Math.pow(10,2);
-        };
-        var getVoltage = function (r, mv, rv) {
-          return round((mv.E * r) / (mv.R + rv.r1 + rv.r2 + rv.r3));
-        };
-
-        input.forEach(function (obj) {
-          var p = obj.parameters,
-              event = eventMap[obj.event],
-              data = function (num) {
-                var prefix = "data" + num,
-                    prefixFn = prefix + "Fn",
-                    field;
-
-                if (event.hasOwnProperty(prefixFn)) {
-                  field = event[prefixFn](p.type, obj);
-                }
-                else if (event.hasOwnProperty(prefix)) {
-                  field = event[prefix];
-                }
-
-                if (field !== undefined) {
-                  if (field === "event_value") {
-                    return obj.event_value;
-                  }
-                  if (field === "*previous_r*") {
-                    var prevRV = prevRValues[p.groupname] && prevRValues[p.groupname][level] && prevRValues[p.groupname][level][p.username] ? prevRValues[p.groupname][level][p.username] : {r1: 0, r2: 0, r3: 0};
-                    return prevRV[p.UID] || "n/a";
-                  }
-                  if (field === "*previous_DMM*") {
-                    return prevDMMValue[p.groupname] && prevDMMValue[p.groupname][level] && prevDMMValue[p.groupname][level][p.username] ? prevDMMValue[p.groupname][level][p.username] : "n/a";
-                  }
-                  return p.hasOwnProperty(field) ? p[field] : "*** UNKNOWN FIELD: '" + field + "' ***";
-                }
-              },
-              level = getLevel(p);
-
-          if (obj.event === "model values") {
-            modelValues[p.groupname][level] = parseValues(obj.parameters);
-          }
-          if (p.hasOwnProperty("r1") && p.hasOwnProperty("r2") && p.hasOwnProperty("r3")) {
-            prevRValues[p.groupname][level][p.username] = rValues[p.groupname][level][p.username];
-            rValues[p.groupname][level][p.username] = parseValues(p);
-          }
-
-          var mv = modelValues[p.groupname] && modelValues[p.groupname][level] ? modelValues[p.groupname][level] : {E: 0, R: 0, GoalR1: 0, GoalR2: 0, GoalR3: 0, V1: 0, V2: 0, V3: 0};
-          var rv = rValues[p.groupname] && rValues[p.groupname][level] && rValues[p.groupname][level][p.username] ? rValues[p.groupname][level][p.username] : {r1: 0, r2: 0, r3: 0};
-
-          var date = new Date(obj.time);
-          var time = date.getTime();
-
-          var lastDate = new Date(lastObj ? lastObj.time : obj.time);
-          var lastTime = lastDate.getTime();
-
-          rows.push({
-            "TeamID": teamPrefix + p.groupname,
-            "StudentID": obj.username.replace(/^(\d+).*$/, "$1"),
-            "TaskLevel": level,
-            "Player": p.username,
-            "Board": parseInt(p.board, 10) + 1,
-            "EventDate": zeroPad(date.getMonth() + 1) + "/" + zeroPad(date.getDate()) + "/" + date.getFullYear(),
-            "EventTime": date.toTimeString().split(" ")[0],
-            "EventTimestamp": time,
-            "TimeSpent": (time - lastTime) / 1000,
-            "DataCode": event.codeFn ? event.codeFn(p.type, obj) : event.code,
-            "DataDesc": event.descFn ? event.descFn(p.type, obj) : event.desc,
-            "Data01": data("01"),
-            "Data02": data("02"),
-            "Data03": data("03"),
-            "Data04": data("04"),
-            "Data05": data("05"),
-            "ContextE": mv.E,
-            "ContextR0": mv.R,
-            "ContextR1": rv.r1,
-            "ContextR2": rv.r2,
-            "ContextR3": rv.r3,
-            "ContextGR1": mv.GoalR1,
-            "ContextGR2": mv.GoalR2,
-            "ContextGR3": mv.GoalR3,
-            "ContextV1": getVoltage(rv.r1, mv, rv),
-            "ContextV2": getVoltage(rv.r2, mv, rv),
-            "ContextV3": getVoltage(rv.r3, mv, rv),
-            "ContextGV1": mv.V1,
-            "ContextGV2": mv.V2,
-            "ContextGV3": mv.V3,
-            "ContextConnected": p.currentFlowing === "true"
-          });
-
-          if (obj.event === "Moved DMM dial") {
-            prevDMMValue[p.groupname][level][p.username] = p.value;
-          }
-
-          lastObj = obj;
-        });
-
-        self.setState({
-          munging: false,
-          csvOutput:  Papa.unparse(rows)
-        });
-      }
-      catch (ex) {
-        alert(ex.toString());
-      }
+    var component = function (options) {
+      return React.createFactory(React.createClass(options));
     };
-    reader.readAsText(this.state.file);
-  }
-});
 
+    var App = component({
+      getInitialState: function () {
+        return {
+          file: null,
+          teamPrefix: null,
+          munging: false,
+          csvOutput: null
+        };
+      },
 
-ReactDOM.render(App({}), document.getElementById("app"));
+      componentDidUpdate: function () {
+        if (this.refs.teamPrefix) {
+          this.refs.teamPrefix.focus();
+        }
+      },
+
+      dragHover: function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+      },
+
+      drop: function (e) {
+        this.dragHover(e);
+
+        var files = e.target.files || e.dataTransfer.files;
+        var file = files[0];
+
+        if (file) {
+          if (file.name.match(/\.json$/i)) {
+            this.setState({file: file});
+          }
+          else {
+            alert("The dropped file needs to be a JSON file (ie have a .json extension)");
+          }
+        }
+      },
+
+      renderDragDrop: function () {
+        return (
+          div({id: "file-drag"}, "Drop an exported JSON log file onto this page")
+        );
+      },
+
+      getTeamPrefix: function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+        this.setState({
+          teamPrefix: this.refs.teamPrefix.value.replace(/^\s+|\s+$/, ""),
+          munging: true
+        });
+
+        setTimeout(this.mungeFile.bind(this), 1);
+      },
+
+      renderTeamPrefix: function () {
+        return (
+          div({},
+            div({},
+              strong({}, "Please enter a prefix to use for the teams (can be blank):")
+            ),
+            div({},
+              form({onSubmit: this.getTeamPrefix},
+                input({type: "text", ref: "teamPrefix"})
+              )
+            )
+          )
+        );
+      },
+
+      renderMunging: function () {
+        return strong({}, "Creating the CSV...");
+      },
+
+      renderDownloadButton: function () {
+        var blob = new Blob([this.state.csvOutput], {type: "text/csv"}),
+            filename = this.state.file.name.replace(/\.json$/, ".csv");
+        return (
+          div({},
+            link({href: URL.createObjectURL(blob), download: filename},
+              "Click here to download the CSV (" + filename + ")"
+            ),
+            div({style: {marginTop: 20, fontSize: 12, textAlign: "center"}}, "(reload the page to convert another file...)")
+          )
+        );
+      },
+
+      renderStep: function () {
+        if (this.state.file === null) {
+          return this.renderDragDrop();
+        }
+        if (this.state.teamPrefix === null) {
+          return this.renderTeamPrefix();
+        }
+        if (this.state.munging) {
+          return this.renderMunging();
+        }
+        return this.renderDownloadButton();
+      },
+
+      render: function () {
+        return (
+          div({id: "flex-container", onDragOver: this.dragHover, onDragLeave: this.dragHover, onDrop: this.drop},
+            div({id: "flex-item"},
+              this.renderStep()
+            ),
+            div({id: "top-nav"}, "ETS Breadboard Log Converter")
+          )
+        );
+      },
+
+      mungeFile: function () {
+        var self = this,
+            reader = new FileReader();
+
+        reader.onload = function() {
+          try {
+            var rows = createETSLog(JSON.parse(reader.result), self.state.teamPrefix);
+
+            self.setState({
+              munging: false,
+              csvOutput:  Papa.unparse(rows)
+            });
+          }
+          catch (ex) {
+            alert(ex.toString());
+          }
+        };
+        reader.readAsText(this.state.file);
+      }
+    });
+
+    ReactDOM.render(App({}), document.getElementById("app"));
+  })();
+}
