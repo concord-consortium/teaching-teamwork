@@ -88,6 +88,7 @@
       "ReactDOM": false,
       "sparks": false,
       "firebase": false,
-      "fabric": false
+      "fabric": false,
+      "Papa": false
     }
 }
