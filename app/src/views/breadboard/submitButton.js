@@ -3,6 +3,36 @@ var userController = require('../../controllers/shared/user'),
     laraController = require('../../controllers/shared/lara'),
     SubmitButton, Popup;
 
+var listenForUnknownValues = function (numCircuits, enterUnknowns, callback) {
+  var usersRef = userController.getFirebaseGroupRef().child('users');
+  usersRef.on("value", function(dataSnapshot) {
+    var users = dataSnapshot.val(),
+        unknownValues = {},
+        haveAllUnknowns = true,
+        i;
+
+    $.each(users, function (name, info) {
+      if (info.hasOwnProperty("client")) {
+        unknownValues[info.client] = info.unknownValues || {};
+      }
+    });
+
+    for (i = 0; i < numCircuits; i++) {
+      haveAllUnknowns = haveAllUnknowns &&   // all have to be true
+                        !!unknownValues[i] &&  // circuit has unknown values set by the user
+                        (!enterUnknowns.E || !!(unknownValues[i].E && unknownValues[i].E.have)) &&  // either E isn't needed or it has a value
+                        (!enterUnknowns.R || !!(unknownValues[i].R && unknownValues[i].R.have)); // either R isn't needed or it has a value
+    }
+
+    callback({
+      unknownValues: unknownValues,
+      haveAllUnknowns: haveAllUnknowns
+    })
+  });
+
+  return usersRef;
+};
+
 module.exports = SubmitButton = React.createClass({
 
   displayName: 'SubmitButton',
@@ -15,7 +45,8 @@ module.exports = SubmitButton = React.createClass({
       closePopup: false,
       nextActivity: this.props.nextActivity,
       enterUnknowns: this.props.enterUnknowns,
-      numCircuits: this.props.goals.length
+      numCircuits: this.props.goals.length,
+      haveAllUnknowns: true
     };
   },
 
@@ -38,7 +69,7 @@ module.exports = SubmitButton = React.createClass({
             now = (new Date().getTime()) + skew;
 
         // ignore submits over 10 seconds old
-        if (submitValue && (submitValue.at < now - (10 * 1000))) {
+        if (!submitValue || (submitValue.at < now - (10 * 1000))) {
           return;
         }
 
@@ -48,15 +79,13 @@ module.exports = SubmitButton = React.createClass({
           if (submitValue && (submitValue.user == userController.getUsername())) {
             logController.logEvent("Submit clicked when all correct", allCorrect);
           }
+          allCorrect = true;
           self.setState({
             submitted: submitValue,
             table: table,
             allCorrect: allCorrect,
             closePopup: false
           });
-          if (allCorrect) {
-            laraController.enableForwardNav(true);
-          }
           if (self.props.setAllCorrect) {
             self.props.setAllCorrect(allCorrect);
           }
@@ -79,13 +108,33 @@ module.exports = SubmitButton = React.createClass({
       for (i = 0; i < otherClients.length; i++) {
         self.clientListRef.child(otherClients[i]).on("value", updateFromClient);
       }
+
+      // listen for user unknown value updates if needed
+      if ((self.state.numCircuits > 1) && self.props.enterUnknowns) {
+        self.usersRef = listenForUnknownValues(self.state.numCircuits, self.props.enterUnknowns, function (results) {
+          debugger
+          self.setState({
+            haveAllUnknowns: results.haveAllUnknowns
+          });
+        });
+      }
     });
+  },
+
+  componentWillUpdate: function (nextProps, nextState) {
+    if (nextState.allCorrect && nextState.haveAllUnknowns) {
+      debugger
+      laraController.enableForwardNav(true);
+    }
   },
 
   componentWillUnmount: function() {
     laraController.enableForwardNav(true);
     this.submitRef.off();
     this.clientListRef.off();
+    if (this.usersRef) {
+      this.usersRef.off();
+    }
   },
 
   getMeasurement: function (client, measurement, callback) {
@@ -339,29 +388,10 @@ Popup = React.createFactory(React.createClass({
     var self = this;
     // listen for user unknown value updates if needed
     if (self.props.multipleClients && self.props.enterUnknowns) {
-      self.usersRef = userController.getFirebaseGroupRef().child('users');
-      self.usersRef.on("value", function(dataSnapshot) {
-        var users = dataSnapshot.val(),
-            unknownValues = {},
-            haveAllUnknowns = true,
-            i;
-
-        $.each(users, function (name, info) {
-          if (info.hasOwnProperty("client")) {
-            unknownValues[info.client] = info.unknownValues || {};
-          }
-        });
-
-        for (i = 0; i < self.props.numCircuits; i++) {
-          haveAllUnknowns = haveAllUnknowns &&   // all have to be true
-                            unknownValues[i] &&  // circuit has unknown values set by the user
-                            (!self.props.enterUnknowns.E || (unknownValues[i].E && unknownValues[i].E.have)) &&  // either E isn't needed or it has a value
-                            (!self.props.enterUnknowns.R || (unknownValues[i].R && unknownValues[i].R.have)); // either R isn't needed or it has a value
-        }
-
+      self.usersRef = listenForUnknownValues(self.props.numCircuits, self.props.enterUnknowns, function (results) {
         self.setState({
-          unknownValues: unknownValues,
-          haveAllUnknowns: haveAllUnknowns
+          unknownValues: results.unknownValues,
+          haveAllUnknowns: results.haveAllUnknowns
         });
       });
     }

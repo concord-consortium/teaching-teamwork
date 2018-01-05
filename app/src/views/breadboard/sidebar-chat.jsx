@@ -66,7 +66,7 @@ module.exports = React.createClass({
         else if (item.type == "left") {
           numExistingUsers = Math.max(self.state.numExistingUsers - 1, 0);
           if (allHaveConnected) {
-            waitingRoomMessage = this.props.allCorrect ? "Please proceed to the next page." : "Oops!  One of your teammates has dropped off.";
+            waitingRoomMessage = this.props.allCorrect ? "Please proceed to the next page." : "Oops!  One or more of your teammates has dropped off.  Hang in there until everyone comes back.";
           }
           else {
             waitingRoomMessage = "Waiting... " + self.getJoinedMessage(numExistingUsers);
