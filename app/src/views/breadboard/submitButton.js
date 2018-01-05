@@ -112,7 +112,6 @@ module.exports = SubmitButton = React.createClass({
       // listen for user unknown value updates if needed
       if ((self.state.numCircuits > 1) && self.props.enterUnknowns) {
         self.usersRef = listenForUnknownValues(self.state.numCircuits, self.props.enterUnknowns, function (results) {
-          debugger
           self.setState({
             haveAllUnknowns: results.haveAllUnknowns
           });
@@ -123,7 +122,6 @@ module.exports = SubmitButton = React.createClass({
 
   componentWillUpdate: function (nextProps, nextState) {
     if (nextState.allCorrect && nextState.haveAllUnknowns) {
-      debugger
       laraController.enableForwardNav(true);
     }
   },
