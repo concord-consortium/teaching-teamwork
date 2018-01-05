@@ -81,10 +81,12 @@ module.exports = React.createClass({
 
     userController.setUnknownValues({
       E: {
+        value: this.state.E,
         have: haveE && haveEUnit,
         correct: eCorrect
       },
       R: {
+        value: this.state.R,
         have: haveR && haveRUnit,
         correct: rCorrect
       }
