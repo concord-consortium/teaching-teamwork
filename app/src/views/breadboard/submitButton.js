@@ -79,7 +79,6 @@ module.exports = SubmitButton = React.createClass({
           if (submitValue && (submitValue.user == userController.getUsername())) {
             logController.logEvent("Submit clicked when all correct", allCorrect);
           }
-          allCorrect = true;
           self.setState({
             submitted: submitValue,
             table: table,
