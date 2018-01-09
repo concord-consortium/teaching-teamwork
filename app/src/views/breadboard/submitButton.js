@@ -27,7 +27,7 @@ var listenForUnknownValues = function (numCircuits, enterUnknowns, callback) {
     callback({
       unknownValues: unknownValues,
       haveAllUnknowns: haveAllUnknowns
-    })
+    });
   });
 
   return usersRef;
