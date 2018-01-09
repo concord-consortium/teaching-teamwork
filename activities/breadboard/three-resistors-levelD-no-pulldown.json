@@ -1,16 +1,16 @@
 {
   "name": "Level D",
   "interface": {
-  "enableChatType": false,
-  "hideZoomDetails": true,
-  "disableForwardNav": true,
-  "showTutorial": false,
-  "tutorialFreePlayDuration": 60,
-  "tutorialFreePlayAboutToTimeoutDuration": 30,
-  "enableWaitingRoom": true,
-  "enablePersistentWaitingRoom": true
-},
-"image": "images/schematic-team.jpg",
+    "enableChatType": false,
+    "hideZoomDetails": true,
+    "disableForwardNav": true,
+    "showTutorial": false,
+    "tutorialFreePlayDuration": 60,
+    "tutorialFreePlayAboutToTimeoutDuration": 30,
+    "enableWaitingRoom": true,
+    "enablePersistentWaitingRoom": true
+  },
+  "image": "images/schematic-team.jpg",
   "enterUnknowns": {
     "E": true,
     "R": true
