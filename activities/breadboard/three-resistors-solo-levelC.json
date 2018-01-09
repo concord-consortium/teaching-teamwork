@@ -101,7 +101,7 @@
       "showComponentEditor": true,
       "showComponentDrawer": false,
       "show_multimeter": true,
-      "notes": "E = $E volts, R0 = $R Ω, your goal is to make V1 = $V1 volts, V2 = $V2 volts, and V3 = $V3 volts.",
+      "notes": "E is unknown, R0 = $R Ω, your goal is to make V1 = $V1 volts, V2 = $V2 volts, and V3 = $V3 volts.",
       "circuit": [
         {
           "type": "resistor",
