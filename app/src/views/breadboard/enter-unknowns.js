@@ -135,7 +135,7 @@ module.exports = React.createClass({
     return div({id: 'enter-unknowns'},
       p({}, strong({}, "Enter Unknown " + this.pluralize("Value"))),
       this.props.activity.enterUnknowns.E ? this.renderUnknown('E', this.state.eCorrect, this.eChanged, this.eUnitChanged) : null,
-      this.props.activity.enterUnknowns.R ? this.renderUnknown('R', this.state.rCorrect, this.rChanged, this.rUnitChanged) : null,
+      this.props.activity.enterUnknowns.R ? this.renderUnknown('R0', this.state.rCorrect, this.rChanged, this.rUnitChanged) : null,
       showMessage ? p({}, "You have entered the correct " + this.pluralize("value") + " and " + this.pluralize("unit") + ".") : button({onClick: this.submit}, "Submit Unknown " + this.pluralize("Value")),
       this.state.alert ? AlertView({message: this.state.alert, onClose: this.closeAlert}) : null
     );
