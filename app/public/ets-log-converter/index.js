@@ -215,13 +215,10 @@ var eventMap = {
     desc: "sent [chat]",
     // sent message changed from event_value to {message, type}
     data01Fn: function (type, obj) {
-      if (obj.hasOwnProperty('message')) {
-        return "message";
-      }
-      return "event_value";
+      return obj.parameters.hasOwnProperty("message") ? "message" : "event_value";
     },
     data02Fn: function (type, obj) {
-      return obj.type ? "type" : undefined; // will return undefined which is ok for old event_value messages
+      return obj.parameters.hasOwnProperty("type") ? "type" : undefined;
     }
   },
   "Submit clicked": {
@@ -238,13 +235,13 @@ var eventMap = {
   },
   "Started tutorial step": {
     code: 7000,
-    desc: "started tutorual step [number] with title '[title]'",
+    desc: "started tutorial step [number] with title '[title]'",
     data01: "number",
     data02: "title"
   },
   "Completed tutorial step": {
     code: 7000,
-    desc: "completed tutorual step [number] with title '[title]', timed out it [timedOut]",
+    desc: "completed tutorial step [number] with title '[title]', timed out it [timedOut]",
     data01: "number",
     data02: "title",
     data03: "timedOut"
