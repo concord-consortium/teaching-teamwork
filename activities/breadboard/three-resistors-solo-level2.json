@@ -1,5 +1,8 @@
 {
   "name": "Three Resistors Solo - Level 2",
+  "interface": {
+    "disableForwardNav": false
+  },
   "image": "images/schematic-solo.jpg",
   "model": {
     "name": "three-resistors",
