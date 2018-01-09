@@ -118,24 +118,24 @@ module.exports = React.createClass({
     this.setState({alert: null});
   },
 
-  renderUnknown: function (component, correct, onValueChange, onUnitChange) {
+  renderUnknown: function (component, label, correct, onValueChange, onUnitChange) {
     var units = [
           option({key: 'none', value: ''}, ''),
           option({key: 'volts', value: 'volts'}, 'volts'),
           option({key: 'ohms', value: 'ohms'}, 'ohms')
         ];
     if (correct) {
-      return p({}, component + ': ' + this.props.model[component] + ' ' + (component == 'E' ? 'volts' : 'ohms'));
+      return p({}, label + ': ' + this.props.model[component] + ' ' + (component == 'E' ? 'volts' : 'ohms'));
     }
-    return p({}, component + ': ', input({ref: component, value: this.state[component], onChange: onValueChange}), select({ref: component.toLowerCase(component) + 'Unit', value: this.state[component + 'Unit'], onChange: onUnitChange}, units));
+    return p({}, label + ': ', input({ref: component, value: this.state[component], onChange: onValueChange}), select({ref: component.toLowerCase(component) + 'Unit', value: this.state[component + 'Unit'], onChange: onUnitChange}, units));
   },
 
   render: function () {
     var showMessage = (!this.props.activity.enterUnknowns.E || this.state.eCorrect) && (!this.props.activity.enterUnknowns.R || this.state.rCorrect);
     return div({id: 'enter-unknowns'},
       p({}, strong({}, "Enter Unknown " + this.pluralize("Value"))),
-      this.props.activity.enterUnknowns.E ? this.renderUnknown('E', this.state.eCorrect, this.eChanged, this.eUnitChanged) : null,
-      this.props.activity.enterUnknowns.R ? this.renderUnknown('R0', this.state.rCorrect, this.rChanged, this.rUnitChanged) : null,
+      this.props.activity.enterUnknowns.E ? this.renderUnknown('E', 'E', this.state.eCorrect, this.eChanged, this.eUnitChanged) : null,
+      this.props.activity.enterUnknowns.R ? this.renderUnknown('R', 'R0', this.state.rCorrect, this.rChanged, this.rUnitChanged) : null,
       showMessage ? p({}, "You have entered the correct " + this.pluralize("value") + " and " + this.pluralize("unit") + ".") : button({onClick: this.submit}, "Submit Unknown " + this.pluralize("Value")),
       this.state.alert ? AlertView({message: this.state.alert, onClose: this.closeAlert}) : null
     );
