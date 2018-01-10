@@ -1,5 +1,8 @@
 {
   "name": "Three Resistors Solo - Level 5",
+  "interface": {
+    "disableForwardNav": true
+  },
   "image": "images/schematic-solo.jpg",
   "enterUnknowns": {
     "E": true,

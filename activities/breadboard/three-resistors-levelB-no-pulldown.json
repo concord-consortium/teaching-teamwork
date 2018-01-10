@@ -1,16 +1,16 @@
 {
   "name": "Level B",
   "interface": {
-  "enableChatType": false,
-  "hideZoomDetails": true,
-  "disableForwardNav": true,
-  "showTutorial": false,
-  "tutorialFreePlayDuration": 60,
-  "tutorialFreePlayAboutToTimeoutDuration": 30,
-  "enableWaitingRoom": true,
-  "enablePersistentWaitingRoom": true
-},
-"image": "images/schematic-team.jpg",
+    "enableChatType": false,
+    "hideZoomDetails": true,
+    "disableForwardNav": true,
+    "showTutorial": false,
+    "tutorialFreePlayDuration": 60,
+    "tutorialFreePlayAboutToTimeoutDuration": 30,
+    "enableWaitingRoom": true,
+    "enablePersistentWaitingRoom": true
+  },
+  "image": "images/schematic-team.jpg",
   "otherCircuits": {
     "image": "images/schematic-team.jpg",
     "width": 740,

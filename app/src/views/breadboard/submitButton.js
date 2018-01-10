@@ -46,7 +46,7 @@ module.exports = SubmitButton = React.createClass({
       nextActivity: this.props.nextActivity,
       enterUnknowns: this.props.enterUnknowns,
       numCircuits: this.props.goals.length,
-      haveAllUnknowns: true
+      haveAllUnknowns: !this.props.enterUnknowns
     };
   },
 
@@ -109,7 +109,7 @@ module.exports = SubmitButton = React.createClass({
       }
 
       // listen for user unknown value updates if needed
-      if ((self.state.numCircuits > 1) && self.props.enterUnknowns) {
+      if (self.props.enterUnknowns) {
         self.usersRef = listenForUnknownValues(self.state.numCircuits, self.props.enterUnknowns, function (results) {
           self.setState({
             haveAllUnknowns: results.haveAllUnknowns
@@ -117,10 +117,16 @@ module.exports = SubmitButton = React.createClass({
         });
       }
     });
+
+    if (!this.props.hasMultipleClients) {
+      userController.listenForUnknownValues = function () {
+        self.setState({haveAllUnknowns: true});
+      };
+    }
   },
 
   componentWillUpdate: function (nextProps, nextState) {
-    if (nextState.allCorrect && nextState.haveAllUnknowns) {
+    if (nextState.allCorrect && (nextState.haveAllUnknowns || (!nextProps.hasMultipleClients && nextProps.unknownValuesEntered))) {
       laraController.enableForwardNav(true);
     }
   },
@@ -132,6 +138,7 @@ module.exports = SubmitButton = React.createClass({
     if (this.usersRef) {
       this.usersRef.off();
     }
+    userController.listenForUnknownValues = null;
   },
 
   getMeasurement: function (client, measurement, callback) {
@@ -288,6 +295,9 @@ module.exports = SubmitButton = React.createClass({
           allCorrect: allCorrect,
           closePopup: false
         });
+        if (self.props.setAllCorrect) {
+          self.props.setAllCorrect(allCorrect);
+        }
       });
     }
     else {

@@ -1,16 +1,16 @@
 {
   "name": "Three Resistors Solo - Level A",
   "interface": {
-  "enableChatType": false,
-  "hideZoomDetails": false,
-  "disableForwardNav": true,
-  "showTutorial": false,
-  "tutorialFreePlayDuration": 60,
-  "tutorialFreePlayAboutToTimeoutDuration": 30,
-  "enableWaitingRoom": false,
-  "enablePersistentWaitingRoom": false
-},
-"image": "images/schematic-solo.jpg",
+    "enableChatType": false,
+    "hideZoomDetails": false,
+    "disableForwardNav": true,
+    "showTutorial": false,
+    "tutorialFreePlayDuration": 60,
+    "tutorialFreePlayAboutToTimeoutDuration": 30,
+    "enableWaitingRoom": false,
+    "enablePersistentWaitingRoom": false
+  },
+  "image": "images/schematic-solo.jpg",
   "model": {
     "name": "three-resistors",
     "options": {

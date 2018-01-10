@@ -1,16 +1,16 @@
 {
   "name": "Level C",
   "interface": {
-  "enableChatType": false,
-  "hideZoomDetails": false,
-  "disableForwardNav": false,
-  "showTutorial": false,
-  "tutorialFreePlayDuration": 60,
-  "tutorialFreePlayAboutToTimeoutDuration": 30,
-  "enableWaitingRoom": false,
-  "enablePersistentWaitingRoom": false
-},
-"image": "images/schematic-team.jpg",
+    "enableChatType": false,
+    "hideZoomDetails": false,
+    "disableForwardNav": false,
+    "showTutorial": false,
+    "tutorialFreePlayDuration": 60,
+    "tutorialFreePlayAboutToTimeoutDuration": 30,
+    "enableWaitingRoom": false,
+    "enablePersistentWaitingRoom": false
+  },
+  "image": "images/schematic-team.jpg",
   "enterUnknowns": {
     "E": true,
     "R": false
