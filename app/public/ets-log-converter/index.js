@@ -1,3 +1,34 @@
+var levelMap = {
+  "three-resistors-level1": 1,
+  "three-resistors-level2": 2,
+  "three-resistors-level3": 3,
+  "three-resistors-level4": 4,
+  "three-resistors-level5": 5,
+  "three-resistors-levelA": 2,
+  "three-resistors-levelA-no-pulldown": 2,
+  "three-resistors-levelA-with-pulldown": 2,
+  "three-resistors-levelB": 3,
+  "three-resistors-levelB-no-pulldown": 3,
+  "three-resistors-levelB-with-pulldown": 3,
+  "three-resistors-levelC": 4,
+  "three-resistors-levelC-no-pulldown": 4,
+  "three-resistors-levelC-with-pulldown": 4,
+  "three-resistors-levelD": 5,
+  "three-resistors-levelD-no-pulldown": 5,
+  "three-resistors-levelD-with-pulldown": 5,
+  "three-resistors-solo-level1": 1,
+  "three-resistors-solo-level2": 2,
+  "three-resistors-solo-level3": 3,
+  "three-resistors-solo-level4": 4,
+  "three-resistors-solo-level5": 5,
+  "three-resistors-solo-levelA": 2,
+  "three-resistors-solo-levelB": 3,
+  "three-resistors-solo-levelC": 4,
+  "three-resistors-solo-levelD": 5,
+  "three-resistors-tutorial-no-pulldown": 2,
+  "three-resistors-tutorial-with-pulldown": 2
+};
+
 var isTrue = function (val) {
   return (val !== "false") && !!val;
 };
@@ -241,7 +272,7 @@ var eventMap = {
   },
   "Completed tutorial step": {
     code: 7000,
-    desc: "completed tutorial step [number] with title '[title]', timed out it [timedOut]",
+    desc: "completed tutorial step [number] with title '[title]', timed out in [timedOut]",
     data01: "number",
     data02: "title",
     data03: "timedOut"
@@ -326,22 +357,17 @@ var eventMap = {
   }
 };
 
-var createETSLog = function (input, teamPrefix) {
+var createETSLog = function (input, teamPrefix, levelMap) {
   var rows = [],
       lastObj = null;
 
   var getLevel = function (p) {
-    var matches = p.levelName.match(/level([a-zA-Z0-9])/);
-    var level = parseInt(matches[1]);
-    if (!isNaN(level)) {
-      return level;
-    }
-    return matches[1].charCodeAt(0) - 64;
+    return levelMap[p.levelName];
   };
 
   // filter out all but the teaching teamwork events we care about
   input = input.filter(function (obj) {
-    return obj.parameters && obj.parameters.levelName && !!obj.parameters.levelName.match(/^three-resistors-(solo-)?level/) && eventMap[obj.event];
+    return obj.parameters && obj.parameters.levelName && !!obj.parameters.levelName.match(/^three-resistors/) && eventMap[obj.event];
   });
 
   // sort by time?
@@ -460,6 +486,7 @@ var createETSLog = function (input, teamPrefix) {
     rows.push({
       "TeamID": teamPrefix + p.groupname,
       "StudentID": obj.username.replace(/^(\d+).*$/, "$1"),
+      "Activity": p.levelName,
       "TaskLevel": level,
       "Player": p.username,
       "Board": parseInt(p.board, 10) + 1,
@@ -633,7 +660,7 @@ else {
 
         reader.onload = function() {
           try {
-            var rows = createETSLog(JSON.parse(reader.result), self.state.teamPrefix);
+            var rows = createETSLog(JSON.parse(reader.result), self.state.teamPrefix, levelMap);
 
             self.setState({
               munging: false,
