@@ -4,7 +4,7 @@
 
 With one or more external activity ids in hand open a rails console on the portal that you wish to extract data from and run the following for each external activity ids:
 
-`> EnternalActivity.find(<id>).offerings.map{|o| o.id}`
+`> ExternalActivity.find(<id>).offerings.map{|o| o.id}`
 
 ## Setup the local configuration
 

@@ -331,12 +331,17 @@ var createETSLog = function (input, teamPrefix) {
       lastObj = null;
 
   var getLevel = function (p) {
-    return p.levelName.replace(/^.*(\d+)$/, "$1");
+    var matches = p.levelName.match(/level([a-zA-Z0-9])/);
+    var level = parseInt(matches[1]);
+    if (!isNaN(level)) {
+      return level;
+    }
+    return matches[1].charCodeAt(0) - 64;
   };
 
   // filter out all but the teaching teamwork events we care about
   input = input.filter(function (obj) {
-    return obj.parameters && obj.parameters.levelName && !!obj.parameters.levelName.match(/^three-resistors-(solo-)?level(\d+)$/) && eventMap[obj.event];
+    return obj.parameters && obj.parameters.levelName && !!obj.parameters.levelName.match(/^three-resistors-(solo-)?level/) && eventMap[obj.event];
   });
 
   // sort by time?
