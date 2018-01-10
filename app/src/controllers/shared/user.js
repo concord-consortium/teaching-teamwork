@@ -220,6 +220,9 @@ module.exports = userController = {
     if (firebaseUsersRef) {
       firebaseUsersRef.child(userName).set({client: client, unknownValues: unknownValues});
     }
+    else if (this.listenForUnknownValues) {
+      this.listenForUnknownValues(unknownValues);
+    }
   },
 
   selectedClient: function() {
