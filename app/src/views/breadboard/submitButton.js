@@ -349,6 +349,7 @@ module.exports = SubmitButton = React.createClass({
         numCircuits: props.numCircuits,
         multipleClients: multipleClients,
         buttonClicked: closePopup,
+        haveAllUnknowns: props.haveAllUnknowns
       }), $anchor.get(0));
     },
 
@@ -385,9 +386,9 @@ Popup = React.createFactory(React.createClass({
   getInitialState: function () {
     return {
       unknownValues: {},
-      showEColumn: this.props.enterUnknowns && this.props.enterUnknowns.E,
-      showRColumn: this.props.enterUnknowns && this.props.enterUnknowns.R,
-      haveAllUnknowns: false
+      showEColumn: this.props.enterUnknowns && this.props.enterUnknowns.E && this.props.hasMultipleClients,
+      showRColumn: this.props.enterUnknowns && this.props.enterUnknowns.R && this.props.hasMultipleClients,
+      haveAllUnknowns: this.props.haveAllUnknowns
     };
   },
 
