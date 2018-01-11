@@ -274,7 +274,7 @@ var eventMap = {
   },
   "Completed tutorial step": {
     code: 7000,
-    desc: "completed tutorial step [number] with title '[title]', timed out in [timedOut]",
+    desc: "completed tutorial step [number] with title '[title]', timed out is [timed out]",
     data01: "number",
     data02: "title",
     data03: "timedOut"
