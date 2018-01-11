@@ -243,8 +243,10 @@ var eventMap = {
   },
   "Sent message": {
     code: 5000,
-    desc: "sent [chat]",
     // sent message changed from event_value to {message, type}
+    descFn: function (type, obj) {
+      return obj.parameters.hasOwnProperty("type") ? "sent [chat] of [type]" : "sent [chat]";
+    },
     data01Fn: function (type, obj) {
       return obj.parameters.hasOwnProperty("message") ? "message" : "event_value";
     },
@@ -272,7 +274,7 @@ var eventMap = {
   },
   "Completed tutorial step": {
     code: 7000,
-    desc: "completed tutorial step [number] with title '[title]', timed out in [timedOut]",
+    desc: "completed tutorial step [number] with title '[title]', timed out is [timed out]",
     data01: "number",
     data02: "title",
     data03: "timedOut"
@@ -297,24 +299,21 @@ var eventMap = {
         return "The user does not need E or R and submitted";
       }
       if (!p.needR && p.needE) {
-        return "The user needs E and submitted the [correct/incorrect] value of [e value] [e unit]";
+        return "The user needs E and submitted the [correct/incorrect] E value of [e value] [e unit]";
       }
       if (p.needR && !p.needE) {
-        return "The user needs R and submitted the [correct/incorrect] value of [r value] [r unit]";
+        return "The user needs R and submitted the [correct/incorrect] R value of [r value] [r unit]";
       }
-      return "The user needs E and R and submitted the [correct/incorrect] values of [e value] [e unit] and [r value] [r unit]";
+      return "The user needs E and R and submitted the [correct/incorrect] E value of [e value] [e unit] and the [correct/incorrect] R value of [r value] [r unit]";
     },
     data01Fn: function (type, obj) {
-      var p = parseUnknownValuesSubmitted(obj),
-          data = [];
+      var p = parseUnknownValuesSubmitted(obj);
       if (p.needE) {
-        data.push(p.correctE ? "correct E" : "incorrect E");
+        obj.parameters._data01 = p.correctE ? "correct" : "incorrect";
+        return "_data01";
       }
-      if (p.needR) {
-        data.push(p.correctR ? "correct R" : "incorrect R");
-      }
-      if (data.length > 0) {
-        obj.parameters._data01 = data.join(" and ");
+      else if (p.needR) {
+        obj.parameters._data01 = p.correctR ? "correct" : "incorrect";
         return "_data01";
       }
     },
@@ -343,11 +342,18 @@ var eventMap = {
     data04Fn: function (type, obj) {
       var p = parseUnknownValuesSubmitted(obj);
       if (p.needE && p.needR) {
+        obj.parameters._data04 = p.correctR ? "correct" : "incorrect";
+        return "_data04";
+      }
+    },
+    data05Fn: function (type, obj) {
+      var p = parseUnknownValuesSubmitted(obj);
+      if (p.needE && p.needR) {
         obj.parameters._rValue = p.rValue;
         return "_rValue";
       }
     },
-    data05Fn: function (type, obj) {
+    data06Fn: function (type, obj) {
       var p = parseUnknownValuesSubmitted(obj);
       if (p.needE && p.needR) {
         obj.parameters._rUnit = p.rUnit;
@@ -501,6 +507,7 @@ var createETSLog = function (input, teamPrefix, levelMap) {
       "Data03": data("03"),
       "Data04": data("04"),
       "Data05": data("05"),
+      "Data06": data("06"),
       "ContextE": mv.E,
       "ContextR0": mv.R,
       "ContextR1": rv.r1,
