@@ -243,8 +243,10 @@ var eventMap = {
   },
   "Sent message": {
     code: 5000,
-    desc: "sent [chat]",
     // sent message changed from event_value to {message, type}
+    descFn: function (type, obj) {
+      return obj.parameters.hasOwnProperty("type") ? "sent [chat] of [type]" : "sent [chat]";
+    },
     data01Fn: function (type, obj) {
       return obj.parameters.hasOwnProperty("message") ? "message" : "event_value";
     },
