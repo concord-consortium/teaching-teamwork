@@ -5,6 +5,7 @@
     "hideZoomDetails": true,
     "disableForwardNav": true,
     "showTutorial": true,
+    "tutorialTimeoutDuration": 60,
     "tutorialFreePlayDuration": 60,
     "tutorialFreePlayAboutToTimeoutDuration": 30,
     "enableWaitingRoom": false,
