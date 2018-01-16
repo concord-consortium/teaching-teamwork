@@ -8,8 +8,14 @@ module.exports = React.createClass({
     var holes = this.props.breadboard.holes,
         holeViews = [];
     for (var i = 0; i < holes.length; i++) {
-      holeViews.push(BreadboardHoleView({hole: holes[i], drawConnection: this.props.drawConnection,
-        reportHover: this.props.reportHover, key: "breadboard-hole-"+i}));
+      holeViews.push(
+        BreadboardHoleView({
+          hole: holes[i],
+          drawConnection: this.props.drawConnection,
+          reportHover: this.props.reportHover,
+          key: "breadboard-hole-"+i,
+          showColors: this.props.showColors
+        }));
     }
 
     return g({id: "breadboard"},

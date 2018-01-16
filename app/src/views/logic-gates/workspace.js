@@ -45,6 +45,7 @@ module.exports = React.createClass({
         showProbe = this.interfaceOption('showProbe'),
         showInputAutoToggles = this.interfaceOption('showInputAutoToggles'),
         showGlobalIOWires = this.interfaceOption('showGlobalIOWires'),
+        showBreadboardColors = this.interfaceOption('showBreadboardColors'),
         selectedConstants,
         spacersAndBoards, i, height;
 
@@ -71,7 +72,8 @@ module.exports = React.createClass({
           forceRerender: this.props.forceRerender,
           soloMode: this.props.soloMode,
           showBusLabels: showBusLabels,
-          showInputAutoToggles: showInputAutoToggles
+          showInputAutoToggles: showInputAutoToggles,
+          showBreadboardColors: showBreadboardColors
         })
       );
     }

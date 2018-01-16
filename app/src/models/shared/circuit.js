@@ -1,3 +1,4 @@
+var TTL = require('./ttl');
 var circuitId = 1;
 
 var Circuit = function (options) {
@@ -25,6 +26,9 @@ Circuit.prototype.setAverageOutputVoltage = function (list) {
       totalOutputVoltage += voltage;
     }
     averageVoltage = totalOutputVoltage / this.outputs.length;
+  }
+  else {
+    averageVoltage = TTL.INVALID_VOLTAGE;
   }
 
   for (i = 0; i < list.length; i++) {

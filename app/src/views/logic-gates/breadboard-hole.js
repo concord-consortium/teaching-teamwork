@@ -1,7 +1,8 @@
-var circle = React.DOM.circle;
+var circle = React.DOM.circle,
+         g = React.DOM.g;
 
 module.exports = React.createClass({
-  displayName: 'ConnectorHoleView',
+  displayName: 'BreadboardHoleView',
 
   startDrag: function (e) {
     if (this.props.hole.connected) {
@@ -11,9 +12,6 @@ module.exports = React.createClass({
   },
 
   mouseOver: function () {
-    if (this.props.hole.connected) {
-      return;
-    }
     this.props.reportHover(this.props.hole);
   },
 
@@ -22,7 +20,9 @@ module.exports = React.createClass({
   },
 
   render: function () {
-    return circle({cx: this.props.hole.cx, cy: this.props.hole.cy, r: this.props.hole.size,
-      opacity: 0, onMouseDown: this.startDrag, onMouseOver: this.mouseOver, onMouseOut: this.mouseOut});
+    return g({onMouseDown: this.startDrag, onMouseOver: this.mouseOver, onMouseOut: this.mouseOut},
+              circle({cx: this.props.hole.cx, cy: this.props.hole.cy, r: this.props.hole.size, opacity: 0}),
+              circle({cx: this.props.hole.cx, cy: this.props.hole.cy, r: this.props.hole.size / 2, opacity: this.props.showColors ? 1 : 0, fill: this.props.hole.getColor()})
+    );
   }
 });

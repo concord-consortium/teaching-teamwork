@@ -1,0 +1,46 @@
+{
+    "name": "Wonky Breadboard Example",
+    "notes": "Shows example of a wonky breadboard",
+    "interface": {
+      "showPinColors": true,
+      "showBusColors": true,
+      "showBusLabels": true,
+      "allowAutoWiring": true,
+      "showPinouts": true,
+      "showProbe": "edit",
+      "showInputAutoToggles": true,
+      "showGlobalIOWires": true,
+      "showBreadboardColors": true
+    },
+    "busSize": 2,
+    "busInputSize": 1,
+    "busOutputSize": 1,
+    "boards": [{
+        "logicChipDrawer": {
+            "chips": {
+                "7411": {
+                    "max": 1
+                }
+            }
+        },
+        "localInputSize": 3,
+        "localOutputSize": 1,
+        "autoWiring": {
+            "chips": {
+                "chip": {
+                    "type": "7411",
+                    "x": 280,
+                    "y": 180
+                }
+            },
+            "wires": [
+                "top+:10, b:18",
+                "i:12, bottom-:16",
+                "input:1, b:15",
+                "input:2, b:14",
+                "input:3, b:13",
+                "b:12, output:1"
+            ]
+        }
+    }]
+}

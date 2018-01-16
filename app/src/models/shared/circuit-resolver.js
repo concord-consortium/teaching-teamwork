@@ -32,7 +32,7 @@ var CircuitResolver = function (options) {
 
 CircuitResolver.prototype.rewire = function (includeGlobalIO) {
   var graph = {},
-      isBusHole, addToGraph, addToCircuit, addBusWire;
+      isBusHole, addToGraph, addToCircuit, addGhostWire;
 
   isBusHole = function (endPoint) {
     return endPoint.connector && (endPoint.connector.type == 'bus');
@@ -65,7 +65,7 @@ CircuitResolver.prototype.rewire = function (includeGlobalIO) {
     }
   };
 
-  addBusWire = function (options) {
+  addGhostWire = function (options) {
     var busWire = new Wire({
       source: options.source,
       dest: options.dest
@@ -80,6 +80,24 @@ CircuitResolver.prototype.rewire = function (includeGlobalIO) {
 
   // create a graph of all the wire end points
   this.forEach(this.boards, function (board) {
+    if (board.breadboard) {
+      // create ghost wires between breadboard holes
+      // TODO: check strip and only add wires where at least one of the holes is connected
+      this.forEach(board.breadboard.ghostWires, function (wire) {
+        this.numWires++;
+        addToGraph(wire.source, wire.dest, wire);
+        addToGraph(wire.dest, wire.source, wire);
+      });
+
+      // create ghost wires between breadboard components and the holes
+      this.forEach(board.componentList, function (component) {
+        this.forEach(component.ghostWires, function (wire) {
+          this.numWires++;
+          addToGraph(wire.source, wire.dest, wire);
+          addToGraph(wire.dest, wire.source, wire);
+        });
+      });
+    }
     this.forEach(board.wires, function (wire) {
       var sourceOnBus = isBusHole(wire.source),
           destOnBus = isBusHole(wire.dest),
@@ -98,7 +116,7 @@ CircuitResolver.prototype.rewire = function (includeGlobalIO) {
         this.forEach(this.boards, function (otherBoard) {
           // wire this board to the other boards
           if (board != otherBoard) {
-            addBusWire({
+            addGhostWire({
               source: sourceOnBus ? otherBoard.connectors.bus.holes[wire.source.index] : wire.source,
               dest: destOnBus ? otherBoard.connectors.bus.holes[wire.dest.index] : wire.dest
             });
@@ -107,7 +125,7 @@ CircuitResolver.prototype.rewire = function (includeGlobalIO) {
 
           // wire this board to the global i/o
           if (includeGlobalIO && (sourceIsGlobalInput || sourceIsGlobalOutput || destIsGlobalInput || destIsGlobalOutput)) {
-            addBusWire({
+            addGhostWire({
               source: sourceIsGlobalInput ? this.input.holes[wire.source.index] : (sourceIsGlobalOutput ? this.output.holes[wire.source.index - this.busOutputStartIndex] : wire.source),
               dest: destIsGlobalInput ? this.input.holes[wire.dest.index] : (destIsGlobalOutput ? this.output.holes[wire.dest.index - this.busOutputStartIndex] : wire.dest)
             });

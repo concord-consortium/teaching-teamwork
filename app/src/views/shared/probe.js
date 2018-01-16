@@ -122,7 +122,7 @@ module.exports = React.createClass({
         voltage = "--",
         needlePath, handlePath, rotation;
 
-    if (this.props.probeSource && (!this.props.probeSource.inputMode || this.props.probeSource.connected)) {
+    if (this.props.probeSource && (!this.props.probeSource.inputMode || this.props.probeSource.connected  || this.props.probeSource.forceShowProbe)) {
 
       voltage = this.truncateDecimals(this.props.probeSource.getVoltage(), 2);
 

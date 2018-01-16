@@ -27,7 +27,7 @@ var Board = function(options) {
     }
 
     if (options.useBreadboard) {
-        this.breadboard = new Breadboard(options.constants);
+        this.breadboard = new Breadboard(this, options.constants);
     }
 };
 Board.prototype.updateComponentList = function() {
@@ -185,7 +185,7 @@ Board.prototype.serializeEndpoint = function(endPoint, label) {
     serialized.board = this.number;
     return serialized;
 };
-Board.prototype.removeWire = function(source, dest) {
+Board.prototype.removeWire = function(source, dest, skipResolver) {
     var numSourceConnections = 0,
         numDestConnections = 0,
         i;
@@ -208,18 +208,14 @@ Board.prototype.removeWire = function(source, dest) {
             if (this.wires[i].source.inputMode) {
                 this.wires[i].source.reset();
             }
-            if (this.wires[i].source.resetStrip) {
-                this.wires[i].source.resetStrip();
-            }
             if (this.wires[i].dest.inputMode) {
                 this.wires[i].dest.reset();
             }
-            if (this.wires[i].dest.resetStrip) {
-                this.wires[i].dest.resetStrip();
-            }
             this.wires.splice(i, 1);
-            this.resolver.rewire();
-            this.resolver.resolve(true);
+            if (!skipResolver) {
+                this.resolver.rewire();
+                this.resolver.resolve(true);
+            }
             return true;
         }
     }
@@ -291,7 +287,12 @@ Board.prototype.addComponent = function(name, component) {
 };
 Board.prototype.placeChip = function(component) {
     if (this.breadboard) {
-        return this.breadboard.placeComponent(component);
+        var canPlace = this.breadboard.placeComponent(component);
+        if (canPlace) {
+            // rewire to add ghost component wires
+            this.resolver.rewire();
+        }
+        return canPlace;
     }
     return true;
 };
@@ -301,6 +302,10 @@ Board.prototype.removeComponent = function(component) {
     }
     delete this.components[component.name];
     this.updateComponentList();
+    if (this.breadboard) {
+        // rewire to remove ghost component wires
+        this.resolver.rewire();
+    }
     this.resolver.resolve(true);
 };
 Board.prototype.setConnectors = function(connectors) {

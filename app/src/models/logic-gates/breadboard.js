@@ -1,72 +1,16 @@
-var TTL = require('../shared/ttl');
+var TTL = require('../shared/ttl'),
+    Wire = require("../shared/wire"),
+    BBHole = require("./bbhole"),
+    BBStrip = require("./bbstrip");
 
-var BBStrip = function(name) {
-  this.name = name;
-  this.setInitialVoltage();
-};
-
-BBStrip.prototype.setVoltage = function(v) {
-  if (this.name.indexOf("pos") === -1 && this.name.indexOf("neg") === -1) {
-    this.voltage = v;
-  }
-};
-
-BBStrip.prototype.setInitialVoltage = function() {
-  this.voltage = 1.5;
-  if (this.name.indexOf("pos") > -1) {
-    this.voltage = 3;
-  } else if (this.name.indexOf("neg") > -1) {
-    this.voltage = 0;
-  }
-};
-
-var BBHole = function(strip, dimensions, column, row) {
-  this.strip = strip;
-  this.cx = dimensions.cx;
-  this.cy = dimensions.cy;
-  this.coords = this.cx+"-"+this.cy;
-  this.size = dimensions.size;
-  this.column = column || 0;
-  this.row = row || 0;
-  this.connected = false;
-};
-
-BBHole.prototype.setVoltage = function(v) {
-  this.strip.setVoltage(v);
-};
-BBHole.prototype.getVoltage = function() {
-  return this.strip.voltage;
-};
-BBHole.prototype.getLogicLevel = function (ignoreForcedVoltage) {
-  return TTL.getVoltageLogicLevel(this.getVoltage(ignoreForcedVoltage));
-};
-BBHole.prototype.isLow = function () {
-  return TTL.isLow(this.getLogicLevel());
-};
-BBHole.prototype.isInvalid = function () {
-  return TTL.isInvalid(this.getLogicLevel());
-};
-BBHole.prototype.isHigh = function () {
-  return TTL.isHigh(this.getLogicLevel());
-};
-BBHole.prototype.resetStrip = function() {
-  this.strip.setInitialVoltage();
-};
-
-BBHole.prototype.serialize = function(label) {
-  var serialized = {connector: "breadboard", strip: this.strip.name};
-  serialized[label] = "hole";
-  return serialized;
-};
-
-BBHole.prototype.toString = function() {
-  return "bbhole:"+this.coords;
-};
-
-var Breadboard = function(constants) {
+var Breadboard = function(board, constants) {
+  this.board = board;
   this.constants = constants;
   this.holes = [];
+  this.holeMap = {};
   this.bodyHolesMap = [];
+  this.holeRowMap = {};
+  this.ghostWires = [];
   this.strips = {};
   this.dimensions = {
     holeSize: 8,
@@ -102,28 +46,35 @@ var Breadboard = function(constants) {
     }
   };
 
-  var topPosRail = this.createStrip("pos-rail-top"),
-      topNegRail = this.createStrip("neg-rail-top"),
-      bottomPosRail = this.createStrip("pos-rail-bottom"),
-      bottomNegRail = this.createStrip("neg-rail-bottom");
-
   var d = this.dimensions,
       x, topY, bottomY, gaps;
+
+  var self = this,
+      addGhostWire = function (hole1, hole2) {
+        if (hole1 && hole2) {
+          self.ghostWires.push(new Wire({source: hole1, dest: hole2}));
+        }
+      },
+      rowName = function (rowIndex) {
+        return String.fromCharCode(97 + rowIndex);
+      };
 
   for (var i = 0; i < 25; i++) {
     gaps = Math.floor(i/5);
     x = d.powerRail.x + ((i+gaps) * d.holeSpaceX);
     this.holes.push(
-      new BBHole(topPosRail, {cx: x, cy: d.powerRail.top.pos.y, size: d.holeSize}),
-      new BBHole(topNegRail, {cx: x, cy: d.powerRail.top.neg.y, size: d.holeSize}),
-      new BBHole(bottomPosRail, {cx: x, cy: d.powerRail.bottom.pos.y, size: d.holeSize}),
-      new BBHole(bottomNegRail, {cx: x, cy: d.powerRail.bottom.neg.y,  size: d.holeSize})
+      new BBHole({rowName: "top+", columnIndex: i, dimensions: {cx: x, cy: d.powerRail.top.pos.y, size: d.holeSize}, type: "output", hasForcedVoltage: true, forcedVoltage: TTL.HIGH_VOLTAGE}),
+      new BBHole({rowName: "top-", columnIndex: i, dimensions: {cx: x, cy: d.powerRail.top.neg.y, size: d.holeSize}, type: "output", hasForcedVoltage: true, forcedVoltage: TTL.LOW_VOLTAGE}),
+      new BBHole({rowName: "bottom+", columnIndex: i, dimensions: {cx: x, cy: d.powerRail.bottom.pos.y, size: d.holeSize}, type: "output", hasForcedVoltage: true, forcedVoltage: TTL.HIGH_VOLTAGE}),
+      new BBHole({rowName: "bottom-", columnIndex: i, dimensions: {cx: x, cy: d.powerRail.bottom.neg.y,  size: d.holeSize}, type: "output", hasForcedVoltage: true, forcedVoltage: TTL.LOW_VOLTAGE})
     );
   }
 
   for (i = 0; i < 30; i++) {
     var topStrip = this.createStrip("top-"+i),
         bottomStrip = this.createStrip("bottom-"+i),
+        lastTopHole = null,
+        lastBottomHole = null,
         topHole, bottomHole;
     this.bodyHolesMap[i] = [];
 
@@ -131,15 +82,31 @@ var Breadboard = function(constants) {
     for (var j = 0; j < 5; j++) {
       topY = d.body.top.y + (j * d.holeSpaceY);
       bottomY = d.body.bottom.y + (j * d.holeSpaceY);
-      topHole = new BBHole(topStrip, {cx: x, cy: topY, size: d.holeSize}, i, j);
-      bottomHole = new BBHole(bottomStrip, {cx: x, cy: bottomY, size: d.holeSize}, i, + 5);
+      topHole = new BBHole({rowName: rowName(j), columnIndex: (29 - i), strip: topStrip, dimensions: {cx: x, cy: topY, size: d.holeSize}, column: i, row: j, inputMode: true, type: "input"});
+      bottomHole = new BBHole({rowName: rowName(j+5), columnIndex: (29 - i), strip: bottomStrip, dimensions: {cx: x, cy: bottomY, size: d.holeSize}, column: i, row: j + 5, inputMode: true, type: "input"});
       this.holes.push(
         topHole,
         bottomHole
       );
-      this.bodyHolesMap[i][j] = topHole;
-      this.bodyHolesMap[i][j+5] = bottomHole;
+      this.bodyHolesMap[i][j] = this.holeMap[topHole] = topHole;
+      this.bodyHolesMap[i][j+5] = this.holeMap[bottomHole] = bottomHole;
+      topStrip.addHole(topHole);
+      bottomStrip.addHole(bottomHole);
+
+      addGhostWire(lastTopHole, topHole);
+      addGhostWire(lastBottomHole, bottomHole);
+      lastTopHole = topHole;
+      lastBottomHole = bottomHole;
     }
+  }
+
+  var ii, hole;
+  for (i = 0, ii = this.holes.length; i < ii; i++) {
+    hole = this.holes[i];
+    if (!this.holeRowMap[hole.rowName]) {
+      this.holeRowMap[hole.rowName] = {holes: []};
+    }
+    this.holeRowMap[hole.rowName].holes[hole.columnIndex] = hole;
   }
 };
 
@@ -162,51 +129,27 @@ Breadboard.prototype.placeComponent = function(component) {
       constants = this.constants.selectedConstants(true),
       pinPos = {x: component.position.x + offset.x, y: component.position.y + offset.y},
       hole = this.getNearestHole(pinPos, true),
-      oldHoles, i, ii, j, jj;
+      i, ii;
 
-  // we have to uplug component before move so we don't block our own holes, but
-  // we keep a ref to those holes in case we need to plug the component back to its
-  // old location
-  oldHoles = this.unplugComponent(component);
+  // TODO: check if another component exists at the placement
 
   component.position.x = hole.cx - offset.x - (constants.PIN_WIDTH/2);
   component.position.y = hole.cy - offset.y;
 
   var firstColumn = hole.column,
       firstRow = hole.row,
-      pin, placement, colOffset, column, row, stripName;
+      pin, column, row;
 
-  // first we have to loop through all the holes and see if it's a valid location
+  component.ghostWires = [];
   for (i = 0, ii = component.pins.length; i < ii; i++) {
     pin = component.pins[i];
-    colOffset = pin.column;
-    column = firstColumn + colOffset;
-    for (j = 0, jj = 4; j < jj; j++) {
-      row = firstRow + j;
-      if (this.bodyHolesMap[column][row].connected) {
-        // reset any old holes
-        for (i = 0, ii = oldHoles.length; i<ii; i++) {
-          oldHoles[i].connected = true;
-        }
-        return false;
-      }
-    }
-  }
-
-  // now add the chip
-  component.holes = [];
-  for (i = 0, ii = component.pins.length; i < ii; i++) {
-    pin = component.pins[i];
-    placement = pin.placement;
-    colOffset = pin.column;
-    column = firstColumn + colOffset;
-    stripName = placement + "-" + column;
-    pin.setBBStrip(this.strips[stripName]);
-    for (j = 0, jj = 4; j < jj; j++) {
-      row = firstRow + j;
-      this.bodyHolesMap[column][row].connected = true;
-      component.holes.push(this.bodyHolesMap[column][row]);
-    }
+    pin.connected = true;
+    column = firstColumn + pin.column;
+    row = pin.placement === "top" ? firstRow : firstRow + 3;
+    component.ghostWires.push(new Wire({
+      source: this.bodyHolesMap[column][row],
+      dest: pin
+    }));
   }
   return true;
 };
@@ -233,13 +176,14 @@ Breadboard.prototype.getNearestHole = function(pos, restrictToFitChip) {
 };
 
 Breadboard.prototype.unplugComponent = function(component) {
-  if (!component.holes) {
-    component.holes = [];
-  }
-  for (var i = 0, ii = component.holes.length; i<ii; i++) {
-    component.holes[i].connected = false;
-  }
-  return component.holes;
+  component.ghostWires = [];
 };
+
+Breadboard.prototype.reset = function () {
+  for (var i = 0, ii = this.holes.length; i < ii; i++) {
+    this.holes[i].reset();
+  }
+};
+
 
 module.exports = Breadboard;
