@@ -48,7 +48,7 @@ module.exports = React.createClass({
         break;
     }
 
-    inputRect.fill = pin.inputMode && (pin.connected || pin.bbStrip) ? pin.getColor() : '#777';
+    inputRect.fill = pin.inputMode && pin.connected ? pin.getColor() : '#777';
     outputRect.fill = !pin.inputMode ? pin.getColor() : '#777';
 
     return g({onMouseDown: enableHandlers ? this.startDrag : null, onMouseOver: enableHandlers ? this.mouseOver : null, onMouseOut: enableHandlers ? this.mouseOut : null},

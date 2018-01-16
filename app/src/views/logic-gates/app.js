@@ -3,7 +3,6 @@ var Connector = require('../../models/shared/connector'),
     TTL = require('../../models/shared/ttl'),
     CircuitResolver = require('../../models/shared/circuit-resolver'),
     LogicChip =  require('../../models/logic-gates/logic-chip'),
-    //LogicChip =  require('../../models/logic-gates/logic-chip'),
     boardWatcher = require('../../controllers/pic/board-watcher'),
     userController = require('../../controllers/shared/user'),
     logController = require('../../controllers/shared/log'),
@@ -400,7 +399,7 @@ module.exports = React.createClass({
       allCorrect = runTest(tests[i], truthTable) && allCorrect;
     }
 
-    console.log(JSON.stringify(truthTable, null, 2));
+    //console.log(JSON.stringify(truthTable, null, 2));
 
     // rewire to remove global i/o
     this.circuitResolver.rewire();
@@ -429,7 +428,8 @@ module.exports = React.createClass({
     };
 
     getEndpoint = function (name, stringIndex) {
-      var item = chipMap[name] || board.connectors[name] || null,
+      var breadboardHoles = board.breadboard ? board.breadboard.holeRowMap : {},
+          item = chipMap[name] || board.connectors[name] || breadboardHoles[name] || null,
           intIndex = parseInt(stringIndex, 10),
           list = null,
           endPoint = null;
@@ -442,6 +442,9 @@ module.exports = React.createClass({
           if (!isNaN(intIndex)) {
             list = item.holes;
           }
+        }
+        else if (item.holes) {
+          list = item.holes;
         }
         else {
           list = item.pins;

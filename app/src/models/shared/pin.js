@@ -25,22 +25,11 @@ var Pin = function (options) {
 Pin.prototype.getBezierReflection = function () {
   return this.bezierReflection;
 };
-Pin.prototype.setBBStrip = function (bbStrip) {
-  this.bbStrip = bbStrip;
-};
 Pin.prototype.setVoltage = function (newVoltage) {
-  if (this.bbStrip) {
-    this.bbStrip.setVoltage(newVoltage);
-  } else {
-    this.voltage = newVoltage;
-  }
+  this.voltage = newVoltage;
 };
 Pin.prototype.getVoltage = function () {
-  if (this.bbStrip) {
-    return this.bbStrip.voltage;
-  } else {
-    return this.voltage;
-  }
+  return this.voltage;
 };
 Pin.prototype.getLogicLevel = function () {
   return TTL.getVoltageLogicLevel(this.voltage);

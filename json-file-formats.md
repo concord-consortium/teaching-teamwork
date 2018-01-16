@@ -239,13 +239,14 @@ This activity is not currently authorable in JSON.
   "notes": "Set bus port E to be A XOR B", # if present this is displayed under the name.  HTML is allowed here.
   "interface": {
     "showPinColors": true,                 # show red/blue pin colors that denote voltage levels
-    "showBusColors": true,                 # show red/blus connector colors on bus that denote voltage levels
+    "showBusColors": true,                 # show red/blue connector colors on bus that denote voltage levels
     "allowAutoWiring": true,               # show button that enables toggling of all wiring of all the boards, if true a "autoWiring" option setting is required below
     "showPinouts": true,                   # show schematic pinouts on hover
     "showBusLabels": true,                 # show labels next to the bus connector holes
     "showProbe": "edit",                   # show probe only in edit mode, other values are "all" and false
-    "showInputAutoToggles": true           # show the increment and decrement controls next to the local board input switches
-    "showGlobalIOWires": true              # shows the wires coming and going to the global input/output on the bus
+    "showInputAutoToggles": true,          # show the increment and decrement controls next to the local board input switches
+    "showGlobalIOWires": true,             # shows the wires coming and going to the global input/output on the bus
+    "showBreadboardColors": true           # show red/blue colors on breadboard that denote voltage levels
   },
   "busSize": 5,                            # total number of holes in the bus connector
   "busInputSize": 2,                       # number of input holes
