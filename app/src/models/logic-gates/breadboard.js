@@ -10,7 +10,6 @@ var Breadboard = function(board, constants) {
   this.holeMap = {};
   this.bodyHolesMap = [];
   this.holeRowMap = {};
-  this.ghostWires = [];
   this.strips = {};
   this.dimensions = {
     holeSize: 8,
@@ -49,13 +48,7 @@ var Breadboard = function(board, constants) {
   var d = this.dimensions,
       x, topY, bottomY, gaps;
 
-  var self = this,
-      addGhostWire = function (hole1, hole2) {
-        if (hole1 && hole2) {
-          self.ghostWires.push(new Wire({source: hole1, dest: hole2}));
-        }
-      },
-      rowName = function (rowIndex) {
+  var rowName = function (rowIndex) {
         return String.fromCharCode(97 + rowIndex);
       };
 
@@ -93,8 +86,8 @@ var Breadboard = function(board, constants) {
       topStrip.addHole(topHole);
       bottomStrip.addHole(bottomHole);
 
-      addGhostWire(lastTopHole, topHole);
-      addGhostWire(lastBottomHole, bottomHole);
+      this.addStripWire(topStrip, lastTopHole, topHole);
+      this.addStripWire(bottomStrip, lastBottomHole, bottomHole);
       lastTopHole = topHole;
       lastBottomHole = bottomHole;
     }
@@ -110,6 +103,34 @@ var Breadboard = function(board, constants) {
   }
 };
 
+Breadboard.prototype.getConnectedStripWires = function () {
+  var self = this,
+      wires = [];
+
+  Object.keys(this.strips).forEach(function (stripName) {
+    var item = self.strips[stripName],
+        stripConnected = false,
+        i, ii, hole;
+
+    for (i = 0, ii = item.strip.holes.length; i < ii; i++) {
+      hole = item.strip.holes[i];
+      if (hole.connected) {
+        stripConnected = true;
+        break;
+      }
+    }
+    for (i = 0, ii = item.strip.holes.length; i < ii; i++) {
+      item.strip.holes[i].forceShowProbe = stripConnected;
+    }
+
+    if (stripConnected) {
+      wires = wires.concat(item.wires);
+    }
+  });
+
+  return wires;
+};
+
 Breadboard.prototype.findHole = function(coords) {
   for (var i = 0, ii = this.holes.length; i < ii; i++) {
     if (this.holes[i].coords == coords) {
@@ -120,8 +141,14 @@ Breadboard.prototype.findHole = function(coords) {
 
 Breadboard.prototype.createStrip = function(name) {
   var strip = new BBStrip(name);
-  this.strips[name] = strip;
+  this.strips[name] = {strip: strip, wires: []};
   return strip;
+};
+
+Breadboard.prototype.addStripWire = function (strip, hole1, hole2) {
+  if (hole1 && hole2 && this.strips[strip.name]) {
+    this.strips[strip.name].wires.push(new Wire({source: hole1, dest: hole2}));
+  }
 };
 
 Breadboard.prototype.placeComponent = function(component) {
@@ -140,13 +167,13 @@ Breadboard.prototype.placeComponent = function(component) {
       firstRow = hole.row,
       pin, column, row;
 
-  component.ghostWires = [];
+  component.pinWires = [];
   for (i = 0, ii = component.pins.length; i < ii; i++) {
     pin = component.pins[i];
     pin.connected = true;
     column = firstColumn + pin.column;
     row = pin.placement === "top" ? firstRow : firstRow + 3;
-    component.ghostWires.push(new Wire({
+    component.pinWires.push(new Wire({
       source: this.bodyHolesMap[column][row],
       dest: pin
     }));
@@ -176,7 +203,7 @@ Breadboard.prototype.getNearestHole = function(pos, restrictToFitChip) {
 };
 
 Breadboard.prototype.unplugComponent = function(component) {
-  component.ghostWires = [];
+  component.pinWires = [];
 };
 
 Breadboard.prototype.reset = function () {

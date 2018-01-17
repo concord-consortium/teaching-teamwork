@@ -256,11 +256,11 @@ Board.prototype.addWire = function(source, dest, color, skipResolver) {
         color: colors.mixedWires[Math.floor(Math.random() * colors.mixedWires.length)]
     });
     this.wires.push(wire);
+    source.connected = true;
+    dest.connected = true;
     if (!skipResolver) {
         this.resolver.rewire();
     }
-    source.connected = true;
-    dest.connected = true;
     return wire;
 };
 Board.prototype.addComponent = function(name, component) {
