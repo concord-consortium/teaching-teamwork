@@ -81,9 +81,9 @@ CircuitResolver.prototype.rewire = function (includeGlobalIO) {
   // create a graph of all the wire end points
   this.forEach(this.boards, function (board) {
     if (board.breadboard) {
-      // create ghost wires between breadboard holes
-      // TODO: check strip and only add wires where at least one of the holes is connected
-      this.forEach(board.breadboard.ghostWires, function (wire) {
+      // create ghost wires between connect breadboard strip holes
+      var connectedStripWires = board.breadboard.getConnectedStripWires();
+      this.forEach(connectedStripWires, function (wire) {
         this.numWires++;
         addToGraph(wire.source, wire.dest, wire);
         addToGraph(wire.dest, wire.source, wire);
@@ -91,7 +91,7 @@ CircuitResolver.prototype.rewire = function (includeGlobalIO) {
 
       // create ghost wires between breadboard components and the holes
       this.forEach(board.componentList, function (component) {
-        this.forEach(component.ghostWires, function (wire) {
+        this.forEach(component.pinWires, function (wire) {
           this.numWires++;
           addToGraph(wire.source, wire.dest, wire);
           addToGraph(wire.dest, wire.source, wire);

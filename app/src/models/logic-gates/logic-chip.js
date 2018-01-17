@@ -74,7 +74,7 @@ var LogicChip = function (options) {
     text: this.type
   };
 
-  this.ghostWires = [];    // ghost wires to bb holes
+  this.pinWires = [];    // ghost wires to bb holes
 };
 LogicChip.prototype.reset = function () {
   var i;

@@ -17,8 +17,7 @@ var BBHole = function(options) {
   this.type = options.type;
   this.hasForcedVoltage = !!options.hasForcedVoltage;
   this.forcedVoltage = options.hasOwnProperty("forcedVoltage") ? options.forcedVoltage : TTL.INVALID_VOLTAGE;
-
-  this.forceShowProbe = true;
+  this.forceShowProbe = false;
 };
 
 BBHole.prototype.setVoltage = function(newVoltage) {
