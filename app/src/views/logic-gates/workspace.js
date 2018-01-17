@@ -61,7 +61,7 @@ module.exports = React.createClass({
           editable: this.props.soloMode || (this.props.userBoardNumber === this.state.selectedBoard.number),
           selected: true,
           user: this.props.users[this.state.selectedBoard.number],
-          logicChipDrawer: this.props.activity ? this.props.activity.boards[this.props.userBoardNumber].logicChipDrawer : null,
+          logicChipDrawer: this.props.activity ? this.props.activity.boards[this.state.selectedBoard.number].logicChipDrawer : null,
           toggleBoard: this.props.soloMode || (this.props.userBoardNumber === this.state.selectedBoard.number) ? this.toggleBoard : null,
           toggleBoardButtonStyle: {marginTop: -35},
           showProbe: (showProbe == 'edit') || (showProbe == 'all'),
