@@ -59,7 +59,7 @@
       "Activity Settings": {
         "parameters": {
           "E": "$E",
-          "R0": "0"
+          "R0": "$R"
         }
       },
       "Activity Goals": {
