@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
 const superagent = require("superagent");
 
 const createETSLog = require("../app/public/ets-log-converter/index.js").createETSLog;
+const levelMap = require("./get-level-map.js").getLevelMap();
 const PapaParse = require("../app/public/ets-log-converter/papaparse.min.js");
 
 const settingsPath = "./log-downloader.json";
@@ -60,7 +61,7 @@ const downloadAndSave = () => {
             const jsonFilename = matches[1];
             fs.writeFileSync(`logs/${jsonFilename}`, res.text);
 
-            const rows = createETSLog(JSON.parse(res.text), "");
+            const rows = createETSLog(JSON.parse(res.text), "", levelMap);
             const csvFilename = jsonFilename.replace(".json", ".csv");
             fs.writeFileSync(`logs/${csvFilename}`, PapaParse.unparse(rows));
           }
