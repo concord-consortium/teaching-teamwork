@@ -123,6 +123,12 @@ module.exports = userController = {
 
       userName = preferredUserName || userName;
 
+      // don't allow entering the group with the preferred username if it has been taken
+      if (preferredUserName && users[preferredUserName]) {
+        userName = null;
+        preferredUserName = null;
+      }
+
       numExistingUsers = Object.keys(users).length;
       if (!userName) {
         if (!users || !numExistingUsers) {
