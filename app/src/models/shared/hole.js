@@ -43,7 +43,7 @@ Hole.prototype.reset = function () {
   this.voltage = this.startingVoltage;
 };
 Hole.prototype.getColor = function (showVoltageColor) {
-  showVoltageColor = showVoltageColor || (this.connected && (this.type == 'output'));
+  showVoltageColor = this.connected && (showVoltageColor || (this.type == 'output'));
   return this.hasForcedVoltage ? TTL.getColor(this.forcedVoltage) : (showVoltageColor ? TTL.getColor(this.voltage) : this.color);
 };
 Hole.prototype.toggleForcedVoltage = function () {
