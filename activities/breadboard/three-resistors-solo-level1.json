@@ -39,7 +39,14 @@
       "type": "battery",
       "UID": "source",
       "voltage": "$E",
-      "connections": "battery_1,0:off_11"
+      "connections": "battery_1,battery_2"
+    },
+    {
+      "type": "resistor",
+      "UID": "rX",
+      "resistance": "$R",
+      "connections": "battery_2,0:off_11",
+      "hidden": true
     },
     {
       "type": "wire",
