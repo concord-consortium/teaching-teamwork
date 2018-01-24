@@ -104,6 +104,7 @@ module.exports = userController = {
 
   tryToEnterGroup: function(groupName, preferredUserName) {
     var self = this,
+        firstUsersRefCallback = true,
         group, members;
 
     for (var i = 0, ii = groups.length; i < ii; i++) {
@@ -114,6 +115,7 @@ module.exports = userController = {
     }
 
     members = group.members;
+    userName = preferredUserName || userName;
 
     this.createFirebaseGroupRef(activityName, groupName, classInfoUrl);
 
@@ -121,24 +123,24 @@ module.exports = userController = {
     groupUsersListener = firebaseUsersRef.on("value", function(snapshot) {
       var users = snapshot.val() || {};
 
-      userName = preferredUserName || userName;
-
       // don't allow entering the group with the preferred username if it has been taken
-      if (preferredUserName && users[preferredUserName]) {
-        userName = null;
-        preferredUserName = null;
+      if (firstUsersRefCallback) {
+        if (preferredUserName && users[preferredUserName]) {
+          userName = null;
+        }
+        firstUsersRefCallback = false;
       }
 
-      numExistingUsers = Object.keys(users).length;
+      noExistingUsers = Object.keys(users).length === 0;
       if (!userName) {
-        if (!users || !numExistingUsers) {
+        if (noExistingUsers) {
           userName = members[0];
 
           // if we're the first user, delete any existing data
           firebaseGroupRef.child('chat').set({});
           firebaseGroupRef.child('clients').set({});
           firebaseGroupRef.child('model').set({});
-        } else if (numExistingUsers < numClients) {
+        } else {
           for (var i = 0, ii=members.length; i<ii; i++) {
             if (!users[members[i]]) {
               userName = members[i];
@@ -146,11 +148,9 @@ module.exports = userController = {
             }
           }
         }
-      } else {
-        delete users[userName];
       }
 
-      if (userName && (!users || Object.keys(users).length) < numClients) {
+      if (userName && (noExistingUsers || !users[userName])) {
         firebaseUsersRef.child(userName).set({here: true});
         onDisconnectRef = firebaseUsersRef.child(userName).onDisconnect();
         onDisconnectRef.set({});
@@ -185,7 +185,6 @@ module.exports = userController = {
     }
 
     UserRegistrationView.open(this, {form: "groupname"});
-
 
     logController.logEvent("Rejected Group", groupName);
   },
