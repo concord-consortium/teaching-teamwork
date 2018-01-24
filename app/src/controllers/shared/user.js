@@ -4,7 +4,6 @@ var UserRegistrationView = require('../../views/shared/userRegistration.jsx'),
     laraController = require('./lara'),
     userController,
     numClients,
-    numExistingUsers,
     activityName,
     userName,
     groupName,
@@ -131,7 +130,7 @@ module.exports = userController = {
         firstUsersRefCallback = false;
       }
 
-      noExistingUsers = Object.keys(users).length === 0;
+      var noExistingUsers = Object.keys(users).length === 0;
       if (!userName) {
         if (noExistingUsers) {
           userName = members[0];
@@ -151,12 +150,13 @@ module.exports = userController = {
       }
 
       if (userName && (noExistingUsers || !users[userName])) {
+        users[userName] = {here: true};
         firebaseUsersRef.child(userName).set({here: true});
         onDisconnectRef = firebaseUsersRef.child(userName).onDisconnect();
         onDisconnectRef.set({});
       }
 
-      UserRegistrationView.open(self, {form: "groupconfirm", users: users, userName: userName, groupName: groupName, numExistingUsers: numExistingUsers});
+      UserRegistrationView.open(self, {form: "groupconfirm", users: users, userName: userName, groupName: groupName, numExistingUsers: Object.keys(users).length});
     });
 
     logController.logEvent("Started to join group", groupName);
