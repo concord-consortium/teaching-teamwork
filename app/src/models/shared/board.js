@@ -9,6 +9,7 @@ var Board = function(options) {
     this.number = options.number;
     this.components = options.components;
     this.connectors = options.connectors;
+    this.boards = options.boards;
     this.bezierReflectionModifier = options.bezierReflectionModifier;
     this.logicDrawer = options.logicDrawer;
     this.wires = [];
@@ -185,12 +186,51 @@ Board.prototype.serializeEndpoint = function(endPoint, label) {
     serialized.board = this.number;
     return serialized;
 };
+Board.prototype.syncBusesAcrossBoards = function (source, dest, removedWire) {
+    var self = this,
+        syncBusHoleAcrossBoards;
+
+    syncBusHoleAcrossBoards = function (localBusHole) {
+        var connected = !removedWire,
+            i, j, board, boardBusHole;
+
+        // check the bus board hole across all the boards to see if it has other connected wires
+        if (removedWire) {
+            for (i = 0; !connected && (i < self.boards.length); i++) {
+                board = self.boards[i];
+                boardBusHole = board.connectors.bus.holes[localBusHole.index];
+
+                for (j = 0; j < board.wires.length; j++) {
+                    if ((board.wires[j].source === boardBusHole) || (board.wires[j].dest === boardBusHole)) {
+                        connected = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        for (i = 0; i < self.boards.length; i++) {
+            boardBusHole = self.boards[i].connectors.bus.holes[localBusHole.index];
+            boardBusHole.connected = connected;
+            if (removedWire && !connected && boardBusHole.inputMode) {
+                boardBusHole.reset();
+            }
+        }
+    };
+
+    if (source.type === "bus") {
+        syncBusHoleAcrossBoards(source);
+    }
+    if (dest.type === "bus") {
+        syncBusHoleAcrossBoards(dest);
+    }
+};
 Board.prototype.removeWire = function(source, dest, skipResolver) {
     var numSourceConnections = 0,
         numDestConnections = 0,
-        i;
+        i, wire;
 
-    // determine the number of wires connected at the source and dest endpoints
+    // determine the number of wires connected at the source and dest endpoints`
     for (i = 0; i < this.wires.length; i++) {
         if (this.wires[i].source == source) {
             numSourceConnections++;
@@ -201,17 +241,19 @@ Board.prototype.removeWire = function(source, dest, skipResolver) {
     }
 
     for (i = 0; i < this.wires.length; i++) {
-        if (this.wires[i].connects(source, dest)) {
+        wire = this.wires[i];
+        if (wire.connects(source, dest)) {
             // set as disconnected if this is the only wire connected to the endpoint
-            this.wires[i].source.connected = (numSourceConnections > 1);
-            this.wires[i].dest.connected = (numDestConnections > 1);
-            if (this.wires[i].source.inputMode) {
-                this.wires[i].source.reset();
+            wire.source.connected = (numSourceConnections > 1);
+            wire.dest.connected = (numDestConnections > 1);
+            if (wire.source.inputMode) {
+                wire.source.reset();
             }
-            if (this.wires[i].dest.inputMode) {
-                this.wires[i].dest.reset();
+            if (wire.dest.inputMode) {
+                wire.dest.reset();
             }
             this.wires.splice(i, 1);
+            this.syncBusesAcrossBoards(wire.source, wire.dest, true);
             if (!skipResolver) {
                 this.resolver.rewire();
                 this.resolver.resolve(true);
@@ -258,6 +300,7 @@ Board.prototype.addWire = function(source, dest, color, skipResolver) {
     this.wires.push(wire);
     source.connected = true;
     dest.connected = true;
+    this.syncBusesAcrossBoards(source, dest, false);
     if (!skipResolver) {
         this.resolver.rewire();
     }

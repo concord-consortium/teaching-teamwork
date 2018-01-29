@@ -84,7 +84,8 @@ module.exports = React.createClass({
         components: components[i],
         connectors: connectors[i],
         fixedComponents: true,
-        resolver: this.circuitResolver
+        resolver: this.circuitResolver,
+        allBoards: boards
       }));
 
       setBoard(components[i], boards[i]);

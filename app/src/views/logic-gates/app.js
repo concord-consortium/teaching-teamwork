@@ -213,7 +213,8 @@ module.exports = React.createClass({
         },
         resolver: this.circuitResolver,
         constants:constants,
-        useBreadboard: true
+        useBreadboard: true,
+        boards: boards
       });
       input.board = board;
       output.board = board;

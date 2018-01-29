@@ -23,6 +23,10 @@ module.exports = React.createClass({
         self = this,
         drag, stopDrag;
 
+    if (!this.props.svgOffset) {
+      return;
+    }
+
     this.props.draggingProbe(true);
 
     e.preventDefault();
