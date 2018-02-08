@@ -21,6 +21,7 @@ var Pin = function (options) {
   this.connected = options.connected || false;
   this.voltage = options.voltage || 0;
   this.startingVoltage = this.voltage;
+  this.inputConnected = false;
 };
 Pin.prototype.getBezierReflection = function () {
   return this.bezierReflection;
@@ -50,6 +51,13 @@ Pin.prototype.reset = function () {
   this.voltage = this.startingVoltage;
 };
 Pin.prototype.getLabel = function () {
+  if (this.inputMode) {
+    if (this.connected) {
+      return this.getVoltage() + "V input (" + this.getLogicLevel().toLowerCase() + ")";
+    }
+    return this.getVoltage() + "V " + (!this.inputMode || this.connected ? "" : "floating ") + (this.inputMode ? "input" : "output") + " (" + this.getLogicLevel().toLowerCase() + ")";
+  }
+
   return this.getVoltage() + "V " + (!this.inputMode || this.connected ? "" : "floating ") + (this.inputMode ? "input" : "output") + " (" + this.getLogicLevel().toLowerCase() + ")";
 };
 Pin.prototype.toString = function () {

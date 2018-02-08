@@ -170,7 +170,7 @@ Breadboard.prototype.placeComponent = function(component) {
   component.pinWires = [];
   for (i = 0, ii = component.pins.length; i < ii; i++) {
     pin = component.pins[i];
-    pin.connected = true;
+    //pin.connected = true;
     column = firstColumn + pin.column;
     row = pin.placement === "top" ? firstRow : firstRow + 3;
     component.pinWires.push(new Wire({
