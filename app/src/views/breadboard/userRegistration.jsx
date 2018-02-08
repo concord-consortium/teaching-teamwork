@@ -142,7 +142,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
         } else {
           groupDetails = (
             <div>
-              <label>These are the other people currently in this group:</label>
+              <label>These are the people currently in this group:</label>
               <ul>
                 {keys.map(function(result) {
                   return <li><b>{result}</b></li>;
