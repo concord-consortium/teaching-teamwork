@@ -83,6 +83,7 @@ CircuitResolver.prototype.rewire = function (includeGlobalIO) {
     if (board.breadboard) {
       // create ghost wires between connect breadboard strip holes
       var connectedStripWires = board.breadboard.getConnectedStripWires();
+
       this.forEach(connectedStripWires, function (wire) {
         this.numWires++;
         addToGraph(wire.source, wire.dest, wire);
@@ -95,6 +96,9 @@ CircuitResolver.prototype.rewire = function (includeGlobalIO) {
           this.numWires++;
           addToGraph(wire.source, wire.dest, wire);
           addToGraph(wire.dest, wire.source, wire);
+          wire.source.connected = wire.dest.connected = !!connectedStripWires.find(function (stripWire) {
+            return (stripWire.source === wire.source) || (stripWire.dest === wire.source);
+          });
         });
       });
     }
@@ -144,6 +148,12 @@ CircuitResolver.prototype.rewire = function (includeGlobalIO) {
       this.circuits.push(circuit);
       addToCircuit(key, circuit);
     }
+  });
+
+  // remove circuits without outputs or connected inputs
+  this.circuits = this.circuits.filter(function (circuit) {
+    var remove = !circuit.inputs.find(function (input) { return input.connected; }) || (circuit.outputs.length === 0);
+    return !remove;
   });
 
   // resolve all the circuits

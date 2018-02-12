@@ -13,12 +13,14 @@ var Connector = require('../../models/shared/connector'),
     AutoWiringView = React.createFactory(require('./auto-wiring')),
     VersionView = React.createFactory(require('../shared/version')),
     ReportView = React.createFactory(require('../shared/report')),
+    CircuitDebuggerView = React.createFactory(require('../shared/circuit-debugger')),
     constants = require('./constants'),
     colors = require('../shared/colors'),
     inIframe = require('../../data/shared/in-iframe'),
     div = React.DOM.div,
     h1 = React.DOM.h1,
-    h2 = React.DOM.h2;
+    h2 = React.DOM.h2,
+    showCircuitDebugger = window.location.search.indexOf('showCircuitDebugger') !== -1;
 
 module.exports = React.createClass({
   displayName: 'AppView',
@@ -542,7 +544,8 @@ module.exports = React.createClass({
           this.state.allowAutoWiring ? AutoWiringView({top: 0, toggleAllChipsAndWires: this.toggleAllChipsAndWires}) : null,
           this.state.soloMode ? null : SidebarChatView({numClients: 2, top: sidebarTop})
         ),
-        VersionView({})
+        VersionView({}),
+        showCircuitDebugger ? CircuitDebuggerView({circuitResolver: this.circuitResolver}) : null
       );
     }
   }

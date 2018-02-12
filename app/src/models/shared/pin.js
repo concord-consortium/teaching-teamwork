@@ -21,7 +21,6 @@ var Pin = function (options) {
   this.connected = options.connected || false;
   this.voltage = options.voltage || 0;
   this.startingVoltage = this.voltage;
-  this.inputConnected = false;
 };
 Pin.prototype.getBezierReflection = function () {
   return this.bezierReflection;

@@ -13,7 +13,8 @@ var boardWatcher = require('../../controllers/pic/board-watcher'),
     svg = React.DOM.svg,
     //line = React.DOM.line,
     path = React.DOM.path,
-    button = React.DOM.button;
+    button = React.DOM.button,
+    showCircuitDebugger = window.location.search.indexOf('showCircuitDebugger') !== -1;
 
 module.exports = React.createClass({
   displayName: 'BoardView',
@@ -506,6 +507,7 @@ module.exports = React.createClass({
 
     return div({className: this.props.editable ? 'board editable-board' : 'board', style: style},
       span({className: this.props.editable ? 'board-user editable-board-user' : 'board-user'}, ('Circuit ' + (this.props.board.number + 1)) + (this.props.user ? ': ' + this.props.user.name : (this.props.soloMode ? '' : ': (unclaimed)'))),
+      showCircuitDebugger && this.state.hoverSource ? span({className: "debug-hover"}, this.state.hoverSource.toString() + ": " + this.state.hoverSource.connected + "/" + this.state.hoverSource.inputMode) : null,
       svg({className: 'board-area', onMouseDown: this.props.selected && this.props.editable ? this.backgroundMouseDown : null, ref: 'svg'},
         breadboardView,
         connectors,

@@ -21,23 +21,23 @@ var LogicChip = function (options) {
 
   switch (this.type) {
     case '7402':
-      outputPins = [0, 3, 9, 12, 13];
+      outputPins = [1, 4, 10, 13];
       break;
     case '7404':
-      outputPins = [1, 3, 5, 6, 7, 9, 11, 13];
+      outputPins = [2, 4, 6, 8, 10, 12];
       break;
     case '7411':
-      outputPins = [5, 6, 7, 11, 13];
+      outputPins = [6, 8, 12];
       break;
     default:
-      outputPins = [2, 5, 6, 7, 10, 13];
+      outputPins = [3, 6, 8, 11];
       break;
   }
 
   this.pins = [];
   this.pinMap = {};
   for (i = 0; i < 14; i++) {
-    inputMode = outputPins.indexOf(i) === -1;
+    inputMode = outputPins.indexOf(i+1) === -1;  // pin indices are 1 based
     pin = {
       number: i,
       voltage: 1.5,

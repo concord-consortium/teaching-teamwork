@@ -120,7 +120,7 @@ Breadboard.prototype.getConnectedStripWires = function () {
       }
     }
     for (i = 0, ii = item.strip.holes.length; i < ii; i++) {
-      item.strip.holes[i].forceShowProbe = stripConnected;
+      item.strip.holes[i].connected = stripConnected;
     }
 
     if (stripConnected) {
@@ -170,11 +170,11 @@ Breadboard.prototype.placeComponent = function(component) {
   component.pinWires = [];
   for (i = 0, ii = component.pins.length; i < ii; i++) {
     pin = component.pins[i];
-    //pin.connected = true;
+    pin.connected = false;
     column = firstColumn + pin.column;
     row = pin.placement === "top" ? firstRow : firstRow + 3;
     component.pinWires.push(new Wire({
-      source: this.bodyHolesMap[column][row],
+      source: this.bodyHolesMap[column][row], // NOTE: do NOT change source/dest pair here as it is assumed source is breadboard and dest is pin in circuit-resolver
       dest: pin
     }));
   }
