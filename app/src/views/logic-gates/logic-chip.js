@@ -103,7 +103,7 @@ module.exports = React.createClass({
         self.props.stopLogicChipDrawerDrag({type: self.props.component.type, x: position.x, y: position.y});
       }
       else if (moved) {
-        var valid = self.props.component.board.placeChip(self.props.component);
+        var valid = self.props.component.board.placeChip(self.props.component, true);
         if (valid) {
           events.logEvent(events.MOVE_LOGIC_CHIP_EVENT, null, {board: self.props.component.board, chip: self.props.component});
         } else {

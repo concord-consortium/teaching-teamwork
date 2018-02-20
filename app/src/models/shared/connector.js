@@ -28,7 +28,9 @@ var Connector = function (options) {
       label: isBus ? (i + 1) : letters[startingLetter + i],
       inputMode: this.type != 'input', // seems weird but output connector holes have values set so their holes are in "inputMode" like the pins
       toggleable: this.type == 'input',
-      type: options.type
+      type: options.type,
+      isSource: options.type == 'input',
+      isSink: options.type == 'output'
     }));
   }
 };

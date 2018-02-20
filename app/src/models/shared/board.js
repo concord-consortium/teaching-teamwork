@@ -70,7 +70,7 @@ Board.prototype.clear = function() {
     }
     this.reset();
     for (i = 0; i < this.pinsAndHoles.length; i++) {
-        this.pinsAndHoles[i].connected = false;
+        this.pinsAndHoles[i].powered = false;
     }
 };
 Board.prototype.reset = function() {
@@ -122,7 +122,7 @@ Board.prototype.updateWires = function(newSerializedWires) {
     for (i = 0; i < newSerializedWires.length; i++) {
         endpoints = this.findSerializedWireEndpoints(newSerializedWires[i]);
         if (endpoints.source && endpoints.dest) {
-            this.addWire(endpoints.source, endpoints.dest, endpoints.color);
+            this.addWire(endpoints.source, endpoints.dest, endpoints.color, true);
         }
     }
 };
@@ -145,7 +145,7 @@ Board.prototype.findSerializedWireEndpoints = function(serializedWire) {
             if ((type == 'connector') && self.connectors[instance]) {
                 endpoint = self.connectors[instance].holes[index];
             } else if ((type == 'component') && self.components[instance]) {
-                endpoint = self.components[instance].pins[index];
+                endpoint = self.components[instance].pins[index - 1];
             } else if ((type == 'bbhole')) {
                 endpoint = self.breadboard.findHole(instance);
             }
@@ -186,74 +186,13 @@ Board.prototype.serializeEndpoint = function(endPoint, label) {
     serialized.board = this.number;
     return serialized;
 };
-Board.prototype.syncBusesAcrossBoards = function (source, dest, removedWire) {
-    var self = this,
-        syncBusHoleAcrossBoards;
-
-    syncBusHoleAcrossBoards = function (localBusHole) {
-        var connected = !removedWire,
-            i, j, board, boardBusHole;
-
-        // check the bus board hole across all the boards to see if it has other connected wires
-        if (removedWire) {
-            for (i = 0; !connected && (i < self.boards.length); i++) {
-                board = self.boards[i];
-                boardBusHole = board.connectors.bus.holes[localBusHole.index];
-
-                for (j = 0; j < board.wires.length; j++) {
-                    if ((board.wires[j].source === boardBusHole) || (board.wires[j].dest === boardBusHole)) {
-                        connected = true;
-                        break;
-                    }
-                }
-            }
-        }
-
-        for (i = 0; i < self.boards.length; i++) {
-            boardBusHole = self.boards[i].connectors.bus.holes[localBusHole.index];
-            boardBusHole.connected = connected;
-            if (removedWire && !connected && boardBusHole.inputMode) {
-                boardBusHole.reset();
-            }
-        }
-    };
-
-    if (source.type === "bus") {
-        syncBusHoleAcrossBoards(source);
-    }
-    if (dest.type === "bus") {
-        syncBusHoleAcrossBoards(dest);
-    }
-};
 Board.prototype.removeWire = function(source, dest, skipResolver) {
-    var numSourceConnections = 0,
-        numDestConnections = 0,
-        i, wire;
-
-    // determine the number of wires connected at the source and dest endpoints`
-    for (i = 0; i < this.wires.length; i++) {
-        if (this.wires[i].source == source) {
-            numSourceConnections++;
-        }
-        if (this.wires[i].dest == dest) {
-            numDestConnections++;
-        }
-    }
+    var i, wire;
 
     for (i = 0; i < this.wires.length; i++) {
         wire = this.wires[i];
         if (wire.connects(source, dest)) {
-            // set as disconnected if this is the only wire connected to the endpoint
-            wire.source.connected = (numSourceConnections > 1);
-            wire.dest.connected = (numDestConnections > 1);
-            if (wire.source.inputMode) {
-                wire.source.reset();
-            }
-            if (wire.dest.inputMode) {
-                wire.dest.reset();
-            }
             this.wires.splice(i, 1);
-            this.syncBusesAcrossBoards(wire.source, wire.dest, true);
             if (!skipResolver) {
                 this.resolver.rewire();
                 this.resolver.resolve(true);
@@ -280,7 +219,7 @@ Board.prototype.addWire = function(source, dest, color, skipResolver) {
     }
     */
     if (source.notConnectable || dest.notConnectable) {
-        alert("Sorry, you can't add a wire to the " + (source.notConnectable ? source.label.text : dest.label.text) + ' pin.  It is already connected to a breadboard component.');
+        alert("Sorry, you can't add a wire to the " + (source.notConnectable ? source.label.text : dest.label.text) + ' pin.  It is already powered to a breadboard component.');
         return null;
     }
 
@@ -295,12 +234,9 @@ Board.prototype.addWire = function(source, dest, color, skipResolver) {
     wire = new Wire({
         source: source,
         dest: dest,
-        color: colors.mixedWires[Math.floor(Math.random() * colors.mixedWires.length)]
+        color: color || colors.mixedWires[Math.floor(Math.random() * colors.mixedWires.length)]
     });
     this.wires.push(wire);
-    source.connected = true;
-    dest.connected = true;
-    this.syncBusesAcrossBoards(source, dest, false);
     if (!skipResolver) {
         this.resolver.rewire();
     }
@@ -320,24 +256,25 @@ Board.prototype.addComponent = function(name, component) {
     }
 
     var valid = this.placeChip(component);
-    if (valid){
+    if (valid) {
         component.name = name;
         component.setBoard(this);
         this.components[name] = component;
         this.updateComponentList();
+        this.resolver.rewire();
         this.resolver.resolve(true);
     }
 };
-Board.prototype.placeChip = function(component) {
+Board.prototype.placeChip = function(component, moving) {
     if (this.breadboard) {
-        var canPlace = this.breadboard.placeComponent(component);
-        if (canPlace) {
-            // rewire to add ghost component wires
+        var valid = this.breadboard.placeComponent(component);
+        if (valid && moving) {
             this.resolver.rewire();
+            this.resolver.resolve(true);
         }
-        return canPlace;
+        return valid;
     }
-    return true;
+    return false;
 };
 Board.prototype.removeComponent = function(component) {
     if (this.breadboard) {

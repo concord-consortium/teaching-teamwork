@@ -56,10 +56,10 @@ var Breadboard = function(board, constants) {
     gaps = Math.floor(i/5);
     x = d.powerRail.x + ((i+gaps) * d.holeSpaceX);
     this.holes.push(
-      new BBHole({rowName: "top+", columnIndex: i, dimensions: {cx: x, cy: d.powerRail.top.pos.y, size: d.holeSize}, type: "output", hasForcedVoltage: true, forcedVoltage: TTL.HIGH_VOLTAGE}),
-      new BBHole({rowName: "top-", columnIndex: i, dimensions: {cx: x, cy: d.powerRail.top.neg.y, size: d.holeSize}, type: "output", hasForcedVoltage: true, forcedVoltage: TTL.LOW_VOLTAGE}),
-      new BBHole({rowName: "bottom+", columnIndex: i, dimensions: {cx: x, cy: d.powerRail.bottom.pos.y, size: d.holeSize}, type: "output", hasForcedVoltage: true, forcedVoltage: TTL.HIGH_VOLTAGE}),
-      new BBHole({rowName: "bottom-", columnIndex: i, dimensions: {cx: x, cy: d.powerRail.bottom.neg.y,  size: d.holeSize}, type: "output", hasForcedVoltage: true, forcedVoltage: TTL.LOW_VOLTAGE})
+      new BBHole({board: board, rowName: "top+", columnIndex: i, dimensions: {cx: x, cy: d.powerRail.top.pos.y, size: d.holeSize}, type: "output", hasForcedVoltage: true, forcedVoltage: TTL.HIGH_VOLTAGE, isSource: true}),
+      new BBHole({board: board, rowName: "top-", columnIndex: i, dimensions: {cx: x, cy: d.powerRail.top.neg.y, size: d.holeSize}, type: "output", hasForcedVoltage: true, forcedVoltage: TTL.LOW_VOLTAGE, isSink: true}),
+      new BBHole({board: board, rowName: "bottom+", columnIndex: i, dimensions: {cx: x, cy: d.powerRail.bottom.pos.y, size: d.holeSize}, type: "output", hasForcedVoltage: true, forcedVoltage: TTL.HIGH_VOLTAGE, isSource: true}),
+      new BBHole({board: board, rowName: "bottom-", columnIndex: i, dimensions: {cx: x, cy: d.powerRail.bottom.neg.y,  size: d.holeSize}, type: "output", hasForcedVoltage: true, forcedVoltage: TTL.LOW_VOLTAGE, isSink: true})
     );
   }
 
@@ -75,8 +75,8 @@ var Breadboard = function(board, constants) {
     for (var j = 0; j < 5; j++) {
       topY = d.body.top.y + (j * d.holeSpaceY);
       bottomY = d.body.bottom.y + (j * d.holeSpaceY);
-      topHole = new BBHole({rowName: rowName(j), columnIndex: (29 - i), strip: topStrip, dimensions: {cx: x, cy: topY, size: d.holeSize}, column: i, row: j, inputMode: true, type: "input"});
-      bottomHole = new BBHole({rowName: rowName(j+5), columnIndex: (29 - i), strip: bottomStrip, dimensions: {cx: x, cy: bottomY, size: d.holeSize}, column: i, row: j + 5, inputMode: true, type: "input"});
+      topHole = new BBHole({board: board, rowName: rowName(j), columnIndex: (29 - i), strip: topStrip, dimensions: {cx: x, cy: topY, size: d.holeSize}, column: i, row: j, inputMode: true, type: "input"});
+      bottomHole = new BBHole({board: board, rowName: rowName(j+5), columnIndex: (29 - i), strip: bottomStrip, dimensions: {cx: x, cy: bottomY, size: d.holeSize}, column: i, row: j + 5, inputMode: true, type: "input"});
       this.holes.push(
         topHole,
         bottomHole
@@ -103,37 +103,9 @@ var Breadboard = function(board, constants) {
   }
 };
 
-Breadboard.prototype.getConnectedStripWires = function () {
-  var self = this,
-      wires = [];
-
-  Object.keys(this.strips).forEach(function (stripName) {
-    var item = self.strips[stripName],
-        stripConnected = false,
-        i, ii, hole;
-
-    for (i = 0, ii = item.strip.holes.length; i < ii; i++) {
-      hole = item.strip.holes[i];
-      if (hole.connected) {
-        stripConnected = true;
-        break;
-      }
-    }
-    for (i = 0, ii = item.strip.holes.length; i < ii; i++) {
-      item.strip.holes[i].forceShowProbe = stripConnected;
-    }
-
-    if (stripConnected) {
-      wires = wires.concat(item.wires);
-    }
-  });
-
-  return wires;
-};
-
-Breadboard.prototype.findHole = function(coords) {
+Breadboard.prototype.findHole = function(serializedId) {
   for (var i = 0, ii = this.holes.length; i < ii; i++) {
-    if (this.holes[i].coords == coords) {
+    if (this.holes[i].serializedId == serializedId) {
       return this.holes[i];
     }
   }
@@ -141,13 +113,13 @@ Breadboard.prototype.findHole = function(coords) {
 
 Breadboard.prototype.createStrip = function(name) {
   var strip = new BBStrip(name);
-  this.strips[name] = {strip: strip, wires: []};
+  this.strips[name] = strip;
   return strip;
 };
 
 Breadboard.prototype.addStripWire = function (strip, hole1, hole2) {
-  if (hole1 && hole2 && this.strips[strip.name]) {
-    this.strips[strip.name].wires.push(new Wire({source: hole1, dest: hole2}));
+  if (hole1 && hole2) {
+    strip.wires.push(new Wire({source: hole1, dest: hole2}));
   }
 };
 
@@ -170,11 +142,10 @@ Breadboard.prototype.placeComponent = function(component) {
   component.pinWires = [];
   for (i = 0, ii = component.pins.length; i < ii; i++) {
     pin = component.pins[i];
-    pin.connected = true;
     column = firstColumn + pin.column;
     row = pin.placement === "top" ? firstRow : firstRow + 3;
     component.pinWires.push(new Wire({
-      source: this.bodyHolesMap[column][row],
+      source: this.bodyHolesMap[column][row], // NOTE: do NOT change source/dest pair here as it is assumed source is breadboard and dest is pin in circuit-resolver
       dest: pin
     }));
   }

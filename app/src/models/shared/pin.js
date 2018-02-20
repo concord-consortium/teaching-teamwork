@@ -18,9 +18,13 @@ var Pin = function (options) {
   this.component = options.component;
   this.bezierReflection = options.bezierReflection || 1;
   this.notConnectable = options.notConnectable || false;
-  this.connected = options.connected || false;
   this.voltage = options.voltage || 0;
   this.startingVoltage = this.voltage;
+  this.powered = false;
+  this.hasSource = false;
+  this.hasSink = false;
+  this.isSource = !!options.isSource;
+  this.isSink = !!options.isSink;
 };
 Pin.prototype.getBezierReflection = function () {
   return this.bezierReflection;
@@ -48,12 +52,19 @@ Pin.prototype.getColor = function () {
 };
 Pin.prototype.reset = function () {
   this.voltage = this.startingVoltage;
+  this.powered = false;
+  this.hasSource = false;
+  this.hasSink = false;
+
 };
 Pin.prototype.getLabel = function () {
-  return this.getVoltage() + "V " + (!this.inputMode || this.connected ? "" : "floating ") + (this.inputMode ? "input" : "output") + " (" + this.getLogicLevel().toLowerCase() + ")";
+  if (!this.powered) {
+    return "";
+  }
+  return this.getVoltage() + "V " + (this.inputMode ? "input" : "output") + " (" + this.getLogicLevel().toLowerCase() + ")";
 };
 Pin.prototype.toString = function () {
-  return ['component', this.component.name, this.number, 'board', this.component.board ? this.component.board.number : "none"].join(':');
+  return ['component', this.component.name, (this.number + 1), 'board', this.component.board ? this.component.board.number : "none"].join(':');
 };
 
 module.exports = Pin;

@@ -23,7 +23,9 @@ var Connector = require('../../models/shared/connector'),
     inIframe = require('../../data/shared/in-iframe'),
     div = React.DOM.div,
     h1 = React.DOM.h1,
-    h2 = React.DOM.h2;
+    h2 = React.DOM.h2,
+    CircuitDebuggerView = React.createFactory(require('../shared/circuit-debugger')),
+    showCircuitDebugger = window.location.search.indexOf('showCircuitDebugger') !== -1;
 
 module.exports = React.createClass({
   displayName: 'AppView',
@@ -201,6 +203,8 @@ module.exports = React.createClass({
     // update the inputs
     inputs = (boardInfo && boardInfo.layout ? boardInfo.layout.inputs : null) || [];
     board.updateInputs(inputs);
+
+    this.circuitResolver.resolve(true);
   },
 
   checkIfCircuitIsCorrect: function (callback) {
@@ -426,7 +430,8 @@ module.exports = React.createClass({
           this.state.showAutoWiring ? AutoWiringView({top: autoWiringTop, running: this.state.running, toggleAllWires: this.toggleAllWires}) : null,
           this.state.soloMode ? null : SidebarChatView({numClients: 3, top: sidebarTop})
         ),
-        VersionView({})
+        VersionView({}),
+        showCircuitDebugger ? CircuitDebuggerView({circuitResolver: this.circuitResolver}) : null
       );
     }
   }

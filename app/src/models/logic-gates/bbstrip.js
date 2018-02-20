@@ -2,6 +2,7 @@ var TTL = require('../shared/ttl');
 
 var BBStrip = function(name) {
   this.holes = [];
+  this.wires = [];
   this.name = name;
   this.setInitialVoltage();
 };
