@@ -257,6 +257,7 @@ module.exports = React.createClass({
     inputs = (boardInfo && boardInfo.layout ? boardInfo.layout.inputs : null) || [];
     board.updateInputs(inputs);
 
+    this.circuitResolver.rewire();
     this.circuitResolver.resolve(true);  // TODO
 
     this.setState({boards: this.state.boards});

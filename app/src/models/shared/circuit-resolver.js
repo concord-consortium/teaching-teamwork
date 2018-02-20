@@ -32,6 +32,7 @@ var CircuitResolver = function (options) {
 
 CircuitResolver.prototype.rewire = function (includeGlobalIO) {
   var graph = {},
+      hasBreadboard = false,
       isBusHole, addToGraph, addToCircuit, addGhostWire;
 
   isBusHole = function (endPoint) {
@@ -80,15 +81,20 @@ CircuitResolver.prototype.rewire = function (includeGlobalIO) {
 
   // create a graph of all the wire end points
   this.forEach(this.boards, function (board) {
-    if (board.breadboard) {
-      // create ghost wires between connect breadboard strip holes
-      var connectedStripWires = board.breadboard.getConnectedStripWires();
 
-      this.forEach(connectedStripWires, function (wire) {
-        this.numWires++;
-        addToGraph(wire.source, wire.dest, wire);
-        addToGraph(wire.dest, wire.source, wire);
-      });
+    board.reset();
+
+    if (board.breadboard) {
+      hasBreadboard = true;
+
+      board.breadboard.reset();
+
+      var connectedStrips = {};
+      var addStrip = function (endPoint) {
+        if (endPoint.strip && !connectedStrips[endPoint.strip.name]) {
+          connectedStrips[endPoint.strip.name] = endPoint.strip;
+        }
+      };
 
       // create ghost wires between breadboard components and the holes
       this.forEach(board.componentList, function (component) {
@@ -96,12 +102,26 @@ CircuitResolver.prototype.rewire = function (includeGlobalIO) {
           this.numWires++;
           addToGraph(wire.source, wire.dest, wire);
           addToGraph(wire.dest, wire.source, wire);
-          wire.source.connected = wire.dest.connected = !!connectedStripWires.find(function (stripWire) {
-            return (stripWire.source === wire.source) || (stripWire.dest === wire.source);
-          });
+          addStrip(wire.source);
+          addStrip(wire.dest);
+        });
+      });
+
+      // create ghost wires between connect breadboard strip holes
+      this.forEach(board.wires, function (wire) {
+        addStrip(wire.source);
+        addStrip(wire.dest);
+      });
+      Object.keys(connectedStrips).forEach(function (stripName) {
+        var strip = connectedStrips[stripName];
+        strip.wires.forEach(function (wire) {
+          this.numWires++;
+          addToGraph(wire.source, wire.dest, wire);
+          addToGraph(wire.dest, wire.source, wire);
         });
       });
     }
+
     this.forEach(board.wires, function (wire) {
       var sourceOnBus = isBusHole(wire.source),
           destOnBus = isBusHole(wire.dest),
@@ -144,16 +164,19 @@ CircuitResolver.prototype.rewire = function (includeGlobalIO) {
   this.forEach(Object.keys(graph), function (key) {
     var circuit;
     if (!graph[key].visited) {
-      circuit = new Circuit({inputs: [], outputs: [], id: this.circuits.length + 1});
+      circuit = new Circuit({inputs: [], outputs: [], id: this.circuits.length + 1, hasBreadboard: hasBreadboard});
       this.circuits.push(circuit);
       addToCircuit(key, circuit);
     }
   });
 
-  // remove circuits without outputs or connected inputs
+  // remove circuits without outputs and set the endpoint flags on the remaining
   this.circuits = this.circuits.filter(function (circuit) {
-    var remove = !circuit.inputs.find(function (input) { return input.connected; }) || (circuit.outputs.length === 0);
-    return !remove;
+    if (circuit.outputs.length === 0) {
+      return false;
+    }
+    circuit.setEndpointFlags();
+    return true;
   });
 
   // resolve all the circuits
@@ -206,6 +229,11 @@ CircuitResolver.prototype.resolveCircuitInput = function (circuit) {
   circuit.resolveInputVoltages();
 };
 
+CircuitResolver.prototype.updateCircuitEndpointPoweredFlag = function (circuit) {
+  circuit.updateEndpointPoweredFlag();
+};
+
+
 CircuitResolver.prototype.resolve = function (resolveUntilStable, callback) {
   var resolveComponentOutput = function (component) { component.resolveOutputVoltages(initialInputVoltages); },
       stable = false,
@@ -231,6 +259,9 @@ CircuitResolver.prototype.resolve = function (resolveUntilStable, callback) {
 
     // resolve each component with the initial input voltages
     this.forEach(this.components, resolveComponentOutput);
+
+    // update each circuit endpoint after the component outputs change
+    this.forEach(this.circuits, this.updateCircuitEndpointPoweredFlag);
 
     // resolve each circuits output voltages
     this.forEach(this.circuits, this.resolveCircuitOutput);

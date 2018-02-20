@@ -8,10 +8,11 @@ BoardWatcher.prototype.startListeners = function (numBoards) {
   var self = this,
       listenerCallbackFn = function (boardNumber) {
         return function (snapshot) {
-          var i;
+          var i, val;
           if (self.listeners[boardNumber]) {
+            val = snapshot.val();
             for (i = 0; i < self.listeners[boardNumber].length; i++) {
-              self.listeners[boardNumber][i].listener(self.listeners[boardNumber][i].board, snapshot.val());
+              self.listeners[boardNumber][i].listener(self.listeners[boardNumber][i].board, val);
             }
           }
         };

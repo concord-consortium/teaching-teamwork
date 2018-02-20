@@ -107,7 +107,7 @@ module.exports = React.createClass({
       for (i = 0; i < this.state.selectedComponents.length; i++) {
         selectedComponent = this.state.selectedComponents[i];
 
-        // mark connected wires to removed component
+        // mark powered wires to removed component
         for (j = 0; j < this.props.board.wires.length; j++) {
           wire = this.props.board.wires[j];
           if ((wiresToRemove.indexOf(wire) === -1) && ((wire.source.component == selectedComponent) || (wire.dest.component == selectedComponent))) {
@@ -507,7 +507,7 @@ module.exports = React.createClass({
 
     return div({className: this.props.editable ? 'board editable-board' : 'board', style: style},
       span({className: this.props.editable ? 'board-user editable-board-user' : 'board-user'}, ('Circuit ' + (this.props.board.number + 1)) + (this.props.user ? ': ' + this.props.user.name : (this.props.soloMode ? '' : ': (unclaimed)'))),
-      showCircuitDebugger && this.state.hoverSource ? span({className: "debug-hover"}, this.state.hoverSource.toString() + ": " + this.state.hoverSource.connected + "/" + this.state.hoverSource.inputMode) : null,
+      showCircuitDebugger && this.state.hoverSource ? span({className: "debug-hover"}, this.state.hoverSource.toString() + ": " + this.state.hoverSource.powered + "/" + this.state.hoverSource.inputMode) : null,
       svg({className: 'board-area', onMouseDown: this.props.selected && this.props.editable ? this.backgroundMouseDown : null, ref: 'svg'},
         breadboardView,
         connectors,

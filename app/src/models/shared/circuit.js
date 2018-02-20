@@ -5,6 +5,31 @@ var Circuit = function (options) {
   this.inputs = options.inputs;
   this.outputs = options.outputs;
   this.id = options.id || circuitId++;
+  this.hasBreadboard = !!options.hasBreadboard;
+};
+
+Circuit.prototype.setEndpointFlags = function () {
+  var hasSource = !!this.outputs.find(function (output) { return output.isSource; });
+  var hasSink = !!this.outputs.find(function (output) { return output.isSink; });
+  var powered = this.hasBreadboard ? hasSource || hasSink : true;
+  var updateEndpoint = function (endPoint) {
+    endPoint.powered = powered;
+    endPoint.hasSource = hasSource;
+    endPoint.hasSink = hasSink;
+  };
+  this.inputs.forEach(updateEndpoint);
+  this.outputs.forEach(updateEndpoint);
+};
+
+Circuit.prototype.updateEndpointPoweredFlag = function () {
+  var powered = this.hasBreadboard || !!this.outputs.find(function (output) { return output.powered; });
+  var updateEndpoint = function (endPoint) {
+    endPoint.powered = powered;
+  };
+  if (powered) {
+    this.inputs.forEach(updateEndpoint);
+    this.outputs.forEach(updateEndpoint);
+  }
 };
 
 Circuit.prototype.resolveInputVoltages = function () {

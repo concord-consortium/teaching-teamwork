@@ -129,26 +129,36 @@ LogicChip.prototype.isEnergized = function() {
 LogicChip.prototype.mapAndSetPins = function (pinConnections, inputVoltages, fn) {
   var inputLogicLevels = {},
       isEnergized = this.isEnergized(),
-      pin, pinVoltage, logicLevels, i, j, inputPinNumbers, outputPinNumber;
+      vcc = this.pins[13],
+      ground = this.pins[6],
+      chipReady = vcc.hasSource && ground.hasSink,
+      inputsReady = [],
+      pin, pinVoltage, logicLevels, i, j, inputPinNumbers, outputPinNumber, pinsReady;
 
   for (i = 0; i < pinConnections.length; i++) {
+    pinsReady = true;
     inputPinNumbers = pinConnections[i][0];
     for (j = 0; j < inputPinNumbers.length; j++) {
       pin = this.pins[inputPinNumbers[j] - 1];
+      pinsReady = pinsReady && pin.powered;
       pinVoltage = pin.getVoltage();
       inputLogicLevels[inputPinNumbers[j]] = TTL.getVoltageLogicLevel(pinVoltage);
     }
+    inputsReady.push(pinsReady);
   }
 
   for (i = 0; i < pinConnections.length; i++) {
-    inputPinNumbers = pinConnections[i][0];
     outputPinNumber = pinConnections[i][1];
-    logicLevels = [];
-    for (j = 0; j < inputPinNumbers.length; j++) {
-      logicLevels.push(inputLogicLevels[inputPinNumbers[j]]);
+    if (chipReady && inputsReady[i]) {
+      inputPinNumbers = pinConnections[i][0];
+      logicLevels = [];
+      for (j = 0; j < inputPinNumbers.length; j++) {
+        logicLevels.push(inputLogicLevels[inputPinNumbers[j]]);
+      }
+      pinVoltage = isEnergized ? TTL.getVoltage(fn.apply(this, logicLevels)) : TTL.INVALID_VOLTAGE;
+      this.pins[outputPinNumber - 1].setVoltage(pinVoltage);
     }
-    pinVoltage = isEnergized ? TTL.getVoltage(fn.apply(this, logicLevels)) : TTL.INVALID_VOLTAGE;
-    this.pins[outputPinNumber - 1].setVoltage(pinVoltage);
+    this.pins[outputPinNumber - 1].powered = chipReady && inputsReady[i];
   }
 };
 LogicChip.prototype.standardPinConnections = [
@@ -157,7 +167,7 @@ LogicChip.prototype.standardPinConnections = [
   [[10, 9], 8],
   [[13, 12], 11]
 ];
-LogicChip.prototype.resolveOutputVoltages = function (inputVoltages) {  // TODO: use input voltages
+LogicChip.prototype.resolveOutputVoltages = function (inputVoltages) {
   // NOTE: all pin indexes are 1 based below to make it easier to verify against 1-based pinout diagrams
   switch (this.type) {
     // Quad 2-Input NAND

@@ -27,7 +27,7 @@ module.exports = React.createClass({
 
     for (i = 0; i < this.props.component.segments.length; i++) {
       segment = this.props.component.segments[i];
-      segments.push(path({key: 'segment' + i, d: segment.pathCommands, fill: segment.pin.connected && segment.pin.isLow() ? '#ccff00' : this.props.constants.UNSELECTED_FILL, transform: segment.transform}));
+      segments.push(path({key: 'segment' + i, d: segment.pathCommands, fill: segment.pin.powered && segment.pin.isLow() ? '#ccff00' : this.props.constants.UNSELECTED_FILL, transform: segment.transform}));
     }
 
     ccPin = this.props.component.pins[7];
@@ -41,7 +41,7 @@ module.exports = React.createClass({
       rect({x: p.display.x, y: p.display.y, width: p.display.width, height: p.display.height, fill: '#333'}),
       pins,
       segments,
-      circle({cx: decimalPoint.cx, cy: decimalPoint.cy, r: decimalPoint.radius, fill: this.props.component.pinMap.DP.connected && !this.props.component.pinMap.DP.value ? '#ccff00' : this.props.constants.UNSELECTED_FILL}),
+      circle({cx: decimalPoint.cx, cy: decimalPoint.cy, r: decimalPoint.radius, fill: this.props.component.pinMap.DP.powered && !this.props.component.pinMap.DP.value ? '#ccff00' : this.props.constants.UNSELECTED_FILL}),
       ccComponents
     );
   }
