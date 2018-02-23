@@ -22,7 +22,7 @@ Circuit.prototype.setEndpointFlags = function () {
 };
 
 Circuit.prototype.updateEndpointPoweredFlag = function () {
-  var powered = this.hasBreadboard || !!this.outputs.find(function (output) { return output.powered; });
+  var powered = !this.hasBreadboard || !!this.outputs.find(function (output) { return output.powered; });
   var updateEndpoint = function (endPoint) {
     endPoint.powered = powered;
   };
