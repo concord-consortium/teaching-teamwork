@@ -5,9 +5,6 @@ module.exports = React.createClass({
   displayName: 'BreadboardHoleView',
 
   startDrag: function (e) {
-    if (this.props.hole.powered) {
-      return;
-    }
     this.props.drawConnection(this.props.hole, e);
   },
 
