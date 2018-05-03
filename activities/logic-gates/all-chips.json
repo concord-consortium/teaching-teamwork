@@ -6,7 +6,7 @@
     "showBusLabels": true,
     "allowAutoWiring": true,
     "showPinouts": true,
-    "showProbe": "false",
+    "showProbe": "edit",
     "showInputAutoToggles": true,
     "showGlobalIOWires": true
   },
@@ -21,6 +21,7 @@
           "7402": {"max": 5},
           "7404": {"max": 5},
           "7408": {"max": 5},
+          "7410": {"max": 5},
           "7411": {"max": 5},
           "7432": {"max": 5},
           "7486": {"max": 5}
@@ -36,6 +37,7 @@
           "7402": {"max": 5},
           "7404": {"max": 5},
           "7408": {"max": 5},
+          "7410": {"max": 5},
           "7411": {"max": 5},
           "7432": {"max": 5},
           "7486": {"max": 5}
@@ -51,6 +53,7 @@
           "7402": {"max": 5},
           "7404": {"max": 5},
           "7408": {"max": 5},
+          "7410": {"max": 5},
           "7411": {"max": 5},
           "7432": {"max": 5},
           "7486": {"max": 5}

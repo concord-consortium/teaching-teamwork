@@ -421,6 +421,15 @@ module.exports = React.createClass({
           powerSymbols
         );
         break;
+      case '7410':
+        // Tri 3-Input NAND
+        pinOut = g({style: {pointerEvents: 'none'}},
+          this.renderFirstTriple(this.renderNand),
+          this.renderMirroredTriple(2, 3, 4, 5, this.renderNand),
+          this.renderMirroredTriple(10, 9, 8, 7, this.renderNand),
+          powerSymbols
+        );
+        break;
       case '7411':
         // Tri 3-Input AND
         pinOut = g({style: {pointerEvents: 'none'}},
