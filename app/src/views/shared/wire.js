@@ -20,9 +20,11 @@ module.exports = React.createClass({
   },
 
   mouseDown: function (e) {
-    e.preventDefault();
-    e.stopPropagation();
-    this.props.wireSelected(this.props.wire, e);
+    if (this.props.enablePointerEvents) {
+      e.preventDefault();
+      e.stopPropagation();
+      this.props.wireSelected(this.props.wire, e);
+    }
   },
 
   renderPlainWire: function() {
@@ -36,10 +38,10 @@ module.exports = React.createClass({
       strokeWidth: this.props.width,
       stroke: this.props.selected && this.props.editable ? '#42f4f1' : (this.state.hovering ? '#2eadab' : color),
       fill: 'none',
-      onMouseOver: this.props.enablePointerEvents ? this.mouseOver : null,
-      onMouseOut: this.props.enablePointerEvents ? this.mouseOut : null,
-      onMouseDown: this.props.enablePointerEvents ? this.mouseDown : null,
-      pointerEvents: this.props.enablePointerEvents ? 'stroke' : 'none'
+      onMouseOver: this.mouseOver,
+      onMouseOut: this.mouseOut,
+      onMouseDown: this.mouseDown,
+      pointerEvents: 'stroke'
     });
   },
 
@@ -65,10 +67,10 @@ module.exports = React.createClass({
         stroke: '#999',
         strokeLinecap: 'round',
         fill: 'none',
-        onMouseOver: this.props.enablePointerEvents ? this.mouseOver : null,
-        onMouseOut: this.props.enablePointerEvents ? this.mouseOut : null,
-        onMouseDown: this.props.enablePointerEvents ? this.mouseDown : null,
-        pointerEvents: this.props.enablePointerEvents ? 'stroke' : 'none'
+        onMouseOver: this.mouseOver,
+        onMouseOut: this.mouseOut,
+        onMouseDown: this.mouseDown,
+        pointerEvents: 'stroke'
       }),
       path({
         className: 'wire',
@@ -77,10 +79,10 @@ module.exports = React.createClass({
         stroke: '#999',
         strokeLinecap: 'round',
         fill: 'none',
-        onMouseOver: this.props.enablePointerEvents ? this.mouseOver : null,
-        onMouseOut: this.props.enablePointerEvents ? this.mouseOut : null,
-        onMouseDown: this.props.enablePointerEvents ? this.mouseDown : null,
-        pointerEvents: this.props.enablePointerEvents ? 'stroke' : 'none'
+        onMouseOver: this.mouseOver,
+        onMouseOut: this.mouseOut,
+        onMouseDown: this.mouseDown,
+        pointerEvents: 'stroke'
       }),
       path({
         className: 'wire',
@@ -88,10 +90,10 @@ module.exports = React.createClass({
         strokeWidth: this.props.width,
         stroke: this.props.selected && this.props.editable ? '#42f4f1' : (this.state.hovering ? '#2eadab' : color),
         fill: 'none',
-        onMouseOver: this.props.enablePointerEvents ? this.mouseOver : null,
-        onMouseOut: this.props.enablePointerEvents ? this.mouseOut : null,
-        onMouseDown: this.props.enablePointerEvents ? this.mouseDown : null,
-        pointerEvents: this.props.enablePointerEvents ? 'stroke' : 'none'
+        onMouseOver: this.mouseOver,
+        onMouseOut: this.mouseOut,
+        onMouseDown: this.mouseDown,
+        pointerEvents: 'stroke'
       })
     );
   },
