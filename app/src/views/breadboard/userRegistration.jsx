@@ -125,27 +125,32 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
             groupDetails,
             joinStr,
             keys = Object.keys(this.props.users),
-            userName = this.props.userName;
+            userName = this.props.userName,
+            otherUsers = keys.filter(function (key) {
+              return key !== userName;
+            });
 
         userDetails = (
-          <div>
+          <p>
             <label>You have been assigned the name <b>{userName}</b>.</label>
-          </div>
+          </p>
         );
 
-        if (keys.length === 0) {
+        if (otherUsers.length === 0) {
           groupDetails = (
-            <div>
+            <p>
               <label>You are the first member of this group.</label>
-            </div>
+            </p>
           );
         } else {
           groupDetails = (
             <div>
-              <label>These are the people currently in this group:</label>
+              <p>
+                <label>These users are either about to join or are already in this group:</label>
+              </p>
               <ul>
-                {keys.map(function(result) {
-                  return <li><b>{result}</b></li>;
+                {otherUsers.map(function(result, index) {
+                  return <li key={index}><b>{result}</b></li>;
                 })}
               </ul>
             </div>
