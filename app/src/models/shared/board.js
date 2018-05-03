@@ -178,7 +178,7 @@ Board.prototype.serializeEndpoint = function(endPoint, label) {
             }
         };
         serialized[label] = 'pin';
-    } else if (endPoint.serialize) {
+    } else if (endPoint && endPoint.serialize) {
         serialized = endPoint.serialize(label);
     } else {
         serialized = {};
