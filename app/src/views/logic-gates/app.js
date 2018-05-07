@@ -20,12 +20,19 @@ var Connector = require('../../models/shared/connector'),
     div = React.DOM.div,
     h1 = React.DOM.h1,
     h2 = React.DOM.h2,
-    showCircuitDebugger = window.location.search.indexOf('showCircuitDebugger') !== -1;
+    a = React.DOM.a,
+    showCircuitDebugger = window.location.search.indexOf('showCircuitDebugger') !== -1,
+    Pin = require('../../models/shared/pin'),
+    Hole = require('../../models/shared/hole'),
+    BBHole = require('../../models/shared/bbhole');
 
 module.exports = React.createClass({
   displayName: 'AppView',
 
   getInitialState: function () {
+    this.parsedActivity = null;
+    this.activityFilename = null;
+
     return {
       boards: [],
       userBoardNumber: -1,
@@ -38,7 +45,8 @@ module.exports = React.createClass({
       inIframe: inIframe(),
       circuitNotStable: false,
       soloMode: window.location.search.indexOf('soloMode') !== -1,
-      showReport: window.location.search.indexOf('report') !== -1
+      showReport: window.location.search.indexOf('report') !== -1,
+      allowExport: window.location.search.indexOf('allowExport') !== -1
     };
   },
 
@@ -56,6 +64,8 @@ module.exports = React.createClass({
     var self = this,
         activityUrl = '../activities/logic-gates/' + activityName + ".json",
         request = new XMLHttpRequest();
+
+    this.activityFilename = activityName + '.json';
 
     request.open('GET', activityUrl, true);
     request.onload = function() {
@@ -84,7 +94,10 @@ module.exports = React.createClass({
 
   parseActivity: function (activityName, rawData) {
     try {
-      return JSON.parse(rawData);
+      var json = JSON.parse(rawData);
+      // keep separate copy of parsed activity so we can updated it on the export
+      this.parsedActivity = JSON.parse(JSON.stringify(json));
+      return json;
     }
     catch (e) {
       alert('Unable to parse JSON for ' + activityName);
@@ -424,6 +437,23 @@ module.exports = React.createClass({
     callback(allCorrect, truthTable, this.state.activity);
   },
 
+  exportWire: function (wire) {
+    return [this.exportEndpoint(wire.source), this.exportEndpoint(wire.dest)].join(", ");
+  },
+
+  exportEndpoint: function (endPoint) {
+    if (endPoint instanceof Pin) {
+      return endPoint.component.name + ":" + (endPoint.number + 1);
+    }
+    else if (endPoint instanceof Hole) {
+      return endPoint.connector.type + ":" + (endPoint.index + 1);
+    }
+    else if (endPoint instanceof BBHole) {
+      return endPoint.rowName + ":" + (endPoint.columnIndex + 1);
+    }
+    return "";
+  },
+
   toggleAllChipsAndWires: function () {
     var chipMap, holeMap, i, j, board, autoWiring, addChip, getEndpoint, wire, wireParts, sourceParts, destParts, source, dest, mapHoles, hasWires;
 
@@ -525,6 +555,32 @@ module.exports = React.createClass({
     this.setState({boards: this.state.boards});
   },
 
+  getExportFileData: function () {
+    var self = this,
+        updatedActivity = this.parsedActivity;
+    updatedActivity.interface = updatedActivity.interface || {};
+    updatedActivity.interface.allowAutoWiring = true;
+    updatedActivity.boards = updatedActivity.boards || [];
+    this.state.boards.forEach(function (board, i) {
+      var autoWiring = {chips: {}, wires: []};
+      Object.keys(board.components).forEach(function (id) {
+        var chip = board.components[id];
+        autoWiring.chips[id] = {
+          type: chip.type,
+          x: Math.round(chip.layout.x),
+          y: Math.round(chip.layout.y)
+        };
+      });
+      board.wires.forEach(function (wire) {
+        autoWiring.wires.push(self.exportWire(wire));
+      });
+      updatedActivity.boards[i].autoWiring = autoWiring;
+    });
+
+    var json = JSON.stringify(updatedActivity, null, 2);
+    return 'data:text/plain;charset=utf-8,' + encodeURIComponent(json);
+  },
+
   render: function () {
     var sidebarTop = this.state.allowAutoWiring ? 75 : 0;
 
@@ -534,6 +590,7 @@ module.exports = React.createClass({
     else {
       return div({},
         this.state.inIframe ? null : h1({}, "Teaching Teamwork" + (this.state.activity ? ": " + this.state.activity.name : "")),
+        this.state.allowExport && this.parsedActivity ? div({style: {margin: 5, textAlign: 'center'}}, a({href: this.getExportFileData(), download: this.activityFilename || 'activity.json'}, "Export Activity")) : null,
         this.state.currentUser ? h2({}, "Circuit " + (this.state.currentBoard + 1) + " (User: " + this.state.currentUser + ", Group: " + this.state.currentGroup + ")") : null,
         OfflineCheckView({}),
         this.state.notes ? div({className: 'activity-notes', dangerouslySetInnerHTML: {__html: this.state.notes}}) : null,

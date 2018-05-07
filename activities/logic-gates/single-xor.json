@@ -30,7 +30,7 @@
         },
         "localInputSize": 2,
         "localOutputSize": 1,
-        "autowiring": {
+        "autoWiring": {
             "chips": {
                 "not": {
                     "type": "7404",

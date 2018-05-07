@@ -52,6 +52,7 @@ need to have values assigned to them and they can be combined in any order.
 * hideProbe - hides probe in edit and "all" view
 * hideInputAutoToggles - hides the increment and decrement controls next to the local board input switches
 * researcherMode - changes the groups to a disjoint researcher group to avoid polluting the research log data
+* allowExport - enables display of "Export Activity" link
 
 Example: [http://concord-consortium.github.io/teaching-teamwork/pic/?logToConsole&soloMode](http://concord-consortium.github.io/teaching-teamwork/pic/?logToConsole&soloMode)
 
