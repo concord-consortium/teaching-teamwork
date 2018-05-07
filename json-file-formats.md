@@ -250,7 +250,9 @@ This activity is not currently authorable in JSON.
   },
   "busSize": 5,                            # total number of holes in the bus connector
   "busInputSize": 2,                       # number of input holes
+  "busInputLabels": ["A", "B"],            # array of labels for bus input
   "busOutputSize": 1,                      # number of output holes
+  "busOutputLabels": ["E"],                # array of labels for bus output
   "boards": [                              # array of boards in the activity
     {
       "logicChipDrawer": {
