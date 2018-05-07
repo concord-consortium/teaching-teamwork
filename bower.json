@@ -6,6 +6,6 @@
     "jsonlint": "1.6.0",
     "mathjs": "1.4.0",
     "jquery.cookie": "1.4.1",
-    "react": "16.1.0"
+    "react": "15.6.1"
   }
 }
