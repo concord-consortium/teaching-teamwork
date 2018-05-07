@@ -7,7 +7,7 @@ var Connector = function (options) {
   var self = this,
       isBus = options.type === 'bus',
       startingLetter = options.type === 'input' ? 0 : (letters.length - options.count),
-      i;
+      i, getBusLabel;
 
   this.type = options.type;
   this.count = options.count;
@@ -15,6 +15,25 @@ var Connector = function (options) {
   this.position = {};
   this.busInputSize = options.busInputSize || 0;
   this.busOutputSize = options.busOutputSize || 0;
+  this.busInputLabels = options.busInputLabels || [];
+  this.busOutputLabels = options.busOutputLabels || [];
+
+  getBusLabel = function (index) {
+    var labels = [],
+        labelIndex = index,
+        outputStartIndex = this.count - this.busOutputSize;
+    if (index < this.busInputSize) {
+      labels = this.busInputLabels;
+    }
+    else if (index >= outputStartIndex) {
+      labels = this.busOutputLabels;
+      labelIndex = index - outputStartIndex;
+    }
+    if (labelIndex < labels.length) {
+      return labels[labelIndex];
+    }
+    return index + 1;
+  }.bind(this);
 
   this.holes = [];
   for (i = 0; i < this.count; i++) {
@@ -25,7 +44,7 @@ var Connector = function (options) {
       radius: 0,
       color: '#555', // ['blue', '#0f0', 'purple', '#cccc00'][i],
       connector: self,
-      label: isBus ? (i + 1) : letters[startingLetter + i],
+      label: isBus ? getBusLabel(i) : letters[startingLetter + i],
       inputMode: this.type != 'input', // seems weird but output connector holes have values set so their holes are in "inputMode" like the pins
       toggleable: this.type == 'input',
       type: options.type,
