@@ -402,7 +402,7 @@ module.exports = React.createClass({
 
     // validate the truth table and normalize the inputs to be an array of arrays
     if (!validateAndNormalize()) {
-      callback(null, truthTable);
+      callback(null, truthTable, this.state.activity);
       return;
     }
 
@@ -421,7 +421,7 @@ module.exports = React.createClass({
     resetBoards();
     this.circuitResolver.resolve(true);
 
-    callback(allCorrect, truthTable);
+    callback(allCorrect, truthTable, this.state.activity);
   },
 
   toggleAllChipsAndWires: function () {
