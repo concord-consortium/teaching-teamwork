@@ -24,7 +24,7 @@ var Connector = require('../../models/shared/connector'),
     showCircuitDebugger = window.location.search.indexOf('showCircuitDebugger') !== -1,
     Pin = require('../../models/shared/pin'),
     Hole = require('../../models/shared/hole'),
-    BBHole = require('../../models/shared/bbhole');
+    BBHole = require('../../models/logic-gates/bbhole');
 
 module.exports = React.createClass({
   displayName: 'AppView',
