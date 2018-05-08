@@ -13,7 +13,9 @@
   },
   "busSize": 12,
   "busInputSize": 3,
+  "busInputLabels": ["A", "B", "C-IN"],
   "busOutputSize": 2,
+  "busOutputLabels": ["S", "C-OUT"],
   "boards": [
     {
       "logicChipDrawer": {

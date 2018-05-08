@@ -10,7 +10,9 @@ module.exports = React.createClass({
   getInitialState: function () {
     return {
       showPopup: false,
-      allCorrect: false
+      allCorrect: false,
+      truthTable: null,
+      activity: null
     };
   },
 
@@ -29,12 +31,12 @@ module.exports = React.createClass({
           return;
         }
 
-        self.props.checkIfCircuitIsCorrect(function (allCorrect) {
+        self.props.checkIfCircuitIsCorrect(function (allCorrect, truthTable, activity) {
           if (self.userClickedSubmit) {
             logController.logEvent("Submit clicked", userController.getUsername(), {correct: allCorrect});
             self.userClickedSubmit = false;
           }
-          self.setState({showPopup: true, allCorrect: allCorrect});
+          self.setState({showPopup: true, allCorrect: allCorrect, truthTable: truthTable, activity: activity});
         });
       });
     });
@@ -57,9 +59,9 @@ module.exports = React.createClass({
       alert("The ciruit has not stablized yet, please wait to press this button until it does.");
     }
     else if (this.props.soloMode) {
-      this.props.checkIfCircuitIsCorrect(function (allCorrect) {
+      this.props.checkIfCircuitIsCorrect(function (allCorrect, truthTable, activity) {
         logController.logEvent("Submit clicked", "n/a", {correct: allCorrect});
-        self.setState({showPopup: true, allCorrect: allCorrect});
+        self.setState({showPopup: true, allCorrect: allCorrect, truthTable: truthTable, activity: activity});
       });
     }
     else {
@@ -75,7 +77,7 @@ module.exports = React.createClass({
     if (this.props.currentUser || this.props.soloMode) {
       return div({id: "we-got-it"},
         button({onClick: this.clicked}, this.props.soloMode ? "I got it!" : "We got it!"),
-        this.state.showPopup ? WeGotItPopupView({allCorrect: this.state.allCorrect, hidePopup: this.hidePopup}) : null
+        this.state.showPopup ? WeGotItPopupView({allCorrect: this.state.allCorrect, hidePopup: this.hidePopup, truthTable: this.state.truthTable, activity: this.state.activity}) : null
       );
     }
     else {
