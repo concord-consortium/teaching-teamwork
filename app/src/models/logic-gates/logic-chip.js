@@ -219,6 +219,20 @@ LogicChip.prototype.resolveOutputVoltages = function (inputVoltages) {
       });
       break;
 
+    // Tri 3-Input NAND
+    case '7410':
+      this.mapAndSetPins([
+        [[1, 2, 13], 12],
+        [[3, 4, 5], 6],
+        [[9, 10, 11], 8]
+      ], inputVoltages, function (a, b, c) {
+        if (TTL.isInvalid(a) || TTL.isInvalid(b) || TTL.isInvalid(c)) {
+          return TTL.INVALID;
+        }
+        return TTL.getBooleanLogicLevel(!(TTL.isHigh(a) && TTL.isHigh(b) && TTL.isHigh(c)));
+      });
+      break;
+
     // Tri 3-Input AND
     case '7411':
       this.mapAndSetPins([
