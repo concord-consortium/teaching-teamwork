@@ -364,6 +364,13 @@ Board.prototype.updateComponents = function(newSerializedComponents) {
     });
 
     this.updateComponentList();
+
+    // place components again to update the breadboard component state
+    if (this.breadboard) {
+        this.componentList.forEach(function (component) {
+            self.breadboard.placeComponent(component);
+        });
+    }
 };
 Board.prototype.serializeInputs = function() {
     var serialized = [];
