@@ -5,7 +5,9 @@ module.exports = React.createClass({
   displayName: 'BreadboardHoleView',
 
   startDrag: function (e) {
-    this.props.drawConnection(this.props.hole, e);
+    if (this.props.editable) {
+      this.props.drawConnection(this.props.hole, e);
+    }
   },
 
   mouseOver: function () {
@@ -17,7 +19,8 @@ module.exports = React.createClass({
   },
 
   render: function () {
-    return g({onMouseDown: this.startDrag, onMouseOver: this.mouseOver, onMouseOut: this.mouseOut},
+    var editable = this.props.editable;
+    return g({onMouseDown: editable ? this.startDrag : null, onMouseOver: editable ? this.mouseOver : null, onMouseOut: editable ? this.mouseOut : null},
               circle({cx: this.props.hole.cx, cy: this.props.hole.cy, r: this.props.hole.size, opacity: 0}),
               circle({cx: this.props.hole.cx, cy: this.props.hole.cy, r: this.props.hole.size / 2, opacity: this.props.showColors ? 1 : 0, fill: this.props.hole.getColor()})
     );

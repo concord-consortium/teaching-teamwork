@@ -123,7 +123,7 @@ module.exports = React.createClass({
         id: 'workspace',
         style: {
           width: this.props.constants.WORKSPACE_WIDTH,
-          height: height + this.props.constants.RIBBON_HEIGHT
+          height: height
         }},
         spacersAndBoards
       );
