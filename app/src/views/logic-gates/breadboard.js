@@ -11,6 +11,7 @@ module.exports = React.createClass({
       holeViews.push(
         BreadboardHoleView({
           hole: holes[i],
+          editable: this.props.editable,
           drawConnection: this.props.drawConnection,
           reportHover: this.props.reportHover,
           key: "breadboard-hole-"+i,

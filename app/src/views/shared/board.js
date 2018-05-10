@@ -502,7 +502,7 @@ module.exports = React.createClass({
 
     var breadboardView = null;
     if (this.props.board.breadboard) {
-      breadboardView = BreadboardView({breadboard: this.props.board.breadboard, drawConnection: this.drawConnection, reportHover: this.reportHover, showColors: this.props.showBreadboardColors});
+      breadboardView = BreadboardView({breadboard: this.props.board.breadboard, editable: this.props.editable, drawConnection: this.drawConnection, reportHover: this.reportHover, showColors: this.props.showBreadboardColors});
     }
 
     return div({className: this.props.editable ? 'board editable-board' : 'board', style: style},
