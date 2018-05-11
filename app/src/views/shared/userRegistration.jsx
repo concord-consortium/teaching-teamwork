@@ -146,7 +146,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
           groupDetails = (
             <div>
               <p>
-                <label>These users are either about to join or are already in this group:</label>
+                <label>These users are already in this group:</label>
               </p>
               <ul>
                 {otherUsers.map(function(result, index) {
