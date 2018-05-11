@@ -33,7 +33,7 @@ var CircuitResolver = function (options) {
 CircuitResolver.prototype.rewire = function (includeGlobalIO) {
   var graph = {},
       hasBreadboard = false,
-      isBusHole, addToGraph, addToCircuit, addGhostWire;
+      isBusHole, addToGraph, addToCircuit, addGhostWire, isWiredToLocalInput;
 
   isBusHole = function (endPoint) {
     return endPoint.connector && (endPoint.connector.type == 'bus');
@@ -73,6 +73,10 @@ CircuitResolver.prototype.rewire = function (includeGlobalIO) {
     });
     addToGraph(busWire.source, busWire.dest, busWire);
     addToGraph(busWire.dest, busWire.source, busWire);
+  };
+
+  isWiredToLocalInput = function (endPoint) {
+    return !!(endPoint.connector && (endPoint.connector.type == "input"));
   };
 
   // clear the existing circuits
@@ -128,7 +132,13 @@ CircuitResolver.prototype.rewire = function (includeGlobalIO) {
           sourceIsGlobalInput = sourceOnBus && (this.inputIndices.indexOf(wire.source.index) != -1),
           sourceIsGlobalOutput = sourceOnBus && (this.outputIndices.indexOf(wire.source.index) != -1),
           destIsGlobalInput = destOnBus && (this.inputIndices.indexOf(wire.dest.index) != -1),
-          destIsGlobalOutput = destOnBus && (this.outputIndices.indexOf(wire.dest.index) != -1);
+          destIsGlobalOutput = destOnBus && (this.outputIndices.indexOf(wire.dest.index) != -1),
+          addWire = !includeGlobalIO || (!isWiredToLocalInput(wire.source) && !isWiredToLocalInput(wire.dest));
+
+      // don't add local input wires when adding global io wires
+      if (!addWire) {
+        return;
+      }
 
       this.numWires++;
 
@@ -181,6 +191,12 @@ CircuitResolver.prototype.rewire = function (includeGlobalIO) {
 
   // resolve all the circuits
   this.resolve(true);
+};
+
+CircuitResolver.prototype.setEndpointFlags = function () {
+  this.circuits.forEach(function (circuit) {
+    circuit.setEndpointFlags();
+  });
 };
 
 CircuitResolver.prototype.forEach = function(list, fn) {
