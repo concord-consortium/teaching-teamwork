@@ -427,11 +427,11 @@ module.exports = React.createClass({
 
     //console.log(JSON.stringify(truthTable, null, 2));
 
-    // rewire to remove global i/o
-    this.circuitResolver.rewire();
-
     // reset to 0 inputs
     resetBoards();
+
+    // rewire to remove global i/o and then resolve until stable
+    this.circuitResolver.rewire();
     this.circuitResolver.resolve(true);
 
     callback(allCorrect, truthTable, this.state.activity);
