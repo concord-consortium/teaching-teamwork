@@ -389,6 +389,7 @@ module.exports = React.createClass({
 
       for (i = 0; i < test.inputVoltages.length; i++) {
         self.circuitResolver.input.setHoleVoltages(test.inputVoltages[i], true);
+        self.circuitResolver.setEndpointFlags();
         self.circuitResolver.resolve(true);
       }
 
@@ -410,7 +411,7 @@ module.exports = React.createClass({
       return allCorrect;
     };
 
-    // rewire the board to include global i/o
+    // rewire the board to include global i/o and remove local input wires
     this.circuitResolver.rewire(true);
 
     // validate the truth table and normalize the inputs to be an array of arrays
@@ -424,8 +425,6 @@ module.exports = React.createClass({
     for (i = 0; i < tests.length; i++) {
       allCorrect = runTest(tests[i], truthTable) && allCorrect;
     }
-
-    //console.log(JSON.stringify(truthTable, null, 2));
 
     // reset to 0 inputs
     resetBoards();

@@ -45,7 +45,7 @@ module.exports = React.createClass({
         entry.output.forEach(function (x, columnIndex) {
           var logicValue = x ? 1 : 0;
           var correct = correctTruthTable && correctTruthTable[rowIndex] && correctTruthTable[rowIndex][1] ? correctTruthTable[rowIndex][1][columnIndex] == logicValue : true;
-          cells.push(td({key: cells.length}, logicValue, correct ? span({className: "correct"}, "✔") : span({className: "incorrect"}, "✘")));
+          cells.push(td({key: cells.length}, correct ? span({className: "correct"}, "✔") : span({className: "incorrect"}, "✘")));
         });
         rows.push(tr({key: rows.length}, cells));
         inputLength = Math.max(inputLength, input.length);
