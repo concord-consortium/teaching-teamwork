@@ -28,7 +28,7 @@ module.exports = React.createClass({
       }
     }
 
-    if (this.props.connector.type == 'input') {
+    if ((this.props.connector.type == 'input') && (numHoles > 0)) {
       dipBank = DIPBankView({key: 'dipbank', connector: this.props.connector, selected: this.props.selected, editable: this.props.editable, forceRerender: this.props.forceRerender});
       if (this.props.showInputAutoToggles) {
         selectorRect = rect({x: position.x + position.width, y: 6, width: position.selectorBackgroundWidth, height: position.height, fill: colors.inputSelectorBackground},
