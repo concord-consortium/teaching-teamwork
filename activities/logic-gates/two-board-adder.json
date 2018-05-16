@@ -1,6 +1,6 @@
 {
     "name": "Two board adder",
-    "notes": "Make a circuit that adds three bits and returns their sum and carry (carry bit to the left)",
+    "notes": "Make a circuit that adds three bits (labeled A,B, and C on the bus) and returns their sum and carry bits.",
     "interface": {
         "showPinColors": true,
         "showBusColors": true,
@@ -13,7 +13,9 @@
     },
     "busSize": 15,
     "busInputSize": 3,
+    "busInputLabels": ["A","B","C"],
     "busOutputSize": 2,
+    "busOutputLabels": ["Carry","Sum"],
     "boards": [{
         "logicChipDrawer": {
             "chips": {
