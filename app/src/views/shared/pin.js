@@ -15,7 +15,7 @@ module.exports = React.createClass({
   },
 
   startDrag: function (e) {
-    this.props.drawConnection(this.props.pin, e, colors.wire);
+    this.props.drawConnection(this.props.pin, e, colors.randomWireColor());
   },
 
   renderPin: function (pin, enableHandlers) {

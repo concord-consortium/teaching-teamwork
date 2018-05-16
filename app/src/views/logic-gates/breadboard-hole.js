@@ -1,12 +1,13 @@
-var circle = React.DOM.circle,
-         g = React.DOM.g;
+var colors = require('../shared/colors'),
+    circle = React.DOM.circle,
+    g = React.DOM.g;
 
 module.exports = React.createClass({
   displayName: 'BreadboardHoleView',
 
   startDrag: function (e) {
     if (this.props.editable) {
-      this.props.drawConnection(this.props.hole, e);
+      this.props.drawConnection(this.props.hole, e, colors.randomWireColor());
     }
   },
 

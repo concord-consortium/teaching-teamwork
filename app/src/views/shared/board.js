@@ -190,7 +190,7 @@ module.exports = React.createClass({
             x2: source.cx,
             y2: source.cy,
             strokeWidth: self.props.constants.selectedConstants(self.props.selected).WIRE_WIDTH,
-            stroke: '#2eadab',
+            stroke: color,
             reflection: bezierReflection * self.props.board.bezierReflectionModifier
           }
         });
@@ -223,7 +223,7 @@ module.exports = React.createClass({
 
       if (moved && dest && (dest !== source)) {
         addedWire = true;
-        wire = self.props.board.addWire(source, dest, (source.color || dest.color || color));
+        wire = self.props.board.addWire(source, dest, color);
         self.setState({
           wires: self.props.board.wires,
           selectedWires: [],
