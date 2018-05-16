@@ -1,6 +1,6 @@
 {
     "name": "Two board adder",
-    "notes": "Make a circuit that adds three bits (labeled A,B, and C on the bus) and returns their sum and carry bits.",
+    "notes": "Make a circuit that adds three bits (labeled A, B, and C on the bus) and returns their sum and carry bits.",
     "interface": {
         "showPinColors": true,
         "showBusColors": true,
