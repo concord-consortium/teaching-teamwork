@@ -318,6 +318,9 @@ This activity is not currently authorable in JSON.
                    # each row is a test with the first array being the global inputs and the second the global outputs
                    # both the input and output arrays are set right to left (the least significant bit is rightmost)
                    # the code will cycle through all the combinations, setting the inputs, resolving the board values and then testing the output
+                   # NOTE: the first array element can be an array of arrays, in which case the inputs are set in that order and
+                   #       then the output is checked.  This is useful to test circuits that switch output between inputs states.
+                   #       An example entry for such a truth table would be: [ [[0, 0], [0, 1]], [0] ]
     [[0, 0], [0]],
     [[0, 1], [1]],
     [[1, 0], [1]],
