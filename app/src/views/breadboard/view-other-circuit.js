@@ -77,7 +77,7 @@ module.exports = React.createClass({
             }
 
             // listen for circuit changes
-            userController.createFirebaseGroupRef(payload.activityName, payload.groupName, payload.classInfoUrl);
+            userController.createFirebaseGroupRef(payload.activityName, payload.groupName, payload.classInfo);
             userController.getFirebaseGroupRef().child('clients').on('value', function(snapshot) {
               var data = snapshot.val(),
                   i;

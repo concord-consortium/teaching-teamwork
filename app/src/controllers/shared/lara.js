@@ -9,7 +9,7 @@ LaraController.prototype = {
   gotInitInteractive: false,
   gotInitInteractiveCallback: null,
   globalState: null,
-  classInfoUrl: null,
+  classInfo: null,
   connected: false,
   connectionCallback: null,
 
@@ -37,16 +37,37 @@ LaraController.prototype = {
         });
       });
       this.laraPhone.addListener("initInteractive", function(options) {
-        if (options) {
-          // the classInfoUrl is only present when LARA is invoked via the portal
-          if (options.classInfoUrl && (options.classInfoUrl.length > 0)) {
-            self.classInfoUrl = options.classInfoUrl;
+        var done = function (classInfo) {
+          self.classInfo = classInfo;
+          if (self.gotInitInteractiveCallback) {
+            self.gotInitInteractive = true;
+            self.gotInitInteractiveCallback(self.globalState, classInfo);
           }
-        }
+        };
         self.globalState = options && options.globalInteractiveState || {};
-        self.gotInitInteractive = true;
-        if (self.gotInitInteractiveCallback) {
-          self.gotInitInteractiveCallback(self.globalState, self.classInfoUrl);
+        // the classInfoUrl is only present when LARA is invoked via the portal
+        if (options && options.classInfoUrl && (options.classInfoUrl.length > 0)) {
+          $.ajax({
+            url: options.classInfoUrl,
+            crossDomain: true,
+            xhrFields: {
+              withCredentials: true
+            }
+          }).done(function (data) {
+            var a = document.createElement("A");
+            a.href = options.classInfoUrl;
+            done({
+              portal: a.host,
+              classHash: data.class_hash,
+              interactiveId: options.interactive.id,
+              email: options.authInfo.email
+            });
+          }).fail(function () {
+            alert("Unable to request class information from portal.");
+          });
+        }
+        else {
+          done();
         }
       });
       this.laraPhone.initialize();
@@ -65,14 +86,14 @@ LaraController.prototype = {
   waitForInitInteractive: function (callback) {
     var self = this;
     if (this.gotInitInteractive) {
-      callback(this.globalState, this.classInfoUrl);
+      callback(this.globalState, this.classHash);
     }
     else {
       this.gotInitInteractiveCallback = callback;
       setTimeout(function () {
         if (!self.gotInitInteractive) {
           self.gotInitInteractiveCallback = null;
-          callback(this.globalState, self.classInfoUrl);
+          callback(self.globalState, self.classInfo);
         }
       }, 5000);
     }

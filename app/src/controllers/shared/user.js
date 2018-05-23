@@ -7,7 +7,7 @@ var UserRegistrationView = require('../../views/shared/userRegistration.jsx'),
     activityName,
     userName,
     groupName,
-    classInfoUrl,
+    classInfo,
     firebaseGroupRef,
     firebaseUsersRef,
     groupUsersListener,
@@ -90,9 +90,9 @@ module.exports = userController = {
   getIdentityFromLara: function (callback) {
     if (laraController.loadedFromLara) {
       UserRegistrationView.open(this, {form: "gettingGlobalState"});
-      laraController.waitForInitInteractive(function (globalState, _classInfoUrl) {
+      laraController.waitForInitInteractive(function (globalState, _classInfo) {
         UserRegistrationView.close();
-        classInfoUrl = _classInfoUrl;
+        classInfo = _classInfo;
         callback(globalState && globalState.identity ? globalState.identity : null);
       });
     }
@@ -116,15 +116,17 @@ module.exports = userController = {
     members = group.members;
     userName = preferredUserName || userName;
 
-    this.createFirebaseGroupRef(activityName, groupName, classInfoUrl);
+    this.createFirebaseGroupRef(activityName, groupName, classInfo);
 
     firebaseUsersRef = firebaseGroupRef.child('users');
     groupUsersListener = firebaseUsersRef.on("value", function(snapshot) {
-      var users = snapshot.val() || {};
+      var users = snapshot.val() || {},
+          email = self.getEmail();
 
-      // don't allow entering the group with the preferred username if it has been taken
+      // don't allow entering the group with the preferred username if it has been taken, unless the lara user email matches
+      // (that way users can reenter groups)
       if (firstUsersRefCallback) {
-        if (preferredUserName && users[preferredUserName]) {
+        if (preferredUserName && users[preferredUserName] && users[preferredUserName].email !== email) {
           userName = null;
         }
         firstUsersRefCallback = false;
@@ -141,7 +143,7 @@ module.exports = userController = {
           firebaseGroupRef.child('model').set({});
         } else {
           for (var i = 0, ii=members.length; i<ii; i++) {
-            if (!users[members[i]]) {
+            if (!users[members[i]] || (users[members[i]].email === email)) {
               userName = members[i];
               break;
             }
@@ -149,14 +151,23 @@ module.exports = userController = {
         }
       }
 
-      if (userName && (noExistingUsers || !users[userName])) {
-        users[userName] = {here: true};
-        firebaseUsersRef.child(userName).set({here: true});
-        onDisconnectRef = firebaseUsersRef.child(userName).onDisconnect();
-        onDisconnectRef.set({});
+      if (userName && (noExistingUsers || !users[userName] || (users[userName].email === email))) {
+        users[userName] = users[userName] || {here: true, email: email};
+        firebaseUsersRef.child(userName).set(users[userName]);
+
+        // clear the user on disconnects if not from lara
+        if (!classInfo) {
+          onDisconnectRef = firebaseUsersRef.child(userName).onDisconnect();
+          onDisconnectRef.set({});
+        }
       }
 
-      UserRegistrationView.open(self, {form: "groupconfirm", users: users, userName: userName, groupName: groupName, numExistingUsers: Object.keys(users).length});
+      if (userName && groupName) {
+        self.setGroupName(groupName);
+      }
+      else {
+        UserRegistrationView.open(self, {form: "groupconfirm", users: users, userName: userName, groupName: groupName, numExistingUsers: Object.keys(users).length});
+      }
     });
 
     logController.logEvent("Started to join group", groupName);
@@ -210,20 +221,38 @@ module.exports = userController = {
     // annoyingly we have to get out of this before the off() call is finalized
     setTimeout(function(){
       boardsSelectionListener = firebaseUsersRef.on("value", function(snapshot) {
-        var users = snapshot.val();
-        UserRegistrationView.open(self, {form: "selectboard", numClients: numClients, users: users, userName: userName});
+        var users = snapshot.val(),
+            email = self.getEmail(),
+            previousClient = email ? (users[userName] && (users[userName].email === email) && users[userName].hasOwnProperty("client") ? users[userName].client : null) : null;
+
+        // if the user already has a client (coming back from lara) make sure another user doesn't have it selected
+        if (previousClient) {
+          Object.keys(users).forEach(function (_userName) {
+            if ((_userName !== userName) && (users[_userName].client === previousClient)) {
+              previousClient = null;
+            }
+          });
+        }
+
+        if (previousClient) {
+          self.selectClient(previousClient);
+          self.selectedClient(previousClient);
+        }
+        else {
+          UserRegistrationView.open(self, {form: "selectboard", numClients: numClients, users: users, userName: userName});
+        }
       });
     }, 1);
   },
 
   selectClient: function(_client) {
     client = _client;
-    firebaseUsersRef.child(userName).set({client: client});
+    firebaseUsersRef.child(userName).set({client: client, email: this.getEmail()});
   },
 
   setUnknownValues: function (unknownValues) {
     if (firebaseUsersRef) {
-      firebaseUsersRef.child(userName).set({client: client, unknownValues: unknownValues});
+      firebaseUsersRef.child(userName).set({client: client, email: this.getEmail(), unknownValues: unknownValues});
     }
     else if (this.listenForUnknownValues) {
       this.listenForUnknownValues(unknownValues);
@@ -261,8 +290,8 @@ module.exports = userController = {
     return groupName;
   },
 
-  getClassInfoUrl: function() {
-    return classInfoUrl;
+  getClassInfo: function() {
+    return classInfo;
   },
 
   getClient: function () {
@@ -287,6 +316,10 @@ module.exports = userController = {
     return ret;
   },
 
+  getEmail: function () {
+    return classInfo ? (classInfo.email || null) : null;
+  },
+
   onGroupRefCreation: function(callback) {
     if (firebaseGroupRef) {
       callback();
@@ -298,9 +331,16 @@ module.exports = userController = {
     }
   },
 
-  createFirebaseGroupRef: function (activityName, groupName, classInfoUrl) {
-    var classId = classInfoUrl ? "class-" + classInfoUrl.split("/").pop() : "no-class-id";
-    var refName = getDatePrefix() + "/" + classId + "/" + groupName + "/activities/" + activityName + "/";
+  createFirebaseGroupRef: function (activityName, groupName, _classInfo) {
+    var refName;
+    classInfo = _classInfo;
+    if (classInfo) {
+      var portal = classInfo.portal.replace(/[.$[\]#\/]/g, "_");
+      refName = "portals/" + portal + "/classes/" + classInfo.classHash + "/interactives/" + classInfo.interactiveId + "/groups/" + groupName + "/activities/" + activityName + "/";
+    }
+    else {
+      refName = getDatePrefix() + "/no-class-id/" + groupName + "/activities/" + activityName + "/";
+    }
     firebaseGroupRef = firebase.database().ref(refName);
     return firebaseGroupRef;
   }

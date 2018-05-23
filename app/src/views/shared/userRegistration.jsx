@@ -15,7 +15,10 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
       }
 
       setTimeout(function() {
-        $('#user-registration')[0].style.opacity = 1;
+        var $anchor = $('#user-registration');
+        if ($anchor.length) {
+          $anchor[0].style.opacity = 1;
+        }
       }, 250);
 
       return ReactDOM.render(
