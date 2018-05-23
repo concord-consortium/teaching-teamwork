@@ -6,23 +6,15 @@ var div = React.DOM.div,
 module.exports = React.createClass({
   displayName: 'Version',
 
-  renderGitCommit: function () {
-    var commitHash = '__TT_COMMIT_HASH__';
-
-    if (commitHash[0] != '_') {
-      return div({className: 'version-info'},
-        a({href: 'https://github.com/concord-consortium/teaching-teamwork/commit/' + commitHash, target: '_blank'}, 'Commit: ' + commitHash)
-      );
-    }
-    else {
-      return null;
-    }
-  },
-
   render: function() {
+    var commitHash = '__TT_COMMIT_HASH__',
+        version = commitHash.substr(0, 8);
+
     return div({className: "version-wrapper"},
-      div({className: 'version-info'}, 'Version __TT_VERSION__, built on __TT_BUILD_DATE__'),
-      this.renderGitCommit()
+      div({className: 'version-info'},
+        'Build ',
+        a({href: 'https://github.com/concord-consortium/teaching-teamwork/commit/' + commitHash, target: '_blank', title: commitHash}, version),
+        ', built on __TT_BUILD_DATE__')
     );
   }
 });

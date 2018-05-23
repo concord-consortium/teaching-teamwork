@@ -114,6 +114,9 @@ var logManagerUrl  = '//teaching-teamwork-log-manager.herokuapp.com/api/logs',
       data.levelName = data.activity;
       delete data.activity;
 
+      // add the build info
+      data.build = '__TT_COMMIT_HASH__';
+
       // flatten parameters
       if (data.parameters) {
         for (var prop in data.parameters) {
