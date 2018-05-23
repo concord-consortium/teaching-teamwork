@@ -70,6 +70,9 @@ LaraController.prototype = {
           done();
         }
       });
+      this.laraPhone.addListener('getInteractiveState', function () {
+        self.laraPhone.post('interactiveState', 'nochange');
+      });
       this.laraPhone.initialize();
     }
   },
