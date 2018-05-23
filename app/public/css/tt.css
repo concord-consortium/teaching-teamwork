@@ -679,14 +679,11 @@ form button:disabled {
   margin: 10px 0;
 }
 .version-info a {
-  transition: opacity 0.5s ease;
   text-decoration: none;
-  margin-top: 5px;
   color: #aaa;
-  opacity: 0;
 }
 .version-info a:hover {
-  opacity: 1;
+  text-decoration: underline;
 }
 
 body.homepage {
