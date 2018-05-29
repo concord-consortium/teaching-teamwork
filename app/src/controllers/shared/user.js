@@ -229,7 +229,7 @@ module.exports = userController = {
           self.selectClient(previousClient);
         }
 
-        UserRegistrationView.open(self, {form: "selectboard", numClients: numClients, users: users, userName: userName});
+        UserRegistrationView.open(self, {form: "selectboard", numClients: numClients, users: users, groupName: groupName, userName: userName});
       });
     }, 1);
   },
