@@ -183,7 +183,9 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
             isOwn = false,
             selected = false,
             valid = true,
-            selectedUsers = [];
+            selectedUsers = [],
+            defaultChecked = false;
+
         for (var user in this.props.users) {
           if (this.props.users[user].client == i) {
             selectedUsers.push(user);
@@ -195,6 +197,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
               valid = false;
             }
             userSpan = ( <span className={ valid ? "" : "error"}>{ selectedUsers.join(", ") }</span> );
+            defaultChecked = true;
           }
         }
         if (isOwn && selectedUsers.length == 1) {
@@ -203,7 +206,7 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
 
         clientChoices.push(
           <div key={ i } >
-            <input type="radio" name="clientSelection" value={ i } onClick={ this.handleClientSelection }/>Circuit { i+1 } ({ userSpan })
+            <input type="radio" name="clientSelection" value={ i } defaultChecked={ defaultChecked } onClick={ this.handleClientSelection }/>Circuit { i+1 } ({ userSpan })
           </div> );
       }
 

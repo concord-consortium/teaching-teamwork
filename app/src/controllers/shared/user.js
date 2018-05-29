@@ -225,22 +225,11 @@ module.exports = userController = {
             email = self.getEmail(),
             previousClient = email ? (users[userName] && (users[userName].email === email) && users[userName].hasOwnProperty("client") ? users[userName].client : null) : null;
 
-        // if the user already has a client (coming back from lara) make sure another user doesn't have it selected
-        if (previousClient) {
-          Object.keys(users).forEach(function (_userName) {
-            if ((_userName !== userName) && (users[_userName].client === previousClient)) {
-              previousClient = null;
-            }
-          });
-        }
-
         if (previousClient) {
           self.selectClient(previousClient);
-          self.selectedClient(previousClient);
         }
-        else {
-          UserRegistrationView.open(self, {form: "selectboard", numClients: numClients, users: users, userName: userName});
-        }
+
+        UserRegistrationView.open(self, {form: "selectboard", numClients: numClients, users: users, userName: userName});
       });
     }, 1);
   },
