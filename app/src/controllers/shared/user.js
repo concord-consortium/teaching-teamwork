@@ -273,6 +273,7 @@ module.exports = userController = {
       time: firebase.database.ServerValue.TIMESTAMP
     });
     var disconnectMessageRef = chatRef.push();
+    disconnectMessageRef.onDisconnect().cancel();
     disconnectMessageRef.onDisconnect().set({
       user: "System",
       message: userName + " has left",
