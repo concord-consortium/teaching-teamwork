@@ -123,21 +123,28 @@ Breadboard.prototype.addStripWire = function (strip, hole1, hole2) {
   }
 };
 
-Breadboard.prototype.placeComponent = function(component) {
+Breadboard.prototype.placeComponent = function(component, componentList) {
   var offset = component.getTopLeftPinOffset(this.constants, true),
       constants = this.constants.selectedConstants(true),
       pinPos = {x: component.position.x + offset.x, y: component.position.y + offset.y},
       hole = this.getNearestHole(pinPos, true),
-      i, ii;
+      firstColumn = hole.column,
+      firstRow = hole.row,
+      pin, column, row, i, ii;
 
-  // TODO: check if another component exists at the placement
 
   component.position.x = hole.cx - offset.x - (constants.PIN_WIDTH/2);
   component.position.y = hole.cy - offset.y;
 
-  var firstColumn = hole.column,
-      firstRow = hole.row,
-      pin, column, row;
+  // check if another component exists at the placement
+  if (componentList) {
+    for (i = 0, ii = componentList.length; i < ii; i++) {
+      var testComponent = componentList[i];
+      if ((testComponent !== component) && (testComponent.position.x == component.position.x) && (testComponent.position.y == component.position.y)) {
+        return false;
+      }
+    }
+  }
 
   component.pinWires = [];
   for (i = 0, ii = component.pins.length; i < ii; i++) {
