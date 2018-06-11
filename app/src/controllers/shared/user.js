@@ -75,10 +75,11 @@ module.exports = userController = {
     if (numClients > 1) {
       var self = this;
       this.getIdentityFromLara(function (identity) {
+        var enteredGroup = false;
         if (identity && identity.groupName) {
-          self.tryToEnterGroup(identity.groupName, identity.userName);
+          enteredGroup = self.tryToEnterGroup(identity.groupName, identity.userName);
         }
-        else {
+        if (!enteredGroup) {
           UserRegistrationView.open(self, {form: "groupname", numClients: numClients});
         }
       });
@@ -111,6 +112,10 @@ module.exports = userController = {
         group = groups[i];
         break;
       }
+    }
+
+    if (!group) {
+      return false;
     }
 
     members = group.members;
@@ -171,6 +176,8 @@ module.exports = userController = {
     });
 
     logController.logEvent("Started to join group", groupName);
+
+    return true;
   },
 
   rejectGroupName: function() {
