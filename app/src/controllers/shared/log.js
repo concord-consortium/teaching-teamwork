@@ -1,4 +1,4 @@
-var logManagerUrl  = '//teaching-teamwork-log-manager.herokuapp.com/api/logs',
+var logManagerUrl  = 'https://c07lwfeoa0.execute-api.us-east-1.amazonaws.com/beta/logs',
     xhrObserver    = require('../../data/shared/xhrObserver'),
     laraController = require('./lara'),
     logToConsole = window.location.search.indexOf('logToConsole') !== -1,
@@ -25,8 +25,11 @@ var logManagerUrl  = '//teaching-teamwork-log-manager.herokuapp.com/api/logs',
     },
 
     sendEvent = function(data) {
-      //console.log('Log:', data);
-      if (laraLoggerReady) {
+      // add the build info
+      data.build = '__TT_COMMIT_HASH__';
+
+      // skip logging to LARA for this branch
+      if (false) { //laraLoggerReady) {
         logToLARA(data);
       } else {
         var request = xhrObserver.createObservedXMLHttpRequest();
@@ -113,9 +116,6 @@ var logManagerUrl  = '//teaching-teamwork-log-manager.herokuapp.com/api/logs',
       // rename activity name conflict
       data.levelName = data.activity;
       delete data.activity;
-
-      // add the build info
-      data.build = '__TT_COMMIT_HASH__';
 
       // flatten parameters
       if (data.parameters) {
