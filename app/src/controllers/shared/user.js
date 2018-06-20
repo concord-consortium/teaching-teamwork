@@ -11,7 +11,6 @@ var UserRegistrationView = require('../../views/shared/userRegistration.jsx'),
     firebaseGroupRef,
     firebaseUsersRef,
     groupUsersListener,
-    boardsSelectionListener,
     groupRefCreationListeners,
     client,
     callback,
@@ -157,8 +156,13 @@ module.exports = userController = {
       }
 
       if (userName && (noExistingUsers || !users[userName] || (users[userName].email === email))) {
-        users[userName] = users[userName] || {here: true, email: email};
-        firebaseUsersRef.child(userName).set(users[userName]);
+        if (!users[userName]) {
+          users[userName] = {here: true, email: email};
+          // wait until after we call setGroupName (which clears this listener)
+          setTimeout(function () {
+            firebaseUsersRef.child(userName).set(users[userName]);
+          }, 1);
+        }
 
         // clear the user on disconnects if not from lara
         if (!classInfo) {
@@ -168,7 +172,7 @@ module.exports = userController = {
       }
 
       if (userName && groupName) {
-        self.setGroupName(groupName);
+        self.setGroupName(groupName, true);
       }
       else {
         UserRegistrationView.open(self, {form: "groupconfirm", users: users, userName: userName, groupName: groupName, numExistingUsers: Object.keys(users).length});
@@ -207,7 +211,7 @@ module.exports = userController = {
     logController.logEvent("Rejected Group", groupName);
   },
 
-  setGroupName: function(_groupName) {
+  setGroupName: function(_groupName, autoSelectClient) {
     var self = this;
 
     groupName = _groupName;
@@ -227,28 +231,38 @@ module.exports = userController = {
 
     // annoyingly we have to get out of this before the off() call is finalized
     setTimeout(function(){
-      boardsSelectionListener = firebaseUsersRef.on("value", function(snapshot) {
-        var users = snapshot.val(),
-            email = self.getEmail(),
-            previousClient = email ? (users[userName] && (users[userName].email === email) && users[userName].hasOwnProperty("client") ? users[userName].client : null) : null;
+      if (autoSelectClient) {
+        firebaseUsersRef.once("value", function(snapshot) {
+          var users = snapshot.val(),
+              email = self.getEmail(),
+              previousClient = email ? (users[userName] && (users[userName].email === email) && users[userName].hasOwnProperty("client") ? users[userName].client : null) : null;
 
-        // if the user already has a client (coming back from lara) make sure another user doesn't have it selected
-        if (previousClient) {
-          Object.keys(users).forEach(function (_userName) {
-            if ((_userName !== userName) && (users[_userName].client === previousClient)) {
-              previousClient = null;
-            }
-          });
-        }
+          // if the user already has a client (coming back from lara) make sure another user doesn't have it selected
+          if (previousClient) {
+            Object.keys(users).forEach(function (_userName) {
+              if ((_userName !== userName) && (users[_userName].client === previousClient)) {
+                previousClient = null;
+              }
+            });
+          }
 
-        if (previousClient) {
-          self.selectClient(previousClient);
-          self.selectedClient(previousClient);
+          if (previousClient) {
+            self.selectClient(previousClient);
+            self.selectedClient(previousClient);
 
-          // force a click in the window so the delete key works
-          UserRegistrationView.open(self, {form: "auto-selected-board", client: parseInt(previousClient) || 0, groupName: groupName, userName: userName});
-        }
-        else {
+            // force a click in the window so the delete key works
+            UserRegistrationView.open(self, {form: "auto-selected-board", client: parseInt(previousClient) || 0, groupName: groupName, userName: userName});
+          }
+          else {
+            autoSelectClient = false;
+            UserRegistrationView.open(self, {form: "selectboard", numClients: numClients, users: users, groupName: groupName, userName: userName});
+          }
+        });
+      }
+
+      firebaseUsersRef.on("value", function(snapshot) {
+        var users = snapshot.val();
+        if (!autoSelectClient) {
           UserRegistrationView.open(self, {form: "selectboard", numClients: numClients, users: users, groupName: groupName, userName: userName});
         }
       });
@@ -352,6 +366,7 @@ module.exports = userController = {
     else {
       refName = getDatePrefix() + "/no-class-id/" + groupName + "/activities/" + activityName + "/";
     }
+    console.log('ref', refName);
     firebaseGroupRef = firebase.database().ref(refName);
     return firebaseGroupRef;
   }
