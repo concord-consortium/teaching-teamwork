@@ -366,7 +366,6 @@ module.exports = userController = {
     else {
       refName = getDatePrefix() + "/no-class-id/" + groupName + "/activities/" + activityName + "/";
     }
-    console.log('ref', refName);
     firebaseGroupRef = firebase.database().ref(refName);
     return firebaseGroupRef;
   }
