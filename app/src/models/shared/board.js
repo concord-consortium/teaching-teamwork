@@ -264,6 +264,7 @@ Board.prototype.addComponent = function(name, component) {
         this.resolver.rewire();
         this.resolver.resolve(true);
     }
+    return valid;
 };
 Board.prototype.placeChip = function(component, moving) {
     if (this.breadboard) {
