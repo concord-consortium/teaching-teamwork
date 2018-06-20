@@ -244,6 +244,9 @@ module.exports = userController = {
         if (previousClient) {
           self.selectClient(previousClient);
           self.selectedClient(previousClient);
+
+          // force a click in the window so the delete key works
+          UserRegistrationView.open(self, {form: "auto-selected-board", client: parseInt(previousClient) || 0, groupName: groupName, userName: userName});
         }
         else {
           UserRegistrationView.open(self, {form: "selectboard", numClients: numClients, users: users, groupName: groupName, userName: userName});
