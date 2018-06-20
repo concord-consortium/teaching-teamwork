@@ -65,6 +65,10 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
   handleSubmit: function (e) {
     e.preventDefault();
   },
+  handleReady: function (e) {
+    e.preventDefault();
+    UserRegistrationView.close();
+  },
   componentDidMount: function () {
     var self = this,
         focusAndSelect = function (ref) {
@@ -83,7 +87,15 @@ module.exports = window.UserRegistrationView = UserRegistrationView = React.crea
   },
   render: function() {
     var form;
-    if (this.props.form == 'gettingGlobalState') {
+    if (this.props.form == 'auto-selected-board') {
+      form = (
+        <div>
+          <h3>You have been automatically returned to circuit {this.props.client + 1} as {this.props.userName} in {this.props.groupName}.</h3>
+          <button onClick={ this.handleReady } >Ok</button>
+        </div>
+      );
+    }
+    else if (this.props.form == 'gettingGlobalState') {
       form = (
         <div>
           <h3>Checking for previously set group and username</h3>

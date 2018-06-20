@@ -16,7 +16,7 @@
     "R": false
   },
   "otherCircuits": {
-        "image": "images/schematic-team.jpg",
+    "image": "images/three-resistors-breadboards.v2.png",
     "width": 740,
     "height": 250,
     "breadboards": [

@@ -421,11 +421,11 @@ module.exports = React.createClass({
   stopLogicChipDrawerDrag: function (chip) {
     var r = this.getLogicChipDragRect();
 
-    // don't add if hidden by drawer
+    // don't add if hidden by drawer or overlapping with existing chip
     if (chip.x < r.right - 100) {
       var component = new LogicChip({type: chip.type, layout: {x: chip.x, y: chip.y}, selectable: true});
-      this.addLogicChip(component);
-      this.setState({draggingChip: null, selectedWires: [], selectedComponents: [component]});
+      var selectedComponents = this.addLogicChip(component) ? [component] : [];
+      this.setState({draggingChip: null, selectedWires: [], selectedComponents: selectedComponents});
     }
     else {
       this.setState({draggingChip: null});
@@ -433,8 +433,11 @@ module.exports = React.createClass({
   },
 
   addLogicChip: function (chip) {
-    this.props.board.addComponent("lc-next", chip);
-    events.logEvent(events.ADD_LOGIC_CHIP_EVENT, null, {board: this.props.board, chip: chip});
+    var addedChip = this.props.board.addComponent("lc-next", chip);
+    if (addedChip) {
+      events.logEvent(events.ADD_LOGIC_CHIP_EVENT, null, {board: this.props.board, chip: chip});
+    }
+    return addedChip;
   },
 
   removeLogicChip: function (chip) {

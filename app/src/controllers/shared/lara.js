@@ -39,8 +39,8 @@ LaraController.prototype = {
       this.laraPhone.addListener("initInteractive", function(options) {
         var done = function (classInfo) {
           self.classInfo = classInfo;
+          self.gotInitInteractive = true;
           if (self.gotInitInteractiveCallback) {
-            self.gotInitInteractive = true;
             self.gotInitInteractiveCallback(self.globalState, classInfo);
           }
         };
