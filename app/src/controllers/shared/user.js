@@ -74,12 +74,45 @@ module.exports = userController = {
     if (numClients > 1) {
       var self = this;
       this.getIdentityFromLara(function (identity) {
-        var enteredGroup = false;
-        if (identity && identity.groupName) {
-          enteredGroup = self.tryToEnterGroup(identity.groupName, identity.userName);
+
+        var initialSignIn = false;
+        firebase.auth().onAuthStateChanged(function(user) {
+          if (user && initialSignIn) {
+            initialSignIn = false;
+            var enteredGroup = false;
+            if (identity && identity.groupName) {
+              enteredGroup = self.tryToEnterGroup(identity.groupName, identity.userName);
+            }
+            if (!enteredGroup) {
+              UserRegistrationView.open(self, {form: "groupname", numClients: numClients});
+            }
+          }
+        });
+
+        if (laraController.loadedFromLara) {
+          laraController.getFirebaseJWT(function (result) {
+            if (result.token) {
+              initialSignIn = true;
+              firebase.auth()
+                .signInWithCustomToken(result.token)
+                .catch(function(error) {
+                  console.error(error);
+                  alert("Unable to authenticate using your portal token!");
+                });
+            }
+            else {
+              console.error(result);
+              alert("Unable to get Firebase JWT from portal!");
+            }
+          });
         }
-        if (!enteredGroup) {
-          UserRegistrationView.open(self, {form: "groupname", numClients: numClients});
+        else {
+          initialSignIn = true;
+          firebase.auth()
+            .signInAnonymously()
+            .catch(function() {
+              alert("Unable to sign in anonymously to Firebase!");
+            });
         }
       });
     } else {
@@ -366,6 +399,7 @@ module.exports = userController = {
     else {
       refName = getDatePrefix() + "/no-class-id/" + groupName + "/activities/" + activityName + "/";
     }
+    console.log("refName", refName);
     firebaseGroupRef = firebase.database().ref(refName);
     return firebaseGroupRef;
   }

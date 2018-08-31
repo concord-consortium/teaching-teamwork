@@ -116,6 +116,16 @@ LaraController.prototype = {
     if (this.loadedFromLara) {
       this.laraPhone.post('navigation', {enableForwardNav: enableForwardNav, message: message});
     }
+  },
+
+  getFirebaseJWT: function (callback) {
+    if (this.loadedFromLara) {
+      this.laraPhone.addListener("firebaseJWT", function(result) {
+        callback(result);
+      });
+      this.laraPhone.post('getFirebaseJWT', {firebase_app: "teaching-teamwork"});
+    }
+
   }
 };
 
