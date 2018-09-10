@@ -89,6 +89,15 @@ module.exports = userController = {
           }
         });
 
+        var signInAnonymously = function () {
+          initialSignIn = true;
+          firebase.auth()
+            .signInAnonymously()
+            .catch(function() {
+              alert("Unable to sign in anonymously to Firebase!");
+            });
+        };
+
         if (laraController.loadedFromLara) {
           laraController.getFirebaseJWT(function (result) {
             if (result.token) {
@@ -101,18 +110,13 @@ module.exports = userController = {
                 });
             }
             else {
-              console.error(result);
-              alert("Unable to get Firebase JWT from portal!");
+              // in preview mode
+              signInAnonymously();
             }
           });
         }
         else {
-          initialSignIn = true;
-          firebase.auth()
-            .signInAnonymously()
-            .catch(function() {
-              alert("Unable to sign in anonymously to Firebase!");
-            });
+          signInAnonymously();
         }
       });
     } else {
