@@ -26,6 +26,12 @@ module.exports = React.createClass({
     };
   },
 
+  componentDidUpdate: function () {
+    if (this.state.open && this.refs.input) {
+      this.refs.input.focus();
+    }
+  },
+
   open: function (e) {
     logController.logEvent("Opened calculator");
     this.setState({open: true});
@@ -286,7 +292,7 @@ module.exports = React.createClass({
 
           <div className="top">
             <div className={ mClass }>M</div>
-            <input className={ this.state.error ? 'screen screen-error' : 'screen' } value={ this.state.input } onChange={ this.keyboardChange } onKeyPress={ this.keyboardPress }></input>
+            <input ref="input" className={ this.state.error ? 'screen screen-error' : 'screen' } value={ this.state.input } onChange={ this.keyboardChange } onKeyPress={ this.keyboardPress }></input>
           </div>
 
           <div className="topRow">
