@@ -19,65 +19,18 @@ module.exports = React.createClass({
 
     return {
       items: items,
-      numExistingUsers: 0,
       chatType: "unselected",
       enableChatType: !!interface.enableChatType
     };
   },
 
-  getJoinedMessage: function (numExistingUsers) {
-    var slotsRemaining = this.props.numClients - numExistingUsers,
-        nums = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"],
-        cap = function (string) {
-          return string.charAt(0).toUpperCase() + string.slice(1);
-        },
-        message = " ";
-
-    if (slotsRemaining > 1) {
-      // One of three users is here
-      message += cap(nums[numExistingUsers]) + " of " + nums[this.props.numClients] + " users is here.";
-    } else if (slotsRemaining == 1) {
-      // Two of you are now here. One more to go before you can get started!
-      message += cap(nums[numExistingUsers]) + " of you are now here. One more to go before you can get started!";
-    } else {
-      message += "You're all here! Time to start this challenge.";
-    }
-
-    return message;
-  },
-
   componentWillMount: function() {
-    var self = this,
-        allHaveConnected = false;
+    var self = this;
     userController.onGroupRefCreation(function() {
       self.firebaseRef = userController.getFirebaseGroupRef().child("chat");
       self.firebaseRef.orderByChild('time').on("child_added", function(dataSnapshot) {
         var items = self.state.items.slice(0),
-            item = dataSnapshot.val(),
-            numExistingUsers = self.state.numExistingUsers,
-            waitingRoomMessage;
-
-        if (item.type == "joined") {
-          numExistingUsers = Math.min(self.state.numExistingUsers + 1, self.props.numClients);
-          allHaveConnected = numExistingUsers >= self.props.numClients;
-          waitingRoomMessage = "Waiting... " + self.getJoinedMessage(numExistingUsers);
-          item.message += self.getJoinedMessage(numExistingUsers);
-        }
-        else if (item.type == "left") {
-          numExistingUsers = Math.max(self.state.numExistingUsers - 1, 0);
-          if (allHaveConnected) {
-            waitingRoomMessage = this.props.allCorrect ? "Please proceed to the next page." : "Oops!  One or more of your teammates has dropped off.  Hang in there until everyone comes back.";
-          }
-          else {
-            waitingRoomMessage = "Waiting... " + self.getJoinedMessage(numExistingUsers);
-          }
-        }
-
-        self.props.setWaitingRoomInfo(self.props.numClients - numExistingUsers, waitingRoomMessage);
-
-        if (numExistingUsers !== self.state.numExistingUsers) {
-          self.setState({numExistingUsers: numExistingUsers});
-        }
+            item = dataSnapshot.val();
 
         items.push(item);
 
@@ -146,7 +99,7 @@ module.exports = React.createClass({
     var disabled = this.state.enableChatType && (this.state.chatType === "unselected");
     return (
       <div className="sidebar-chat">
-        <ChatItems items={ this.state.items } />
+        <ChatItems items={ this.state.items } slotsRemaining={this.props.slotsRemaining} waitingRoomMessage={this.props.waitingRoomMessage} />
         <div className="sidebar-chat-input">
           <form onSubmit={ this.handleSubmit }>
             { this.renderChatType() }
@@ -178,7 +131,18 @@ ChatItems = React.createClass({
         var owner = (item.user == user) ? "me" : item.user == "System" ? "system" : "others";
         return <ChatItem key={ i } item={ item } owner={ owner } />;
       })}
+      {this.renderWaiting()}
     </div>;
+  },
+
+  renderWaiting: function () {
+    if (this.props.slotsRemaining && this.props.waitingRoomMessage) {
+      return (
+        <div className='chat-item chat-item-system'>
+          <b>System:</b> { this.props.waitingRoomMessage }
+        </div>
+      );
+    }
   }
 });
 

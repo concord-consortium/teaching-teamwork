@@ -25,8 +25,13 @@ module.exports = React.createClass({
       renderedWaitingRoom: false,
       leftWaitingRoom: false,
       tutorialShowing: false,
-      allCorrect: false
+      allCorrect: false,
+      slotsRemaining: 0
     };
+  },
+
+  componentWillMount: function () {
+    userController.setWaitingRoomInfo(this.setWaitingRoomInfo.bind(this));
   },
 
   getInterface: function () {
@@ -46,6 +51,7 @@ module.exports = React.createClass({
       this.setState({leftWaitingRoom: true});
     }
     this.setState({
+      slotsRemaining: slotsRemaining,
       showWaitingRoom: showWaitingRoom,
       waitingRoomMessage: waitingRoomMessage
     });
@@ -56,6 +62,7 @@ module.exports = React.createClass({
   },
 
   setAllCorrect: function (allCorrect) {
+    userController.allCorrect = allCorrect;
     this.setState({allCorrect: allCorrect});
   },
 
@@ -84,7 +91,7 @@ module.exports = React.createClass({
         submitButton = this.props.showSubmit && this.props.circuit ? (<SubmitButtonView label={hasMultipleClients ? 'We got it!' : "I got it!"} goals={ this.props.goals } nextActivity={ this.props.nextActivity } enterUnknowns={activity.enterUnknowns} disableForwardNav={interface.disableForwardNav} setAllCorrect={this.setAllCorrect} hasMultipleClients={hasMultipleClients} />) : null,
         otherCircuitsButton = hasMultipleClients && this.props.circuit ? (<OtherCircuitsView circuit={ this.props.circuit } numClients={ activity.clients.length } activityName={ this.props.activityName } groupName={ userController.getGroupname() } classInfo={ userController.getClassInfo() } ttWorkbench={ this.props.ttWorkbench } tutorialShowing={this.state.tutorialShowing} />) : null,
         calculator = this.props.circuit ? (<CalculatorView />) : null,
-        chatProps = hasMultipleClients ? $.extend({}, activity, {numClients: activity.clients.length, setWaitingRoomInfo: this.setWaitingRoomInfo, allCorrect: this.state.allCorrect}) : null,
+        chatProps = hasMultipleClients ? $.extend({}, activity, {numClients: activity.clients.length, slotsRemaining: this.state.slotsRemaining, waitingRoomMessage: this.state.waitingRoomMessage}) : null,
         belowTutorialClassname = "below-tutorial" + (this.state.tutorialShowing ? " below-tutorial-showing" : "");
 
     return (

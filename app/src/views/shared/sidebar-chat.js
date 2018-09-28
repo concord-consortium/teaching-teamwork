@@ -21,30 +21,8 @@ module.exports = React.createClass({
     }
 
     return {
-      items: items,
-      numExistingUsers: 0
+      items: items
     };
-  },
-
-  getJoinedMessage: function (numExistingUsers) {
-    var slotsRemaining = this.props.numClients - numExistingUsers,
-        nums = ["zero", "one", "two", "three"],
-        cap = function (string) {
-          return string.charAt(0).toUpperCase() + string.slice(1);
-        },
-        message = " ";
-
-    if (slotsRemaining > 1) {
-      // One of three users is here
-      message += cap(nums[numExistingUsers]) + " of " + this.props.numClients + " users is here.";
-    } else if (slotsRemaining == 1) {
-      // Two of you are now here. One more to go before you can get started!
-      message += cap(nums[numExistingUsers]) + " of you are now here. One more to go before you can get started!";
-    } else {
-      message += "You're all here! Time to start this challenge.";
-    }
-
-    return message;
   },
 
   componentWillMount: function() {
@@ -53,20 +31,7 @@ module.exports = React.createClass({
       self.firebaseRef = userController.getFirebaseGroupRef().child("chat");
       self.firebaseRef.orderByChild('time').on("child_added", function(dataSnapshot) {
         var items = self.state.items.slice(0),
-            item = dataSnapshot.val(),
-            numExistingUsers = self.state.numExistingUsers;
-
-        if (item.type == "joined") {
-          numExistingUsers = Math.min(self.state.numExistingUsers + 1, this.props.numClients);
-          item.message += self.getJoinedMessage(numExistingUsers);
-        }
-        else if (item.type == "left") {
-          numExistingUsers = Math.max(self.state.numExistingUsers - 1, 0);
-        }
-
-        if (numExistingUsers !== self.state.numExistingUsers) {
-          self.setState({numExistingUsers: numExistingUsers});
-        }
+            item = dataSnapshot.val();
 
         items.push(item);
 
