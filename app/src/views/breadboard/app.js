@@ -1,6 +1,7 @@
 var PageView              = React.createFactory(require('./page.jsx')),
     WorkbenchAdaptor      = require('../../data/shared/workbenchAdaptor'),
     WorkbenchFBConnector  = require('../../data/shared/workbenchFBConnector'),
+    laraController        = require('../../controllers/shared/lara'),
     logController         = require('../../controllers/shared/log'),
     userController        = require('../../controllers/shared/user'),
     eventsController      = require('../../controllers/shared/events'),
@@ -219,6 +220,10 @@ module.exports = React.createClass({
           logController.logEvents(ttWorkbench.logging && ttWorkbench.logging.startActivity ? ttWorkbench.logging.startActivity : null);
         });
       });
+    }, function () {
+      if (ttWorkbench.interface && ttWorkbench.interface.disableForwardNav) {
+        laraController.enableForwardNav(false, "Please complete this activity before moving to the next page.");
+      }
     });
   },
 

@@ -64,7 +64,7 @@ logController.setGetServerSkew(function () {
 
 module.exports = userController = {
 
-  init: function(_numClients, _activityName, _callback) {
+  init: function(_numClients, _activityName, _callback, laraCallback) {
 
     numClients = _numClients;
     activityName = _activityName;
@@ -74,6 +74,10 @@ module.exports = userController = {
     if (numClients > 1) {
       var self = this;
       this.getIdentityFromLara(function (identity) {
+
+        if (laraCallback) {
+          laraCallback(identity);
+        }
 
         var initialSignIn = false;
         firebase.auth().onAuthStateChanged(function(user) {
