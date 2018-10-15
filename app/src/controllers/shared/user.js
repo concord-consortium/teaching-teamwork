@@ -4,6 +4,9 @@ var UserRegistrationView = require('../../views/shared/userRegistration.jsx'),
     laraController = require('./lara'),
     userController,
     numClients,
+    numCurrentUsers = 0,
+    allCorrect = false,
+    setWaitingRoomInfo,
     activityName,
     userName,
     groupName,
@@ -90,9 +93,12 @@ module.exports = userController = {
         });
 
         var signInAnonymously = function () {
-          initialSignIn = true;
           firebase.auth()
-            .signInAnonymously()
+            .signOut()
+            .then(function() {
+              initialSignIn = true;
+              return firebase.auth().signInAnonymously();
+            })
             .catch(function() {
               alert("Unable to sign in anonymously to Firebase!");
             });
@@ -101,9 +107,12 @@ module.exports = userController = {
         if (laraController.loadedFromLara) {
           laraController.getFirebaseJWT(function (result) {
             if (result.token) {
-              initialSignIn = true;
               firebase.auth()
-                .signInWithCustomToken(result.token)
+                .signOut()
+                .then(function () {
+                  initialSignIn = true;
+                  return firebase.auth().signInWithCustomToken(result.token);
+                })
                 .catch(function(error) {
                   console.error(error);
                   alert("Unable to authenticate using your portal token!");
@@ -197,7 +206,14 @@ module.exports = userController = {
           users[userName] = {here: true, email: email};
           // wait until after we call setGroupName (which clears this listener)
           setTimeout(function () {
-            firebaseUsersRef.child(userName).set(users[userName]);
+            var ref = firebaseUsersRef.child(userName);
+            ref.transaction(function (user) {
+              if (user && user.email && email && (user.email !== email)) {
+                // abort, another user has selected the username
+                return;
+              }
+              return users[userName];
+            });
           }, 1);
         }
 
@@ -284,11 +300,11 @@ module.exports = userController = {
           }
 
           if (previousClient) {
-            self.selectClient(previousClient);
-            self.selectedClient(previousClient);
-
-            // force a click in the window so the delete key works
-            UserRegistrationView.open(self, {form: "auto-selected-board", client: parseInt(previousClient) || 0, groupName: groupName, userName: userName});
+            self.selectClient(previousClient, function () {
+              self.selectedClient(previousClient);
+              // force a click in the window so the delete key works
+              UserRegistrationView.open(self, {form: "auto-selected-board", client: parseInt(previousClient) || 0, groupName: groupName, userName: userName});
+            });
           }
           else {
             autoSelectClient = false;
@@ -306,42 +322,130 @@ module.exports = userController = {
     }, 1);
   },
 
-  selectClient: function(_client) {
+  selectClient: function(_client, callback) {
     client = _client;
-    firebaseUsersRef.child(userName).set({client: client, email: this.getEmail()});
+    var ref = firebaseUsersRef.child(userName);
+    var email = this.getEmail();
+    var userInfo = {client: client, email: email, clientSelected: false};
+
+    ref.transaction(function (user) {
+      if (user && user.email && email && (user.email !== email)) {
+        // abort if another user has selected the client
+        return;
+      }
+      return userInfo;
+    }, function (error, committed) {
+      if (committed && callback) {
+        callback();
+      }
+    });
   },
 
   setUnknownValues: function (unknownValues) {
     if (firebaseUsersRef) {
-      firebaseUsersRef.child(userName).set({client: client, email: this.getEmail(), unknownValues: unknownValues});
+      firebaseUsersRef.child(userName).child("unknownValues").set(unknownValues);
     }
     else if (this.listenForUnknownValues) {
       this.listenForUnknownValues(unknownValues);
     }
   },
 
+  getJoinedMessage: function () {
+    var slotsRemaining = numClients - numCurrentUsers,
+        nums = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"],
+        cap = function (string) {
+          return string.charAt(0).toUpperCase() + string.slice(1);
+        },
+        message = " ";
+
+    if (slotsRemaining > 1) {
+      // One of three users is here
+      message += cap(nums[numCurrentUsers]) + " of " + nums[numClients] + " users " + (numCurrentUsers === 1 ? "is" : "are") + " here.";
+    } else if (slotsRemaining == 1) {
+      // Two of you are now here. One more to go before you can get started!
+      message += cap(nums[numCurrentUsers]) + " of you are now here. One more to go before you can get started!";
+    } else {
+      message += "You're all here! Time to start this challenge.";
+    }
+
+    return message;
+  },
+
+  setWaitingRoomInfo: function (callback) {
+    setWaitingRoomInfo = callback;
+  },
+
   selectedClient: function() {
-    firebaseUsersRef.off("value");
-    UserRegistrationView.close();
+    var ref = firebaseUsersRef.child(userName);
+    var email = this.getEmail();
+    var userInfo = {client: client, email: email, clientSelected: true};
 
-    var chatRef = firebaseGroupRef.child('chat'),
-        message = userName + " has joined on Circuit "+((client*1)+1)+".";
+    ref.transaction(function (user) {
+      if (user && user.email && email && (user.email !== email)) {
+        // abort if another user has selected the client
+        return;
+      }
+      return userInfo;
+    }, function (error, committed) {
+      if (committed) {
+        firebaseUsersRef.off("value");
+        UserRegistrationView.close();
 
-    chatRef.push({
-      user: "System",
-      message: message,
-      type: "joined",
-      time: firebase.database.ServerValue.TIMESTAMP
+        var maxPreviousUsers = 0;
+        firebaseUsersRef.on("value", function (snapshot) {
+          var users = snapshot.val();
+          var waitingRoomMessage;
+          var clients = {};
+
+          if (users) {
+            Object.keys(users).forEach(function (key) {
+              var user = users[key];
+              if (user.hasOwnProperty("client") && user.clientSelected) {
+                clients[user.client] = true;
+              }
+              if ((key === userName) && email && (user.email !== email)) {
+                // someone else has taken our username somehow so leave
+                alert("ERROR: Another user has taken your username in this group. This window will reload.");
+                window.location.reload();
+              }
+            });
+          }
+          numCurrentUsers = Object.keys(clients).length;
+
+          if ((numCurrentUsers < numClients) && (maxPreviousUsers >= numClients)) {
+            waitingRoomMessage = allCorrect ? "Please proceed to the next page." : "Oops!  One or more of your teammates has dropped off.  Hang in there until everyone comes back.";
+          }
+          else {
+            waitingRoomMessage = "Waiting... " + userController.getJoinedMessage();
+          }
+
+          if (setWaitingRoomInfo) {
+            setWaitingRoomInfo(numClients - numCurrentUsers, waitingRoomMessage);
+          }
+          maxPreviousUsers = Math.max(numCurrentUsers, maxPreviousUsers);
+        });
+
+        var chatRef = firebaseGroupRef.child('chat'),
+            message = userName + " has joined on Circuit "+((client*1)+1)+".";
+
+        chatRef.push({
+          user: "System",
+          message: message,
+          type: "joined",
+          time: firebase.database.ServerValue.TIMESTAMP
+        });
+        var disconnectMessageRef = chatRef.push();
+        disconnectMessageRef.onDisconnect().cancel();
+        disconnectMessageRef.onDisconnect().set({
+          user: "System",
+          message: userName + " has left",
+          type: "left",
+          time: firebase.database.ServerValue.TIMESTAMP
+        });
+        callback(client);
+      }
     });
-    var disconnectMessageRef = chatRef.push();
-    disconnectMessageRef.onDisconnect().cancel();
-    disconnectMessageRef.onDisconnect().set({
-      user: "System",
-      message: userName + " has left",
-      type: "left",
-      time: firebase.database.ServerValue.TIMESTAMP
-    });
-    callback(client);
+
   },
 
   getUsername: function() {

@@ -87,18 +87,11 @@ LaraController.prototype = {
   },
 
   waitForInitInteractive: function (callback) {
-    var self = this;
     if (this.gotInitInteractive) {
-      callback(this.globalState, this.classHash);
+      callback(this.globalState, this.classInfo);
     }
     else {
       this.gotInitInteractiveCallback = callback;
-      setTimeout(function () {
-        if (!self.gotInitInteractive) {
-          self.gotInitInteractiveCallback = null;
-          callback(self.globalState, self.classInfo);
-        }
-      }, 5000);
     }
   },
 
