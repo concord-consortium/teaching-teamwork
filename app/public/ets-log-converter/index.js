@@ -590,7 +590,7 @@ else {
 
       renderDragDrop: function () {
         return (
-          div({id: "file-drag"}, "Drop an exported JSON log file onto this page")
+          div({id: "file-drag"}, "Drop an exported \"log-puller\" JSON log file onto this page")
         );
       },
 
