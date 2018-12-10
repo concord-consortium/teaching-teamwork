@@ -136,7 +136,7 @@ module.exports = SubmitButton = React.createClass({
     this.submitRef.off();
     this.clientListRef.off();
     if (this.usersRef) {
-      this.usersRef.off();
+      this.usersRef.off("value", listenForUnknownValues);
     }
     userController.listenForUnknownValues = null;
   },
@@ -407,7 +407,7 @@ Popup = React.createFactory(React.createClass({
 
   componentWillUnmount: function () {
     if (this.usersRef) {
-      this.usersRef.off();
+      this.usersRef.off("value", listenForUnknownValues);
     }
   },
 
