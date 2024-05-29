@@ -20,7 +20,7 @@ var UserRegistrationView = require('../../views/shared/userRegistration.jsx'),
     serverSkew,
     onDisconnectRef,
     firebaseConfig = {
-      apiKey: "AIzaSyBBodQ91rke-1Th07mQU-YgwvIx079BB8k",
+      apiKey: atob("QUl6YVN5QkJvZFE5MXJrZS0xVGgwN21RVS1ZZ3d2SXgwNzlCQjhr"),
       authDomain: "teaching-teamwork-c9ac4.firebaseapp.com",
       databaseURL: "https://teaching-teamwork-c9ac4.firebaseio.com",
       storageBucket: "teaching-teamwork-c9ac4.appspot.com",
